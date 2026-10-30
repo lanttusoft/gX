@@ -1,15 +1,17 @@
 <!-- //ai: distinguish proof checking, trusted assumptions, gate coverage, and source correspondence. -->
 # Lean 4 proof audit
 
-> Public source beta note: the Lean proof tree is not included in this source
-> tarball. `make proofs` and `make proofs-full` are maintained outside this
-> source beta.
+> The Lean proof sources are published separately at
+> https://github.com/lanttusoft/gx-proofs. They are not included in this
+> source tarball or linked into the engine executable. `make proofs` and
+> `make proofs-full` expect a sibling `../proofs` checkout.
 
 ## What the gates establish
 
 `make proofs` builds the core tier. `make proofs-full` builds the Mathlib gfx
 and gxmath tiers; requesting it without the pinned cache is an error, not a
-successful skip. The full proof tree is maintained separately; it is never
+successful skip. The proof tree is published in the separate
+[gX proofs](https://github.com/lanttusoft/gx-proofs) repository; it is never
 part of the engine release payload. Both run `scripts/proof_audit.py`, which checks:
 
 - Every project module in the selected tiers is reachable from its root and
@@ -108,9 +110,10 @@ model and cofactor/inverse algebra now live in `GxMath.ClipMatrix` and
 `GxMath.CofactorInverse`; `GfxCofactorInverse` retains the camera-history
 bridge.
 
-The proof repository maintains its significance scale and reviewed
-importance catalog (target evidence levels, source/guard/gate paths and known
-gaps). Neither file is included in this source beta. The catalog derives `checked`/`grounded`/`guarded`/`complete`
+The [gX proofs repository](https://github.com/lanttusoft/gx-proofs)
+maintains its significance scale and reviewed importance catalog (target
+evidence levels, source/guard/gate paths and known gaps). Neither file is
+included in this source beta. The catalog derives `checked`/`grounded`/`guarded`/`complete`
 labels from those declarations; they are static evidence labels, not
 execution certificates.
 

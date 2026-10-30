@@ -83,10 +83,11 @@ code, assets, and content bundled with gX, per their respective licenses.
   `docs/porting.md`.
 
 ### Proof/build dependencies
-- **Lean 4 / Mathlib4** — Apache-2.0. Used by `proofs/` as a Lake/Mathlib
-  proof-build dependency; not linked into the release executable. The core proof specifications
-  salvaged from the author's gameX `lean/` archive are project-owned and
-  re-verified against gX source. Attribution
+- **Lean 4 / Mathlib4** — Apache-2.0. Used by the separate
+  [gX proofs](https://github.com/lanttusoft/gx-proofs) repository as a
+  Lake/Mathlib proof-build dependency; not linked into the release executable.
+  The core proof specifications salvaged from the author's gameX `lean/`
+  archive are project-owned and re-verified against gX source. Attribution
   recorded here for source and proof artifacts.
 
 ## Assets

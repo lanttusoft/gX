@@ -11,6 +11,7 @@ generic engine demo.
 - Build: `./build.sh`; unit tests: `./build/gX_build --test-only`;
   fast checks: `make check-fast`.
 - Docs index: `docs/README.md`.
+- Proof sources: https://github.com/lanttusoft/gx-proofs
 - AI usage, limitations and disclaimer: `docs/ai_disclosure.md`.
 - Security reports: see `SECURITY.md`.
 - Contributing: see `CONTRIBUTING.md`; support: `SUPPORT.md`; conduct: `CODE_OF_CONDUCT.md`.

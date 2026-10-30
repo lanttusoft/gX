@@ -136,6 +136,7 @@ review limits and the as-is disclaimer.
 Docs
 ----
 The documentation index lives in `docs/README.md`.
+Lean proof sources: https://github.com/lanttusoft/gx-proofs
 
 Credits
 -------

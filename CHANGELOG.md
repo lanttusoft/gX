@@ -6,6 +6,11 @@ SemVer.
 
 ## [Unreleased]
 
+### Added
+- **Public proof sources**: the Lean 4 proof tree is published separately at
+  https://github.com/lanttusoft/gx-proofs (GPL-3.0-or-later; Mathlib/Lean
+  notices included). The engine tarball remains proof-free.
+
 ## [0.18.0] - 2026-10-31
 
 ### Added

@@ -5,6 +5,8 @@ Start here:
 - [gX readme](../readme.txt) — what gX is, build, license and controls.
 - [Contributing](../CONTRIBUTING.md), [support](../SUPPORT.md), [security policy](../SECURITY.md), [code of conduct](../CODE_OF_CONDUCT.md).
 - [Changelog](../CHANGELOG.md) — released versions and current changes.
+- [gX proofs](https://github.com/lanttusoft/gx-proofs) — Lean 4 proof sources,
+  audit contract and provenance.
 - [AI policy](ai_policy.md) — contribution marking, asset provenance and the
   license stance for AI-assisted work.
 - [AI usage and limitations](ai_disclosure.md) — what AI assisted with,

@@ -6,11 +6,12 @@ the *semantics* (what the formulas mean), the math pass pins the *code*
 
 ## Tiers
 
-- **Lean proofs** (`proofs/`, sibling of `master/`) — coordinate mappings,
-  RHI state machines, draw protocols, the point-shadow face table, and the
-  containment algebra. Core tier is blocking in `make check`
+- **Lean proofs** (separate
+  [gX proofs](https://github.com/lanttusoft/gx-proofs) repository) — coordinate
+  mappings, RHI state machines, draw protocols, the point-shadow face table,
+  and the containment algebra. Core tier is blocking in `make check`
   (`make proofs`); the Mathlib tiers are opt-in (`make proofs-full`).
-  See `../proofs/README.md`.
+  See the [proof README](https://github.com/lanttusoft/gx-proofs/blob/main/README.md).
   Both tiers audit root coverage and transitive theorem axioms; see
   [`lean_proofs.md`](lean_proofs.md) for correctness-audit findings and limits.
 - **Math pass** (`make math-check`) — the engine's gxmath corpus
