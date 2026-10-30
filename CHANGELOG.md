@@ -15,10 +15,11 @@ SemVer.
   and control cells, metadata-at-edges, payload-in-middle, SECDED ECC, CRC32,
   bounded RLE/raw compression and a synthetic camera round trip in
   `--test-only`, plus eight-way rotation/mirror auto-detection from the corner
-  controls. `--color-code <text>` presents the frozen code fullscreen or 1:1
-  (`SPACE`, `F`, `ESC`) with a deterministic screenshot hook. Perspective
-  rectification and multi-frame reassembly remain backlog; see
-  `docs/color_code_format.md`.
+  controls and caller-supplied affine/perspective rectification through four
+  projected grid corners. `--color-code <text>` presents the frozen code
+  fullscreen or 1:1 (`SPACE`, `F`, `ESC`) with a deterministic screenshot
+  hook. Automatic corner detection and multi-frame reassembly remain backlog;
+  see `docs/color_code_format.md`.
 
 ## [0.20.0] - 2026-10-30
 

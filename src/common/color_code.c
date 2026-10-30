@@ -23,6 +23,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "color_code.h"
 #include "log.h"
@@ -347,6 +348,63 @@ static gX_I32 color_code_decompress(gX_U8 mode, const gX_U8 *source,
     return GX_COLOR_CODE_OK;
 }
 
+static gX_I32 color_code_homography(const gX_ColorCodeImage *image,
+    gX_F32 matrix[9])
+{
+    if (!image || !matrix || !image->perspective) return GX_COLOR_CODE_ERR_ARGUMENT;
+    gX_F32 x0 = image->corners[0];
+    gX_F32 y0 = image->corners[1];
+    gX_F32 x1 = image->corners[2];
+    gX_F32 y1 = image->corners[3];
+    gX_F32 x2 = image->corners[4];
+    gX_F32 y2 = image->corners[5];
+    gX_F32 x3 = image->corners[6];
+    gX_F32 y3 = image->corners[7];
+    if (!isfinite(x0) || !isfinite(y0) || !isfinite(x1) || !isfinite(y1)
+        || !isfinite(x2) || !isfinite(y2) || !isfinite(x3) || !isfinite(y3))
+        return GX_COLOR_CODE_ERR_GEOMETRY;
+    gX_F32 dx1 = x1 - x2;
+    gX_F32 dx2 = x3 - x2;
+    gX_F32 dx3 = x0 - x1 + x2 - x3;
+    gX_F32 dy1 = y1 - y2;
+    gX_F32 dy2 = y3 - y2;
+    gX_F32 dy3 = y0 - y1 + y2 - y3;
+    gX_F32 denominator = dx1 * dy2 - dx2 * dy1;
+    gX_F32 g = 0.0f;
+    gX_F32 h = 0.0f;
+    gX_F32 a = 0.0f;
+    gX_F32 b = 0.0f;
+    gX_F32 d = 0.0f;
+    gX_F32 e = 0.0f;
+    if (fabsf(dx3) < 0.0001f && fabsf(dy3) < 0.0001f)
+    {
+        a = x1 - x0;
+        b = x3 - x0;
+        d = y1 - y0;
+        e = y3 - y0;
+    }
+    else
+    {
+        if (fabsf(denominator) < 0.0001f) return GX_COLOR_CODE_ERR_GEOMETRY;
+        g = (dx3 * dy2 - dx2 * dy3) / denominator;
+        h = (dx1 * dy3 - dx3 * dy1) / denominator;
+        a = x1 - x0 + g * x1;
+        b = x3 - x0 + h * x3;
+        d = y1 - y0 + g * y1;
+        e = y3 - y0 + h * y3;
+    }
+    matrix[0] = a;
+    matrix[1] = b;
+    matrix[2] = x0;
+    matrix[3] = d;
+    matrix[4] = e;
+    matrix[5] = y0;
+    matrix[6] = g;
+    matrix[7] = h;
+    matrix[8] = 1.0f;
+    return GX_COLOR_CODE_OK;
+}
+
 static gX_I0 color_code_map_cell(gX_U32 row, gX_U32 col,
     gX_I32 orientation, gX_U32 *imageRow, gX_U32 *imageCol)
 {
@@ -421,13 +479,56 @@ static gX_I32 color_code_sample_pixel(const gX_ColorCodeImage *image,
     return GX_COLOR_CODE_OK;
 }
 
+static gX_I32 color_code_sample_point(const gX_ColorCodeImage *image,
+    gX_F32 x, gX_F32 y, gX_F32 color[3])
+{
+    if (!image || !color || !image->pixels)
+        return GX_COLOR_CODE_ERR_ARGUMENT;
+    if (!isfinite(x) || !isfinite(y)) return GX_COLOR_CODE_ERR_GEOMETRY;
+    gX_I32 centerX = (gX_I32)floorf(x);
+    gX_I32 centerY = (gX_I32)floorf(y);
+    gX_I32 radius = 1;
+    gX_F32 sum[3] = {0.0f,0.0f,0.0f};
+    gX_U32 count = 0;
+    for (gX_I32 sampleY = centerY - radius; sampleY <= centerY + radius; sampleY++)
+    {
+        if (sampleY < 0 || (gX_U32)sampleY >= image->height) continue;
+        for (gX_I32 sampleX = centerX - radius; sampleX <= centerX + radius; sampleX++)
+        {
+            if (sampleX < 0 || (gX_U32)sampleX >= image->width) continue;
+            gX_U32 offset = ((gX_U32)sampleY * image->width
+                + (gX_U32)sampleX) * 4;
+            sum[0] += image->pixels[offset + 0];
+            sum[1] += image->pixels[offset + 1];
+            sum[2] += image->pixels[offset + 2];
+            count++;
+        }
+    }
+    if (count == 0) return GX_COLOR_CODE_ERR_GEOMETRY;
+    color[0] = sum[0] / (gX_F32)count;
+    color[1] = sum[1] / (gX_F32)count;
+    color[2] = sum[2] / (gX_F32)count;
+    return GX_COLOR_CODE_OK;
+}
+
 static gX_I32 color_code_sample(const gX_ColorCodeImage *image,
-    gX_U32 row, gX_U32 col, gX_I32 orientation, gX_F32 color[3])
+    gX_U32 row, gX_U32 col, gX_I32 orientation, const gX_F32 *homography,
+    gX_F32 color[3])
 {
     gX_U32 imageRow = 0;
     gX_U32 imageCol = 0;
     color_code_map_cell(row, col, orientation, &imageRow, &imageCol);
-    return color_code_sample_pixel(image, imageRow, imageCol, color);
+    if (!homography)
+        return color_code_sample_pixel(image, imageRow, imageCol, color);
+    gX_F32 u = ((gX_F32)imageCol + 0.5f) / (gX_F32)GX_COLOR_CODE_GRID;
+    gX_F32 v = ((gX_F32)imageRow + 0.5f) / (gX_F32)GX_COLOR_CODE_GRID;
+    gX_F32 denominator = homography[6] * u + homography[7] * v + 1.0f;
+    if (fabsf(denominator) < 0.000001f) return GX_COLOR_CODE_ERR_GEOMETRY;
+    gX_F32 x = (homography[0] * u + homography[1] * v + homography[2])
+        / denominator;
+    gX_F32 y = (homography[3] * u + homography[4] * v + homography[5])
+        / denominator;
+    return color_code_sample_point(image, x, y, color);
 }
 
 static gX_I32 color_code_palette_index(const gX_F32 color[3],
@@ -466,7 +567,8 @@ static gX_I32 color_code_palette_index(const gX_F32 color[3],
 }
 
 static gX_I32 color_code_calibrate(const gX_ColorCodeImage *image,
-    gX_I32 orientation, gX_F32 black[3], gX_F32 white[3])
+    gX_I32 orientation, const gX_F32 *homography,
+    gX_F32 black[3], gX_F32 white[3])
 {
     gX_F32 blackSum[3] = {0.0f,0.0f,0.0f};
     gX_F32 whiteSum[3] = {0.0f,0.0f,0.0f};
@@ -477,8 +579,8 @@ static gX_I32 color_code_calibrate(const gX_ColorCodeImage *image,
         gX_F32 color[3];
         gX_U32 gridRow = GX_COLOR_CODE_QUIET;
         gX_U32 gridCol = GX_COLOR_CODE_QUIET + col;
-        if (color_code_sample(image, gridRow, gridCol, orientation, color)
-            != GX_COLOR_CODE_OK)
+        if (color_code_sample(image, gridRow, gridCol, orientation, homography,
+                color) != GX_COLOR_CODE_OK)
             return GX_COLOR_CODE_ERR_GEOMETRY;
         if (col & 1)
         {
@@ -507,11 +609,12 @@ static gX_I32 color_code_calibrate(const gX_ColorCodeImage *image,
 }
 
 static gX_I32 color_code_classify(const gX_ColorCodeImage *image,
-    gX_I32 orientation, gX_U8 *cells, gX_U16 *erased)
+    gX_I32 orientation, const gX_F32 *homography, gX_U8 *cells, gX_U16 *erased)
 {
     gX_F32 black[3];
     gX_F32 white[3];
-    gX_I32 status = color_code_calibrate(image, orientation, black, white);
+    gX_I32 status = color_code_calibrate(image, orientation, homography,
+        black, white);
     if (status != GX_COLOR_CODE_OK) return status;
     *erased = 0;
     for (gX_U32 row = 0; row < GX_COLOR_CODE_GRID; row++)
@@ -519,8 +622,8 @@ static gX_I32 color_code_classify(const gX_ColorCodeImage *image,
         for (gX_U32 col = 0; col < GX_COLOR_CODE_GRID; col++)
         {
             gX_F32 color[3];
-            if (color_code_sample(image, row, col, orientation, color)
-                != GX_COLOR_CODE_OK)
+            if (color_code_sample(image, row, col, orientation, homography,
+                    color) != GX_COLOR_CODE_OK)
                 return GX_COLOR_CODE_ERR_GEOMETRY;
             gX_U8 index = 0;
             status = color_code_palette_index(color, black, white, &index);
@@ -533,7 +636,8 @@ static gX_I32 color_code_classify(const gX_ColorCodeImage *image,
 }
 
 static gX_I1 color_code_corner_color_matches(const gX_ColorCodeImage *image,
-    gX_I32 orientation, gX_U32 activeRow, gX_U32 activeCol,
+    gX_I32 orientation, const gX_F32 *homography,
+    gX_U32 activeRow, gX_U32 activeCol,
     const gX_U8 pattern[9], const gX_F32 black[3], const gX_F32 white[3])
 {
     for (gX_U32 index = 0; index < 9; index++)
@@ -541,7 +645,7 @@ static gX_I1 color_code_corner_color_matches(const gX_ColorCodeImage *image,
         gX_U32 row = GX_COLOR_CODE_QUIET + activeRow + index / 3;
         gX_U32 col = GX_COLOR_CODE_QUIET + activeCol + index % 3;
         gX_F32 color[3];
-        if (color_code_sample(image, row, col, orientation, color)
+        if (color_code_sample(image, row, col, orientation, homography, color)
             != GX_COLOR_CODE_OK)
             return 0;
         gX_U8 palette = 0;
@@ -554,23 +658,23 @@ static gX_I1 color_code_corner_color_matches(const gX_ColorCodeImage *image,
 }
 
 static gX_I1 color_code_orientation_matches(const gX_ColorCodeImage *image,
-    gX_I32 orientation)
+    gX_I32 orientation, const gX_F32 *homography)
 {
     gX_F32 black[3];
     gX_F32 white[3];
-    if (color_code_calibrate(image, orientation, black, white)
+    if (color_code_calibrate(image, orientation, homography, black, white)
         != GX_COLOR_CODE_OK)
         return 0;
-    if (!color_code_corner_color_matches(image, orientation, 0, 0,
+    if (!color_code_corner_color_matches(image, orientation, homography, 0, 0,
             gX_ColorCodeCornerTL, black, white))
         return 0;
-    if (!color_code_corner_color_matches(image, orientation, 0,
+    if (!color_code_corner_color_matches(image, orientation, homography, 0,
             GX_COLOR_CODE_ACTIVE - 3, gX_ColorCodeCornerTR, black, white))
         return 0;
-    if (!color_code_corner_color_matches(image, orientation,
+    if (!color_code_corner_color_matches(image, orientation, homography,
             GX_COLOR_CODE_ACTIVE - 3, 0, gX_ColorCodeCornerBL, black, white))
         return 0;
-    if (!color_code_corner_color_matches(image, orientation,
+    if (!color_code_corner_color_matches(image, orientation, homography,
             GX_COLOR_CODE_ACTIVE - 3, GX_COLOR_CODE_ACTIVE - 3,
             gX_ColorCodeCornerBR, black, white))
         return 0;
@@ -654,26 +758,47 @@ gX_I32 gX_ColorCode_Encode(const gX_U8 *payload, gX_U32 length,
 gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
     gX_ColorCodeResult *result)
 {
-    if (!image || !result || !image->pixels || image->cellSize == 0)
+    if (!image || !result || !image->pixels
+        || (!image->perspective && image->cellSize == 0))
         return GX_COLOR_CODE_ERR_ARGUMENT;
     memset(result, 0, sizeof(*result));
     result->orientation = -1;
     snprintf((char *)result->name, sizeof(result->name), "%s", "Color code result");
     snprintf((char *)result->description, sizeof(result->description), "%s",
         "Decoded screen transfer payload");
-    gX_U64 required = (gX_U64)GX_COLOR_CODE_GRID * image->cellSize;
-    if ((gX_U64)image->originX + required > image->width
-        || (gX_U64)image->originY + required > image->height)
+    gX_F32 homography[9];
+    const gX_F32 *projection = NULL;
+    if (image->perspective)
     {
-        result->status = GX_COLOR_CODE_ERR_GEOMETRY;
-        return result->status;
+        if (image->autoOrientation)
+        {
+            result->status = GX_COLOR_CODE_ERR_ARGUMENT;
+            return result->status;
+        }
+        gX_I32 status = color_code_homography(image, homography);
+        if (status != GX_COLOR_CODE_OK)
+        {
+            result->status = status;
+            return result->status;
+        }
+        projection = homography;
+    }
+    else
+    {
+        gX_U64 required = (gX_U64)GX_COLOR_CODE_GRID * image->cellSize;
+        if ((gX_U64)image->originX + required > image->width
+            || (gX_U64)image->originY + required > image->height)
+        {
+            result->status = GX_COLOR_CODE_ERR_GEOMETRY;
+            return result->status;
+        }
     }
     gX_I32 orientation = 0;
     if (image->autoOrientation)
     {
         gX_I1 found = 0;
         for (gX_I32 candidate = 0; candidate < 8; candidate++)
-            if (color_code_orientation_matches(image, candidate))
+            if (color_code_orientation_matches(image, candidate, projection))
             {
                 orientation = candidate;
                 found = 1;
@@ -687,7 +812,8 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
     }
     gX_U8 cells[GX_COLOR_CODE_CELLS];
     gX_U16 erased = 0;
-    gX_I32 status = color_code_classify(image, orientation, cells, &erased);
+    gX_I32 status = color_code_classify(image, orientation, projection,
+        cells, &erased);
     if (status != GX_COLOR_CODE_OK)
     {
         result->status = status;

@@ -85,7 +85,7 @@ this source beta.
   Encode/Decode/Render/Palette. Control/calibration cells, metadata-at-edges,
   payload-in-middle, SECDED ECC, CRC32 and raw/RLE compression; the decoder
   auto-detects eight rotation/mirror orientations from corner controls and
-  currently requires axis-aligned grid geometry. See
+  accepts caller-supplied affine/perspective corners for rectification. See
   `docs/color_code_format.md` and `--test-only`.
 - `gX_JSON_Schema*` / `gX_JSON_Load/Save` / `gX_JSON_*` / `gX_Marshal_*` —
   marshal (custom json_impl, drop-in json-c subset).

@@ -131,6 +131,222 @@ static gX_U8 *test_transform(const gX_U8 *source, gX_I32 mode)
     return target;
 }
 
+static gX_U8 *test_warp_affine(const gX_U8 *source)
+{
+    const gX_U32 size = 512;
+    const gX_F32 origin = (gX_F32)TEST_ORIGIN;
+    const gX_F32 span = (gX_F32)(GX_COLOR_CODE_GRID * TEST_CELL);
+    const gX_F32 x0 = 60.0f, y0 = 40.0f;
+    const gX_F32 x1 = 440.0f, y1 = 80.0f;
+    const gX_F32 x3 = 20.0f, y3 = 420.0f;
+    const gX_F32 a = x1 - x0, b = x3 - x0;
+    const gX_F32 d = y1 - y0, e = y3 - y0;
+    const gX_F32 determinant = a * e - b * d;
+    gX_U8 *target = (gX_U8 *)gX_Calloc(size * size * 4);
+    if (!target || fabsf(determinant) < 0.0001f)
+    {
+        gX_Free(target);
+        return NULL;
+    }
+    for (gX_U32 y = 0; y < size; y++)
+        for (gX_U32 x = 0; x < size; x++)
+        {
+            gX_F32 px = (gX_F32)x + 0.5f - x0;
+            gX_F32 py = (gX_F32)y + 0.5f - y0;
+            gX_F32 u = (e * px - b * py) / determinant;
+            gX_F32 v = (-d * px + a * py) / determinant;
+            gX_U32 offset = (y * size + x) * 4;
+            target[offset + 3] = 255;
+            if (u < 0.0f || u >= 1.0f || v < 0.0f || v >= 1.0f) continue;
+            gX_I32 sourceX = (gX_I32)(origin + u * span);
+            gX_I32 sourceY = (gX_I32)(origin + v * span);
+            if (sourceX < 0 || sourceX >= TEST_WIDTH
+                || sourceY < 0 || sourceY >= TEST_HEIGHT) continue;
+            gX_U32 sourceOffset = ((gX_U32)sourceY * TEST_WIDTH
+                + (gX_U32)sourceX) * 4;
+            memcpy(target + offset, source + sourceOffset, 4);
+        }
+    return target;
+}
+
+static gX_I32 test_homography(const gX_F32 corners[8], gX_F32 matrix[9])
+{
+    gX_F32 dx1 = corners[2] - corners[4];
+    gX_F32 dx2 = corners[6] - corners[4];
+    gX_F32 dx3 = corners[0] - corners[2] + corners[4] - corners[6];
+    gX_F32 dy1 = corners[3] - corners[5];
+    gX_F32 dy2 = corners[7] - corners[5];
+    gX_F32 dy3 = corners[1] - corners[3] + corners[5] - corners[7];
+    gX_F32 denominator = dx1 * dy2 - dx2 * dy1;
+    gX_F32 g = 0.0f;
+    gX_F32 h = 0.0f;
+    gX_F32 a = 0.0f;
+    gX_F32 b = 0.0f;
+    gX_F32 d = 0.0f;
+    gX_F32 e = 0.0f;
+    if (fabsf(dx3) < 0.0001f && fabsf(dy3) < 0.0001f)
+    {
+        a = corners[2] - corners[0];
+        b = corners[6] - corners[0];
+        d = corners[3] - corners[1];
+        e = corners[7] - corners[1];
+    }
+    else
+    {
+        if (fabsf(denominator) < 0.0001f) return 1;
+        g = (dx3 * dy2 - dx2 * dy3) / denominator;
+        h = (dx1 * dy3 - dx3 * dy1) / denominator;
+        a = corners[2] - corners[0] + g * corners[2];
+        b = corners[6] - corners[0] + h * corners[6];
+        d = corners[3] - corners[1] + g * corners[3];
+        e = corners[7] - corners[1] + h * corners[7];
+    }
+    matrix[0] = a;
+    matrix[1] = b;
+    matrix[2] = corners[0];
+    matrix[3] = d;
+    matrix[4] = e;
+    matrix[5] = corners[1];
+    matrix[6] = g;
+    matrix[7] = h;
+    matrix[8] = 1.0f;
+    return 0;
+}
+
+static gX_I32 test_invert(const gX_F32 matrix[9], gX_F32 inverse[9])
+{
+    gX_F32 a = matrix[0], b = matrix[1], c = matrix[2];
+    gX_F32 d = matrix[3], e = matrix[4], f = matrix[5];
+    gX_F32 g = matrix[6], h = matrix[7], i = matrix[8];
+    gX_F32 determinant = a * (e * i - f * h)
+        - b * (d * i - f * g)
+        + c * (d * h - e * g);
+    if (fabsf(determinant) < 0.000001f) return 1;
+    inverse[0] = (e * i - f * h) / determinant;
+    inverse[1] = (c * h - b * i) / determinant;
+    inverse[2] = (b * f - c * e) / determinant;
+    inverse[3] = (f * g - d * i) / determinant;
+    inverse[4] = (a * i - c * g) / determinant;
+    inverse[5] = (c * d - a * f) / determinant;
+    inverse[6] = (d * h - e * g) / determinant;
+    inverse[7] = (b * g - a * h) / determinant;
+    inverse[8] = (a * e - b * d) / determinant;
+    return 0;
+}
+
+static gX_U8 *test_warp_perspective(const gX_U8 *source)
+{
+    const gX_U32 size = 512;
+    const gX_F32 origin = (gX_F32)TEST_ORIGIN;
+    const gX_F32 span = (gX_F32)(GX_COLOR_CODE_GRID * TEST_CELL);
+    const gX_F32 corners[8] = {
+        90.0f, 50.0f, 420.0f, 70.0f, 430.0f, 450.0f, 60.0f, 430.0f};
+    gX_F32 matrix[9];
+    gX_F32 inverse[9];
+    if (test_homography(corners, matrix) || test_invert(matrix, inverse))
+        return NULL;
+    gX_U8 *target = (gX_U8 *)gX_Calloc(size * size * 4);
+    if (!target) return NULL;
+    for (gX_U32 y = 0; y < size; y++)
+        for (gX_U32 x = 0; x < size; x++)
+        {
+            gX_F32 px = (gX_F32)x + 0.5f;
+            gX_F32 py = (gX_F32)y + 0.5f;
+            gX_F32 w = inverse[6] * px + inverse[7] * py + inverse[8];
+            gX_U32 offset = (y * size + x) * 4;
+            target[offset + 3] = 255;
+            if (fabsf(w) < 0.000001f) continue;
+            gX_F32 u = (inverse[0] * px + inverse[1] * py + inverse[2]) / w;
+            gX_F32 v = (inverse[3] * px + inverse[4] * py + inverse[5]) / w;
+            if (u < 0.0f || u >= 1.0f || v < 0.0f || v >= 1.0f) continue;
+            gX_I32 sourceX = (gX_I32)(origin + u * span);
+            gX_I32 sourceY = (gX_I32)(origin + v * span);
+            if (sourceX < 0 || sourceX >= TEST_WIDTH
+                || sourceY < 0 || sourceY >= TEST_HEIGHT) continue;
+            gX_U32 sourceOffset = ((gX_U32)sourceY * TEST_WIDTH
+                + (gX_U32)sourceX) * 4;
+            memcpy(target + offset, source + sourceOffset, 4);
+        }
+    return target;
+}
+
+static gX_I32 test_perspective(const gX_U8 *payload, gX_U32 length)
+{
+    gX_I32 errors = 0;
+    gX_ColorCodeFrame frame;
+    gX_I32 status = gX_ColorCode_Encode(payload, length, 0, 1, &frame);
+    if (status != GX_COLOR_CODE_OK) return 1;
+    gX_U8 *source = test_image(&frame, 0.90f, 9.0f);
+    if (!source) return 1;
+    gX_U8 *warped = test_warp_affine(source);
+    gX_Free(source);
+    if (!warped) return 1;
+    gX_ColorCodeImage image = {0};
+    image.pixels = warped;
+    image.width = 512;
+    image.height = 512;
+    image.perspective = 1;
+    image.corners[0] = 60.0f;
+    image.corners[1] = 40.0f;
+    image.corners[2] = 440.0f;
+    image.corners[3] = 80.0f;
+    image.corners[4] = 400.0f;
+    image.corners[5] = 460.0f;
+    image.corners[6] = 20.0f;
+    image.corners[7] = 420.0f;
+    gX_ColorCodeResult result;
+    status = gX_ColorCode_Decode(&image, &result);
+    gX_Free(warped);
+    if (status != GX_COLOR_CODE_OK || result.payloadLength != length
+        || memcmp(result.payload, payload, length) != 0
+        || result.orientation != 0)
+    {
+        gX_TraceLog(gX_LOG_ERROR,
+            "COLOR CODE 11 FAIL: perspective status=%d payload=%u",
+            status, result.payloadLength);
+        errors++;
+    }
+    return errors;
+}
+
+static gX_I32 test_perspective_matrix(const gX_U8 *payload, gX_U32 length)
+{
+    gX_I32 errors = 0;
+    gX_ColorCodeFrame frame;
+    gX_I32 status = gX_ColorCode_Encode(payload, length, 0, 1, &frame);
+    if (status != GX_COLOR_CODE_OK) return 1;
+    gX_U8 *source = test_image(&frame, 0.91f, 8.0f);
+    if (!source) return 1;
+    gX_U8 *warped = test_warp_perspective(source);
+    gX_Free(source);
+    if (!warped) return 1;
+    gX_ColorCodeImage image = {0};
+    image.pixels = warped;
+    image.width = 512;
+    image.height = 512;
+    image.perspective = 1;
+    image.corners[0] = 90.0f;
+    image.corners[1] = 50.0f;
+    image.corners[2] = 420.0f;
+    image.corners[3] = 70.0f;
+    image.corners[4] = 430.0f;
+    image.corners[5] = 450.0f;
+    image.corners[6] = 60.0f;
+    image.corners[7] = 430.0f;
+    gX_ColorCodeResult result;
+    status = gX_ColorCode_Decode(&image, &result);
+    gX_Free(warped);
+    if (status != GX_COLOR_CODE_OK || result.payloadLength != length
+        || memcmp(result.payload, payload, length) != 0)
+    {
+        gX_TraceLog(gX_LOG_ERROR,
+            "COLOR CODE 12 FAIL: keystone status=%d payload=%u",
+            status, result.payloadLength);
+        errors++;
+    }
+    return errors;
+}
+
 static gX_I32 test_roundtrip(const gX_U8 *payload, gX_U32 length,
     gX_I32 expectedCompression)
 {
@@ -343,6 +559,8 @@ gX_I32 gX_Tests_ColorCode(gX_I0)
         GX_COLOR_CODE_ERR_ECC);
     errors += test_single_bit_matrix(raw, (gX_U32)strlen((const char *)raw));
     errors += test_orientation(raw, (gX_U32)strlen((const char *)raw));
+    errors += test_perspective(raw, (gX_U32)strlen((const char *)raw));
+    errors += test_perspective_matrix(raw, (gX_U32)strlen((const char *)raw));
     errors += test_metadata_corruption(raw, (gX_U32)strlen((const char *)raw));
     errors += test_erasure(raw, (gX_U32)strlen((const char *)raw));
     gX_ColorCodeFrame frame;

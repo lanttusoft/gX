@@ -85,6 +85,21 @@ markers match. The result reports the chosen `orientation`. The caller must
 provide a frame that fills the declared 45×45 grid; arbitrary cropping is
 rejected.
 
+For caller-supplied perspective, set `perspective = 1` and provide the four
+projected full-grid corners in image pixels, ordered TL, TR, BR, BL:
+
+```c
+image.perspective = 1;
+image.corners[0] = tl.x; image.corners[1] = tl.y;
+image.corners[2] = tr.x; image.corners[3] = tr.y;
+image.corners[4] = br.x; image.corners[5] = br.y;
+image.corners[6] = bl.x; image.corners[7] = bl.y;
+```
+
+The decoder reconstructs the homography and samples through it. Perspective
+mode rejects `autoOrientation` because the corner order is already caller
+defined; a future slice can combine both.
+
 ## Presentation
 
 `./build/gX_build --color-code <text>` opens a standalone presentation window.
@@ -92,10 +107,11 @@ The code is static (frozen for capture); `SPACE` toggles fit/1:1, `F` toggles
 the window fullscreen and `ESC` closes it. `GX_COLOR_CODE_SHOT=/path.png` saves
 a deterministic capture at frame 10 for the presentation gate.
 
-Perspective rectification, camera-device capture and multi-frame playback
-remain backlog. The format is deliberately a reusable module rather than an
-editor-only panel, so it can serve a CLI/tool or an in-engine screen when
-normal stdout/stderr transport is not available.
+Caller-supplied perspective rectification is implemented. Automatic corner
+detection, camera-device capture and multi-frame playback remain backlog. The
+format is deliberately a reusable module rather than an editor-only panel, so
+it can serve a CLI/tool or an in-engine screen when normal stdout/stderr
+transport is not available.
 
 ## Validation
 
@@ -106,6 +122,7 @@ normal stdout/stderr transport is not available.
 - one-bit SECDED correction;
 - two-bit SECDED rejection;
 - all eight rotation/mirror orientations;
+- affine and true keystone perspective warps via supplied corners;
 - metadata CRC rejection;
 - low-confidence cell erasure rejection;
 - payload capacity and image geometry bounds.

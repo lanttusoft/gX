@@ -102,6 +102,9 @@ typedef struct gX_ColorCodeImage {
     gX_U32       originY;
     gX_U32       cellSize;
     gX_I1        autoOrientation;
+    //ai: optional projected full-grid corners (TL, TR, BR, BL) in image pixels.
+    gX_I1        perspective;
+    gX_F32       corners[8];
 } gX_ColorCodeImage;
 
 //ai: encode a bounded payload into a calibration/control/metadata/payload frame.

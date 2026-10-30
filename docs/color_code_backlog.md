@@ -3,8 +3,9 @@
 Status: **core encoder/decoder prototype implemented** (2026-10-30). The
 bounded C module, format layout, synthetic camera round trip and eight-way
 rotation/mirror detection live in [color_code_format.md](color_code_format.md).
-Perspective rectification, multi-frame reassembly and a camera-device walk
-remain backlog.
+Caller-supplied affine/perspective rectification is implemented; automatic
+corner detection, multi-frame reassembly and a camera-device walk remain
+backlog.
 
 ## Goal
 
