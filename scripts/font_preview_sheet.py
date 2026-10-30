@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: render every project font into one labeled PNG preview with explicit
 #   missing-glyph markers and JSON metadata. No display, engine or network.
 """Render a deterministic font preview sheet for resources/font.

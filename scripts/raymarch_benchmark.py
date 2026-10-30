@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: deterministic raymarch benchmark — CPU frame time (engine CSV) plus the
 #   module's own GPU timers (--raymarch-profile), across quality (render
 #   scale) and feature rows. The output is advisory: `--check` only validates

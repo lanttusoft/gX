@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 # opencode: same-process temporal SSGI spin-pair regression harness.
 """Measure temporal SSGI stability from same-process spinning-frame bursts."""
 import os

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: compare the exact polynomial C/Lean inverse contract; no IEEE operation-order claim.
 import ast
 from pathlib import Path

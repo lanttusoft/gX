@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 """
 gX API-Reference Coverage Checker
 Verifies every public gX_* function family declared in the source headers

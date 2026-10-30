@@ -30,7 +30,7 @@ a deliberate license check.
 | ODE (Open Dynamics Engine) | optional system `libode` physics | LGPL-2.1 | NOTICE (added) | credited; distribution obligations apply |
 | EMMIR NTSC/CRT | `src/external/crt_core.c`, `crt_ntsc.c` | EMMIR 2018–2023; LMP88959/NTSC-CRT permissive terms verified | NOTICE + `license/ntsc-crt/LICENSE` + source header | credited |
 | Tangent-basis construction | `src/backend/raylib/raylib_wrappers_model.c` | independent UV-gradient implementation; no tutorial snippet | NOTICE | credited as independent implementation |
-| Lean 4 / Mathlib4 | `proofs/` and separate `gx-proofs` staging | Apache-2.0 | NOTICE | credited; build/proof dependency, not a shipped binary |
+| Lean 4 / Mathlib4 | `proofs/` and the separate [gX proofs](https://github.com/lanttusoft/gx-proofs) repository | Apache-2.0 | NOTICE | credited; build/proof dependency, not a shipped binary |
 | gameX / game3 / game2 | architecture, ports, gxmath/raymarch/gfx lineage | author's read-only archives, project-owned | `docs/porting.md`, NOTICE | recorded |
 | AI-generated assets | wavetables, textures, fixtures | author-prompted; stance in NOTICE | NOTICE + policy | credited |
 | Kenney / European Teletext fonts | UI / teletext | CC0 | NOTICE + license files | credited |

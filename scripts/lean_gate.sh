@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 # gX Lean gate — grades the Release payload (text + rodata + data) and max-bss
 # against a baseline, with absolute caps in .lean_budget.json.
 #

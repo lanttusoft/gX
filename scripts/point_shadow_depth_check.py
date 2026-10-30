@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: scalar radial-depth contract witnesses; actual GPU storage/filter error remains supplied.
 import argparse
 from fractions import Fraction as Q

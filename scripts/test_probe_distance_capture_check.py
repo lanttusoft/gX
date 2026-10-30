@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: self-contained controls for distance dump identity and quantization metrics.
 from pathlib import Path
 import struct

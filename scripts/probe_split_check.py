@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: isolated sky/local resource and explicit-unavailable diagnostics; no renderer admission.
 """Validate diagnostic resource selection without certifying sampled local RGB."""
 import argparse

@@ -79,7 +79,7 @@ links `gx_engine_core`; unresolved engine symbols resolve from the host at
 ## Level probe
 
 The first client is `game/src/level_module.c`, built by the game CMake as
-`gx_level.so` under `master/build/labs/`.
+`gx_level.so` under `build/labs/`.
 
 - It compiles the real game-side `level.c`, `level_runtime.c` and the common
   JSON implementation.
@@ -97,7 +97,7 @@ Run:
 ```bash
 GX_LEVEL="$PWD/game/tests/fixtures/level.json" \
 DISPLAY=:1 GX_FRAMES=60 GX_NO_SETTINGS_SAVE=1 \
-./master/build/gX_build --module "$PWD/game/build/labs/gx_level.so" \
+./build/gX_build --module "$PWD/game/build/labs/gx_level.so" \
   --module-scene
 ```
 

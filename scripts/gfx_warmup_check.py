@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: first-frame warmup pin — bursts frames 1-12 of --showcase and
 #   gates the startup envelope: content appears by frame 7, exactly one
 #   shape, settled drift by frame 12. Startup black frames and the single

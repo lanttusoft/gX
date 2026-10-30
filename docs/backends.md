@@ -60,7 +60,7 @@ points through OES/EXT names, e.g. `glGenVertexArrays` is loaded from
 | Native GL 3.0/3.1/3.2 contexts | `scripts/gl_legacy_native_check.py` (Mesa + context patch; capability pins + denies-absent/visible fixtures) | the "educational ladder", not a product promise |
 | Hosted GLSL 130 dialect | `scripts/glsl130_check.py` | compatibility probe of the 130 rewrite |
 | GL policy ladder | `scripts/gl_level_check.py` (`build/gl-level33\|43`) | policy rows are not native-context certification |
-| GPU-free raster CI | Mesa llvmpipe (e.g. `gl_legacy_native_check` runs `GALLIUM_DRIVER=llvmpipe`); hidden-window audit renders; Xvfb for `mkrelease --verify` | software GL pipelines already live |
+| GPU-free raster CI | Mesa llvmpipe (e.g. `gl_legacy_native_check` runs `GALLIUM_DRIVER=llvmpipe`); hidden-window audit renders; Xvfb for release capture checks | software GL pipelines already live |
 
 ## 2. Candidate matrix
 

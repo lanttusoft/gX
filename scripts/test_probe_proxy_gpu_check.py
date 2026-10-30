@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: readback interval and direct GPU control-reader tests, independent of native launches.
 from pathlib import Path
 import struct

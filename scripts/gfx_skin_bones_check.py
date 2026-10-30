@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: >64-bone skinning gate. The 80-joint probe must upload all 80 bone
 #   matrices in both the main and depth shader paths (the historic clamp was
 #   64), and the wave clip must visibly deform the ribbon between two static

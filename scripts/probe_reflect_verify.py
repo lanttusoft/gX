@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: v0.1.24 — reflection verification harness for --showcase-minimal.
 #   The scene contains exactly two models with known geometry:
 #     plane slab : 8 x 0.15 x 8 at pos (0,-0.075,0)   -> top surface y=0

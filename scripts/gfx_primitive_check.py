@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: blockout-primitive gate. GX_GFX_PRIMITIVE_CHECK adds one cube,
 #   sphere and torus through the same helper the Add-primitive button calls;
 #   the traces must report geometry, and the frame must visibly change

@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: orientation/winding negatives and renderer camera/culling source drift checks.
 from fractions import Fraction as Q
 from pathlib import Path

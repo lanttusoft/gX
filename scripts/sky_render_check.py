@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: deterministic sky renderer suite. Captures fixed 1024x768 standalone-sky
 #   states and a no-sky control; reports finite/non-empty/repeat/state deltas.
 #   No shader, scene or preset changes.

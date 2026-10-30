@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: deterministic CPU fog-sprite check. It validates on/off response,
 #   wind and count control arms, distance visibility, silhouette readability,
 #   and exact repeatability.

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 # gX layout check — auto-seat verification + scene capture triptych.
 #   1. Runs --layout-check (in-engine CPU verdict: before>0 / after==0).
 #   2. Captures --showcase (default orbit, top-down, below-slab) and

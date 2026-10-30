@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: common-sense regression guard — freezes the accepted findings of the
 #   2026-09-29 coherence pass (docs/audit_backlog.md) and fails on NEW ones:
 #     - public gX_* functions declared in headers but defined nowhere

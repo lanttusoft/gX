@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: static colour census for GUI templates and UI-producing scenes. Reports
 #   distinct colours, named/theme-token overlap, orphans and font references;
 #   no engine launch, display or asset changes.

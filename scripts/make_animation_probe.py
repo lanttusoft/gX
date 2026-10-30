@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: generate resources/model/probe/animprobe.glb — a self-authored,
 #   deterministic skinned fixture for the animation gate. Two joints ("root",
 #   "tip") drive a 0.25 x 2.0 quad strip; the "swing" clip rotates the tip +30

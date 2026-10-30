@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: compile the actual atlas rebuild against real raylib image conversion and a bounds/byte-checking GPU upload stub.
 import os
 import shlex

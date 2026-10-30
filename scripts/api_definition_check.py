@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: declared-versus-defined public API audit (AUD-03). Declarations come from
 #   src/**.h (backend/external/game skipped, like api_coverage.py); definitions
 #   come from every normal-build object (T/W symbols), so linker-dropped

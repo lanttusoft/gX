@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: compile the exact mesh-emission resolver against owned cached/uncached native materials.
 import subprocess
 import tempfile

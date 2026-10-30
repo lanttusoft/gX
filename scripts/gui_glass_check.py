@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: GUI Aero-glass gate — the glass surface must sample and blur the
 #   accumulated backdrop, tint toward its color, add a silhouette rim, keep a
 #   deterministic frame, and fall back pixel-identically to the plain

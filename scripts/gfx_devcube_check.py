@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: 2026-10-21 devcube lab-module gate — 60 Hz phase + native overlay capture.
 """Verify the devcube module without making it part of the default startup.
 

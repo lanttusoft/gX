@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: prefab gate — capture the fixture's anchor model + nearby lights
 #   into a .prefab.json, place a copy 2m along +X, and verify the file shape,
 #   the radius bound, and both placed positions. Hook: GX_GFX_PREFAB_CHECK.

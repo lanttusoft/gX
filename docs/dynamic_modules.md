@@ -188,7 +188,7 @@ are opt-in lab clients: they build outside the release tree
 auto-scan only sees files physically placed there by an operator, and the lab
 output directories are deliberately elsewhere.
 
-Packaging policy, pinned by `scripts/packaging_check.py`:
+Packaging policy:
 
 - Source and release exports contain no `build/` tree and no shared module
   binary (`.so`, `.dylib`, `.dll`). `build/labs/` and `build/scripting/` are

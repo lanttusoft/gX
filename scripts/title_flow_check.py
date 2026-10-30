@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: title front-end flow pin — every advertised sub-view must open
 #   without crashing and leave the frame visibly changed, and the ESC back
 #   route must return to the main menu bit-identically (the fixed clock makes

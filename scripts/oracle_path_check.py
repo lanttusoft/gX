@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: Paper 1 M1 — deterministic opt-in transport-oracle gate.
 #   The reflectrow scene is a fixed roughness/metalness ladder. The gate
 #   checks that the path hook changes the diffuse environment plus direct-light

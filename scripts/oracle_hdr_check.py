@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: Paper 1 M2/M3/M4 — deterministic raster/CPU linear-HDR parity gate.
 #   The renderer's opt-in matte, GGX, and environment-bounce fixtures evaluate
 #   the same direct-light contracts as oracle_cpu_path.py. This compares the

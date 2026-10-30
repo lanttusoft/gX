@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: exact-rational inside-box projection fixtures; no renderer or GPU certification.
 from fractions import Fraction as Q
 from itertools import product

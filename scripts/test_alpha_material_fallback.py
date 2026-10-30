@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: compile actual per-primitive alpha routing; full-source material 137 must bypass cache 32.
 import subprocess
 import tempfile

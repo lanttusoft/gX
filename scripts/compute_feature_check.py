@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: GL4.3 Forward+ compute regression pin. Builds the opt-in compute
 #   binary, runs the 64-light showcase with the cluster parity hook, and
 #   requires an exact GPU image-grid vs CPU-reference match, a bounded

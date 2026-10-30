@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: scene-camera render gate. An authored camera renders the scene to
 #   a PNG (cropped to the docked viewport, no editor overlays); the "cameras"
 #   preset section must round-trip through a batch save, two distinct cameras

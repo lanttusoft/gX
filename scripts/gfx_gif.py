@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: deterministic showcase GIF generator. Captures N fixed
 #   scene/camera frames (one headless run per frame, yaw-swept for orbits)
 #   and assembles them with PIL (GIF or animated WebP, no extra deps).

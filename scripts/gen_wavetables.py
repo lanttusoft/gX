@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: wavetable fixture generator — deterministic additive tables for the synth
 #   demo's WavetableLoad path (raw little-endian float32, values 0..1 like
 #   gX_Synth_WT_Generate). Regenerate with:

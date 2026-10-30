@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: textwriter editor gate — the panel opens through both entry paths
 #   (GX_TOOLS_OPEN and --textwriter-editor), the CLI path routes to the
 #   textwriter scene and auto-loads its file (the preview surface), and the

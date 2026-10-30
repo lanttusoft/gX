@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: docked-editor layout pin. The GFX editor docks the scene beside its
 #   scene panel and inspector: the GUI dock reserves the inspector width (right
 #   inset), so the scene must render between the panels with letterbox bands

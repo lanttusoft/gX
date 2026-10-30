@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: fog+light joint verification matrix — isolated fog/light coupling rows.
 #   The feature matrix proves fog and sun each move pixels alone; this script
 #   proves they interact correctly: inscatter scales with sun radiance, tint

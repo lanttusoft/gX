@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: GL4.3 compute particle-velocity regression pin. Builds the opt-in
 #   compute binary, captures the velocity RT for one same-process 12-frame
 #   burst, and requires moving particle-band vectors rather than only shader

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: background editor gate — the panel opens through both entry paths
 #   (GX_TOOLS_OPEN + the CLI flag), the opener routes to the background scene,
 #   the panel traces its draw, the shipped sample preset stays loadable, and

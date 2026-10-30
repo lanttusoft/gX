@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: debugger gate. Two legs:
 #   1. crash trace — a deliberate fault (GX_DEBUG_CRASH_TEST) must exit with
 #      128+SIGSEGV and print the header, the register block, a stack with

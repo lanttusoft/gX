@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: hosted desktop GLSL 1.30 compatibility regression. The production
 # GL33 context compiles the native-GL3.0 shader dialect through GX_GLSL130=1;
 # this validates core/batch source compatibility only, not context creation.

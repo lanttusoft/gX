@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 # gX feature verification matrix v2 — isolated rows (user directive:
 # disable everything else to minimize interference).
 # Baseline: every effect forced OFF; each row enables exactly ONE

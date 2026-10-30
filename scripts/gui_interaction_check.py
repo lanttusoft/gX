@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: GUI interaction gate — drives the real canvas GUI through
 #   GX_AI_INPUT and asserts the GX_GUI_TRACE readout (clicks, title views,
 #   modal/dialog scope, canvas rebuilds). Every row exercises a user-facing

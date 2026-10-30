@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: OpenGL selected-policy matrix. raylib has desktop 3.3 and 4.3
 #   context profiles only, so GL3.0/3.1/3.2 rows are policy inspection, NOT
 #   native-context certification. Each lower capability is requested alone

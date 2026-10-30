@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: browse-only asset root discovery pin. The GFX asset browser indexes
 #   local resources plus guest roots from three sources: GX_ASSETS, the
 #   --guest-asset flags, and the settings-backed root list the browser's

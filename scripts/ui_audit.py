@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: UI audit — tool wiring matrix + panel conventions (+ optional
 #   captures for the vision review). The mechanical part is a gate: every
 #   editor must be reachable through all three open paths (CLI flag,

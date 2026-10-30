@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: deterministic two-mirror feedback check. It validates pair
 #   response, settle convergence (energy bound), the energy-decay mechanism
 #   (1.0 vs 0.9 must differ), camera-motion invalidation, and exact

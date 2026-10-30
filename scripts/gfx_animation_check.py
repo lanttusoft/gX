@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: GLB clip playback gate — evaluates the generated animation probe
 #   (two joints, one "swing" clip) through the authored preset and proves that
 #   (a) the skinned render bends with the clip pose and (b) playback advances,

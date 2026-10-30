@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: GUI gradient-depth gate — authored gradients must survive the SDF
 #   surface path, and the themed depth profiles (horizon/metallic) must shape
 #   the surface profile at their token positions. Falls back to the flat

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: audit result cache — fingerprints the build INPUTS, not the linked binary.
 #   A normal relink no longer invalidates unchanged gate work, while a source,
 #   resource, helper, flag or build-profile change still does. Only passing

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: HUD-over-scene contrast probe. Captures fixed scenes, samples documented
 #   text ROIs, and reports WCAG text contrast with alpha-aware math. Findings
 #   are report-only unless a baseline/strict option is supplied; no OCR or AI.

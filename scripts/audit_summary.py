@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: aggregate GPU audit summary — runs the curated quick gate set and
 #   prints one pass/fail table with per-gate wall time. The gates own their own
 #   assertions; this runner only schedules and reports, so it never

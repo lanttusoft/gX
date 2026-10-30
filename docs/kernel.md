@@ -61,7 +61,7 @@ cmake --build build/kernel -j$(nproc)
 GX_FRAMES=30 ./build/kernel/gX_build --ai-screenshot-final   # NULL boot
 ```
 
-Or the CI wrapper (needs a display — Xvfb headless, like mkrelease):
+Or the CI wrapper (needs a display — Xvfb headless):
 
 ```bash
 make check-kernel   # cluster-off build → tests → 30-frame NULL boot
@@ -132,7 +132,9 @@ failure/zero-size semantics, tracker saturation or thread safety.
 
 ## Lean 4 kernel proofs
 
-`../proofs/` (see salvage policy in `../proofs/README.md`): `MainDataRefresh`
+the [gX proofs repository](https://github.com/lanttusoft/gx-proofs) (see its
+[README](https://github.com/lanttusoft/gx-proofs/blob/main/README.md)):
+`MainDataRefresh`
 (resolution ladder), `MainDataReset` (defaults 1536×1152), `MainDataSwitch`
 (flag machine + five-responder contract), `ModuleInfoConsistency` (flag
 mirror + kernel_only case, re-enabled by the moduleinfo population in

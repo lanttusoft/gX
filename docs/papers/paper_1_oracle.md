@@ -340,7 +340,7 @@ proves the machinery; the Monte Carlo estimator follows.
   single-frame; 12-frame burst average 97.51 vs seed-off 97.16
   (ratio 1.0036) - rotation is mean-preserving, downstream
   accumulators converge it. Non-black, no compile fails.
-- Formal proofs (gX/proofs/, outside master/): all three tiers build
+- Formal proofs (separate gX proofs repository): all three tiers build
   green (GxProofs 33 jobs, GxProofsGfx 3079, GxMath 3069). No spec
   updates needed - ReflectFlags pins flag lifecycle only,
   PipelineOrder the six modeled stages, EffectSources flag

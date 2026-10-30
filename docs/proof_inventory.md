@@ -68,7 +68,7 @@ The cluster-off build, link boundary and NULL boot are enforced natively by
 
 ## Significance review
 
-Scores follow the proof repository's significance scale: 0–100 measures how much gX
+Scores follow the [gX proofs significance scale](https://github.com/lanttusoft/gx-proofs/blob/main/SIGNIFICANCE.md): 0–100 measures how much gX
 depends on the contract, not proof fame or verification level.
 Unreviewed modules use the family default score and do not appear
 in this reviewed table.

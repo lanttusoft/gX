@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: temporal stability gate — consecutive-frame drift within one
 #   GX_BURST run (burst_000..011, zero-padded, sortable). Catches
 #   per-frame seed/shimmer-class regressions (backlog 34: static 1.93

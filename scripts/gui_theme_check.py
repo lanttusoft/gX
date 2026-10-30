@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: GUI theme/a11y gate — every shipped theme must load through the
 #   GX_GUI_THEME audit hook, keep its WCAG 2.2 AA On- pairs, and render.
 #   The high-contrast theme is additionally proven to change pixels against

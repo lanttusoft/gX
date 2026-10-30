@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: advisory GFX visual-review lane. It turns the fixed captures from
 #   gfx_feature_matrix.py and reflect_suite.py into reviewable contact sheets,
 #   preserves adjacent human grades/notes, and records image hashes. It never

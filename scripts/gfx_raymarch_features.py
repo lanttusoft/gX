@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: raymarch shader-feature gate. Three legs:
 #   1. feature matrix — each enable flag is forced on/off (GX_GFX_RAYMARCH_FEATURE)
 #      and the captured frames must differ (the shader feature is wired);

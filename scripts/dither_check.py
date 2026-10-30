@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: deterministic opt-in dither mode check. It captures the same
 #   minimal sky fixture with off/IGN/Bayer/seeded-noise modes and verifies that
 #   the modes are stable and observable without changing the default path.

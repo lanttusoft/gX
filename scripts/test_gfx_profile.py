@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: native timing contracts pin enum/table identity, unchanged pass execution order and frame-matched benchmark windows.
 import csv
 import os

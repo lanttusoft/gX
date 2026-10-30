@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: fail-closed parser, arity, non-finite and child-status controls for the math gate.
 import subprocess
 import unittest

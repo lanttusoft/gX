@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: wireframe placement pin — the transpose=0 defect rendered
 #   (PV)^T garbage that PASSED the difference-style matrix row (garbage
 #   differs from baseline just as well as a correct render). Only a

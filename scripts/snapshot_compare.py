@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: generic PNG/PPM snapshot comparison — reusable image diff for GUI/visual
 #   review. No display, scene launch or AI probe; PIL/numpy only.
 """Compare two PNG or binary PPM (P6) images.

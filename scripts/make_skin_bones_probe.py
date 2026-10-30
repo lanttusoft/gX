@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: generate resources/model/probe/skinprobe80.glb — an 80-joint chain
 #   driving a quad strip, sized just past the historic 64-bone upload cap. The
 #   file is self-authored and deterministic (no third-party content), and the

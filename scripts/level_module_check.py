@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: dev-only module-owned scene smoke — first/third camera + level geometry.
 
 # Runs the real gX binary with the game-side gx_level lab module in both

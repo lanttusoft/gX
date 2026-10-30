@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 # gX build helper — mirrors gameX build.sh interface
 set -e
 BUILD_TYPE="${1:-Debug}"

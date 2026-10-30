@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: invariant checks over the seeded math dump; complements the differential oracle.
 #   These tests do not reuse the formula oracle, so a shared C/oracle convention
 #   mistake is more likely to surface here.

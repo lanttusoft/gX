@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
 # gX — Makefile (convenience wrapper around build.sh)
 #   make          — build Debug
 #   make check    — full CI: build → tests → scene smoke → lean gate
@@ -97,6 +99,7 @@ check: all
 	DISPLAY=$${DISPLAY:-:1} GX_FRAMES=60 GX_NO_SETTINGS_SAVE=1 timeout 60 ./build/gX_build --screenWidth 1024 --screenHeight 768 --showcase-y2k >/dev/null 2>&1
 	@echo "== [gX CI] resource + copyright audit =="
 	bash scripts/audit_resources.sh
+	python3 scripts/script_license_audit.py --strict
 	$(MAKE) -s asset-clearance-check
 	@echo "== [gX CI] hardware report =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/hw_report_check.py
@@ -142,17 +145,15 @@ check: all
 	$(MAKE) -s proofs
 	@echo "== [gX CI] OK =="
 
+#ai: every project script carries SPDX/copyright metadata.
+.PHONY: script-license-check
+script-license-check:
+	python3 scripts/script_license_audit.py --strict
+
 #ai: isolated runtime hardening regressions; no display or engine launch needed.
 .PHONY: runtime-input-check
 runtime-input-check:
 	python3 scripts/runtime_input_check.py
-
-#ai: preview uncommitted export rules; committed release/certification never uses this override.
-.PHONY: packaging-export-check
-packaging-export-check:
-	python3 scripts/test_packaging_check.py
-	python3 scripts/packaging_check.py --worktree-attributes
-	python3 scripts/packaging_check.py --worktree-attributes --layout release
 
 #ai: source dependency contracts and headless spatial/brightness/boundedness rejection controls.
 .PHONY: clean-defaults-check
@@ -174,6 +175,7 @@ check-fast: all
 	./build/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/gX_build --test-only && exit 1)
 	@echo "== [gX fast] attribution =="
 	python3 scripts/attribution_audit.py --strict
+	python3 scripts/script_license_audit.py --strict
 	@echo "== [gX fast] static-lightmap contract =="
 	python3 scripts/lightmap_check.py
 	@echo "== [gX fast] short scene smoke (title + gfx + y2k, 24 frames each) =="
@@ -233,7 +235,7 @@ dialogue-editor-check:
 #opencode: kernel-only CI — renderer/scene sources out (atomic pair),
 #   then unit tests + a short NULL boot (exit 0, clean unload). Separate
 #   from check (own build dir, own cost); run before tagging kernel work.
-#   The boot step needs a display (run under Xvfb headless, like mkrelease).
+#   The boot step needs a display (run under Xvfb headless).
 check-kernel:
 	cmake -B build/kernel -DGX_ENABLE_RENDERER=OFF -DCMAKE_BUILD_TYPE=Debug -DGX_COMPUTE=OFF
 	cmake --build build/kernel -j$$(nproc)
@@ -902,11 +904,6 @@ audit-summary-full: all
 	@echo "== [gX CI] GPU audit summary (full) =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/audit_summary.py --full --jobs $(AUDIT_JOBS)
 
-#opencode: recreate the disposable verification worktree (docs/parallel_work.md).
-.PHONY: gx-clean
-gx-clean:
-	bash scripts/gx_clean.sh $(GX_CLEAN_ARGS)
-
 #opencode: existing scene presets require an explicit Cancel/Overwrite choice.
 gfx-preset-overwrite-check: all
 	@echo "== [gX CI] GFX preset overwrite guard =="
@@ -1344,7 +1341,7 @@ proofs-full:
 	  echo "proofs-full: failed (no Mathlib cache; run 'lake update' in proofs/)" >&2; exit 1; \
 	else \
 	  cd ../proofs && lake build GxProofs GxProofsGfx GxMath && \
-	    python3 ../master/scripts/proof_audit.py --full --no-build; \
+	    python3 scripts/proof_audit.py --full --no-build; \
 	fi
 	#ai: keep the generated proof catalog in sync with the source modules.
 	python3 scripts/proof_inventory.py --check

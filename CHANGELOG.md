@@ -6,10 +6,28 @@ SemVer.
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-10-30
+
 ### Added
 - **Public proof sources**: the Lean 4 proof tree is published separately at
   https://github.com/lanttusoft/gx-proofs (GPL-3.0-or-later; Mathlib/Lean
   notices included). The engine tarball remains proof-free.
+- **Script license gate**: `scripts/script_license_audit.py` requires
+  GPLv3 SPDX + copyright metadata on project scripts and runs in the fast and
+  full CI paths.
+
+### Changed
+- Project scripts now carry SPDX/copyright headers.
+- Proof links were added to the engine docs, README/readme, release notes and
+  third-party notices.
+
+### Fixed
+- Removed private monorepo release helpers (`mkrelease.sh`,
+  `packaging_check.py`, `packaging_walk.py`, `test_packaging_check.py`,
+  `gx_clean.sh`) and their private `master/` layout assumptions from the public
+  tree.
+- Corrected the public proof-audit path and remaining `master/` documentation
+  examples.
 
 ## [0.18.0] - 2026-10-31
 

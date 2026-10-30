@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: partial-orbit GTAO freshness gate using only the gX-owned reflectrow scene.
 import json
 from pathlib import Path

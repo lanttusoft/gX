@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: GUI text-shadow gate — the themed shadow tokens must reach the
 #   draw path (bitmap and SDF), stay deterministic, and disable cleanly when
 #   the theme zeroes them. The forced GX_GUI_TEXT_SHADOW hook turns the

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #backend-sdl lane check — A/B the GLFW and SDL platform builds from the same
 #   source. Requires prebuilt binaries; build them in the lane with:
 #       cmake -B build/glfw . && cmake --build build/glfw -j

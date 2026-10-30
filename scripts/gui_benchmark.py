@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: advisory GUI benchmark runner — times a fixed template set with
 #   repeated wall-clock samples and writes one JSON artifact. `--check` runs
 #   the measurements and validates the artifact shape (rows, sample counts,

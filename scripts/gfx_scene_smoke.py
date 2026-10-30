@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: GFX scene boot smoke — every standalone scene flag must boot, render
 #   a non-empty frame and log no ERROR!/FATAL! lines. The deep per-feature
 #   gates cover the shared pipeline; this is the boot floor for the secondary

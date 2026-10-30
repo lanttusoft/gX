@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: fail on drift in source clauses abstracted by the Lean SSR coverage model.
 # These checks pin selected expressions, not shader execution or visibility.
 import re

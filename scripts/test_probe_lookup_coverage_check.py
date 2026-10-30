@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: exact counterexamples and inverse face mapping controls; no GPU admission.
 from fractions import Fraction as Q
 from itertools import product

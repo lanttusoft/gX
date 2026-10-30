@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: raymarch revival gate. Runs the --raymarch scene headlessly; the
 #   renderer's GX_GFX_RAYMARCH_CHECK hook saves the live scene through the
 #   restored preset schema, mutates fields, reloads from disk and reports the

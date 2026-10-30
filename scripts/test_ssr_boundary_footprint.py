@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: fixed filter footprint witnesses and negatives; no general GPU or reflection visibility certification.
 from fractions import Fraction as Q
 from itertools import product

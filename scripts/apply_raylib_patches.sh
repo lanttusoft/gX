@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 # gX — apply vendor patches to the frozen raylib submodule (idempotent).
 # The submodule pointer never moves; patches/* overlay opt-in behavior that
 # is zero-effect unless its env hook is set. Safe to run on every build:

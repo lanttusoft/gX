@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 # gX resource + copyright audit — runs all validators, fails CI on real issues.
 # Report-only: resource_deps --unused and shader_uniform_validator (heuristic).
 set -uo pipefail

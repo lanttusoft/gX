@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: GL-level request/readout gate. With GX_GL_LEVEL=330 the editor must
 #   report user=330 with compute/SSBO disabled; with 430 it must enable both.
 #   The detected hardware level must allow the request. The persisted

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: native desktop GL 3.x certification. Runs the GL3.0/3.1/3.2 policy
 # rungs on REAL 3.x contexts (hard-capped Mesa + the opt-in raylib context
 # hook) instead of the GL3.3 host: each rung checks its capability pin,

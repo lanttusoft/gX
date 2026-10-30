@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: hardware report gate — runs the engine with GX_HW_REPORT=1 and validates
 #   the capability block (GL strings, level, feature flags, limits, tier),
 #   cross-checks the C classifier against the same tier rules, and asserts the

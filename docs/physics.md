@@ -646,7 +646,8 @@ Deliberately out of this slice (documented follow-ups): the render flavours
 colouring for fast movers) and the Mathlib-tier Lean twins of the gxmath
 laws (the identities `gamma^2 (1 - beta^2) = 1`, `contraction . gamma =
 length`, `dilute = gamma . t`, `doppler^2 = (1+b)/(1-b)`, and the velocity
-addition as `tanh (atanh u + atanh v)` — in `../proofs/GxMath/Physics.lean`
+addition as `tanh (atanh u + atanh v)` — in
+[`GxMath/Physics.lean`](https://github.com/lanttusoft/gx-proofs/blob/main/GxMath/Physics.lean)
 (Mathlib gate, where the cache lives)).
 
 ## Tests and gates

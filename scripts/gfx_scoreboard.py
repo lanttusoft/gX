@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: GFX feature scoreboard — completeness (static, curated) /
 #   correctness (owning-gate verdicts) / hardness (timed on/off wall cost).
 #   Hardness runs GX_FRAMES frames per arm on the matrix row scenes; each arm

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: custom label-font gate — loads a shipped font, falls back on a bad
 #   path, and asserts the label quad reaches actual scene pixels. The
 #   GX_LABEL_DUMP texture comparison still covers glyph rendering; the scene

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: generated proof inventory; declaration counts, roots, namespaces and math coverage.
 import argparse
 import json
@@ -361,7 +365,7 @@ def markdown():
         "",
         "## Significance review",
         "",
-        "Scores follow `../../proofs/SIGNIFICANCE.md`: 0–100 measures how much gX",
+        "Scores follow the [gX proofs significance scale](https://github.com/lanttusoft/gx-proofs/blob/main/SIGNIFICANCE.md): 0–100 measures how much gX",
         "depends on the contract, not proof fame or verification level.",
         "Unreviewed modules use the family default score and do not appear",
         "in this reviewed table.",

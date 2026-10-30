@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: headless gfx analysis toolkit. Pure image ops over engine
 #   captures (no engine coupling): side-by-side composites, frame stats,
 #   A/B diffs, and block-match flow. Formalizes the ad-hoc analyses used

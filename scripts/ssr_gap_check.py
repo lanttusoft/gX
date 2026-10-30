@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: engine-owned fixed-camera reflection coverage fixture; controls are not a renderer fidelity certificate.
 """Separate planar, direct cube and SSR sources without author assets or presets."""
 import argparse

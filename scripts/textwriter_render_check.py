@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: deterministic textwriter render suite. Temporary fixtures exercise the
 #   plain/tagged tags, reveal progression and choice line through the real
 #   renderer; no shipped text or parser syntax changes.

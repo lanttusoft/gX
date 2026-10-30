@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 # opencode: TAA x SSR temporal stability probe — 2x2 arms (taa 0/1, ssr 0/1),
 #   static twins + spin bursts to GIFs. Instability hypothesis: TAA jitter x
 #   SSR march interact (shimmer beyond the sum of parts). Spin cross-arm

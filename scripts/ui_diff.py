@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #ai: 2026-10-22 textual UI diff over gX structured layout dumps.
 """Compare two layout dumps without a vision round-trip.
 

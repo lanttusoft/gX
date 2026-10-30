@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: water object-reflection pin — SSR on/off A/B over
 #   --showcase-water with exposure locked. Object zones (below torus/cube)
 #   must carry ~2x the delta of open water at the same depth; the sky

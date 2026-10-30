@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: v0.1.36 — reflection comparison suite (Phase C of the pack).
 #   Captures SSR (--showcase-minimal) and planar (--showcase-planar) modes
 #   at multiple orbit angles, scores each with the corrected trace oracle

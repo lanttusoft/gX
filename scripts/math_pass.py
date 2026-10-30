@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: math pass — verifies the engine's gxmath corpus against an
 #   independent SymPy oracle. The engine prints the corpus with
 #   GX_MATH_DUMP=1 (src/gxmath/gxmath_tests.c); this script recomputes every

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (c) 2025-2026 lanttu, opencode
+# This file is part of gX. See LICENSE.
+
 #opencode: error-handling audit — static scan for silent failures.
 #   1. Silent stubs: a function whose whole body is unused-parameter casts and
 #      a success return (the schema2 class of bug: "saved" while doing
