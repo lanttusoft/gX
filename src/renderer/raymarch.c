@@ -1165,6 +1165,18 @@ gX_I0 gX_RendererRaymarch_Update(gX_RendererRaymarch *rm) {
             if (scale > 1.0f) scale = 1.0f;
             rm->parameters.renderScale = scale;
         }
+        //ai: shared-depth cost split (benchmark): pin march steps/bounces so
+        //   the depth-preserving budget can be measured without a preset edit.
+        const char *stepsHook = getenv("GX_RAYMARCH_STEPS");
+        if (stepsHook && stepsHook[0]) {
+            gX_I32 steps = atoi(stepsHook);
+            if (steps >= 8) rm->parameters.steps = steps;
+        }
+        const char *bouncesHook = getenv("GX_RAYMARCH_BOUNCES");
+        if (bouncesHook && bouncesHook[0]) {
+            gX_I32 bounces = atoi(bouncesHook);
+            if (bounces >= 1) rm->parameters.bounces = bounces;
+        }
         s_headlessScaleDone = 1;
     }
 
@@ -1867,9 +1879,22 @@ static gX_I0 rm_draw(gX_RendererRaymarch *rm, gX_RenderTexture *outputRT,
     //   unless procedural sky is active)
     gX_Drawing_BeginTexture(*renderTarget);
         if (renderTarget != &target) gX_Drawing_ClearBG((gX_Color){0,0,0,0});
+        //ai: color-only hybrid fill must never touch the host depth attachment;
+        //   shared mode writes depth in a separate full-res pass.
+        if (hybridMode == 1) {
+            gX_RHI_Disable(gX_RHI_DEPTH_TEST);
+            gX_RHI_Depth_Write(0);
+        }
         gX_Drawing_BeginBlend(gX_BLEND_ALPHA);
 
         if (rm->shader.shader.shader.id) {
+            gX_I1 depthOnly = (hybridMode == 5);
+            gX_I32 savedColorMask[4] = {1, 1, 1, 1};
+            if (depthOnly) {
+                gX_RHI_GetIntegerv(gX_RHI_COLOR_WRITEMASK, savedColorMask);
+                //ai: depth pass publishes authored roughness in alpha only.
+                gX_RHI_Color_Mask(0, 0, 0, 1);
+            }
             gX_RHI_Query_Timer_Begin(&rm->timerDraw);
             gX_Drawing_BeginShader(rm->shader.shader.shader);
 
@@ -1934,6 +1959,10 @@ static gX_I0 rm_draw(gX_RendererRaymarch *rm, gX_RenderTexture *outputRT,
                 }
                 gX_Drawing_DrawScreenQuad(0, 0, (gX_F32)rw, (gX_F32)rh);
             gX_Drawing_EndShader();
+            if (depthOnly) {
+                gX_RHI_Color_Mask(savedColorMask[0] != 0, savedColorMask[1] != 0,
+                    savedColorMask[2] != 0, savedColorMask[3] != 0);
+            }
             gX_RHI_Query_Timer_End(&rm->timerDraw);
         }
 
@@ -1970,18 +1999,24 @@ gX_I0 gX_RendererRaymarch_DrawHybrid(gX_RendererRaymarch *rm,
 {
     if (!rasterDepth.id || !outputRT || !rm->shader.shader.loadingState.loaded
         || camera.camera3D.projection != 0) return;
+    //ai: isolate the color-only fill's depth/blend state from the host pass.
+    gX_Batch_Flush();
+    gX_GL_State_Push();
     rm_draw(rm,outputRT,rasterDepth,1);
+    gX_Batch_Flush();
+    gX_GL_State_Pop();
+    gX_RHI_InvalidateCaches();
 }
 
 //ai: bracket the raw depth draw and restore state before downstream GFX passes.
 static gX_I0 rm_draw_shared(gX_RendererRaymarch *rm,
-    gX_RenderTexture *outputRT, gX_I32 mode)
+    gX_RenderTexture *outputRT, gX_I32 mode, gX_Texture rasterDepth)
 {
     if (!outputRT || !outputRT->id || !outputRT->depth.id
         || !rm->shader.shader.loadingState.loaded || camera.camera3D.projection != 0) return;
     gX_Batch_Flush();
     gX_GL_State_Push();
-    rm_draw(rm,outputRT,(gX_Texture){0},mode);
+    rm_draw(rm,outputRT,rasterDepth,mode);
     gX_Batch_Flush();
     gX_GL_State_Pop();
     gX_RHI_InvalidateCaches();
@@ -1990,13 +2025,26 @@ static gX_I0 rm_draw_shared(gX_RendererRaymarch *rm,
 //ai: the shared scene color/depth and normal coverage use the same primary-hit precision.
 gX_I0 gX_RendererRaymarch_DrawSharedDepth(gX_RendererRaymarch *rm, gX_RenderTexture *outputRT)
 {
-    rm_draw_shared(rm,outputRT,2);
+    rm_draw_shared(rm,outputRT,2,(gX_Texture){0});
+}
+
+//ai: depth-only shared pass — full-res primary hit, no gradient or shading.
+//    Primary depth converges faster than a shaded march, so the depth stage
+//    gets a bounded budget while the color pass keeps the authored steps.
+gX_I0 gX_RendererRaymarch_DrawSharedDepthOnly(gX_RendererRaymarch *rm,
+    gX_RenderTexture *outputRT)
+{
+    gX_I32 savedSteps = rm->parameters.steps;
+    if (savedSteps > 64)
+        rm->parameters.steps = (savedSteps > 128) ? 128 : 64;
+    rm_draw_shared(rm,outputRT,5,(gX_Texture){0});
+    rm->parameters.steps = savedSteps;
 }
 
 //ai: rerender primary hits only into the normal target, preserving foreground raster normals.
 gX_I0 gX_RendererRaymarch_DrawSharedNormals(gX_RendererRaymarch *rm, gX_RenderTexture *outputRT)
 {
-    rm_draw_shared(rm,outputRT,3);
+    rm_draw_shared(rm,outputRT,3,(gX_Texture){0});
 }
 
 //ai: fingerprint authored inputs and texture identities/sampling only; camera/profiling do not invalidate history.

@@ -362,7 +362,12 @@ gX_I32 gX_RendererGFX_ValidateState(gX_RendererGFX *gfx) {
     if (gfx->sky.color.r == 0 && gfx->sky.color.g == 0 && gfx->sky.color.b == 0) { gX_TraceLog_GFX(gX_LOG_WARNING, "AUDIT: sky.color is black"); warns++; }
     // Check state flags
     if (!gfx->state.ENABLE_LIGHTING_AMBIENT && !gfx->state.ENABLE_LIGHTING_DIFFUSE) { gX_TraceLog_GFX(gX_LOG_WARNING, "AUDIT: all lighting is disabled"); warns++; }
-    if (!gfx->state.ENABLE_PHONG && !gfx->state.ENABLE_GOURAUD) { gX_TraceLog_GFX(gX_LOG_WARNING, "AUDIT: no lighting model selected (Phong=0, Gouraud=0)"); warns++; }
+    if (!gfx->state.ENABLE_PHONG && !gfx->state.ENABLE_GOURAUD
+        && !gfx->state.ENABLE_FLAT) {
+        gX_TraceLog_GFX(gX_LOG_WARNING,
+            "AUDIT: no lighting model selected (Phong=0, Gouraud=0, Flat=0)");
+        warns++;
+    }
     // Check renderer
     if (gfx->second.rt == NULL) { gX_TraceLog_GFX(gX_LOG_WARNING, "AUDIT: second.rt is NULL"); warns++; }
     // Check SSBO (created lazily — warning is a false alarm since SSBO init runs after audit)

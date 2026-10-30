@@ -945,7 +945,9 @@ void main() {
     float grazing = 1.0 - abs(dot(viewDir, normal));
     float grazingBlend = smoothstep(0.25, 0.80, grazing);
     float adaptiveStep = mix(stepSize, stepSize * 0.5, grazingBlend);
-    float traceStep = isWater ? max(stepSize, 1.0) : adaptiveStep;
+    //ai: water keeps a coarser cadence than opaque surfaces, but 1.0 u skipped
+    //   thin props (the axis arrows) entirely; 0.5 keeps them visible.
+    float traceStep = isWater ? max(stepSize, 0.5) : adaptiveStep;
     int traceMaxSteps = isWater ? maxSteps
         : min(128, int(ceil(float(maxSteps) * stepSize / max(traceStep, 1.0e-4))));
     vec3 liftNormal = normal;
@@ -1031,15 +1033,16 @@ void main() {
     //   creates a black/white impulse field. Keep normal SSR at its tuned step,
     //   but use a coarser water-only cadence to reject those false crossings.
     float curStep = traceStep;
-    //opencode: v0.1.19 - water fresnel gate. With geometry-only water SSR
-    //   (v0.1.17), a face-on water pixel's contribution is capped by Schlick
-    //   fresnel (~4-12%) - nearly invisible after the composite - yet the
-    //   near-field bottom of the frame is a LARGE marching area. Skip the
-    //   march entirely below 0.12 (the same Schlick term is recomputed for
-    //   the composite below). Saves ~1.5ms of water-plane marching.
+    //opencode: v0.1.19 - water fresnel gate. Face-on water is a large marching
+    //   area for a weak reflection; skip it below 0.05 (the same term is
+    //   recomputed for the composite below). The 12% floor keeps object
+    //   reflections visible from high views without turning water into a mirror.
     if (isWater) {
-        float wfres = mix(0.04, 1.0, pow(1.0 - max(dot(viewDir, normal), 0.0), 5.0));
-        if (wfres < 0.12) {
+        //ai: keep a small non-zero reflection footprint at normal incidence;
+        //   the physical 4% term washed object reflections out under a bright
+        //   procedural sky, reading as "no planar reflection" from high views.
+        float wfres = mix(0.12, 1.0, pow(1.0 - max(dot(viewDir, normal), 0.0), 5.0));
+        if (wfres < 0.05) {
             finalColor = debugMode == 15 ? vec4(1.0, 1.0, 0.0, 1.0) : vec4(0.0);
             return;
         }
@@ -1322,11 +1325,14 @@ void main() {
         return;
     }
 
-    //opencode: Schlick Fresnel - face-on reflections stay weak (?4%), grazing
-    //   gets full strength. Without it, SSR blended flat at 0.8 opacity: model
-    //   tops reflecting the bright sky washed out (overexposed upper half) and
-    //   the grazing floor showed no mirror reflections at all.
-    float fresnel = mix(0.04, 1.0, pow(1.0 - max(dot(viewDir, normal), 0.0), 5.0));
+    //opencode: Schlick Fresnel - face-on reflections stay weak, grazing gets
+    //   full strength. Water uses a 12% floor (visible object reflections from
+    //   high views); opaque surfaces keep the physical 4% term. Without the
+    //   term, SSR blended flat at 0.8 opacity: model tops reflecting the bright
+    //   sky washed out and the grazing floor showed no mirror reflections.
+    float fresnel = isWater
+        ? mix(0.12, 1.0, pow(1.0 - max(dot(viewDir, normal), 0.0), 5.0))
+        : mix(0.04, 1.0, pow(1.0 - max(dot(viewDir, normal), 0.0), 5.0));
 
     //opencode: composite fade - geometry chains fade by the first hit's
     //   traversal; env chains use the traversal fade (same curve as the

@@ -155,6 +155,18 @@ script-license-check:
 runtime-input-check:
 	python3 scripts/runtime_input_check.py
 
+#ai: public source exports omit the private packaging policy tooling; skip it
+#    there and run the full check in the proof-bearing release staging tree.
+.PHONY: packaging-export-check
+packaging-export-check:
+	@if [ ! -f scripts/packaging_check.py ]; then \
+	  echo "packaging tooling absent (public source export) — skipped"; \
+	else \
+	  python3 scripts/test_packaging_check.py && \
+	  python3 scripts/packaging_check.py --worktree-attributes && \
+	  python3 scripts/packaging_check.py --worktree-attributes --layout release; \
+	fi
+
 #ai: source dependency contracts and headless spatial/brightness/boundedness rejection controls.
 .PHONY: clean-defaults-check
 clean-defaults-check:
@@ -715,6 +727,14 @@ gfx-raymarch-depth-check: all
 gfx-raymarch-shared-depth-check: all
 	python3 scripts/test_gfx_raymarch_depth_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_raymarch_depth_check.py --shared
+
+#ai: deterministic shared-depth budget — one SDF sphere against raster only.
+.PHONY: gfx-raymarch-shared-bench gfx-raymarch-shared-bench-check
+gfx-raymarch-shared-bench: all
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_raymarch_shared_bench.py
+
+gfx-raymarch-shared-bench-check: all
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_raymarch_shared_bench.py --check
 
 #ai: primary SDF normals and authored roughness in the shared GFX buffers.
 .PHONY: gfx-raymarch-surface-check

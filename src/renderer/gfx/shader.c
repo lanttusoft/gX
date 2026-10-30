@@ -762,7 +762,11 @@ static gX_I0 gX_RendererGFX_Shader_SetValues(gX_RendererGFX_Shader *shader, gX_R
     gX_Shader_SetValue_Int(shader->shader,shader->locations.enableMapParallaxLoc, gfx->state.ENABLE_MAP_PARALLAX);
     
     gX_Shader_SetValue_Int(shader->shader,shader->locations.enableGouraudLoc, gfx->state.ENABLE_GOURAUD);
-    gX_Shader_SetValue_Int(shader->shader,shader->locations.enablePhongLoc,   gfx->state.ENABLE_PHONG);
+    //ai: Flat is a normal mode, not a lighting model — keep the Phong term
+    //    active so Flat does not silently collapse into Unlit.
+    gX_Shader_SetValue_Int(shader->shader,shader->locations.enablePhongLoc,
+        gfx->state.ENABLE_PHONG
+            || (gfx->state.ENABLE_FLAT && !gfx->state.ENABLE_GOURAUD));
     if (shader->locations.enableFlatLoc >= 0)
         gX_Shader_SetValue_Int(shader->shader,shader->locations.enableFlatLoc, gfx->state.ENABLE_FLAT);
 

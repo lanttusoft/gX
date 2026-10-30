@@ -444,7 +444,12 @@ static gX_I1 Pass_On_RaymarchDepth(gX_RendererGFX *gfx)
 //ai: depth-tested writes avoid reading any attachment of the active HDR framebuffer.
 static gX_I0 Pass_Run_RaymarchDepth(gX_RendererGFX *gfx, gX_RenderTexture *)
 {
-    gX_RendererRaymarch_DrawSharedDepth(renderer.raymarch.data,&gfx->bloom.hdrScene.wrapper.rt);
+    //ai: shared depth does not need a full-res shaded march. The hybrid fill
+    //   owns SDF color at the module render scale; the depth-only pass keeps
+    //   the full-res attachment exact for water/SSR/SSAO/TAA consumers.
+    gX_RenderTexture *sceneRT = &gfx->bloom.hdrScene.wrapper.rt;
+    gX_RendererRaymarch_DrawHybrid(renderer.raymarch.data,sceneRT,sceneRT->depth);
+    gX_RendererRaymarch_DrawSharedDepthOnly(renderer.raymarch.data,sceneRT);
     //ai: ownership follows the resolved shared depth, not raster geometry hidden behind an SDF.
     const gX_I8 *temporalHook = getenv("GX_RAYMARCH_TEMPORAL");
     if (temporalHook && temporalHook[0] != '0' && gfx->state.ENABLE_TAA

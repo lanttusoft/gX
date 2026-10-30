@@ -82,6 +82,11 @@ typedef struct gX_RendererWater {
     gX_I32 shader_camtarLoc;
     gX_I32 shader_camupLoc;
     gX_I32 shader_camfovLoc;
+    //ai: scene fog on the above-water surface (standard-shader contract).
+    gX_I32 shader_fogEnabledLoc;
+    gX_I32 shader_fogNearLoc;
+    gX_I32 shader_fogFarLoc;
+    gX_I32 shader_fogColorLoc;
 
     // Wave uniform locations
     gX_I32 shader_waveCountLoc;

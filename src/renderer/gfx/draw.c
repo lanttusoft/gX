@@ -1385,6 +1385,21 @@ gX_I0 gX_RendererGFX_Draw_Reflections(gX_RendererGFX *gfx)
                 //   restore idiom as the Hi-Z chain below.
                 gX_I1 fillPB_Blend = gX_RHI_IsEnabled(gX_RHI_BLEND);
                 gX_RHI_Disable(gX_RHI_BLEND);
+                //ai: clip the planar fill to the reflective side. Without this,
+                //    an object crossing the plane contributes its below-plane
+                //    half to the mirror as an opposite-side ghost.
+                gX_I32 clipEnableLoc = gX_RHI_GetUniformLocation(
+                    gfx->shader.shader.id, "gX_PlanarClipEnabled");
+                gX_I32 clipPlaneLoc = gX_RHI_GetUniformLocation(
+                    gfx->shader.shader.id, "gX_PlanarClip");
+                if (clipEnableLoc >= 0 && clipPlaneLoc >= 0
+                    && !getenv("GX_PLANAR_NO_CLIP")) {
+                    gX_F32 clipPlane[4] = {planeNormal.x, planeNormal.y,
+                        planeNormal.z, planeDist};
+                    gX_RHI_Shader_Use(gfx->shader.shader.id);
+                    gX_RHI_UniformInt(clipEnableLoc, 1);
+                    gX_RHI_UniformVec4(clipPlaneLoc, 1, clipPlane);
+                }
                 GX_HEAP_FOREACH(gfx->models, gX_RendererGFX_Model, rmodel) {
                     if (!rmodel->loaded) continue;
                     if (rmodel->params.excludeFromPlanarCapture) continue;
@@ -1689,6 +1704,8 @@ gX_I0 gX_RendererGFX_Draw_Reflections(gX_RendererGFX *gfx)
                         gX_Raw_Mesh_Draw(md.meshes[mi]);
                     }
                 }
+                if (clipEnableLoc >= 0)
+                    gX_RHI_UniformInt(clipEnableLoc, 0);
                 if (fillPB_Blend) gX_RHI_Enable(gX_RHI_BLEND);
                 gX_Batch_Flush();
                 //opencode: two-mirror — terrain march, stats, and fog stay

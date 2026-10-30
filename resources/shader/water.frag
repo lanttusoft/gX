@@ -13,6 +13,11 @@ uniform vec3  sunDir;
 uniform vec3  sunColor;
 uniform float sunBrightness;
 uniform int velocityMode = 0;
+//ai: scene fog applied to the above-water surface.
+uniform int   enableFog = 0;
+uniform float fogNear = 0.0;
+uniform float fogFar = 1000.0;
+uniform vec3  fogColor = vec3(1.0);
 
 uniform sampler2D normalMap;
 uniform float normalMapStrength;
@@ -366,6 +371,13 @@ void main()
         vec3 color = mix(waterColor, skyRefl, fresnel * 0.7);
         color += specColor;
         color += foam * vec3(1.0, 0.95, 0.85);
+
+        if (enableFog == 1) {
+            float fogDistance = length(fragPosition - cpos);
+            float fogValue = clamp((fogDistance - fogNear)
+                / max(fogFar - fogNear, 0.001), 0.0, 1.0);
+            color = mix(color, fogColor, fogValue);
+        }
 
         float edgeFade = 1.0;
         float halfSize = 20.0;

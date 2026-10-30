@@ -376,8 +376,10 @@ minimal-scene cubemap fixture and use the `probes` benchmark/matrix rows.
 ### P3 — Infinite two-mirror temporal feedback — implemented opt-in
 
 Research a bounded ping-pong render-target loop for facing mirrors.
-`GX_MIRROR_PAIR=1` adds two facing slabs plus an emissive seed bar to the
-minimal scene and engages the loop; `GX_MIRROR_ENERGY` (default 0.90,
+Two loaded planar models tagged **Plane A / Plane B** in the editor's
+Model > Surface panel engage the loop; the tags persist as `mirrorPair`.
+`GX_MIRROR_PAIR=1` remains the fixture hook that adds two facing slabs plus an
+emissive seed bar to the minimal scene; `GX_MIRROR_ENERGY` (default 0.90,
 clamped 0..1) bounds feedback energy.
 
 - Recursion budget: 1 stored bounce per mirror (plane 0 reuses the legacy

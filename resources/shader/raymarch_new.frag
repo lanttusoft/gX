@@ -1209,6 +1209,16 @@ vec4 march(inout rmData data) {
                 data.distFromPos = depth;
             }
             
+            //ai: shared depth-only pass — the primary distance is the only
+            //   output; skip gradient, normal and all material shading.
+            if (hybridDepthEnabled == 5) {
+                data.pathLength = depth;
+                data.pathSteps = stepsThisBounce;
+                data.bounceCount++;
+                hit = true;
+                break;
+            }
+
             //opencode: save object index/dist before gradient (map() overwrites them)
             int hitIndex = data.currentObjectIndex;
             float hitDist = data.currentObjectDist;
@@ -1357,6 +1367,12 @@ void main() {
         }
     }
 #endif
+    //ai: the depth-only shared pass owns no RGB; it still publishes authored
+    //   roughness in HDR alpha for the SSR consumer.
+    if (hybridDepthEnabled == 5) {
+        finalColor = vec4(0.0, 0.0, 0.0, primaryRoughness);
+        return;
+    }
     //ai: the normal-only pass does not composite fog/cloud/color after its primary hit.
     if (hybridDepthEnabled == 3) {
         finalColor = vec4(normalize(primaryNormal)*0.5+0.5,1.0);

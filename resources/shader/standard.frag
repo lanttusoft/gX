@@ -51,6 +51,10 @@ flat in vec3 flatNormal;
 
 uniform int enableGouraud = 0;
 uniform int enableFlat = 0;
+//ai: planar capture clip — keep only the reflective side of the mirror;
+//    geometry crossing/behind the plane must not appear as a ghost.
+uniform int gX_PlanarClipEnabled = 0;
+uniform vec4 gX_PlanarClip = vec4(0.0, 1.0, 0.0, 0.0);
 uniform int ssrNormalPass = 0; //opencode: emit interpolated normal for opt-in SSR
 uniform int enableLightingAmbient = 1;
 uniform int enableLightingDiffuse = 1;
@@ -1304,6 +1308,9 @@ vec3 gX_Oracle_AnalyticEnvironment(vec3 direction) {
 void main() {
     finalColor = vec4(1.0, 0.0, 1.0, 1.0); // magenta = fallthrough error
     outRoughness = 0.5;
+    if (gX_PlanarClipEnabled == 1
+        && dot(fs_in.fragPosition, gX_PlanarClip.xyz) < gX_PlanarClip.w)
+        discard;
     gXProbeTraceValid = 0;
     gXProbeTraceHasSecondary = 0;
     //opencode: light markers represent emitters, not lit scene materials.
@@ -1384,6 +1391,9 @@ void main() {
 void main() {
     finalColor = vec4(1.0, 0.0, 1.0, 1.0); // magenta = fallthrough error
     outRoughness = 0.5;
+    if (gX_PlanarClipEnabled == 1
+        && dot(fs_in.fragPosition, gX_PlanarClip.xyz) < gX_PlanarClip.w)
+        discard;
     //opencode: light markers represent emitters, not lit scene materials.
     if (lightMarkerMode == 1) {
         vec3 markerEmission = max(emissiveColor.rgb, vec3(0.0))
@@ -1873,6 +1883,17 @@ void main() {
 #if QUALITY >= 1
     apply_detail(color.rgb);
 #endif
+    //opencode: mirror fill renders linear: main-view SSAO does not apply
+    //   to mirror-view fragments, and tonemap+exposure run once in main.
+    //   Branchless (float casts) - the translator DCEs branched
+    //   reassignments (verified in the planar block above). SSAO runs before
+    //   fog so a fully fogged surface converges to the fog color.
+    {
+        float ssaoGate = (1.0 - float(mirrorFill)) * float(enableSSAO == 1);
+        float ssaoFactor = mix(1.0, texture(ssaoMap, gl_FragCoord.xy / resolution).r, ssaoGate);
+
+        color.rgb *= mix(1.0, ssaoFactor, 0.6 * (1.0 - float(mirrorFill)));
+    }
     if (enableFog == 1)         fog(color);
 
     if (showPosition == 1)  color = vec4(fs_in.fragPosition, 1.0);
@@ -1892,16 +1913,6 @@ void main() {
         color = vec4(lp, 1.0);
     }
 
-    //opencode: mirror fill renders linear: main-view SSAO does not apply
-    //   to mirror-view fragments, and tonemap+exposure run once in main.
-    //   Branchless (float casts) - the translator DCEs branched
-    //   reassignments (verified in the planar block above).
-    {
-        float ssaoGate = (1.0 - float(mirrorFill)) * float(enableSSAO == 1);
-        float ssaoFactor = mix(1.0, texture(ssaoMap, gl_FragCoord.xy / resolution).r, ssaoGate);
-
-        color.rgb *= mix(1.0, ssaoFactor, 0.6 * (1.0 - float(mirrorFill)));
-    }
     //opencode: Paper 1 M2 — the opt-in raster parity fixture bypasses the
     //   production PBR/Phong accumulation and evaluates the same Lambert
     //   direct-light contract as oracle_cpu_path.py. This is deliberately

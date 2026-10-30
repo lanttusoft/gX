@@ -6,6 +6,37 @@ SemVer.
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-30
+
+### Added
+- **Deterministic shared-depth benchmark**: `gfx-raymarch-shared-bench-check`
+  renders one SDF sphere against the raster scene and pins render-scale
+  separation plus a bounded depth-pass overhead.
+- **Editor-driven two-plane mirrors**: planar models can be tagged Plane A/B;
+  `mirrorPair` persists in presets and activates the facing-mirror feedback
+  loop without the `GX_MIRROR_PAIR` fixture hook.
+- **DAE/GLB oversized rigs**: rigs above the 128-bone upload cap now render
+  their authored bind pose with a warning instead of collapsing geometry.
+- **Water scene fog**: the above-water surface applies the scene fog
+  near/far/color.
+
+### Changed
+- **Shared-depth raymarch**: shaded SDF color renders at `renderScale`, with a
+  separate full-res depth-only march, a raster-depth early-out and a bounded
+  depth-step budget.
+- **Water reflections**: 12% Fresnel floor at normal incidence and a 0.5 u
+  water march step keep high-view and thin-prop reflections visible.
+- **SSAO/fog order**: SSAO is evaluated before fog so fully fogged surfaces
+  converge to the fog color.
+- **Flat lighting**: Flat keeps Phong lighting and only switches the normal
+  source; Unlit is the only all-off lighting model.
+
+### Fixed
+- **Planar ghosting**: the planar capture clips geometry behind/crossing the
+  mirror plane, removing opposite-side ghosts.
+- **Flat vs Unlit**: old presets with Flat but Phong off now light correctly.
+- **Water fog/reflection visibility** and **SSAO fog-color** regressions.
+
 ## [0.19.1] - 2026-10-30
 
 ### Fixed

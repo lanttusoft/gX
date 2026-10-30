@@ -190,9 +190,22 @@ current routing invariants and a separate, unimplemented optional-camera policy.
   normals (`isWater` branch in gfx_ssr.frag); the water pass itself paints
   the sky via the dynamic cubemap. Water and planar reflections coexist: SSR
   still runs, while plane-origin results defer to the forward planar sample.
+  Water uses a 12% Fresnel floor at normal incidence so high/face-on views
+  keep visible object reflections instead of reading as "no reflection"; the
+  water march step is capped at 0.5 u so thin props survive the coarser water
+  cadence. A bright procedural sky is not a reflection gate — it can still
+  wash out a weak reflection visually. The above-water surface also applies the
+  scene fog (`enableFog`, near/far/color), and `standard.frag` evaluates SSAO
+  before fog so a fully fogged surface converges to the fog color instead of
+  being re-darkened by AO.
 - **Planar receivers**: `standard.frag` samples the planar RT in the forward
   pass; the SSR composite defers on-plane origins to that result instead of
   globally disabling SSR for the frame.
+- **Planar capture clip**: the full-lit planar fill discards fragments on the
+  back side of the mirror plane (`dot(worldPos, n) < d`), so an object crossing
+  or behind the plane cannot contribute an opposite-side ghost. The plane uses
+  the same authored normal/distance as the receiver. `GX_PLANAR_NO_CLIP=1` is
+  the A/B bypass; the debug solid-fill path is not clipped.
 - **Non-planar gating**: the non-planar analytic branch fires only when a
   model sets BOTH `planarReflection` and `nonPlanarReflection`
   (model.c:802); the planar RT must exist, so the scene still needs ≥1

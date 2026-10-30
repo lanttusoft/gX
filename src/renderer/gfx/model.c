@@ -1041,6 +1041,16 @@ gX_I32 gX_RendererGFX_Model_Load(gX_RendererGFX_Model *model, gX_RendererGFX *gf
                     model->model.meshCount,
                     model->model.meshCount > 0 ? model->model.meshes[0].vertexCount : 0);
 
+    //ai: oversized rigs cannot fit one boneMatrices upload. The draw path
+    //    falls back to the authored bind pose (see MeshSkinning); surface the
+    //    trade-off so a silently static character is not mistaken for a fix.
+    if (model->model.skeleton.boneCount > gX_GFX_SKIN_MAX_BONES) {
+        gX_TraceLog_GFX(gX_LOG_WARNING,
+            "Model rig '%s' has %d bones (cap %d) — rendering bind pose, animation disabled",
+            model->path, model->model.skeleton.boneCount,
+            gX_GFX_SKIN_MAX_BONES);
+    }
+
     //opencode: guard against failed load — 0 meshes means file was not found or corrupt
     if (model->model.meshCount == 0) {
         gX_TraceLog_GFX(gX_LOG_WARNING, "Model load FAILED: %s (0 meshes) — removing",
@@ -1641,6 +1651,12 @@ static gX_I0 gX_RendererGFX_Model_MeshSkinning(gX_RendererGFX_Model *model,
         gX_Mesh *mesh = &model->model.meshes[meshIndex];
         skin = (mesh->boneIndices != NULL && mesh->boneWeights != NULL) ? 1 : 0;
     }
+    //ai: rigs above the shader's per-draw upload cap cannot be skinned
+    //    correctly (raylib stores joint indices as u8 and the uniform array is
+    //    boneMatrices[128]). glTF vertices are authored in bind pose, so
+    //    disabling the shader path renders the model intact instead of
+    //    collapsing vertices whose joints fall outside the uploaded prefix.
+    if (model->model.skeleton.boneCount > gX_GFX_SKIN_MAX_BONES) skin = 0;
     gX_RHI_UniformInt(useSkinningLoc, skin);
 }
 

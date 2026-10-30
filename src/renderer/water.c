@@ -208,6 +208,10 @@ static gX_I0 water_gpu_load(gX_I0 *arg)
     water->shader_camtarLoc  = gX_Shader_GetLocation(water->shader, "ctarget");
     water->shader_camupLoc   = gX_Shader_GetLocation(water->shader, "cup");
     water->shader_camfovLoc  = gX_Shader_GetLocation(water->shader, "cfov");
+    water->shader_fogEnabledLoc = gX_Shader_GetLocation(water->shader, "enableFog");
+    water->shader_fogNearLoc = gX_Shader_GetLocation(water->shader, "fogNear");
+    water->shader_fogFarLoc = gX_Shader_GetLocation(water->shader, "fogFar");
+    water->shader_fogColorLoc = gX_Shader_GetLocation(water->shader, "fogColor");
 
     // Wave locations
     water->shader_waveCountLoc = gX_Shader_GetLocation(water->shader, "waveCount");
@@ -564,6 +568,30 @@ static gX_I0 water_upload_uniforms(gX_RendererWater *water, gX_Camera3D *cam)
     gX_Shader_SetValue_V3(   sha, water->shader_camtarLoc, cam->target);
     gX_Shader_SetValue_V3(   sha, water->shader_camupLoc, cam->up);
     gX_Shader_SetValue_Float(sha, water->shader_camfovLoc, cam->fovy);
+
+    //ai: the water surface uses the scene fog, not a separate water-only haze.
+    {
+        gX_I1 fogEnabled = 0;
+        gX_F32 fogNear = 0.0f;
+        gX_F32 fogFar = 1000.0f;
+        gX_Color fogColor = (gX_Color){255, 255, 255, 255};
+        if (water->gfxRef) {
+            fogEnabled = water->gfxRef->state.ENABLE_FOG;
+            fogNear = water->gfxRef->fog.near;
+            fogFar = water->gfxRef->fog.far;
+            fogColor = water->gfxRef->fog.color;
+        }
+        if (water->shader_fogEnabledLoc >= 0)
+            gX_Shader_SetValue_Int(sha, water->shader_fogEnabledLoc, fogEnabled);
+        if (water->shader_fogNearLoc >= 0)
+            gX_Shader_SetValue_Float(sha, water->shader_fogNearLoc, fogNear);
+        if (water->shader_fogFarLoc >= 0)
+            gX_Shader_SetValue_Float(sha, water->shader_fogFarLoc, fogFar);
+        if (water->shader_fogColorLoc >= 0)
+            gX_Shader_SetValue_V3(sha, water->shader_fogColorLoc,
+                (gX_F32v3){fogColor.r / 255.0f, fogColor.g / 255.0f,
+                    fogColor.b / 255.0f});
+    }
 
     // Wave uniforms
     gX_Shader_SetValue_Int(sha, water->shader_waveCountLoc, water->waveCount);

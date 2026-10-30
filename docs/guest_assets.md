@@ -99,6 +99,34 @@ GX_ASSETS=/path/gameA/resources:/path/gameB/resources
 ./build/gX_build --showcase --ai-screenshot-final --gfx-profile=/tmp/gfx.csv
 ```
 
+## DAE sources → GLB
+
+COLLADA (`.dae`) is not loaded natively, so convert it before pointing a
+guest root at the result. Assimp 6.0 is the reliable path for rigged
+characters:
+
+```bash
+assimp export "Character.dae" Character.glb -fglb2
+```
+
+- `glb2` keeps the mesh split, base-colour textures and skin weights.
+  Textures are written as **relative URIs** (original PNG names or a
+  `Textures/` subdirectory), so keep them beside the GLB or under the same
+  parent folder.
+- Blender 5.2's bundled `simple_collada_importer` imported a test character
+  with 0 bones and exported 0 glTF skins; do not use it for rigged COLLADA.
+- gX uploads at most 128 bone matrices per draw (`boneMatrices[128]`), and
+  raylib stores joint indices as u8. A rig above the cap is rendered in its
+  authored bind pose with a WARNING naming the bone count instead of
+  collapsing vertices. Retarget or reduce to ≤128 joints when the model must
+  animate.
+- Assimp omits `doubleSided` and usually `alphaMode`; closed meshes are
+  unaffected, but hair/card layers may need a manual double-sided or alpha
+  pass.
+- Assimp applies the COLLADA `<up_axis>` through a root rotation. Assets
+  authored in a different axis (for example a world map whose geometry lies
+  in X/Y) still need a scene-level rotation after import.
+
 ## Capture behavior under heavy guests
 
 `--ai-screenshot-final` waits for every scene model to load (frame gate,

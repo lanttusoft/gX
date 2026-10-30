@@ -34,6 +34,7 @@
 #include <math.h>
 
 #include "../gfx.h"
+#include "boilerplate.h"
 #include "mirror.h"
 #include "fullscreen_pass.h"
 #include "../renderer.h"
@@ -54,21 +55,23 @@
 #include "../../gxmath/matrix.h"
 #include "../../gxmath/gxmath.h"
 
-//opencode: pair fixture hook — scene slabs and render logic share it.
-static gX_I1 Mirror_WantPair(gX_I0)
-{
-    const gX_I8 *hook = getenv("GX_MIRROR_PAIR");
-    return (hook && hook[0] == '1') ? 1 : 0;
-}
-
+//opencode: editor-driven pair — two loaded planar models tagged Plane A/B.
 gX_I1 gX_RendererGFX_Mirror_Active(gX_RendererGFX *gfx)
 {
-    if (!Mirror_WantPair()) return 0;
+    if (!gfx) return 0;
     if (!gfx->mirror.freshB.wrapper.loadingState.loaded) return 0;
     if (!gfx->mirror.histA.wrapper.loadingState.loaded) return 0;
     if (!gfx->mirror.histB.wrapper.loadingState.loaded) return 0;
     if (!gfx->mirror.feedbackShader.loaded) return 0;
-    return 1;
+    gX_I1 tagA = 0;
+    gX_I1 tagB = 0;
+    GX_HEAP_FOREACH(gfx->models, gX_RendererGFX_Model, model) {
+        if (!model->loaded || !model->params.planarReflection) continue;
+        if (model->params.mirrorPair == 1) tagA = 1;
+        else if (model->params.mirrorPair == 2) tagB = 1;
+        if (tagA && tagB) return 1;
+    }
+    return 0;
 }
 
 //opencode: validity gate — exact compare is deterministic under fixed
@@ -76,7 +79,7 @@ gX_I1 gX_RendererGFX_Mirror_Active(gX_RendererGFX *gfx)
 gX_I0 gX_RendererGFX_Mirror_BeginFrame(gX_RendererGFX *gfx)
 {
     gX_RendererGFX_Mirror *mirror = &gfx->mirror;
-    if (!Mirror_WantPair()) return;
+    if (!gX_RendererGFX_Mirror_Active(gfx)) return;
     const gX_I8 *energyHook = getenv("GX_MIRROR_ENERGY");
     gX_F32 energy = energyHook ? (gX_F32)atof((const char *)energyHook) : 0.90f;
     if (energy < 0.0f) energy = 0.0f;

@@ -6013,6 +6013,16 @@ static gX_I0 gfx_model_surface_panel(gX_RendererGFX *gfx) {
         &model->params.reflectionPlaneHeight, 0.05f, -100.0f, 100.0f);
     ImGui::DragFloat3("reflection normal", (float *)&model->params.reflectionNormal, 0.02f, -1.0f, 1.0f);
     ImGui::DragFloat("wave amplitude", &model->params.waveAmplitude, 0.01f, 0.0f, 2.0f);
+    if (model->params.planarReflection) {
+        static const gX_I8 *pairModes[] = {"Off", "Plane A", "Plane B"};
+        gX_I32 pair = model->params.mirrorPair;
+        if (pair < 0 || pair > 2) pair = 0;
+        if (ImGui::Combo("two-mirror pair", &pair, pairModes, 3))
+            model->params.mirrorPair = pair;
+        gfx_text_disabled_wrapped(
+            "Tag two facing planar mirrors A/B for simultaneous captures; "
+            "each samples the other's history bounce.");
+    }
     gX_I1 alphaTest = model->params.enableAlphaTest ? 1 : 0;
     if (ImGui::Checkbox("alpha test", (bool *)&alphaTest)) model->params.enableAlphaTest = alphaTest ? 1 : 0;
     ImGui::DragFloat("alpha cutoff", &model->params.alphaCutoff, 0.01f, 0.0f, 1.0f);
@@ -7422,7 +7432,9 @@ static gX_I0 gfx_look_panel(gX_RendererGFX *gfx) {
         : (gfx->state.ENABLE_GOURAUD ? 1 : (gfx->state.ENABLE_PHONG ? 0 : 3));
     const gX_I8 *lightingModels[] = { "Phong", "Gouraud", "Flat", "Unlit" };
     if (ImGui::Combo("lighting model", &lightingModel, lightingModels, 4)) {
-        gfx->state.ENABLE_PHONG = lightingModel == 0;
+        //ai: Flat keeps Phong lighting and only switches the normal source;
+        //    Unlit is the only state with every lighting model off.
+        gfx->state.ENABLE_PHONG = (lightingModel == 0 || lightingModel == 2);
         gfx->state.ENABLE_GOURAUD = lightingModel == 1;
         gfx->state.ENABLE_FLAT = lightingModel == 2;
     }

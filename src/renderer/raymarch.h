@@ -499,6 +499,9 @@ gX_I0 gX_RendererRaymarch_DrawHybrid(gX_RendererRaymarch *rm,
 //ai: writes opaque SDF HDR color and projected depth; never samples attached depth.
 gX_I0 gX_RendererRaymarch_DrawSharedDepth(gX_RendererRaymarch *rm,
     gX_RenderTexture *outputRT);
+//ai: full-res primary depth without material shading; color comes from DrawHybrid.
+gX_I0 gX_RendererRaymarch_DrawSharedDepthOnly(gX_RendererRaymarch *rm,
+    gX_RenderTexture *outputRT);
 //ai: encoded world normals and binary coverage into the SSR target's private depth.
 gX_I0 gX_RendererRaymarch_DrawSharedNormals(gX_RendererRaymarch *rm,
     gX_RenderTexture *outputRT);

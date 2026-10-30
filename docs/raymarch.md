@@ -3,11 +3,36 @@
 ## Experimental hybrid visibility
 
 **Shared-depth prototype:** `GX_GFX_RAYMARCH_DEPTH=2` (or the editor's
-**shared scene depth (experimental)** checkbox) writes SDF HDR color and
-projected primary-hit depth after MSAA resolve, before water and screen-space
-inputs. The hardware LESS test merges raster and SDF depth; this draw never
-samples the attached depth. Misses and clipped hits write nothing. Mode 1 below
-remains the independent post-effects visibility path; production default is off.
+**shared scene depth (experimental)** checkbox) merges SDF color and
+projected primary-hit depth into the raster HDR scene after MSAA resolve,
+before water and screen-space inputs. The color fill uses
+`parameters.renderScale`; a separate full-res depth-only march writes the
+primary hit into the same depth attachment (hardware LESS). Misses and clipped
+hits write nothing. Mode 1 below remains the independent post-effects
+visibility path; production default is off.
+
+## Compositing order
+
+The two renderers keep separate scene representations; the merge order is
+deliberate:
+
+1. GFX rasterizes opaque geometry and terrain into the HDR scene (color +
+   depth), then MSAA resolves.
+2. **Shared depth**: the SDF color fill is drawn at `renderScale` and
+   upscaled; a full-res depth-only march writes primary SDF depth into the
+   raster depth attachment. SDF hits behind raster depth fail the hardware
+   test and write nothing. Water, SSR, SSAO, TAA and bloom then consume the
+   merged frame.
+3. **Hybrid visibility** (`GX_GFX_RAYMARCH_DEPTH=1`): the SDF color is
+   composited after raster effects as an opaque visibility overlay; it does
+   not feed depth, normals or materials to those effects.
+4. **Backdrop composite** (`GX_GFX_RAYMARCH_COMPOSITE=2`): raymarch runs
+   first and GFX is composited over it. This is the only order where
+   raymarch is the background, and it does not share depth.
+
+So "raymarch on top" means depth-tested color drawn after the raster pass, not
+a naive overlay: raster geometry in front still wins, and shared depth lets
+later effects treat SDF hits as scene depth.
 
 `make gfx-raymarch-shared-depth-check` checks color visibility and native float
 combined depth against the analytic sphere/cube oracle for both camera views,
@@ -108,9 +133,10 @@ converted to view-axis depth and compared with reconstructed raster depth;
 misses preserve GFX sky and raster hits in front remain untouched. The
 hybrid color layer honors `parameters.renderScale` (default 0.35) and upscales
 from the private HDR buffer; 0.5 or higher is recommended when overlay
-sharpness matters. Shared-depth mode still runs at full output resolution
-because it writes the frame's depth attachment. Proxy mode is bypassed.
-Standalone and historical color compositing are unchanged.
+sharpness matters. Shared-depth mode uses the same scaled color fill plus a
+full-res depth-only march, so the depth attachment stays exact while the
+shaded pixels stay cheap. Proxy mode is bypassed. Standalone and historical
+color compositing are unchanged.
 
 Mode 1 is **opaque visibility only**, after raster effects: no shared SDF depth,
 normals or materials are exported to SSAO/SSR/TAA/bloom, no cross-renderer
@@ -409,9 +435,17 @@ and debugging a scene's geometry. Presets persist the flag
 
 ## Performance, profiling, hardware
 
-- The module renders at `parameters.renderScale` (default 0.35) and upscales;
-  that is the main quality/cost knob. Hybrid color honors it; shared-depth
-  mode remains full-res.
+- The color fill renders at `parameters.renderScale` (default 0.35) and
+  upscales; that is the main quality/cost knob. Shared depth uses the same
+  scaled fill plus a full-res depth-only march. The depth stage caps its
+  primary budget at 64 steps (128 when the authored steps exceed 128); the
+  color pass keeps the authored steps.
+- Deterministic probe: `--showcase-minimal` plus
+  `GX_RAYMARCH_DEPTH_TEST=front` puts one SDF sphere against the raster
+  floor/cube with no terrain or water, isolating pass cost from scene content.
+  `make gfx-raymarch-shared-bench-check` runs that probe and checks that the
+  color scale separates 0.35 from 1.00 and that the depth overhead stays
+  within a bounded multiple of hybrid color.
 - `--raymarch-profile=<csv>` writes the module's own GPU timers;
   `make raymarch-benchmark` measures quality and feature rows
   (`make raymarch-benchmark-check` validates the artifact and the
@@ -438,6 +472,8 @@ All are environment variables; see `scripts/gfx_raymarch_check.py` and
 | `GX_GFX_RAYMARCH_FEATURE=<name>` + `_STATE=0\|1` | one-shot flag toggle (terrain, water, fog, clouds, volfog, objects, lights, proxy, …; `objecttexture` sets a textured fixture) |
 | `GX_GFX_RAYMARCH_DEFINES="…"` | full `CF_*` define override |
 | `GX_GFX_RAYMARCH_RENDERSCALE=0.25` | pin the module render scale |
+| `GX_RAYMARCH_STEPS=<n>` | pin march steps (benchmark/quality tuning) |
+| `GX_RAYMARCH_BOUNCES=<n>` | pin march bounces (benchmark/quality tuning) |
 | `GX_GFX_RAYMARCH_GALLERY=1\|2\|3` | built-in primitive row / empty / new-types row |
 | `GX_GFX_RAYMARCH_GALLERY=4\|5\|6\|7` | analytic scaled solid / camera inside / near miss then far target / exhausted-budget fixtures |
 | `GX_GFX_RAYMARCH_GALLERY=8` | lit reflective white-sphere stability fixture |
