@@ -11,6 +11,11 @@ SemVer.
   color, depth/shadow, instanced and planar draws; `flipNormals` inverts the
   shaded normal without changing winding. Both are editable per model,
   default off, and persist in presets.
+- **Screen color-code core**: reusable 45×45 encoder/decoder with calibration
+  and control cells, metadata-at-edges, payload-in-middle, SECDED ECC, CRC32,
+  bounded RLE/raw compression and a synthetic camera round trip in
+  `--test-only`. Camera rectification and multi-frame reassembly remain
+  backlog; see `docs/color_code_format.md`.
 
 ## [0.20.0] - 2026-10-30
 

@@ -58,6 +58,8 @@ Start here:
 ## GUI, tools and editors
 
 - [Offline bug reports](bug_reporting.md)
+- [Screen color-code format v1](color_code_format.md) — bounded encoder/decoder
+  prototype (calibration, metadata, SECDED, CRC32, RLE; synthetic camera test).
 - [gX debug colors — magic-color registry](debug_colors.md)
 - [gX — editors and tooling surfaces](editors.md)
 - [GFX editor rework](gfx_editor_rework.md) — hierarchy, identity, showcase and

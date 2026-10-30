@@ -1,9 +1,9 @@
 # Screen color-code transfer — backlog
 
-Status: **idea, not scoped or implemented.** This is a design note for a
-gameX-lineage N64-style color code: a QR-like grid rendered on screen and read
-back by a camera, with calibration, error correction, compression and a
-structured payload/metadata layout.
+Status: **core encoder/decoder prototype implemented** (2026-10-30). The
+bounded C module, format layout and synthetic camera round trip live in
+[color_code_format.md](color_code_format.md). Camera rectification, multi-frame
+reassembly and a screen/editor presentation tool remain backlog.
 
 ## Goal
 
