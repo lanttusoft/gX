@@ -82,8 +82,10 @@ this source beta.
 - `gX_LogState.globalLevel` — log threshold
 - `gX_Text_Format/Replace/...` — string utils
 - `gX_ColorCode_*` — bounded 45×45 screen-transfer frame:
-  Encode/Decode/Render/Palette. Control/calibration cells, metadata-at-edges,
-  payload-in-middle, SECDED ECC, CRC32 and raw/RLE compression; the decoder
+  Encode/Decode/Render/Palette. An 8-colour, 3-bit palette covers black/white
+  plus full/half red, green and blue; the top border calibrates every palette
+  entry. Metadata-at-edges, payload-in-middle, SECDED ECC, CRC32 and raw/RLE
+  compression; the decoder
   auto-detects eight rotation/mirror orientations from corner controls and
   accepts caller-supplied affine/perspective corners for rectification.
   `EncodeMulti`/`Reassemble` add ordered 4096-byte payloads with payload IDs,

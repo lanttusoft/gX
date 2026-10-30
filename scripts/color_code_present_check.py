@@ -27,8 +27,12 @@ def palette_counts(pixels):
     colors = {
         "black": (0, 0, 0),
         "white": (255, 255, 255),
-        "red": (220, 40, 40),
-        "blue": (40, 80, 220),
+        "red_full": (220, 40, 40),
+        "red_half": (110, 20, 20),
+        "green_full": (40, 200, 80),
+        "green_half": (20, 100, 40),
+        "blue_full": (40, 80, 220),
+        "blue_half": (20, 40, 110),
     }
     counts = {}
     for name, color in colors.items():
@@ -70,7 +74,9 @@ def check_flat(image):
     counts = palette_counts(image)
     print("flat palette counts:", counts, flush=True)
     for name, minimum in (("black", 10000), ("white", 100),
-                          ("red", 20), ("blue", 20)):
+                          ("red_full", 20), ("red_half", 20),
+                          ("green_full", 20), ("green_half", 20),
+                          ("blue_full", 20), ("blue_half", 20)):
         if counts[name] < minimum:
             raise RuntimeError(f"flat {name} palette band too small: {counts[name]}")
     center = image[HEIGHT // 4:HEIGHT * 3 // 4,
@@ -87,14 +93,16 @@ def check_tv(image):
     blue = pixels[..., 2]
     bright = int(((red + green + blue) > 300).sum())
     red_dominant = int(((red > green + 40) & (red > blue + 40)).sum())
+    green_dominant = int(((green > red + 40) & (green > blue + 40)).sum())
     blue_dominant = int(((blue > red + 40) & (blue > green + 20)).sum())
     dark = int(((red + green + blue) < 90).sum())
     print("tv bands:", {"bright": bright, "red": red_dominant,
-                        "blue": blue_dominant, "dark": dark}, flush=True)
+                        "green": green_dominant, "blue": blue_dominant,
+                        "dark": dark}, flush=True)
     if bright < 1000:
         raise RuntimeError("TV presentation has too few bright pixels")
-    if red_dominant < 20 or blue_dominant < 20:
-        raise RuntimeError("TV presentation lost its red/blue palette bands")
+    if red_dominant < 20 or green_dominant < 20 or blue_dominant < 20:
+        raise RuntimeError("TV presentation lost a colour palette band")
     if dark < 10000:
         raise RuntimeError("TV presentation lost its dark background")
 
@@ -107,9 +115,9 @@ def check_multiframe(out):
     second, second_log = run("--color-code", out / "multi_b.png", out,
                              payload=payload, frames=130, shot_frame=65,
                              tag="multi_b")
-    if "COLOR_CODE: 4 frame(s)" not in first_log:
-        raise RuntimeError("multi-frame presentation did not encode four frames")
-    if "COLOR_CODE: frame 2/4" not in second_log:
+    if "COLOR_CODE: 2 frame(s)" not in first_log:
+        raise RuntimeError("multi-frame presentation did not encode two frames")
+    if "COLOR_CODE: frame 2/2" not in second_log:
         raise RuntimeError("multi-frame presentation did not advance to frame 2")
     if float(np.abs(first.astype(np.int32) - second.astype(np.int32)).mean()) < 1.0:
         raise RuntimeError("multi-frame presentation frames did not change")

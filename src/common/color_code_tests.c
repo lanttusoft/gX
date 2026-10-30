@@ -428,8 +428,9 @@ static gX_I32 test_single_bit_matrix(const gX_U8 *payload, gX_U32 length)
         gX_ColorCodeFrame frame;
         gX_I32 status = gX_ColorCode_Encode(payload, length, 0, 1, &frame);
         if (status != GX_COLOR_CODE_OK) return errors + 1;
-        gX_U32 flatCell = bit / 2;
-        gX_U32 cellBit = 1 - (bit & 1);
+        gX_U32 flatCell = bit / GX_COLOR_CODE_BITS_PER_CELL;
+        gX_U32 cellBit = GX_COLOR_CODE_BITS_PER_CELL - 1
+            - (bit % GX_COLOR_CODE_BITS_PER_CELL);
         gX_U32 row = GX_COLOR_CODE_DATA_START_ROW
             + flatCell / GX_COLOR_CODE_INNER;
         gX_U32 col = GX_COLOR_CODE_QUIET + GX_COLOR_CODE_BORDER
@@ -604,7 +605,7 @@ static gX_I32 test_multiframe(void)
     gX_U32 count = 0;
     gX_I32 status = gX_ColorCode_EncodeMulti(payload, length, frames,
         GX_COLOR_CODE_MAX_MULTI_FRAMES, &count);
-    if (status != GX_COLOR_CODE_OK || count != 4)
+    if (status != GX_COLOR_CODE_OK || count != 2)
     {
         gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 14 FAIL: multi encode %d count=%u",
             status, count);
@@ -684,10 +685,8 @@ static gX_I32 test_multiframe(void)
     }
     for (gX_U32 index = 0; index < count; index++)
         shuffled[index] = results[index];
-    shuffled[0].fullPayloadCRC ^= 1;
-    shuffled[1].fullPayloadCRC ^= 1;
-    shuffled[2].fullPayloadCRC ^= 1;
-    shuffled[3].fullPayloadCRC ^= 1;
+    for (gX_U32 index = 0; index < count; index++)
+        shuffled[index].fullPayloadCRC ^= 1;
     if (gX_ColorCode_Reassemble(shuffled, count, rebuilt,
             sizeof(rebuilt), &rebuiltLength) != GX_COLOR_CODE_ERR_CHECKSUM)
     {
@@ -704,6 +703,73 @@ static gX_I32 test_multiframe(void)
 cleanup:
     gX_Free(frames);
     gX_Free(results);
+    return errors;
+}
+
+static gX_I32 test_tint(const gX_U8 *payload, gX_U32 length,
+    gX_F32 redGain, gX_F32 greenGain, gX_F32 blueGain,
+    gX_F32 redBias, gX_F32 greenBias, gX_F32 blueBias)
+{
+    gX_I32 errors = 0;
+    gX_ColorCodeFrame frame;
+    gX_I32 status = gX_ColorCode_Encode(payload, length, 0, 1, &frame);
+    if (status != GX_COLOR_CODE_OK) return 1;
+    gX_U8 *pixels = test_image(&frame, 1.0f, 0.0f);
+    if (!pixels) return 1;
+    gX_F32 gains[3] = {redGain, greenGain, blueGain};
+    gX_F32 biases[3] = {redBias, greenBias, blueBias};
+    for (gX_U32 index = 0; index < TEST_WIDTH * TEST_HEIGHT; index++)
+        for (gX_U32 channel = 0; channel < 3; channel++)
+        {
+            gX_F32 value = (gX_F32)pixels[index * 4 + channel]
+                * gains[channel] + biases[channel];
+            if (value < 0.0f) value = 0.0f;
+            if (value > 255.0f) value = 255.0f;
+            pixels[index * 4 + channel] = (gX_U8)(value + 0.5f);
+        }
+    gX_ColorCodeResult result;
+    status = test_decode(pixels, &result);
+    gX_Free(pixels);
+    if (status != GX_COLOR_CODE_OK || result.payloadLength != length
+        || memcmp(result.payload, payload, length) != 0)
+    {
+        gX_TraceLog(gX_LOG_ERROR,
+            "COLOR CODE 23 FAIL: tint %.2f/%.2f/%.2f status=%d",
+            redGain, greenGain, blueGain, status);
+        errors++;
+    }
+    return errors;
+}
+
+static gX_I32 test_palette_levels(const gX_U8 *payload, gX_U32 length)
+{
+    gX_I32 errors = 0;
+    gX_U8 palette[GX_COLOR_CODE_PALETTE_SIZE][3];
+    for (gX_U32 index = 0; index < GX_COLOR_CODE_PALETTE_SIZE; index++)
+        gX_ColorCode_Palette((gX_U8)index, &palette[index][0],
+            &palette[index][1], &palette[index][2]);
+    if (!(palette[2][0] > palette[3][0]
+        && palette[4][1] > palette[5][1]
+        && palette[6][2] > palette[7][2]))
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 24 FAIL: full/half levels collapse");
+        errors++;
+    }
+    gX_ColorCodeFrame frame;
+    gX_I32 status = gX_ColorCode_Encode(payload, length, 0, 1, &frame);
+    if (status != GX_COLOR_CODE_OK) return errors + 1;
+    gX_I1 seen[GX_COLOR_CODE_PALETTE_SIZE] = {0};
+    for (gX_U32 col = 3; col < GX_COLOR_CODE_ACTIVE - 3; col++)
+    {
+        gX_U32 cell = (GX_COLOR_CODE_QUIET *
+            GX_COLOR_CODE_GRID) + GX_COLOR_CODE_QUIET + col;
+        gX_U8 value = frame.cells[cell];
+        if (value != (gX_U8)((col - 3) % GX_COLOR_CODE_PALETTE_SIZE))
+            errors++;
+        if (value < GX_COLOR_CODE_PALETTE_SIZE) seen[value] = 1;
+    }
+    for (gX_U32 index = 0; index < GX_COLOR_CODE_PALETTE_SIZE; index++)
+        if (!seen[index]) errors++;
     return errors;
 }
 
@@ -728,6 +794,11 @@ gX_I32 gX_Tests_ColorCode(gX_I0)
     errors += test_perspective_matrix(raw, (gX_U32)strlen((const char *)raw));
     errors += test_tv(raw, (gX_U32)strlen((const char *)raw));
     errors += test_multiframe();
+    errors += test_tint(raw, (gX_U32)strlen((const char *)raw),
+        0.85f, 0.95f, 1.10f, 10.0f, 5.0f, 20.0f);
+    errors += test_tint(raw, (gX_U32)strlen((const char *)raw),
+        1.10f, 0.90f, 0.80f, 0.0f, 0.0f, 0.0f);
+    errors += test_palette_levels(raw, (gX_U32)strlen((const char *)raw));
     errors += test_metadata_corruption(raw, (gX_U32)strlen((const char *)raw));
     errors += test_erasure(raw, (gX_U32)strlen((const char *)raw));
     gX_ColorCodeFrame frame;

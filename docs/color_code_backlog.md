@@ -3,10 +3,11 @@
 Status: **core encoder/decoder prototype implemented** (2026-10-30). The
 bounded C module, format layout, synthetic camera round trip and eight-way
 rotation/mirror detection live in [color_code_format.md](color_code_format.md).
-Caller-supplied affine/perspective rectification, a deterministic simulated
-CRT/TV view and bounded multi-frame reassembly are implemented; automatic
-corner detection, stronger erasure recovery and a camera-device walk remain
-backlog.
+The 8-colour / 3-bit palette (full and half red, green and blue), per-palette
+calibration strip, caller-supplied affine/perspective rectification, a
+deterministic simulated CRT/TV view and bounded multi-frame reassembly are
+implemented. Automatic corner detection, stronger erasure recovery, a
+16-colour/4-bit palette experiment and a camera-device walk remain backlog.
 
 ## Goal
 
