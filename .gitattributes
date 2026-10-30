@@ -1,0 +1,21 @@
+* text=auto
+*.c text eol=lf
+*.h text eol=lf
+*.txt text eol=lf
+*.md text eol=lf
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+*.sh text eol=lf
+*.png binary
+*.ppm binary
+*.glb binary
+*.ogg binary
+*.wav binary
+*.ttf binary
+
+#ai: source exports omit local runtime and evidence artifacts.
+/screenshot*.png export-ignore
+/screenshot/ export-ignore
+/bugs/ export-ignore
+/certificates/ export-ignore
+/resources/settings.json export-ignore

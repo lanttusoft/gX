@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "name": "release-gtx1060-2026-09-20",
+  "description": "Reference captured at 1024x768, fixed 1/60 timestep, seed 424242, three repeats, Release binary.",
+  "machine": {
+    "vendor": "NVIDIA Corporation",
+    "renderer": "NVIDIA GeForce GTX 1060 6GB (reference class)",
+    "opengl": "3.3.0 NVIDIA (proprietary driver)",
+    "glsl": "3.30 NVIDIA"
+  },
+  "baseline": {
+    "width": 1024,
+    "height": 768,
+    "target_fps": 60.0,
+    "seed": 424242
+  },
+  "rows": {
+    "default": {
+      "cpu": {"p95_ms": 36.672755},
+      "gpu": {"p95_ms": 13.34},
+      "budgets_ms": {"cpu_p95": 55.0, "gpu_p95": 20.0}
+    },
+    "isolated": {
+      "cpu": {"p95_ms": 3.774625},
+      "gpu": {"p95_ms": 3.4315},
+      "budgets_ms": {"cpu_p95": 6.0, "gpu_p95": 6.0}
+    },
+    "ssr": {
+      "cpu": {"p95_ms": 11.1276},
+      "gpu": {"p95_ms": 10.74},
+      "budgets_ms": {"cpu_p95": 17.0, "gpu_p95": 16.0}
+    },
+    "ssao": {
+      "cpu": {"p95_ms": 4.74379},
+      "gpu": {"p95_ms": 4.5305},
+      "budgets_ms": {"cpu_p95": 8.0, "gpu_p95": 7.0}
+    },
+    "bloom": {
+      "cpu": {"p95_ms": 7.81014},
+      "gpu": {"p95_ms": 3.76},
+      "budgets_ms": {"cpu_p95": 12.0, "gpu_p95": 6.0}
+    },
+    "taa": {
+      "cpu": {"p95_ms": 3.660405},
+      "gpu": {"p95_ms": 3.32},
+      "budgets_ms": {"cpu_p95": 6.0, "gpu_p95": 6.0}
+    }
+  }
+}

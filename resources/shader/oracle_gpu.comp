@@ -1,0 +1,441 @@
+//opencode: Paper 1 M5-M8 — GL4.3 BVH transport for the audit and editor preview.
+//   previewMode=0 preserves the opt-in raster-HDR transport audit; previewMode=1
+//   writes an independent HDR primary-hit/miss image and progressive samples.
+//   The preview traces opaque model geometry only and uses the scene clear color
+//   for environment misses. It is never dispatched on the production GL33 path.
+#version 430
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(rgba16f, binding = 0) uniform image2D sceneImage;
+layout(rgba16f, binding = 1) uniform image2D accumulationImage;
+
+struct OracleTriangle {
+    vec4 p0;
+    vec4 p1;
+    vec4 p2;
+    vec4 n0;
+    vec4 n1;
+    vec4 n2;
+    vec4 albedo;
+    vec4 material;
+    vec4 uv0;
+    vec4 uv1;
+    vec4 uv2;
+    vec4 textureUV;
+};
+
+layout(std430, binding = 2) readonly buffer OracleTriangles {
+    OracleTriangle triangles[];
+};
+
+struct OracleBvhNode {
+    vec4 boundsMin;
+    vec4 boundsMax;
+    ivec4 data;
+};
+
+layout(std430, binding = 3) readonly buffer OracleBvhNodes {
+    OracleBvhNode bvhNodes[];
+};
+
+layout(std430, binding = 4) readonly buffer OracleBvhIndices {
+    uint bvhIndices[];
+};
+
+uniform vec2 resolution;
+uniform vec3 cameraPosition;
+uniform vec3 cameraForward;
+uniform vec3 cameraRight;
+uniform vec3 cameraUp;
+uniform float tanHalfFov;
+uniform int cameraProjection;
+uniform float orthoHalfHeight;
+uniform float aspect;
+uniform int pointCount;
+uniform vec4 pointPositions[32];
+uniform vec4 pointRadiance[32];
+uniform vec4 pointAtten[32];
+uniform vec3 sunDirection;
+uniform vec3 sunRadiance;
+uniform int sunCastShadows;
+uniform vec3 environmentColor;
+uniform float exposure;
+uniform int bounceCount;
+uniform int bvhNodeCount;
+uniform int reflectionMode;
+uniform int sampleIndex;
+uniform int previewMode;
+uniform sampler2DArray albedoTextureArray;
+
+const float PI = 3.141592653589793;
+
+uint oracleHash(ivec2 pixel, int salt) {
+    uint x = uint(pixel.x) * 1973u + uint(pixel.y) * 9277u
+        + uint(salt) * 40503u + 1u;
+    x = (x ^ (x >> 16u)) * 0x45d9f3bu;
+    x = (x ^ (x >> 16u)) * 0x45d9f3bu;
+    return x ^ (x >> 16u);
+}
+
+float oracleRandom(ivec2 pixel, int salt) {
+    return (float(oracleHash(pixel, salt) & 0x00ffffffu) + 0.5) / 16777216.0;
+}
+
+vec3 oracleEnvironment(vec3 direction) {
+    float height = clamp(direction.y * 0.5 + 0.5, 0.0, 1.0);
+    vec3 sky = vec3(0.025, 0.035, 0.060) * (1.0 - height);
+    sky += vec3(0.18, 0.24, 0.38) * height;
+    vec3 sun = vec3(0.55, 0.38, 0.20);
+    vec3 diskDirection = normalize(vec3(1.0, 2.0, 1.0));
+    float highlight = pow(max(dot(direction, diskDirection), 0.0), 180.0);
+    return sky + sun * (5.0 * highlight);
+}
+
+//opencode: the interactive preview uses the authored clear color for misses.
+vec3 oraclePreviewEnvironment() {
+    return environmentColor;
+}
+
+bool oracleBoundsHit(vec3 origin, vec3 direction, vec3 boundsMin,
+    vec3 boundsMax, float limit) {
+    float nearDistance = -3.402823466e38;
+    float farDistance = limit;
+    for (int axis = 0; axis < 3; axis++) {
+        float component = axis == 0 ? direction.x
+            : (axis == 1 ? direction.y : direction.z);
+        float originComponent = axis == 0 ? origin.x
+            : (axis == 1 ? origin.y : origin.z);
+        float low = axis == 0 ? boundsMin.x
+            : (axis == 1 ? boundsMin.y : boundsMin.z);
+        float high = axis == 0 ? boundsMax.x
+            : (axis == 1 ? boundsMax.y : boundsMax.z);
+        if (abs(component) < 1.0e-12) {
+            if (originComponent < low || originComponent > high) return false;
+        } else {
+            float first = (low - originComponent) / component;
+            float last = (high - originComponent) / component;
+            if (first > last) {
+                float swapValue = first;
+                first = last;
+                last = swapValue;
+            }
+            nearDistance = max(nearDistance, first);
+            farDistance = min(farDistance, last);
+            if (nearDistance > farDistance) return false;
+        }
+    }
+    return farDistance >= max(nearDistance, 0.0);
+}
+
+bool oracleTriangleHit(int triangleIndex, vec3 origin, vec3 direction,
+    inout float best, inout int bestIndex, inout vec3 bestBary) {
+    OracleTriangle triangle = triangles[triangleIndex];
+    vec3 edgeA = triangle.p1.xyz - triangle.p0.xyz;
+    vec3 edgeB = triangle.p2.xyz - triangle.p0.xyz;
+    vec3 pvec = cross(direction, edgeB);
+    float determinant = dot(edgeA, pvec);
+    if (abs(determinant) < 1.0e-10) return false;
+    float inverse = 1.0 / determinant;
+    vec3 tvec = origin - triangle.p0.xyz;
+    float u = dot(tvec, pvec) * inverse;
+    if (u < 0.0 || u > 1.0) return false;
+    vec3 qvec = cross(tvec, edgeA);
+    float v = dot(direction, qvec) * inverse;
+    if (v < 0.0 || u + v > 1.0) return false;
+    float distance = dot(edgeB, qvec) * inverse;
+    if (distance <= 1.0e-5 || distance >= best) return false;
+    best = distance;
+    bestIndex = triangleIndex;
+    bestBary = vec3(1.0 - u - v, u, v);
+    return true;
+}
+
+bool oracleHit(vec3 origin, vec3 direction, out float hitDistance,
+    out int hitIndex, out vec3 barycentric) {
+    float best = 3.402823466e38;
+    int bestIndex = -1;
+    vec3 bestBary = vec3(0.0);
+    int stack[64];
+    int stackSize = 0;
+    if (bvhNodeCount <= 0) return false;
+    stack[stackSize++] = 0;
+    while (stackSize > 0) {
+        int nodeIndex = stack[--stackSize];
+        OracleBvhNode node = bvhNodes[nodeIndex];
+        if (!oracleBoundsHit(origin, direction, node.boundsMin.xyz,
+                node.boundsMax.xyz, best)) continue;
+        if (node.data.x < 0) {
+            for (int offset = 0; offset < node.data.w; offset++) {
+                int triangleIndex = int(bvhIndices[node.data.z + offset]);
+                oracleTriangleHit(triangleIndex, origin, direction,
+                    best, bestIndex, bestBary);
+            }
+        } else {
+            if (stackSize + 2 > 64) continue;
+            stack[stackSize++] = node.data.x;
+            stack[stackSize++] = node.data.y;
+        }
+    }
+    if (bestIndex < 0) return false;
+    hitDistance = best;
+    hitIndex = bestIndex;
+    barycentric = bestBary;
+    return true;
+}
+
+vec3 oracleNormal(OracleTriangle triangle, vec3 barycentric, vec3 direction) {
+    vec3 normal = normalize(triangle.n0.xyz * barycentric.x
+        + triangle.n1.xyz * barycentric.y + triangle.n2.xyz * barycentric.z);
+    return dot(normal, direction) > 0.0 ? -normal : normal;
+}
+
+//opencode: sample the authored per-mesh base-color map at the BVH hit UV.
+float oracleWrapCoordinate(float coordinate, int mode) {
+    if (mode == 1) return clamp(coordinate, 0.0, 1.0);
+    if (mode == 2) {
+        float mirrored = mod(coordinate, 2.0);
+        return 1.0 - abs(mirrored - 1.0);
+    }
+    return fract(coordinate);
+}
+
+vec3 oracleMaterialAlbedo(OracleTriangle triangle, vec3 barycentric) {
+    if (triangle.material.z < 0.5) return triangle.albedo.rgb;
+    vec2 uv = triangle.uv0.xy * barycentric.x
+        + triangle.uv1.xy * barycentric.y + triangle.uv2.xy * barycentric.z;
+    uv.x = oracleWrapCoordinate(uv.x, int(triangle.uv0.z + 0.5));
+    uv.y = oracleWrapCoordinate(uv.y, int(triangle.uv0.w + 0.5));
+    uv = uv * triangle.textureUV.xy + triangle.textureUV.zw;
+    vec3 texel = texture(albedoTextureArray,
+        vec3(uv, triangle.material.z)).rgb;
+    return triangle.albedo.rgb * triangle.material.w * texel;
+}
+
+vec3 oracleDirect(vec3 point, vec3 normal, vec3 albedo) {
+    vec3 result = albedo / PI * max(dot(normal, sunDirection), 0.0) * sunRadiance;
+    for (int index = 0; index < pointCount; index++) {
+        vec3 delta = pointPositions[index].xyz - point;
+        float distance = max(length(delta), 1.0e-12);
+        vec3 light = delta / distance;
+        float cosine = max(dot(normal, light), 0.0);
+        float attenuation = 1.0 / (pointAtten[index].x
+            + pointAtten[index].y * distance
+            + pointAtten[index].z * distance * distance);
+        result += albedo / PI * cosine * pointRadiance[index].rgb * attenuation;
+    }
+    return result;
+}
+
+vec3 oracleFresnel(float cosine, vec3 f0) {
+    return f0 + (1.0 - f0) * pow(max(1.0 - cosine, 0.0), 5.0);
+}
+
+//opencode: visibility rays share the uploaded triangle BVH with path samples.
+bool oracleVisible(vec3 point, vec3 normal, vec3 direction, float maxDistance) {
+    float hitDistance;
+    int hitIndex;
+    vec3 hitBary;
+    vec3 origin = point + normal * 1.0e-4;
+    if (!oracleHit(origin, direction, hitDistance, hitIndex, hitBary)) return true;
+    return hitDistance >= maxDistance - 1.0e-3;
+}
+
+float oracleDistributionGGX(vec3 normal, vec3 halfway, float roughness) {
+    float alpha = roughness * roughness;
+    float alpha2 = alpha * alpha;
+    float normalHalfway = max(dot(normal, halfway), 0.0);
+    float denominator = normalHalfway * normalHalfway * (alpha2 - 1.0) + 1.0;
+    return min(alpha2 / (PI * denominator * denominator), 64.0);
+}
+
+float oracleGeometrySchlickGGX(float normalDirection, float roughness) {
+    float r = roughness + 1.0;
+    float k = (r * r) / 8.0;
+    return normalDirection / (normalDirection * (1.0 - k) + k);
+}
+
+vec3 oracleDirectGGX(vec3 point, vec3 normal, vec3 view, vec3 albedo,
+    float metalness, float roughness, bool traceVisibility) {
+    vec3 result = vec3(0.0);
+    vec3 f0 = mix(vec3(0.04), albedo, metalness);
+    float normalView = max(dot(normal, view), 0.001);
+    vec3 sunLight = sunDirection;
+    float sunCosine = max(dot(normal, sunLight), 0.0);
+    if (sunCosine > 0.0 && (!traceVisibility || sunCastShadows == 0
+            || oracleVisible(point, normal, sunLight, 3.402823466e38))) {
+        vec3 halfway = normalize(view + sunLight);
+        vec3 fresnel = oracleFresnel(max(dot(halfway, view), 0.0), f0);
+        float distribution = oracleDistributionGGX(normal, halfway, roughness);
+        float geometry = oracleGeometrySchlickGGX(normalView, roughness);
+        geometry *= oracleGeometrySchlickGGX(max(dot(normal, sunLight), 0.001), roughness);
+        vec3 specular = distribution * geometry * fresnel
+            / max(4.0 * normalView * sunCosine, 0.001);
+        vec3 diffuse = (1.0 - fresnel) * (1.0 - metalness) * albedo / PI;
+        result += (diffuse + specular) * sunRadiance * sunCosine;
+    }
+    for (int index = 0; index < pointCount; index++) {
+        vec3 delta = pointPositions[index].xyz - point;
+        float distance = max(length(delta), 1.0e-12);
+        vec3 light = delta / distance;
+        float lightCosine = max(dot(normal, light), 0.0);
+        if (lightCosine <= 0.0) continue;
+        if (traceVisibility && pointAtten[index].w > 0.5
+            && !oracleVisible(point, normal, light, distance)) continue;
+        vec3 halfway = normalize(view + light);
+        vec3 fresnel = oracleFresnel(max(dot(halfway, view), 0.0), f0);
+        float distribution = oracleDistributionGGX(normal, halfway, roughness);
+        float geometry = oracleGeometrySchlickGGX(normalView, roughness);
+        geometry *= oracleGeometrySchlickGGX(max(dot(normal, light), 0.001), roughness);
+        vec3 specular = distribution * geometry * fresnel
+            / max(4.0 * normalView * lightCosine, 0.001);
+        vec3 diffuse = (1.0 - fresnel) * (1.0 - metalness) * albedo / PI;
+        float attenuation = 1.0 / (pointAtten[index].x
+            + pointAtten[index].y * distance
+            + pointAtten[index].z * distance * distance);
+        result += (diffuse + specular) * pointRadiance[index].rgb
+            * attenuation * lightCosine;
+    }
+    return result;
+}
+
+vec3 oracleCosineDirection(vec3 normal, ivec2 pixel, int bounce, int sampleNumber) {
+    int salt = 17 + bounce * 2 + sampleNumber * 7919;
+    float u1 = oracleRandom(pixel, salt);
+    float u2 = oracleRandom(pixel, salt + 1);
+    float radius = sqrt(u1);
+    float phi = 6.28318530718 * u2;
+    vec3 local = vec3(radius * cos(phi), radius * sin(phi),
+        sqrt(max(0.0, 1.0 - u1)));
+    vec3 helper = abs(normal.y) < 0.999
+        ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(helper, normal));
+    vec3 bitangent = cross(normal, tangent);
+    return normalize(tangent * local.x + bitangent * local.y + normal * local.z);
+}
+
+void main() {
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    if (pixel.x >= int(resolution.x) || pixel.y >= int(resolution.y)) return;
+
+    vec2 screen = (vec2(pixel) + 0.5) / vec2(resolution) * 2.0 - 1.0;
+    vec3 rayOrigin = cameraPosition;
+    vec3 direction;
+    if (cameraProjection == 1) {
+        rayOrigin += cameraRight * screen.x * aspect * orthoHalfHeight
+            + cameraUp * screen.y * orthoHalfHeight;
+        direction = cameraForward;
+    } else {
+        direction = normalize(cameraForward + cameraRight * screen.x
+            * aspect * tanHalfFov + cameraUp * screen.y * tanHalfFov);
+    }
+    float primaryDistance;
+    int primaryIndex;
+    vec3 primaryBary;
+    bool primaryHit = oracleHit(rayOrigin, direction, primaryDistance,
+        primaryIndex, primaryBary);
+    if (previewMode == 1 && !primaryHit) {
+        imageStore(sceneImage, pixel, vec4(oraclePreviewEnvironment(), 1.0));
+        return;
+    }
+    if (!primaryHit)
+        return;
+
+    OracleTriangle primary = triangles[primaryIndex];
+    vec3 primaryNormal = oracleNormal(primary, primaryBary, direction);
+    vec3 primaryPoint = rayOrigin + direction * primaryDistance;
+    if (previewMode == 1) {
+        vec3 primaryAlbedo = oracleMaterialAlbedo(primary, primaryBary);
+        vec3 radiance = oracleDirectGGX(primaryPoint, primaryNormal, -direction,
+            primaryAlbedo, primary.material.x, primary.material.y, true);
+        vec3 throughput = primaryAlbedo;
+        vec3 rayOrigin = primaryPoint + primaryNormal * 1.0e-4;
+        vec3 rayDirection = oracleCosineDirection(primaryNormal, pixel, 0, sampleIndex);
+        int count = clamp(bounceCount, 1, 2);
+        for (int bounce = 0; bounce < 2; bounce++) {
+            if (bounce >= count) break;
+            float secondaryDistance;
+            int secondaryIndex;
+            vec3 secondaryBary;
+            if (oracleHit(rayOrigin, rayDirection, secondaryDistance,
+                    secondaryIndex, secondaryBary)) {
+                OracleTriangle secondary = triangles[secondaryIndex];
+                vec3 secondaryNormal = oracleNormal(secondary, secondaryBary, rayDirection);
+                vec3 secondaryPoint = rayOrigin + rayDirection * secondaryDistance;
+                vec3 secondaryAlbedo = oracleMaterialAlbedo(secondary,
+                    secondaryBary);
+                radiance += throughput * oracleDirectGGX(secondaryPoint,
+                    secondaryNormal, -rayDirection, secondaryAlbedo,
+                    secondary.material.x, secondary.material.y, true);
+                if (bounce + 1 >= count) break;
+                throughput *= secondaryAlbedo;
+                rayOrigin = secondaryPoint + secondaryNormal * 1.0e-4;
+                rayDirection = oracleCosineDirection(secondaryNormal, pixel,
+                    bounce + 1, sampleIndex);
+            } else {
+                radiance += throughput * oraclePreviewEnvironment();
+                break;
+            }
+        }
+        radiance *= exposure;
+        if (sampleIndex > 0) {
+            vec3 previous = imageLoad(accumulationImage, pixel).rgb;
+            float weight = 1.0 / float(sampleIndex + 1);
+            radiance = mix(previous, radiance, weight);
+        }
+        imageStore(accumulationImage, pixel, vec4(radiance, 1.0));
+        imageStore(sceneImage, pixel, vec4(radiance, 1.0));
+        return;
+    }
+    vec3 transport = vec3(0.0);
+    if (reflectionMode == 1) {
+        vec3 view = -direction;
+        vec3 f0 = mix(vec3(0.04), primary.albedo.rgb, primary.material.x);
+        vec3 throughput = oracleFresnel(max(dot(primaryNormal, view), 0.0), f0);
+        vec3 rayDirection = normalize(reflect(direction, primaryNormal));
+        vec3 rayOrigin = primaryPoint + primaryNormal * 1.0e-4;
+        float secondaryDistance;
+        int secondaryIndex;
+        vec3 secondaryBary;
+        if (oracleHit(rayOrigin, rayDirection, secondaryDistance,
+                secondaryIndex, secondaryBary)) {
+            OracleTriangle secondary = triangles[secondaryIndex];
+            vec3 secondaryNormal = oracleNormal(secondary, secondaryBary, rayDirection);
+            vec3 secondaryPoint = rayOrigin + rayDirection * secondaryDistance;
+            transport += throughput * oracleDirectGGX(secondaryPoint, secondaryNormal,
+                -rayDirection, secondary.albedo.rgb, secondary.material.x,
+                secondary.material.y, false);
+        } else {
+            transport += throughput * oracleEnvironment(rayDirection);
+        }
+    } else {
+        vec3 throughput = primary.albedo.rgb;
+        vec3 rayOrigin = primaryPoint + primaryNormal * 1.0e-4;
+        vec3 rayDirection = oracleCosineDirection(primaryNormal, pixel, 0, sampleIndex);
+        int count = clamp(bounceCount, 1, 2);
+        for (int bounce = 0; bounce < 2; bounce++) {
+            if (bounce >= count) break;
+            float secondaryDistance;
+            int secondaryIndex;
+            vec3 secondaryBary;
+            if (oracleHit(rayOrigin, rayDirection, secondaryDistance,
+                    secondaryIndex, secondaryBary)) {
+                OracleTriangle secondary = triangles[secondaryIndex];
+                vec3 secondaryNormal = oracleNormal(secondary, secondaryBary, rayDirection);
+                vec3 secondaryPoint = rayOrigin + rayDirection * secondaryDistance;
+                transport += throughput * oracleDirect(secondaryPoint, secondaryNormal,
+                    secondary.albedo.rgb);
+                if (bounce + 1 >= count) break;
+                throughput *= secondary.albedo.rgb;
+                rayOrigin = secondaryPoint + secondaryNormal * 1.0e-4;
+                rayDirection = oracleCosineDirection(secondaryNormal, pixel,
+                    bounce + 1, sampleIndex);
+            } else {
+                transport += throughput * oracleEnvironment(rayDirection);
+                break;
+            }
+        }
+    }
+    vec3 secondaryContribution = transport * exposure;
+    vec4 current = imageLoad(sceneImage, pixel);
+    imageStore(sceneImage, pixel, vec4(current.rgb + secondaryContribution, current.a));
+}

@@ -1,0 +1,1883 @@
+{
+ "name": "gX Editor Default",
+ "description": "Default editor scene: teapot, primitives and lights using shipped project assets.",
+ "created_date": "2026-09-22",
+ "created_time": "17:57:11",
+ "state": {
+  "SHOW_DEPTH_VISUALIZER": false,
+  "depthVisSource": 0,
+  "ENABLE_LIGHTING_AMBIENT": true,
+  "ENABLE_LIGHTING_DIFFUSE": true,
+  "ENABLE_LIGHTING_SPECULAR": true,
+  "ENABLE_MAP_ALBEDO": true,
+  "ENABLE_MAP_METALNESS": true,
+  "ENABLE_MAP_NORMAL": true,
+  "ENABLE_MAP_PARALLAX": true,
+  "ENABLE_DETAIL": false,
+  "ENABLE_FLAT": false,
+  "ENABLE_GOURAUD": false,
+  "ENABLE_PHONG": true,
+  "ENABLE_FOG": false,
+  "ENABLE_SHADOWS": false,
+  "ENABLE_REFLECTIONS": false,
+  "ENABLE_SKYBOX": true,
+  "ENABLE_PROCEDURAL_SKY": true,
+  "ENABLE_POINT_SHADOWS": false,
+  "ENABLE_COOKIES": false,
+  "ENABLE_BLOOM": false,
+  "ENABLE_SSR": true,
+  "ENABLE_SSR_AUXVIEW": true,
+  "ENABLE_MOTION_BLUR": false,
+  "ENABLE_DOF": false,
+  "ENABLE_TAA": false,
+  "ENABLE_SSAO": false,
+  "ENABLE_FXAA": true,
+  "ENABLE_CLUSTERED": true,
+  "ENABLE_AGX_TONEMAP": true,
+  "ENABLE_RIM": false,
+  "rimIntensity": 0.5,
+  "rimPower": 2.0,
+  "rimColor": [
+   255,
+   255,
+   255,
+   255
+  ],
+  "ENABLE_ENV_AMBIENT": true,
+  "envAmbientFactor": 0.30000001192092896,
+  "textureFilter": 1,
+  "shaderQuality": 0,
+  "mipmapBias": 0.0,
+  "msaaLevel": 0,
+  "qualityPreset": 0,
+  "ENABLE_PARTICLES": false,
+  "ENABLE_SNOWFALL": false,
+  "ENABLE_RAIN": false,
+  "ENABLE_FOGSPRITE": false,
+  "ENABLE_SPLAT": false,
+  "ENABLE_GODRAYS": false,
+  "ENABLE_VOLUME_FOG": false,
+  "ENABLE_LENS_FLARE": false,
+  "ENABLE_OCCLUSION_CULLING": false,
+  "ENABLE_BINDLESS": false,
+  "ENABLE_ACES_TONEMAP": true,
+  "ENABLE_GAMMA_CORRECTION": true,
+  "ENABLE_STENCIL": false,
+  "ENABLE_STENCIL_OUTLINE": false,
+  "ENABLE_FRUSTUM_CULLING": false,
+  "SHOW_POSITION": false,
+  "SHOW_TEXCOORD": false,
+  "SHOW_TEXCOORD2": false,
+  "SHOW_NORMAL": false
+ },
+ "ssao": {
+  "radius": 0.5,
+  "bias": 0.02500000037252903,
+  "strength": 2.5,
+  "kernelSize": 32,
+  "useGTAO": true,
+  "useSSGI": true
+ },
+ "csm": {
+  "cascadeCount": 2,
+  "distance0": 10.0,
+  "distance1": 30.0,
+  "distance2": 60.0,
+  "distance3": 100.0
+ },
+ "ssr": {
+  "maxSteps": 96,
+  "stepSize": 0.25,
+  "maxDistance": 100.0,
+  "depthBias": 0.25,
+  "opacity": 0.800000011920929,
+  "roughness": 0.20000000298023224,
+  "maxLod": 2.5
+ },
+ "reflection": {
+  "bias": 0.5
+ },
+ "godray": {
+  "density": 64,
+  "decay": 0.8999999761581421,
+  "weight": 0.41999998688697815,
+  "exposure": 1.0
+ },
+ "fogVolume": {
+  "density": 0.0005000000237487257,
+  "heightFalloff": 1.2000000476837158,
+  "scattering": 1.0,
+  "hgAsymmetry": 0.8500000238418579
+ },
+ "lensflare": {
+  "intensity": 1.0,
+  "dispersal": 1.0
+ },
+ "bloom": {
+  "threshold": 0.8500000238418579,
+  "intensity": 6.0,
+  "blurAmount": 1.0,
+  "exposure": 1.0,
+  "vignette": 0.5,
+  "saturation": 1.0,
+  "contrast": 1.0,
+  "autoExposure": true
+ },
+ "fog": {
+  "near": 5.0,
+  "far": 20.0,
+  "color": [
+   255,
+   255,
+   255,
+   255
+  ],
+  "heightDensity": 0.0,
+  "heightBase": 0.0
+ },
+ "detail": {
+  "uvScale": 8.0,
+  "strength": 0.0,
+  "distFade": 20.0
+ },
+ "motionBlur": {
+  "strength": 1.0,
+  "maxSamples": 16
+ },
+ "dof": {
+  "focalDistance": 5.0,
+  "focalRange": 2.0,
+  "maxRadius": 8.0
+ },
+ "taa": {
+  "blendFactor": 0.8500000238418579
+ },
+ "sky": {
+  "strength": 0.15000000596046448,
+  "color": [
+   200,
+   200,
+   255,
+   255
+  ],
+  "skyboxModelPath": "resources/model/primitive/cube.glb",
+  "altitude": 1.0,
+  "turbidity": 2.0,
+  "density": 2.200000047683716,
+  "hue": 0.0,
+  "horizon": 0.800000011920929,
+  "sunIntensity": 0.5,
+  "contrast": 1.5,
+  "starDensity": 1.0,
+  "starBrightness": 1.0,
+  "starTwinkle": 1.0
+ },
+ "sun": {
+  "dir": [
+   1.0,
+   -1.0,
+   1.0
+  ],
+  "color": [
+   255,
+   255,
+   255,
+   255
+  ],
+  "brightness": 1.0,
+  "castShadows": false
+ },
+ "models": [
+  {
+   "path": "resources/model/teapot.glb",
+   "params": {
+    "pos": [
+     -2.5,
+     0.675000011920929,
+     1.5
+    ],
+    "scale": [
+     0.30000001192092896,
+     0.30000001192092896,
+     0.30000001192092896
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "usePBR": true,
+    "shininess": 96.0,
+    "albedo": 0.8999999761581421,
+    "hasAlbedoMap": true,
+    "albedoMapFactor": 1.0,
+    "albedoMapScale": [
+     1.0,
+     1.0
+    ],
+    "albedoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "metalness": 0.8999999761581421,
+    "hasMetalnessMap": false,
+    "metalnessMapFactor": 1.0,
+    "metalnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "metalnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasNormalMap": false,
+    "normalMapFactor": 1.0,
+    "normalMapScale": [
+     10.0,
+     10.0
+    ],
+    "normalMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasHeightMap": false,
+    "heightMapFactor": 0.30000001192092896,
+    "heightMapScale": [
+     10.0,
+     10.0
+    ],
+    "heightMapOffset": [
+     0.0,
+     0.0
+    ],
+    "parallaxMode": 2,
+    "enableReflections": false,
+    "planarReflection": false,
+    "reflectionPlaneHeight": -1.0,
+    "reflectionNormal": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "nonPlanarReflection": false,
+    "waveAmplitude": 0.0,
+    "specularColor": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "hasEmissiveMap": false,
+    "emissiveFactor": 0.0,
+    "emissiveColor": [
+     0,
+     0,
+     0,
+     255
+    ],
+    "emissiveMapScale": [
+     1.0,
+     1.0
+    ],
+    "emissiveMapOffset": [
+     0.0,
+     0.0
+    ],
+    "emissiveMapFactor": 1.0,
+    "enableAlphaTest": false,
+    "alphaCutoff": 0.5,
+    "enableBlending": false,
+    "blendOpacity": 0.5,
+    "roughness": 0.6000000238418579,
+    "hasRoughnessMap": false,
+    "roughnessMapFactor": 1.0,
+    "roughnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "roughnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "ao": 1.0,
+    "hasAoMap": false,
+    "aoMapFactor": 1.0,
+    "aoMapScale": [
+     1.0,
+     1.0
+    ],
+    "aoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasLightmap": false,
+    "lightmapID": -1,
+    "lightmapStrength": 1.0,
+    "lightmapScale": [
+     1.0,
+     1.0
+    ],
+    "lightmapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasWater": false,
+    "waterScrollU": 0.0,
+    "waterScrollV": 0.0,
+    "instanceCount": 0,
+    "hasGlossMap": false,
+    "glossMapFactor": 1.0,
+    "injectedNormalMapID": -1,
+    "refractiveIndex": 1.0,
+    "enableRefraction": false,
+    "textVisible": false,
+    "textBillboard": true,
+    "textString": "",
+    "textFontSize": 24.0,
+    "materialOverrides": []
+   },
+   "textureID": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ],
+   "texturePurpose": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ]
+  },
+  {
+   "path": "resources/model/primitive/cube.glb",
+   "params": {
+    "pos": [
+     2.5,
+     1.0750000476837158,
+     -1.5
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rotation": [
+     0.0,
+     30.0,
+     0.0
+    ],
+    "usePBR": false,
+    "shininess": 32.0,
+    "albedo": 0.8999999761581421,
+    "hasAlbedoMap": true,
+    "albedoMapFactor": 1.0,
+    "albedoMapScale": [
+     1.0,
+     1.0
+    ],
+    "albedoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "metalness": 0.10000000149011612,
+    "hasMetalnessMap": false,
+    "metalnessMapFactor": 1.0,
+    "metalnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "metalnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasNormalMap": false,
+    "normalMapFactor": 1.0,
+    "normalMapScale": [
+     10.0,
+     10.0
+    ],
+    "normalMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasHeightMap": false,
+    "heightMapFactor": 0.30000001192092896,
+    "heightMapScale": [
+     10.0,
+     10.0
+    ],
+    "heightMapOffset": [
+     0.0,
+     0.0
+    ],
+    "parallaxMode": 2,
+    "enableReflections": false,
+    "planarReflection": false,
+    "reflectionPlaneHeight": -1.0,
+    "reflectionNormal": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "nonPlanarReflection": false,
+    "waveAmplitude": 0.0,
+    "specularColor": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "hasEmissiveMap": false,
+    "emissiveFactor": 0.0,
+    "emissiveColor": [
+     0,
+     0,
+     0,
+     255
+    ],
+    "emissiveMapScale": [
+     1.0,
+     1.0
+    ],
+    "emissiveMapOffset": [
+     0.0,
+     0.0
+    ],
+    "emissiveMapFactor": 1.0,
+    "enableAlphaTest": false,
+    "alphaCutoff": 0.5,
+    "enableBlending": false,
+    "blendOpacity": 0.5,
+    "roughness": 0.699999988079071,
+    "hasRoughnessMap": false,
+    "roughnessMapFactor": 1.0,
+    "roughnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "roughnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "ao": 1.0,
+    "hasAoMap": false,
+    "aoMapFactor": 1.0,
+    "aoMapScale": [
+     1.0,
+     1.0
+    ],
+    "aoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasLightmap": false,
+    "lightmapID": -1,
+    "lightmapStrength": 1.0,
+    "lightmapScale": [
+     1.0,
+     1.0
+    ],
+    "lightmapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasWater": false,
+    "waterScrollU": 0.0,
+    "waterScrollV": 0.0,
+    "instanceCount": 0,
+    "hasGlossMap": false,
+    "glossMapFactor": 1.0,
+    "injectedNormalMapID": -1,
+    "refractiveIndex": 1.0,
+    "enableRefraction": false,
+    "textVisible": false,
+    "textBillboard": true,
+    "textString": "",
+    "textFontSize": 24.0,
+    "materialOverrides": []
+   },
+   "textureID": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ],
+   "texturePurpose": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ]
+  },
+  {
+   "path": "resources/model/primitive/cone.glb",
+   "params": {
+    "pos": [
+     -3.0,
+     1.0750000476837158,
+     -3.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rotation": [
+     0.0,
+     -30.0,
+     0.0
+    ],
+    "usePBR": false,
+    "shininess": 16.0,
+    "albedo": 0.8999999761581421,
+    "hasAlbedoMap": true,
+    "albedoMapFactor": 1.0,
+    "albedoMapScale": [
+     1.0,
+     1.0
+    ],
+    "albedoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "metalness": 0.10000000149011612,
+    "hasMetalnessMap": false,
+    "metalnessMapFactor": 1.0,
+    "metalnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "metalnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasNormalMap": false,
+    "normalMapFactor": 1.0,
+    "normalMapScale": [
+     10.0,
+     10.0
+    ],
+    "normalMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasHeightMap": false,
+    "heightMapFactor": 0.30000001192092896,
+    "heightMapScale": [
+     10.0,
+     10.0
+    ],
+    "heightMapOffset": [
+     0.0,
+     0.0
+    ],
+    "parallaxMode": 2,
+    "enableReflections": false,
+    "planarReflection": false,
+    "reflectionPlaneHeight": -1.0,
+    "reflectionNormal": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "nonPlanarReflection": false,
+    "waveAmplitude": 0.0,
+    "specularColor": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "hasEmissiveMap": false,
+    "emissiveFactor": 0.0,
+    "emissiveColor": [
+     0,
+     0,
+     0,
+     255
+    ],
+    "emissiveMapScale": [
+     1.0,
+     1.0
+    ],
+    "emissiveMapOffset": [
+     0.0,
+     0.0
+    ],
+    "emissiveMapFactor": 1.0,
+    "enableAlphaTest": false,
+    "alphaCutoff": 0.5,
+    "enableBlending": false,
+    "blendOpacity": 0.5,
+    "roughness": 0.699999988079071,
+    "hasRoughnessMap": false,
+    "roughnessMapFactor": 1.0,
+    "roughnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "roughnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "ao": 1.0,
+    "hasAoMap": false,
+    "aoMapFactor": 1.0,
+    "aoMapScale": [
+     1.0,
+     1.0
+    ],
+    "aoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasLightmap": false,
+    "lightmapID": -1,
+    "lightmapStrength": 1.0,
+    "lightmapScale": [
+     1.0,
+     1.0
+    ],
+    "lightmapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasWater": false,
+    "waterScrollU": 0.0,
+    "waterScrollV": 0.0,
+    "instanceCount": 0,
+    "hasGlossMap": false,
+    "glossMapFactor": 1.0,
+    "injectedNormalMapID": -1,
+    "refractiveIndex": 1.0,
+    "enableRefraction": false,
+    "textVisible": false,
+    "textBillboard": true,
+    "textString": "",
+    "textFontSize": 24.0,
+    "materialOverrides": []
+   },
+   "textureID": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ],
+   "texturePurpose": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ]
+  },
+  {
+   "path": "resources/model/primitive/torus.glb",
+   "params": {
+    "pos": [
+     4.5,
+     0.30000001192092896,
+     2.5
+    ],
+    "scale": [
+     0.8999999761581421,
+     0.8999999761581421,
+     0.8999999761581421
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "usePBR": true,
+    "shininess": 64.0,
+    "albedo": 0.8999999761581421,
+    "hasAlbedoMap": true,
+    "albedoMapFactor": 1.0,
+    "albedoMapScale": [
+     1.0,
+     1.0
+    ],
+    "albedoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "metalness": 0.20000000298023224,
+    "hasMetalnessMap": false,
+    "metalnessMapFactor": 1.0,
+    "metalnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "metalnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasNormalMap": false,
+    "normalMapFactor": 1.0,
+    "normalMapScale": [
+     10.0,
+     10.0
+    ],
+    "normalMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasHeightMap": false,
+    "heightMapFactor": 0.30000001192092896,
+    "heightMapScale": [
+     10.0,
+     10.0
+    ],
+    "heightMapOffset": [
+     0.0,
+     0.0
+    ],
+    "parallaxMode": 2,
+    "enableReflections": false,
+    "planarReflection": false,
+    "reflectionPlaneHeight": -1.0,
+    "reflectionNormal": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "nonPlanarReflection": false,
+    "waveAmplitude": 0.0,
+    "specularColor": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "hasEmissiveMap": false,
+    "emissiveFactor": 0.0,
+    "emissiveColor": [
+     0,
+     0,
+     0,
+     255
+    ],
+    "emissiveMapScale": [
+     1.0,
+     1.0
+    ],
+    "emissiveMapOffset": [
+     0.0,
+     0.0
+    ],
+    "emissiveMapFactor": 1.0,
+    "enableAlphaTest": false,
+    "alphaCutoff": 0.5,
+    "enableBlending": false,
+    "blendOpacity": 0.5,
+    "roughness": 0.4000000059604645,
+    "hasRoughnessMap": false,
+    "roughnessMapFactor": 1.0,
+    "roughnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "roughnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "ao": 1.0,
+    "hasAoMap": false,
+    "aoMapFactor": 1.0,
+    "aoMapScale": [
+     1.0,
+     1.0
+    ],
+    "aoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasLightmap": false,
+    "lightmapID": -1,
+    "lightmapStrength": 1.0,
+    "lightmapScale": [
+     1.0,
+     1.0
+    ],
+    "lightmapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasWater": false,
+    "waterScrollU": 0.0,
+    "waterScrollV": 0.0,
+    "instanceCount": 0,
+    "hasGlossMap": false,
+    "glossMapFactor": 1.0,
+    "injectedNormalMapID": -1,
+    "refractiveIndex": 1.0,
+    "enableRefraction": false,
+    "textVisible": false,
+    "textBillboard": true,
+    "textString": "",
+    "textFontSize": 24.0,
+    "materialOverrides": []
+   },
+   "textureID": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ],
+   "texturePurpose": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ]
+  },
+  {
+   "path": "resources/model/primitive/icosahedron.glb",
+   "params": {
+    "pos": [
+     -4.5,
+     1.0750000476837158,
+     -0.5
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "usePBR": true,
+    "shininess": 48.0,
+    "albedo": 0.8999999761581421,
+    "hasAlbedoMap": true,
+    "albedoMapFactor": 1.0,
+    "albedoMapScale": [
+     1.0,
+     1.0
+    ],
+    "albedoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "metalness": 0.6000000238418579,
+    "hasMetalnessMap": false,
+    "metalnessMapFactor": 1.0,
+    "metalnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "metalnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasNormalMap": false,
+    "normalMapFactor": 1.0,
+    "normalMapScale": [
+     10.0,
+     10.0
+    ],
+    "normalMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasHeightMap": false,
+    "heightMapFactor": 0.30000001192092896,
+    "heightMapScale": [
+     10.0,
+     10.0
+    ],
+    "heightMapOffset": [
+     0.0,
+     0.0
+    ],
+    "parallaxMode": 2,
+    "enableReflections": false,
+    "planarReflection": false,
+    "reflectionPlaneHeight": -1.0,
+    "reflectionNormal": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "nonPlanarReflection": false,
+    "waveAmplitude": 0.0,
+    "specularColor": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "hasEmissiveMap": false,
+    "emissiveFactor": 0.0,
+    "emissiveColor": [
+     0,
+     0,
+     0,
+     255
+    ],
+    "emissiveMapScale": [
+     1.0,
+     1.0
+    ],
+    "emissiveMapOffset": [
+     0.0,
+     0.0
+    ],
+    "emissiveMapFactor": 1.0,
+    "enableAlphaTest": false,
+    "alphaCutoff": 0.5,
+    "enableBlending": false,
+    "blendOpacity": 0.5,
+    "roughness": 0.5,
+    "hasRoughnessMap": false,
+    "roughnessMapFactor": 1.0,
+    "roughnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "roughnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "ao": 1.0,
+    "hasAoMap": false,
+    "aoMapFactor": 1.0,
+    "aoMapScale": [
+     1.0,
+     1.0
+    ],
+    "aoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasLightmap": false,
+    "lightmapID": -1,
+    "lightmapStrength": 1.0,
+    "lightmapScale": [
+     1.0,
+     1.0
+    ],
+    "lightmapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasWater": false,
+    "waterScrollU": 0.0,
+    "waterScrollV": 0.0,
+    "instanceCount": 0,
+    "hasGlossMap": false,
+    "glossMapFactor": 1.0,
+    "injectedNormalMapID": -1,
+    "refractiveIndex": 1.0,
+    "enableRefraction": false,
+    "textVisible": false,
+    "textBillboard": true,
+    "textString": "",
+    "textFontSize": 24.0,
+    "materialOverrides": []
+   },
+   "textureID": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ],
+   "texturePurpose": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ]
+  },
+  {
+   "path": "resources/model/button.glb",
+   "params": {
+    "pos": [
+     0.5,
+     0.0949999988079071,
+     2.799999952316284
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "usePBR": false,
+    "shininess": 24.0,
+    "albedo": 0.8999999761581421,
+    "hasAlbedoMap": true,
+    "albedoMapFactor": 1.0,
+    "albedoMapScale": [
+     1.0,
+     1.0
+    ],
+    "albedoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "metalness": 0.0,
+    "hasMetalnessMap": false,
+    "metalnessMapFactor": 1.0,
+    "metalnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "metalnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasNormalMap": false,
+    "normalMapFactor": 1.0,
+    "normalMapScale": [
+     10.0,
+     10.0
+    ],
+    "normalMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasHeightMap": false,
+    "heightMapFactor": 0.30000001192092896,
+    "heightMapScale": [
+     10.0,
+     10.0
+    ],
+    "heightMapOffset": [
+     0.0,
+     0.0
+    ],
+    "parallaxMode": 2,
+    "enableReflections": false,
+    "planarReflection": false,
+    "reflectionPlaneHeight": -1.0,
+    "reflectionNormal": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "nonPlanarReflection": false,
+    "waveAmplitude": 0.0,
+    "specularColor": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "hasEmissiveMap": false,
+    "emissiveFactor": 0.0,
+    "emissiveColor": [
+     0,
+     0,
+     0,
+     255
+    ],
+    "emissiveMapScale": [
+     1.0,
+     1.0
+    ],
+    "emissiveMapOffset": [
+     0.0,
+     0.0
+    ],
+    "emissiveMapFactor": 1.0,
+    "enableAlphaTest": false,
+    "alphaCutoff": 0.5,
+    "enableBlending": false,
+    "blendOpacity": 0.5,
+    "roughness": 0.8999999761581421,
+    "hasRoughnessMap": false,
+    "roughnessMapFactor": 1.0,
+    "roughnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "roughnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "ao": 1.0,
+    "hasAoMap": false,
+    "aoMapFactor": 1.0,
+    "aoMapScale": [
+     1.0,
+     1.0
+    ],
+    "aoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasLightmap": false,
+    "lightmapID": -1,
+    "lightmapStrength": 1.0,
+    "lightmapScale": [
+     1.0,
+     1.0
+    ],
+    "lightmapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasWater": false,
+    "waterScrollU": 0.0,
+    "waterScrollV": 0.0,
+    "instanceCount": 0,
+    "hasGlossMap": false,
+    "glossMapFactor": 1.0,
+    "injectedNormalMapID": -1,
+    "refractiveIndex": 1.0,
+    "enableRefraction": false,
+    "textVisible": false,
+    "textBillboard": true,
+    "textString": "",
+    "textFontSize": 24.0,
+    "materialOverrides": []
+   },
+   "textureID": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ],
+   "texturePurpose": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ]
+  },
+  {
+   "path": "resources/model/primitive/cube.glb",
+   "params": {
+    "pos": [
+     0.0,
+     -0.07500000298023224,
+     0.0
+    ],
+    "scale": [
+     8.0,
+     0.15000000596046448,
+     8.0
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "usePBR": false,
+    "shininess": 128.0,
+    "albedo": 0.8999999761581421,
+    "hasAlbedoMap": true,
+    "albedoMapFactor": 1.0,
+    "albedoMapScale": [
+     1.0,
+     1.0
+    ],
+    "albedoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "metalness": 0.10000000149011612,
+    "hasMetalnessMap": false,
+    "metalnessMapFactor": 1.0,
+    "metalnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "metalnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasNormalMap": false,
+    "normalMapFactor": 1.0,
+    "normalMapScale": [
+     10.0,
+     10.0
+    ],
+    "normalMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasHeightMap": false,
+    "heightMapFactor": 0.30000001192092896,
+    "heightMapScale": [
+     10.0,
+     10.0
+    ],
+    "heightMapOffset": [
+     0.0,
+     0.0
+    ],
+    "parallaxMode": 2,
+    "enableReflections": true,
+    "planarReflection": false,
+    "reflectionPlaneHeight": 0.07500000298023224,
+    "reflectionNormal": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "nonPlanarReflection": false,
+    "waveAmplitude": 0.0,
+    "specularColor": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "hasEmissiveMap": false,
+    "emissiveFactor": 0.0,
+    "emissiveColor": [
+     0,
+     0,
+     0,
+     255
+    ],
+    "emissiveMapScale": [
+     1.0,
+     1.0
+    ],
+    "emissiveMapOffset": [
+     0.0,
+     0.0
+    ],
+    "emissiveMapFactor": 1.0,
+    "enableAlphaTest": false,
+    "alphaCutoff": 0.5,
+    "enableBlending": false,
+    "blendOpacity": 0.5,
+    "roughness": 0.07999999821186066,
+    "hasRoughnessMap": false,
+    "roughnessMapFactor": 1.0,
+    "roughnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "roughnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "ao": 1.0,
+    "hasAoMap": false,
+    "aoMapFactor": 1.0,
+    "aoMapScale": [
+     1.0,
+     1.0
+    ],
+    "aoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasLightmap": false,
+    "lightmapID": -1,
+    "lightmapStrength": 1.0,
+    "lightmapScale": [
+     1.0,
+     1.0
+    ],
+    "lightmapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasWater": false,
+    "waterScrollU": 0.0,
+    "waterScrollV": 0.0,
+    "instanceCount": 0,
+    "hasGlossMap": false,
+    "glossMapFactor": 1.0,
+    "injectedNormalMapID": -1,
+    "refractiveIndex": 1.0,
+    "enableRefraction": false,
+    "textVisible": false,
+    "textBillboard": true,
+    "textString": "",
+    "textFontSize": 24.0,
+    "materialOverrides": []
+   },
+   "textureID": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ],
+   "texturePurpose": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ]
+  },
+  {
+   "path": "resources/model/primitive/sphere.glb",
+   "params": {
+    "pos": [
+     -5.5,
+     0.875,
+     2.5
+    ],
+    "scale": [
+     0.800000011920929,
+     0.800000011920929,
+     0.800000011920929
+    ],
+    "rotation": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "usePBR": true,
+    "shininess": 256.0,
+    "albedo": 0.8999999761581421,
+    "hasAlbedoMap": true,
+    "albedoMapFactor": 1.0,
+    "albedoMapScale": [
+     1.0,
+     1.0
+    ],
+    "albedoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "metalness": 1.0,
+    "hasMetalnessMap": false,
+    "metalnessMapFactor": 1.0,
+    "metalnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "metalnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasNormalMap": false,
+    "normalMapFactor": 1.0,
+    "normalMapScale": [
+     10.0,
+     10.0
+    ],
+    "normalMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasHeightMap": false,
+    "heightMapFactor": 0.30000001192092896,
+    "heightMapScale": [
+     10.0,
+     10.0
+    ],
+    "heightMapOffset": [
+     0.0,
+     0.0
+    ],
+    "parallaxMode": 2,
+    "enableReflections": false,
+    "planarReflection": false,
+    "reflectionPlaneHeight": -1.0,
+    "reflectionNormal": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "nonPlanarReflection": false,
+    "waveAmplitude": 0.0,
+    "specularColor": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "hasEmissiveMap": false,
+    "emissiveFactor": 0.0,
+    "emissiveColor": [
+     0,
+     0,
+     0,
+     255
+    ],
+    "emissiveMapScale": [
+     1.0,
+     1.0
+    ],
+    "emissiveMapOffset": [
+     0.0,
+     0.0
+    ],
+    "emissiveMapFactor": 1.0,
+    "enableAlphaTest": false,
+    "alphaCutoff": 0.5,
+    "enableBlending": false,
+    "blendOpacity": 0.5,
+    "roughness": 0.019999999552965164,
+    "hasRoughnessMap": false,
+    "roughnessMapFactor": 1.0,
+    "roughnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "roughnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "ao": 1.0,
+    "hasAoMap": false,
+    "aoMapFactor": 1.0,
+    "aoMapScale": [
+     1.0,
+     1.0
+    ],
+    "aoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasLightmap": false,
+    "lightmapID": -1,
+    "lightmapStrength": 1.0,
+    "lightmapScale": [
+     1.0,
+     1.0
+    ],
+    "lightmapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasWater": false,
+    "waterScrollU": 0.0,
+    "waterScrollV": 0.0,
+    "instanceCount": 0,
+    "hasGlossMap": false,
+    "glossMapFactor": 1.0,
+    "injectedNormalMapID": -1,
+    "refractiveIndex": 1.0,
+    "enableRefraction": false,
+    "textVisible": false,
+    "textBillboard": true,
+    "textString": "",
+    "textFontSize": 24.0,
+    "materialOverrides": []
+   },
+   "textureID": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ],
+   "texturePurpose": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ]
+  },
+  {
+   "path": "resources/model/primitive/cube.glb",
+   "params": {
+    "pos": [
+     0.20000000298023224,
+     0.574999988079071,
+     -3.5
+    ],
+    "scale": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "rotation": [
+     0.0,
+     20.0,
+     0.0
+    ],
+    "usePBR": true,
+    "shininess": 200.0,
+    "albedo": 0.8999999761581421,
+    "hasAlbedoMap": true,
+    "albedoMapFactor": 1.0,
+    "albedoMapScale": [
+     1.0,
+     1.0
+    ],
+    "albedoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "metalness": 1.0,
+    "hasMetalnessMap": false,
+    "metalnessMapFactor": 1.0,
+    "metalnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "metalnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasNormalMap": false,
+    "normalMapFactor": 1.0,
+    "normalMapScale": [
+     10.0,
+     10.0
+    ],
+    "normalMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasHeightMap": false,
+    "heightMapFactor": 0.30000001192092896,
+    "heightMapScale": [
+     10.0,
+     10.0
+    ],
+    "heightMapOffset": [
+     0.0,
+     0.0
+    ],
+    "parallaxMode": 2,
+    "enableReflections": false,
+    "planarReflection": false,
+    "reflectionPlaneHeight": -1.0,
+    "reflectionNormal": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "nonPlanarReflection": false,
+    "waveAmplitude": 0.0,
+    "specularColor": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "hasEmissiveMap": false,
+    "emissiveFactor": 0.0,
+    "emissiveColor": [
+     0,
+     0,
+     0,
+     255
+    ],
+    "emissiveMapScale": [
+     1.0,
+     1.0
+    ],
+    "emissiveMapOffset": [
+     0.0,
+     0.0
+    ],
+    "emissiveMapFactor": 1.0,
+    "enableAlphaTest": false,
+    "alphaCutoff": 0.5,
+    "enableBlending": false,
+    "blendOpacity": 0.5,
+    "roughness": 0.11999999731779099,
+    "hasRoughnessMap": false,
+    "roughnessMapFactor": 1.0,
+    "roughnessMapScale": [
+     1.0,
+     1.0
+    ],
+    "roughnessMapOffset": [
+     0.0,
+     0.0
+    ],
+    "ao": 1.0,
+    "hasAoMap": false,
+    "aoMapFactor": 1.0,
+    "aoMapScale": [
+     1.0,
+     1.0
+    ],
+    "aoMapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasLightmap": false,
+    "lightmapID": -1,
+    "lightmapStrength": 1.0,
+    "lightmapScale": [
+     1.0,
+     1.0
+    ],
+    "lightmapOffset": [
+     0.0,
+     0.0
+    ],
+    "hasWater": false,
+    "waterScrollU": 0.0,
+    "waterScrollV": 0.0,
+    "instanceCount": 0,
+    "hasGlossMap": false,
+    "glossMapFactor": 1.0,
+    "injectedNormalMapID": -1,
+    "refractiveIndex": 1.0,
+    "enableRefraction": false,
+    "textVisible": false,
+    "textBillboard": true,
+    "textString": "",
+    "textFontSize": 24.0,
+    "materialOverrides": []
+   },
+   "textureID": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ],
+   "texturePurpose": [
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1
+   ]
+  }
+ ],
+ "lights": [
+  {
+   "pos": [
+    2.5,
+    2.0,
+    2.5
+   ],
+   "dir": [
+    1.0,
+    -1.0,
+    1.0
+   ],
+   "color": [
+    255,
+    90,
+    90,
+    255
+   ],
+   "brightness": 1.399999976158142,
+   "type": 1,
+   "fov": 45.0,
+   "diffuseTint": [
+    255,
+    90,
+    90,
+    255
+   ],
+   "specularTint": [
+    255,
+    90,
+    90,
+    255
+   ],
+   "diffuseFactor": 1.0,
+   "specularFactor": 1.0,
+   "attenConst": 1.0,
+   "attenLinear": 0.0,
+   "attenQuad": 0.3499999940395355,
+   "castShadows": false,
+   "shadowSize": 1024,
+   "shadowFov": 90.0,
+   "shadowFar": 50.0,
+   "shadowRange": 0.0,
+   "cookieEnabled": false
+  },
+  {
+   "pos": [
+    -2.5,
+    2.0,
+    2.5
+   ],
+   "dir": [
+    1.0,
+    -1.0,
+    1.0
+   ],
+   "color": [
+    90,
+    190,
+    255,
+    255
+   ],
+   "brightness": 1.399999976158142,
+   "type": 1,
+   "fov": 45.0,
+   "diffuseTint": [
+    90,
+    190,
+    255,
+    255
+   ],
+   "specularTint": [
+    90,
+    190,
+    255,
+    255
+   ],
+   "diffuseFactor": 1.0,
+   "specularFactor": 1.0,
+   "attenConst": 1.0,
+   "attenLinear": 0.0,
+   "attenQuad": 0.3499999940395355,
+   "castShadows": false,
+   "shadowSize": 1024,
+   "shadowFov": 90.0,
+   "shadowFar": 50.0,
+   "shadowRange": 0.0,
+   "cookieEnabled": false
+  },
+  {
+   "pos": [
+    0.0,
+    3.0,
+    -2.5
+   ],
+   "dir": [
+    1.0,
+    -1.0,
+    1.0
+   ],
+   "color": [
+    255,
+    210,
+    90,
+    255
+   ],
+   "brightness": 1.399999976158142,
+   "type": 1,
+   "fov": 45.0,
+   "diffuseTint": [
+    255,
+    210,
+    90,
+    255
+   ],
+   "specularTint": [
+    255,
+    210,
+    90,
+    255
+   ],
+   "diffuseFactor": 1.0,
+   "specularFactor": 1.0,
+   "attenConst": 1.0,
+   "attenLinear": 0.0,
+   "attenQuad": 0.3499999940395355,
+   "castShadows": false,
+   "shadowSize": 1024,
+   "shadowFov": 90.0,
+   "shadowFar": 50.0,
+   "shadowRange": 0.0,
+   "cookieEnabled": false
+  },
+  {
+   "pos": [
+    0.0,
+    4.0,
+    -0.5
+   ],
+   "dir": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "color": [
+    255,
+    255,
+    220,
+    255
+   ],
+   "brightness": 2.0,
+   "type": 2,
+   "fov": 45.0,
+   "diffuseTint": [
+    255,
+    255,
+    220,
+    255
+   ],
+   "specularTint": [
+    255,
+    255,
+    220,
+    255
+   ],
+   "diffuseFactor": 1.0,
+   "specularFactor": 1.0,
+   "attenConst": 1.0,
+   "attenLinear": 0.0,
+   "attenQuad": 0.15000000596046448,
+   "castShadows": false,
+   "shadowSize": 1024,
+   "shadowFov": 90.0,
+   "shadowFar": 50.0,
+   "shadowRange": 0.0,
+   "cookieEnabled": true
+  }
+ ],
+ "textures": []
+}

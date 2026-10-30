@@ -1,0 +1,80 @@
+name: Bug report
+description: Report a reproducible gX engine or tooling defect.
+title: "[bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report security vulnerabilities here. Use the private
+        vulnerability-reporting channel in `SECURITY.md`.
+
+        Remove credentials, private paths, personal data, and gameX material
+        from logs and attachments before submitting.
+  - type: input
+    id: version
+    attributes:
+      label: gX version / commit
+      description: Release tag or exact commit where the issue reproduces.
+      placeholder: v0.18.0 or 6d4cdcd
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Linux (X11)
+        - Linux (Wayland)
+        - Windows
+        - macOS
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU / driver
+      description: GPU model, driver version, and OpenGL version.
+      placeholder: Mesa 25.x, RADV, OpenGL 4.6
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Minimal steps from a clean build or checkout.
+      placeholder: |
+        1. ./build.sh
+        2. ./build/gX_build --gfx
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / evidence
+      description: Relevant output, crash trace, screenshot, or capture. Redact private data.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: I removed credentials, private paths, and private assets from this report.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

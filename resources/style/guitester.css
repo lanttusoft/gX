@@ -1,0 +1,21 @@
+/* gameX gameCSS demo — guitester row 12
+ *
+ * Cascade demo (later wins):
+ *   builder-set fields < stylesheet (specificity, then source order) < inline style
+ *
+ * .demo-blue        — class selector (specificity 10)
+ * #overridden       — id selector matches element->name (specificity 100)
+ * .demo-red         — class selector, beaten by the inline style on #inlined
+ */
+
+.demo-blue {
+    background-color: rgb(0, 150, 220);
+}
+
+#overridden {
+    background-color: #ffffff;
+}
+
+.demo-red {
+    background-color: #ff0000;
+}

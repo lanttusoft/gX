@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+#opencode: textwriter editor gate — the panel opens through both entry paths
+#   (GX_TOOLS_OPEN and --textwriter-editor), the CLI path routes to the
+#   textwriter scene and auto-loads its file (the preview surface), and the
+#   unknown-value hint stays honest. The save/load data path (round trip,
+#   unloaded refusal, shipped-text harness guard) runs in --test-only
+#   (textwriter parser tests).
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import audit_common as audit
+
+
+ROOT = Path(__file__).resolve().parents[1]
+BIN = ROOT / "build" / "gX_build"
+DISPLAY = os.environ.get("DISPLAY", ":1")
+TIMEOUT = 180
+
+
+def clean_env(**extra):
+    environment = {k: v for k, v in os.environ.items() if not k.startswith("GX_")}
+    environment["DISPLAY"] = DISPLAY
+    environment["GX_NO_SETTINGS_SAVE"] = "1"
+    environment["GX_FRAMES"] = "40"
+    environment.update(extra)
+    return environment
+
+
+def run(args, env):
+    return subprocess.run([str(BIN), *args], cwd=str(ROOT), env=env,
+                          capture_output=True, text=True, timeout=TIMEOUT)
+
+
+def main():
+    failures = []
+
+    #opencode: GX_TOOLS_OPEN path — the same runtime opener the EXTRAS cards
+    #   call, so a green run covers the in-app path too. No routing: it opens
+    #   over the current scene (title by default).
+    result = run(["--screenWidth", "1024", "--screenHeight", "768"],
+                 clean_env(GX_TOOLS_OPEN="textwriter"))
+    log = audit.strip_ansi(result.stdout + result.stderr)
+    if result.returncode != 0 or "Tools: textwriter editor opened at runtime" not in log:
+        failures.append(f"GX_TOOLS_OPEN path failed (exit {result.returncode})")
+
+    #opencode: CLI flag path — routes to the textwriter scene, which
+    #   auto-loads resources/text/textwriter.txt on first update.
+    result = run(["--textwriter-editor", "--screenWidth", "1024", "--screenHeight", "768"],
+                 clean_env())
+    log = audit.strip_ansi(result.stdout + result.stderr)
+    if result.returncode != 0 or "Tools: textwriter editor opened at runtime" not in log:
+        failures.append(f"--textwriter-editor path failed (exit {result.returncode})")
+    if "TextWriter: loaded" not in log:
+        failures.append("--textwriter-editor did not route to the auto-loading scene")
+
+    #opencode: the unknown-value hint names the accepted set (keeps the env
+    #   hook self-documenting when a typo sneaks into a gate).
+    result = run([], clean_env(GX_TOOLS_OPEN="textwriter_typo"))
+    log = audit.strip_ansi(result.stdout + result.stderr)
+    if "expects editor|theme|themlab|materials|gfx|script|wavetable|textwriter" not in log:
+        failures.append("unknown GX_TOOLS_OPEN value missing the hint")
+
+    if failures:
+        for failure in failures:
+            print(f"TEXTWRITER_EDITOR_CHECK: FAIL — {failure}")
+        return 1
+    print("TEXTWRITER_EDITOR_CHECK: PASS (runtime + routed CLI open, unknown-value hint)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,11 @@
+{
+  "materials": [
+    {
+      "material": "Material",
+      "albedoMap": "misc/testcard.png",
+      "emissiveMap": "orb.png",
+      "emissive": 2.0,
+      "emissiveColor": [255, 255, 255, 255]
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+ "schema": 1,
+ "note": "Source of truth for resource provenance. Every file under resources/ must match exactly one entry. scripts/provenance_audit.py --strict validates this and generates license/ATTRIBUTIONS.md; make check runs it.",
+ "entries": [
+  {
+   "match": "resources/settings.json",
+   "origin": "author",
+   "license": "project data (never committed)",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/audio/wavetable/**",
+   "origin": "ai-generated",
+   "license": "author-prompted generation (deterministic additive tables, scripts/gen_wavetables.py)",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/model/teapot.glb",
+   "origin": "public-domain",
+   "license": "Utah teapot dataset (public domain), project-exported",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/model/button.glb",
+   "origin": "author",
+   "license": "project (GPLv3)",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/model/props/tubetech_vt.glb",
+   "origin": "ai-generated",
+   "license": "author-prompted generation",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/model/primitive/lightmap_fixture.glb",
+   "origin": "ai-generated",
+   "license": "author-prompted generation",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/model/primitive/**",
+   "origin": "author",
+   "license": "project (GPLv3), procedural primitives",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/model/probe/**",
+   "origin": "author",
+   "license": "project (GPLv3), generated fixtures",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/model/**",
+   "origin": "author",
+   "license": "project (GPLv3), author-owned model data (material sidecars)",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/texture/skybox/skybox1.png",
+   "origin": "third-party",
+   "license": "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)",
+   "attribution": "Skybox texture from learnopengl.com (Joey de Vries), https://learnopengl.com/Advanced-OpenGL/Cubemaps; exported/resized for gX.",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/texture/cookie_window.png",
+   "origin": "ai-generated",
+   "license": "author-prompted generation",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/texture/lightmap_fixture.png",
+   "origin": "ai-generated",
+   "license": "author-prompted generation",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/texture/misc/scorch.png",
+   "origin": "ai-generated",
+   "license": "author-prompted generation (procedural script, no third-party assets)",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/texture/**",
+   "origin": "author",
+   "license": "project (GPLv3)",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/font/**",
+   "origin": "third-party",
+   "license": "CC0 (license files shipped alongside)",
+   "attribution": null,
+   "publish": "keep"
+  },
+  {
+   "match": "resources/shader/**",
+   "origin": "author",
+   "license": "project (GPLv3)",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/script/**",
+   "origin": "author",
+   "license": "project (GPLv3), scripting shell examples",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/style/**",
+   "origin": "author",
+   "license": "project (GPLv3)",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/text/**",
+   "origin": "author",
+   "license": "project (GPLv3)",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/tools/**",
+   "origin": "author",
+   "license": "project (GPLv3), authored presets",
+   "publish": "keep"
+  }
+ ]
+}

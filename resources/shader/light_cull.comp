@@ -1,0 +1,56 @@
+//opencode: v0.5.0 — Forward+ tile light culling (compute, GL 4.3).
+//   The CPU projects each light once per frame (same math as clusters.c:
+//   world->view->clip, screen disc radius from the attenuation quadratic
+//   root) into heap-slot-indexed projLights[]; this kernel assembles the
+//   per-tile bitmask grid in parallel (one thread per tile). The light DATA
+//   SSBO (binding 0, std430, 7 vec4s per light) stays for the fragment shader;
+//   this projected buffer (binding 1) is the compute input. The RG32UI grid is written via
+//   image unit 1 (rlBindImageTexture) and read by standard.frag texelFetch.
+//   NOTE: matrices are NOT passed to the kernel — the Cg-based GLSL
+//   translator on the test driver silently drops compute dispatches that
+//   multiply a mat4 uniform by an SSBO-derived vector (kernel never reached
+//   its imageStore; verified by grid readback). Projection stays CPU-side.
+#version 430
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 1) buffer ProjectedLights {
+    vec4 projLights[]; // x = screen cx, y = screen cy, z = radius; z <= 0 = hole
+} pl;
+
+layout(rg32ui, binding = 1) uniform uimage2D gridImage;
+
+uniform vec2  tiles;        // tilesX, tilesY
+uniform int   lightCount;
+uniform float tileSize = 16.0;
+
+void main() {
+    ivec2 tileIdx = ivec2(gl_GlobalInvocationID.xy);
+    if (tileIdx.x >= int(tiles.x) || tileIdx.y >= int(tiles.y)) return;
+
+    uint mask = 0u;
+    uint maskHi = 0u;
+    for (int li = 0; li < lightCount; li++) {
+        vec4 pli = pl.projLights[li];
+        if (pli.z <= 0.0) continue;
+        float cx = pli.x;
+        float cy = pli.y;
+        float sr = pli.z;
+        int x0 = int(floor((cx - sr) / tileSize));
+        int x1 = int(floor((cx + sr) / tileSize));
+        int y0 = int(floor((cy - sr) / tileSize));
+        int y1 = int(floor((cy + sr) / tileSize));
+        x0 = max(x0, 0); y0 = max(y0, 0);
+        x1 = min(x1, int(tiles.x) - 1);
+        y1 = min(y1, int(tiles.y) - 1);
+        if (tileIdx.x >= x0 && tileIdx.x <= x1 &&
+            tileIdx.y >= y0 && tileIdx.y <= y1) {
+            if (li < 32)
+                mask |= (1u << li);
+            else
+                maskHi |= (1u << (li - 32));
+        }
+    }
+
+    imageStore(gridImage, tileIdx, uvec4(mask, maskHi, 0u, 0u));
+}

@@ -1,0 +1,605 @@
+{
+  "core": {
+    "panelBg": [
+      63,
+      63,
+      127,
+      255
+    ],
+    "textColor": [
+      255,
+      255,
+      255,
+      255
+    ],
+    "focusRing": [
+      255,
+      224,
+      96,
+      255
+    ],
+    "focusRingOffset": 4.0,
+    "fontSize": 32.0,
+    "fontSpacing": 3,
+    "buttonBase": [
+      115,
+      115,
+      57,
+      255
+    ],
+    "buttonHover": [
+      0,
+      115,
+      0,
+      255
+    ],
+    "buttonText": [
+      255,
+      255,
+      255,
+      255
+    ],
+    "buttonW": 2.0,
+    "buttonH": 0.5,
+    "backBase": [
+      128,
+      64,
+      32,
+      255
+    ],
+    "backHover": [
+      200,
+      54,
+      54,
+      255
+    ],
+    "backText": [
+      255,
+      255,
+      255,
+      255
+    ],
+    "backW": 1.0,
+    "backH": 0.5,
+    "playBase": [
+      200,
+      255,
+      200,
+      255
+    ],
+    "playHover": [
+      0,
+      255,
+      0,
+      255
+    ],
+    "extraBase": [
+      255,
+      255,
+      200,
+      255
+    ],
+    "extraHover": [
+      255,
+      255,
+      0,
+      255
+    ],
+    "quitBase": [
+      255,
+      200,
+      200,
+      255
+    ],
+    "quitHover": [
+      220,
+      50,
+      50,
+      255
+    ],
+    "sectionHeader": [
+      195,
+      185,
+      240,
+      255
+    ],
+    "sectionDividerH": 0.04,
+    "panelOverlay": [
+      127,
+      127,
+      127,
+      127
+    ],
+    "titleSize": 48.0,
+    "bodySize": 18.0,
+    "smallSize": 14.0,
+    "creditsSize": 28.0,
+    "creditsSpacing": -3,
+    "hoverSeconds": 0.1,
+    "hoverMultiplier": 2.0,
+    "hoverScale": 1.1,
+    "scrollbarW": 0.5,
+    "scrolllistItemH": 0.6,
+    "stepperBtnW": 0.6,
+    "tabBarH": 0.6,
+    "tabGutter": 0.1,
+    "sliderH": 0.05,
+    "knobRadius": 24.0,
+    "scrollbarTrack": [
+      31,
+      31,
+      31,
+      255
+    ],
+    "scrollbarThumb": [
+      130,
+      130,
+      160,
+      255
+    ],
+    "scrollbarArrow": [
+      150,
+      150,
+      150,
+      255
+    ],
+    "selectedBg": [
+      50,
+      102,
+      204,
+      255
+    ],
+    "unselectedBg": [
+      47,
+      47,
+      63,
+      255
+    ],
+    "selectedText": [
+      255,
+      255,
+      255,
+      255
+    ],
+    "unselectedText": [
+      191,
+      191,
+      191,
+      255
+    ],
+    "widgetSDF": true,
+    "cornerRadius": 4.0,
+    "shadowOpacity": 0.35,
+    "gradientStrength": 1.0,
+    "borderWidth": 1.5
+  },
+  "shared": {
+    "accentGold": [
+      255,
+      220,
+      100,
+      255
+    ],
+    "accentCyan": [
+      100,
+      200,
+      255,
+      255
+    ],
+    "panelDark": [
+      20,
+      20,
+      40,
+      200
+    ],
+    "textDim": [
+      180,
+      180,
+      185,
+      230
+    ],
+    "textLightBlue": [
+      200,
+      200,
+      255,
+      255
+    ],
+    "translucentWhite": [
+      255,
+      255,
+      255,
+      127
+    ],
+    "hpGreen": [
+      100,
+      255,
+      100,
+      200
+    ],
+    "alertRed": [
+      255,
+      100,
+      100,
+      200
+    ],
+    "goldDim": [
+      200,
+      200,
+      100,
+      200
+    ],
+    "borderLight": [
+      200,
+      200,
+      200,
+      200
+    ],
+    "textOnCard": [
+      255,
+      255,
+      255,
+      255
+    ]
+  },
+  "escape": {
+    "dimOverlay": [
+      40,
+      30,
+      60,
+      80
+    ],
+    "panelBg": [
+      20,
+      15,
+      35,
+      200
+    ],
+    "titleBarBg": [
+      40,
+      30,
+      60,
+      220
+    ],
+    "buttonBg": [
+      40,
+      35,
+      60,
+      200
+    ],
+    "closeBg": [
+      60,
+      50,
+      80,
+      200
+    ],
+    "titleText": [
+      200,
+      200,
+      255,
+      255
+    ],
+    "hintText": [
+      255,
+      255,
+      255,
+      255
+    ],
+    "savedText": [
+      190,
+      185,
+      215,
+      230
+    ]
+  },
+  "battle": {
+    "panelBg": [
+      8,
+      18,
+      42,
+      224
+    ],
+    "nameBg": [
+      30,
+      58,
+      104,
+      255
+    ],
+    "hpBg": [
+      46,
+      8,
+      20,
+      255
+    ],
+    "mpBg": [
+      8,
+      20,
+      58,
+      255
+    ],
+    "enBg": [
+      54,
+      42,
+      8,
+      255
+    ],
+    "enemyPanelBg": [
+      42,
+      10,
+      18,
+      224
+    ],
+    "enemyNameBg": [
+      92,
+      24,
+      30,
+      255
+    ],
+    "enemyHpBg": [
+      62,
+      8,
+      12,
+      255
+    ],
+    "menuBg": [
+      8,
+      12,
+      32,
+      242
+    ],
+    "menuItemBg": [
+      18,
+      30,
+      64,
+      255
+    ],
+    "magicBg": [
+      26,
+      12,
+      58,
+      242
+    ],
+    "magicItemBg": [
+      48,
+      24,
+      92,
+      255
+    ],
+    "skillsBg": [
+      8,
+      42,
+      34,
+      242
+    ],
+    "skillsItemBg": [
+      12,
+      70,
+      52,
+      255
+    ],
+    "itemsBg": [
+      54,
+      38,
+      8,
+      242
+    ],
+    "itemsItemBg": [
+      88,
+      60,
+      12,
+      255
+    ],
+    "targetBg": [
+      64,
+      18,
+      24,
+      242
+    ],
+    "overlayBg": [
+      4,
+      8,
+      20,
+      228
+    ]
+  },
+  "title2": {
+    "bgGradientTop": [
+      40,
+      0,
+      60,
+      255
+    ],
+    "bgGradientBottom": [
+      100,
+      20,
+      120,
+      255
+    ],
+    "titleCardBg": [
+      255,
+      255,
+      255,
+      255
+    ],
+    "moduleAvailable": [
+      63,
+      127,
+      63,
+      255
+    ],
+    "moduleUnavailable": [
+      63,
+      63,
+      63,
+      255
+    ],
+    "moduleHover": [
+      0,
+      255,
+      0,
+      255
+    ],
+    "subButtonBg": [
+      127,
+      127,
+      63,
+      255
+    ],
+    "actionBg": [
+      63,
+      63,
+      127,
+      255
+    ],
+    "actionHover": [
+      0,
+      0,
+      255,
+      255
+    ],
+    "modelBg": [
+      30,
+      30,
+      60,
+      255
+    ]
+  },
+  "a11y": {
+    "surfaceCanvas": [
+      48,
+      44,
+      78,
+      255
+    ],
+    "surfaceRaised": [
+      63,
+      63,
+      100,
+      255
+    ],
+    "surfaceOverlay": [
+      35,
+      32,
+      60,
+      255
+    ],
+    "surfaceSunken": [
+      28,
+      26,
+      48,
+      255
+    ],
+    "surfaceInverse": [
+      240,
+      235,
+      255,
+      255
+    ],
+    "textOnCanvas": [
+      235,
+      232,
+      255,
+      255
+    ],
+    "textOnRaised": [
+      240,
+      237,
+      255,
+      255
+    ],
+    "textOnOverlay": [
+      235,
+      232,
+      255,
+      255
+    ],
+    "textOnSunken": [
+      200,
+      197,
+      230,
+      255
+    ],
+    "textOnInverse": [
+      40,
+      36,
+      70,
+      255
+    ],
+    "motionShort": 150.0,
+    "motionBase": 250.0,
+    "motionLong": 400.0,
+    "motionReduced": false,
+    "typeLineHeight": 1.5
+  },
+  "textShadow": {
+    "offsetX": 3.0,
+    "offsetY": 3.0,
+    "color": [
+      0,
+      0,
+      0,
+      200
+    ],
+    "offsetXSmall": 3.0,
+    "offsetYSmall": 3.0,
+    "softness": 0.0
+  },
+  "surfaceDepth": {
+    "mode": 0,
+    "horizonPos": 0.45,
+    "horizonSoft": 0.16,
+    "horizonGlow": 0.28,
+    "metalBand": 0.38,
+    "metalWidth": 0.1,
+    "metalStrength": 0.35,
+    "metalRim": 0.22
+  },
+  "glass": {
+    "blur": 0.0,
+    "tint": 0.0,
+    "rim": 0.0,
+    "refraction": 0.0,
+    "gloss": 0.0
+  },
+  "cursorLight": {
+    "strength": 0.0,
+    "radius": 160.0,
+    "color": [
+      255,
+      235,
+      205,
+      255
+    ],
+    "glint": 0.35
+  },
+  "blueprint": {
+    "inkColor": [
+      40,
+      45,
+      60,
+      255
+    ],
+    "accentColor": [
+      120,
+      180,
+      240,
+      255
+    ],
+    "latticeColor": [
+      90,
+      120,
+      180,
+      255
+    ],
+    "latticeAlpha": 0.22,
+    "latticeCell": 48.0
+  },
+  "textOutline": {
+    "width": 0.0,
+    "color": [
+      0,
+      0,
+      0,
+      255
+    ]
+  }
+}

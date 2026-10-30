@@ -1,0 +1,14 @@
+{
+	"format": "gx-material-v1",
+	"name": "Neutral",
+	"description": "Identity tint with emissive, roughness, metalness, and map overrides unset.",
+	"surface": {
+		"emissiveColor": [255, 255, 255, 255],
+		"emissive": 0.0,
+		"albedo": [255, 255, 255, 255],
+		"roughness": -1.0,
+		"metalness": -1.0,
+		"albedoMap": "",
+		"emissiveMap": ""
+	}
+}

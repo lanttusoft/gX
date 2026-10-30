@@ -1,0 +1,76 @@
+{
+  "name": "gX Static Lightmap Fixture",
+  "description": "Opt-in end-to-end secondary-UV lightmap fixture; production presets do not load it.",
+  "state": {
+    "qualityPreset": 0,
+    "ENABLE_LIGHTING_AMBIENT": true,
+    "ENABLE_LIGHTING_DIFFUSE": true,
+    "ENABLE_LIGHTING_SPECULAR": false,
+    "ENABLE_PHONG": true,
+    "ENABLE_GOURAUD": false,
+    "ENABLE_ENV_AMBIENT": false,
+    "ENABLE_SKYBOX": false,
+    "ENABLE_PROCEDURAL_SKY": true,
+    "ENABLE_SHADOWS": false,
+    "ENABLE_REFLECTIONS": false,
+    "ENABLE_SSR": false,
+    "ENABLE_SSAO": false,
+    "ENABLE_BLOOM": false,
+    "ENABLE_FOG": false,
+    "ENABLE_VOLUME_FOG": false,
+    "ENABLE_PARTICLES": false,
+    "ENABLE_FXAA": false,
+    "exposure": 1.0
+  },
+  "models": [
+    {
+      "path": "resources/model/primitive/lightmap_fixture.glb",
+      "params": {
+        "usePBR": false,
+        "albedo": 1.0,
+        "albedoTint": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "hasLightmap": true,
+        "lightmapID": 0,
+        "lightmapStrength": 1.0,
+        "lightmapScale": [
+          1.0,
+          1.0
+        ],
+        "lightmapOffset": [
+          0.0,
+          0.0
+        ]
+      },
+      "textureID": [
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "texturePurpose": [
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "path": "resources/texture/lightmap_fixture.png"
+    }
+  ]
+}

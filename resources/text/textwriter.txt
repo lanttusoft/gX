@@ -1,0 +1,25 @@
+Hello world!
+This is <red>red text</> with a <green>green word</> in it.
+<color r='255' g='0' b='0' />This line starts red.
+<offset x='0' y='20' />Indented line via offset.
+<offset x='0' y='20' />Another indented line.
+</>Back to normal after reset.
+Final line - <blue>blue</> and <yellow>yellow</> mixed.
+<matrix a='1' c='-0.3' />Italic via matrix (c=-0.3)</>
+<i />Italic shorthand (i tag).</>
+<italic />Italic via italic tag.</>
+<b />Bold text (b tag).</>
+<u />Underlined text (u tag).</>
+<i><u />Italic + underlined combo.</>
+<spacing v='8' />Wide spacing (8px extra).</>
+<ruby rt='furigana' />Ruby annotation demo.</>
+<red><ruby rt='aka' />Red ruby</> text.</>
+<rainbow />Rainbow effect text.</>
+<shake />Shaking text effect.</>
+<disintegrate />Disintegrating text.</>
+<wave amp='6' freq='0.15' />Waving text effect.</>
+<gradient r='255' g='0' b='0' />Gradient to red.</>
+<rainbow><i />Rainbow italic combo.</>
+<font path='resources/font/KenneyMiniSquareMono.ttf' />Custom font via font tag.</>
+<jump line='0' />
+This is <matrix a='1' c='-0.2' />italic text</>inlined in normal text.</>

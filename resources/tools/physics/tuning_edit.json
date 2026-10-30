@@ -1,0 +1,36 @@
+{
+ "version": 1,
+ "gravity": 9.81,
+ "tuneLevel": -1,
+ "props": 16,
+ "ragdolls": 0,
+ "materials": true,
+ "joints": true,
+ "water": true,
+ "magnetsOn": false,
+ "sparks": true,
+ "decals": true,
+ "em": {
+  "coulombScale": 60.0,
+  "softening": 0.6,
+  "maxForce": 500.0,
+  "bX": 0.0,
+  "bY": 0.0,
+  "bZ": 0.0,
+  "dipoleScale": 0.03,
+  "susceptibilityScale": 1.0
+ },
+ "thermal": {
+  "ambientTemperature": 288.0,
+  "heatingScale": 2000.0,
+  "coolingScale": 1e-07,
+  "contactConductance": 300.0,
+  "maxTemperature": 4000.0,
+  "minImpactSpeed": 2.0,
+  "enabled": true
+ },
+ "fluidDensity": 1.0,
+ "fluidDrag": 1.1,
+ "fluidLinearDrag": 1.5,
+ "fluidAngularDrag": 0.8
+}

@@ -1,0 +1,12 @@
+{
+ "name": "palette_showcase",
+ "description": "sample background preset — hue-cycle palette (partial; missing sections keep defaults)",
+ "created_date": "2026-10-14",
+ "created_time": "12:00:00",
+ "palette": {
+  "mode": 3,
+  "rowCount": 64,
+  "blendMode": 0,
+  "colorMathMode": 0
+ }
+}

@@ -1,0 +1,39 @@
+diff --git a/src/rlgl.h b/src/rlgl.h
+index 76b765e2..982f6b12 100644
+--- a/src/rlgl.h
++++ b/src/rlgl.h
+@@ -5109,3 +5109,34 @@ static void rlLoadShaderDefault(void)
+     // NOTE: Compiled vertex/fragment shaders are not deleted,
+     // they are kept for re-use as default shaders in case some shader loading fails
++#if defined(GRAPHICS_API_OPENGL_33)
++    //opencode: gX experiment (opt-in): the raylib default shader is authored for GLSL
++    // 330, but the native GL3.x ladder deliberately requests GLSL 130/140/150.
++    // Replace only the version line so raylib's own batch remains usable on
++    // those contexts; the production GL33 path keeps the original source.
++    {
++        const char *gxVersion = NULL;
++        const char *gx30 = getenv("GX_GL30_CONTEXT");
++        const char *gx31 = getenv("GX_GL31_CONTEXT");
++        const char *gx32 = getenv("GX_GL32_CONTEXT");
++        if (gx30 && gx30[0] && gx30[0] != '0') gxVersion = "#version 130\n";
++        else if (gx31 && gx31[0] && gx31[0] != '0') gxVersion = "#version 140\n";
++        else if (gx32 && gx32[0] && gx32[0] != '0') gxVersion = "#version 150\n";
++        if (gxVersion)
++        {
++            static char gxVShaderCode[1024];
++            static char gxFShaderCode[1024];
++            const char *vBody = strchr(defaultVShaderCode, '\n');
++            const char *fBody = strchr(defaultFShaderCode, '\n');
++            if (vBody && fBody)
++            {
++                strcpy(gxVShaderCode, gxVersion);
++                strcat(gxVShaderCode, vBody + 1);
++                strcpy(gxFShaderCode, gxVersion);
++                strcat(gxFShaderCode, fBody + 1);
++                defaultVShaderCode = gxVShaderCode;
++                defaultFShaderCode = gxFShaderCode;
++            }
++        }
++    }
++#endif
+     RLGL.State.defaultVShaderId = rlLoadShader(defaultVShaderCode, GL_VERTEX_SHADER);     // Compile default vertex shader

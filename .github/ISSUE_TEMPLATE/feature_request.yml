@@ -1,0 +1,43 @@
+name: Feature request
+description: Propose a focused engine, renderer, or tooling improvement.
+title: "[feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        gX is a beta. Describe the engine problem first, then the smallest
+        change that solves it. Large features should be discussed before a PR.
+        Do not include story content, gameX assets, or private material.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is missing or painful today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the behavior and public surface, not just the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives / scope
+      description: Existing workarounds, affected subsystems, and what is explicitly out of scope.
+  - type: input
+    id: version
+    attributes:
+      label: gX version / commit
+      placeholder: v0.18.0
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and documentation for this proposal.
+          required: true
+        - label: This is engine-scoped and does not require private game content.
+          required: true

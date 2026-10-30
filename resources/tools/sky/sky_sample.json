@@ -1,0 +1,19 @@
+{
+ "type": "sky_preset",
+ "version": 1,
+ "timeSec": 9000.0,
+ "skyDensity": 1.2,
+ "skyHue": 0.35,
+ "horizonGlow": 1.4,
+ "skyContrast": 1.8,
+ "altitude": 0.0,
+ "turbidity": 5.0,
+ "sunDiskSize": 800.0,
+ "sunDiskIntensity": 3.0,
+ "starDensity": 1.0,
+ "starBrightness": 1.0,
+ "starTwinkleSpeed": 1.0,
+ "moonSize": 700.0,
+ "moonBrightness": 0.5,
+ "showHelpers": 0
+}

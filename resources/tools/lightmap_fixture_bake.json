@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "size": 128,
+  "ambient": 0.08,
+  "bias": 0.001,
+  "dilate": 3,
+  "strict_uv": true,
+  "lights": [
+    {
+      "type": "directional",
+      "direction": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "intensity": 0.9
+    },
+    {
+      "type": "point",
+      "position": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "color": [
+        1.0,
+        0.6,
+        0.35
+      ],
+      "intensity": 0.45,
+      "range": 6.0
+    }
+  ]
+}

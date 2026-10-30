@@ -1,0 +1,10 @@
+{
+  "materials": [
+    {
+      "material": "Material",
+      "albedo": [70, 210, 90, 255],
+      "roughness": 0.9,
+      "metalness": 0.0
+    }
+  ]
+}
