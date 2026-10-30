@@ -721,16 +721,28 @@ gX_I32 gX_ColorCode_EncodeChunk(const gX_U8 *chunk, gX_U32 chunkLength,
     gX_U32 compressedLength = color_code_compress(chunk, chunkLength,
         compressed, sizeof(compressed));
     if (compressedLength == 0) return GX_COLOR_CODE_ERR_CAPACITY;
-    if (compressedLength * GX_COLOR_CODE_ECC_BITS > GX_COLOR_CODE_DATA_BITS)
+    gX_U32 blockCount = (compressedLength + 7) / 8;
+    gX_U32 encodedBytes = compressedLength + blockCount;
+    if (encodedBytes * GX_COLOR_CODE_ECC_BITS > GX_COLOR_CODE_DATA_BITS)
         return GX_COLOR_CODE_ERR_CAPACITY;
+    gX_U8 encoded[GX_COLOR_CODE_MAX_ENCODED];
+    memset(encoded, 0, sizeof(encoded));
+    memcpy(encoded, compressed, compressedLength);
+    for (gX_U32 block = 0; block < blockCount; block++)
+    {
+        gX_U8 parity = 0;
+        for (gX_U32 index = block; index < compressedLength; index += blockCount)
+            parity ^= compressed[index];
+        encoded[compressedLength + block] = parity;
+    }
     gX_U8 meta[GX_COLOR_CODE_META_BYTES];
     memset(meta, 0, sizeof(meta));
     meta[0] = 0x43;
-    meta[1] = 4;
+    meta[1] = 5;
     meta[2] = frameTotal > 1 ? 1 : 0;
     meta[3] = 2;
     meta[4] = compressed[0];
-    meta[5] = 1;
+    meta[5] = 2;
     color_code_put_u16(meta + 6, (gX_U16)chunkLength);
     color_code_put_u16(meta + 8, (gX_U16)compressedLength);
     meta[10] = (gX_U8)frameIndex;
@@ -749,15 +761,15 @@ gX_I32 gX_ColorCode_EncodeChunk(const gX_U8 *chunk, gX_U32 chunkLength,
         GX_COLOR_CODE_META_ROWS, metaCells);
     gX_U8 dataBits[GX_COLOR_CODE_DATA_BITS];
     memset(dataBits, 0, sizeof(dataBits));
-    for (gX_U32 index = 0; index < compressedLength; index++)
+    for (gX_U32 index = 0; index < encodedBytes; index++)
     {
-        gX_U16 codeword = color_code_hamming_encode(compressed[index]);
+        gX_U16 codeword = color_code_hamming_encode(encoded[index]);
         for (gX_U32 bit = 0; bit < GX_COLOR_CODE_ECC_BITS; bit++)
             dataBits[index * GX_COLOR_CODE_ECC_BITS + bit] =
                 (gX_U8)((codeword >> bit) & 1);
     }
     gX_U8 dataCells[GX_COLOR_CODE_DATA_CELLS];
-    color_code_pack_bits(dataBits, compressedLength * GX_COLOR_CODE_ECC_BITS,
+    color_code_pack_bits(dataBits, encodedBytes * GX_COLOR_CODE_ECC_BITS,
         dataCells, GX_COLOR_CODE_DATA_CELLS);
     color_code_grid_from_flat(frame->cells, GX_COLOR_CODE_DATA_ACTIVE_ROW,
         GX_COLOR_CODE_DATA_ROWS, dataCells);
@@ -954,12 +966,12 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
         metaBits, GX_COLOR_CODE_META_BITS);
     gX_U8 meta[GX_COLOR_CODE_META_BYTES];
     color_code_bits_to_bytes(metaBits, GX_COLOR_CODE_META_BYTES, meta);
-    if (meta[0] != 0x43 || meta[1] != 4)
+    if (meta[0] != 0x43 || meta[1] != 5)
     {
         result->status = GX_COLOR_CODE_ERR_VERSION;
         return result->status;
     }
-    if (meta[3] != 2 || meta[5] != 1 || meta[2] > 1)
+    if (meta[3] != 2 || meta[5] != 2 || meta[2] > 1)
     {
         result->status = GX_COLOR_CODE_ERR_PALETTE;
         return result->status;
@@ -979,28 +991,42 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
         result->status = GX_COLOR_CODE_ERR_METADATA;
         return result->status;
     }
+    gX_U32 blockCount = (compressedLength + 7) / 8;
+    gX_U32 encodedBytes = compressedLength + blockCount;
+    if (encodedBytes * GX_COLOR_CODE_ECC_BITS > GX_COLOR_CODE_DATA_BITS)
+    {
+        result->status = GX_COLOR_CODE_ERR_METADATA;
+        return result->status;
+    }
     gX_U8 dataCells[GX_COLOR_CODE_DATA_CELLS];
     color_code_grid_to_flat(cells, GX_COLOR_CODE_DATA_ACTIVE_ROW,
         GX_COLOR_CODE_DATA_ROWS, dataCells);
-    for (gX_U32 index = 0; index < compressedLength * GX_COLOR_CODE_ECC_BITS;
-        index++)
-        if (dataCells[index / 2] == 0xFF)
-        {
-            result->status = GX_COLOR_CODE_ERR_ERASURE;
-            return result->status;
-        }
     gX_U8 dataBits[GX_COLOR_CODE_DATA_BITS];
     color_code_unpack_bits(dataCells, GX_COLOR_CODE_DATA_CELLS, dataBits,
         GX_COLOR_CODE_DATA_BITS);
-    gX_U8 compressed[GX_COLOR_CODE_MAX_COMPRESSED];
-    gX_U16 corrected = 0;
-    for (gX_U32 index = 0; index < compressedLength; index++)
+    gX_U8 erasedEncoded[GX_COLOR_CODE_MAX_ENCODED];
+    memset(erasedEncoded, 0, sizeof(erasedEncoded));
+    for (gX_U32 cell = 0; cell < GX_COLOR_CODE_DATA_CELLS; cell++)
     {
+        if (dataCells[cell] != 0xFF) continue;
+        for (gX_U32 bit = 0; bit < GX_COLOR_CODE_BITS_PER_CELL; bit++)
+        {
+            gX_U32 bitIndex = cell * GX_COLOR_CODE_BITS_PER_CELL + bit;
+            if (bitIndex >= encodedBytes * GX_COLOR_CODE_ECC_BITS) continue;
+            erasedEncoded[bitIndex / GX_COLOR_CODE_ECC_BITS] = 1;
+        }
+    }
+    gX_U8 encoded[GX_COLOR_CODE_MAX_ENCODED];
+    memset(encoded, 0, sizeof(encoded));
+    gX_U16 corrected = 0;
+    for (gX_U32 index = 0; index < encodedBytes; index++)
+    {
+        if (erasedEncoded[index]) continue;
         gX_U16 codeword = 0;
         for (gX_U32 bit = 0; bit < GX_COLOR_CODE_ECC_BITS; bit++)
             codeword |= (gX_U16)(dataBits[index * GX_COLOR_CODE_ECC_BITS + bit] << bit);
         gX_I1 fixed = 0;
-        status = color_code_hamming_decode(codeword, &compressed[index], &fixed);
+        status = color_code_hamming_decode(codeword, &encoded[index], &fixed);
         if (status != GX_COLOR_CODE_OK)
         {
             result->status = status;
@@ -1009,6 +1035,40 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
         if (fixed) corrected++;
     }
     result->correctedBits = corrected;
+    gX_U16 recovered = 0;
+    for (gX_U32 block = 0; block < blockCount; block++)
+    {
+        gX_U32 parityIndex = compressedLength + block;
+        if (erasedEncoded[parityIndex])
+        {
+            result->status = GX_COLOR_CODE_ERR_ERASURE;
+            return result->status;
+        }
+        gX_U32 erasedCount = 0;
+        gX_U32 erasedIndex = 0;
+        for (gX_U32 index = block; index < compressedLength; index += blockCount)
+            if (erasedEncoded[index])
+            {
+                erasedCount++;
+                erasedIndex = index;
+            }
+        if (erasedCount > 1)
+        {
+            result->status = GX_COLOR_CODE_ERR_ERASURE;
+            return result->status;
+        }
+        if (erasedCount == 1)
+        {
+            gX_U8 value = encoded[parityIndex];
+            for (gX_U32 index = block; index < compressedLength; index += blockCount)
+                if (index != erasedIndex) value ^= encoded[index];
+            encoded[erasedIndex] = value;
+            recovered++;
+        }
+    }
+    result->correctedErasures = recovered;
+    gX_U8 compressed[GX_COLOR_CODE_MAX_COMPRESSED];
+    memcpy(compressed, encoded, compressedLength);
     if (compressed[0] != meta[4])
     {
         result->status = GX_COLOR_CODE_ERR_COMPRESSION;

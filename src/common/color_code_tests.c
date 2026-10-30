@@ -476,7 +476,8 @@ static gX_I32 test_metadata_corruption(const gX_U8 *payload, gX_U32 length)
     return errors;
 }
 
-static gX_I32 test_erasure(const gX_U8 *payload, gX_U32 length)
+static gX_I32 test_erased_cells(const gX_U8 *payload, gX_U32 length,
+    const gX_U32 *flatCells, gX_U32 cellCount, gX_I32 expectedStatus)
 {
     gX_I32 errors = 0;
     gX_ColorCodeFrame frame;
@@ -484,30 +485,53 @@ static gX_I32 test_erasure(const gX_U8 *payload, gX_U32 length)
     if (status != GX_COLOR_CODE_OK) return 1;
     gX_U8 *pixels = test_image(&frame, 0.90f, 8.0f);
     if (!pixels) return 1;
-    gX_U32 flatCell = 50;
-    gX_U32 row = GX_COLOR_CODE_DATA_START_ROW + flatCell / GX_COLOR_CODE_INNER;
-    gX_U32 col = GX_COLOR_CODE_QUIET + GX_COLOR_CODE_BORDER
-        + flatCell % GX_COLOR_CODE_INNER;
-    for (gX_U32 y = 0; y < TEST_CELL; y++)
-        for (gX_U32 x = 0; x < TEST_CELL; x++)
-        {
-            gX_U32 px = TEST_ORIGIN + col * TEST_CELL + x;
-            gX_U32 py = TEST_ORIGIN + row * TEST_CELL + y;
-            gX_U32 offset = (py * TEST_WIDTH + px) * 4;
-            pixels[offset + 0] = 128;
-            pixels[offset + 1] = 128;
-            pixels[offset + 2] = 128;
-        }
+    for (gX_U32 cellIndex = 0; cellIndex < cellCount; cellIndex++)
+    {
+        gX_U32 flatCell = flatCells[cellIndex];
+        gX_U32 row = GX_COLOR_CODE_DATA_START_ROW
+            + flatCell / GX_COLOR_CODE_INNER;
+        gX_U32 col = GX_COLOR_CODE_QUIET + GX_COLOR_CODE_BORDER
+            + flatCell % GX_COLOR_CODE_INNER;
+        for (gX_U32 y = 0; y < TEST_CELL; y++)
+            for (gX_U32 x = 0; x < TEST_CELL; x++)
+            {
+                gX_U32 px = TEST_ORIGIN + col * TEST_CELL + x;
+                gX_U32 py = TEST_ORIGIN + row * TEST_CELL + y;
+                gX_U32 offset = (py * TEST_WIDTH + px) * 4;
+                pixels[offset + 0] = 128;
+                pixels[offset + 1] = 128;
+                pixels[offset + 2] = 128;
+            }
+    }
     gX_ColorCodeResult result;
     status = test_decode(pixels, &result);
     gX_Free(pixels);
-    if (status != GX_COLOR_CODE_ERR_ERASURE)
+    if (status != expectedStatus)
     {
         gX_TraceLog(gX_LOG_ERROR,
             "COLOR CODE 8 FAIL: erasure status=%d expected=%d",
-            status, GX_COLOR_CODE_ERR_ERASURE);
+            status, expectedStatus);
         errors++;
     }
+    if (expectedStatus == GX_COLOR_CODE_OK
+        && (result.payloadLength != length
+            || memcmp(result.payload, payload, length) != 0
+            || result.correctedErasures == 0))
+        errors++;
+    return errors;
+}
+
+static gX_I32 test_erasure(const gX_U8 *payload, gX_U32 length)
+{
+    gX_I32 errors = 0;
+    gX_U32 single[1] = {50};
+    errors += test_erased_cells(payload, length, single, 1, GX_COLOR_CODE_OK);
+    gX_U32 differentBlocks[2] = {0, 52};
+    errors += test_erased_cells(payload, length, differentBlocks, 2,
+        GX_COLOR_CODE_OK);
+    gX_U32 sameBlock[2] = {0, 39};
+    errors += test_erased_cells(payload, length, sameBlock, 2,
+        GX_COLOR_CODE_ERR_ERASURE);
     return errors;
 }
 

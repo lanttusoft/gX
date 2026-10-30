@@ -48,7 +48,8 @@ extern "C" {
 #define GX_COLOR_CODE_DATA_BITS         (GX_COLOR_CODE_DATA_CELLS * GX_COLOR_CODE_BITS_PER_CELL)
 #define GX_COLOR_CODE_ECC_BITS          13
 #define GX_COLOR_CODE_MAX_COMPRESSED    (GX_COLOR_CODE_DATA_BITS / GX_COLOR_CODE_ECC_BITS)
-#define GX_COLOR_CODE_MAX_PAYLOAD       320
+#define GX_COLOR_CODE_MAX_ENCODED       (GX_COLOR_CODE_MAX_COMPRESSED + (GX_COLOR_CODE_MAX_COMPRESSED + 7) / 8)
+#define GX_COLOR_CODE_MAX_PAYLOAD       304
 #define GX_COLOR_CODE_MAX_MULTI_PAYLOAD 4096
 #define GX_COLOR_CODE_MAX_MULTI_FRAMES  ((GX_COLOR_CODE_MAX_MULTI_PAYLOAD + GX_COLOR_CODE_MAX_PAYLOAD - 1) / GX_COLOR_CODE_MAX_PAYLOAD)
 #define GX_COLOR_CODE_MAX_IMAGE_BYTES   (64 * 1024 * 1024)
@@ -90,6 +91,7 @@ typedef struct gX_ColorCodeResult {
     gX_U16  payloadLength;
     gX_U16  compressedLength;
     gX_U16  correctedBits;
+    gX_U16  correctedErasures;
     gX_U16  erasedCells;
     gX_U8   frameIndex;
     gX_U8   frameTotal;

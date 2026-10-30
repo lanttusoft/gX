@@ -85,7 +85,8 @@ this source beta.
   Encode/Decode/Render/Palette. A 16-colour, 4-bit palette covers black/white,
   25/50/75/100% red, green and blue, plus dark/light gray; both horizontal
   borders calibrate every palette entry. Metadata-at-edges,
-  payload-in-middle, SECDED ECC, CRC32 and raw/RLE compression; the decoder
+  payload-in-middle, SECDED plus interleaved XOR-parity erasure recovery,
+  CRC32 and raw/RLE compression; the decoder
   auto-detects eight rotation/mirror orientations from corner controls and
   accepts caller-supplied affine/perspective corners for rectification.
   `EncodeMulti`/`Reassemble` add ordered 4096-byte payloads with payload IDs,

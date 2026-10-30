@@ -31,7 +31,9 @@ SemVer.
   horizontal control borders cycle every palette entry so the decoder
   calibrates each reference directly; per-channel tint/white-balance tests and
   a two-row calibration-strip coverage test run in `--test-only`. Format
-  metadata is now v4; a single frame carries up to 320 bytes.
+  metadata is now v5; a single frame carries up to 304 bytes and uses SECDED
+  plus interleaved XOR parity to recover one erased byte per block, with
+  same-block double erasures failing closed.
 
 ## [0.20.0] - 2026-10-30
 

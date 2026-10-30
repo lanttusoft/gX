@@ -34,11 +34,11 @@ The 26-byte header is written into the first 104 metadata cells:
 | Offset | Size | Field |
 | --- | --- | --- |
 | 0 | 1 | Magic `0x43` |
-| 1 | 1 | Format version (`4`) |
+| 1 | 1 | Format version (`5`) |
 | 2 | 1 | Flags (`bit0` = multi-frame) |
 | 3 | 1 | Palette ID (`2` = 16-colour, 4-bit) |
 | 4 | 1 | Compression ID (`0` raw, `1` RLE) |
-| 5 | 1 | ECC ID (`1` = SECDED) |
+| 5 | 1 | ECC ID (`2` = SECDED + interleaved XOR parity) |
 | 6 | 2 | Chunk length (LE) |
 | 8 | 2 | Compressed length including mode byte (LE) |
 | 10 | 1 | Frame index |
@@ -53,7 +53,7 @@ Unknown versions, palette IDs, ECC IDs and compression IDs fail closed.
 ## Multi-frame payloads
 
 `gX_ColorCode_EncodeMulti` splits a payload of up to **4096 bytes** into
-sequential 320-byte chunks and sets the same 16-bit payload ID and
+sequential 304-byte chunks and sets the same 16-bit payload ID and
 whole-payload CRC on every frame. `gX_ColorCode_Reassemble` accepts the decoded
 result set in any order, requires exactly `frameTotal` unique indices with one
 shared payload ID, concatenates in index order, enforces the output capacity
@@ -65,14 +65,16 @@ fails closed.
 
 ## Integrity and bounds
 
-- Each compressed byte becomes a 13-bit SECDED codeword. The decoder corrects
-  one bit per codeword and rejects a detected double-bit error.
-- Low-confidence cells are classified as erasures. Metadata/data erasures fail
-  closed with a distinct status; the first slice does not pretend to recover
-  arbitrary erasure patterns.
+- Each encoded byte becomes a 13-bit SECDED codeword. The decoder corrects one
+  bit per codeword and rejects a detected double-bit error.
+- Compressed bytes are grouped into interleaved 8-byte blocks with one XOR
+  parity byte per block. One erased data byte per block is recoverable; an
+  erased parity byte or two erased data bytes in the same block fail closed.
+- Low-confidence cells are classified as erasures; a cell marks every encoded
+  byte whose bits it covers.
 - CRC32 covers the header, each chunk and the completed multi-frame payload
   separately.
-- A single frame is capped at **320 payload bytes**; a multi-frame payload is
+- A single frame is capped at **304 payload bytes**; a multi-frame payload is
   capped at **4096 bytes**. Compressed length, reassembly and decompression
   outputs are bounded.
 - Compression is a PackBits-style RLE. If RLE is not smaller, the encoder uses
@@ -158,6 +160,8 @@ visual/robustness fixture, not a physical CRT or camera model.
 - affine and true keystone perspective warps via supplied corners;
 - per-channel tint/white-balance gains and biases;
 - 25/50/75/100% red, green and blue levels plus calibration-strip coverage;
+- one erased data byte per block, different-block recovery and same-block
+  erasure rejection;
 - simulated-CRT scanline/phosphor/noise/chroma/vignette decode across three seeds;
 - multi-frame complete/shuffled/incomplete/duplicate/mixed-ID/bad-CRC sets;
 - metadata CRC rejection;

@@ -5,10 +5,10 @@ bounded C module, format layout, synthetic camera round trip and eight-way
 rotation/mirror detection live in [color_code_format.md](color_code_format.md).
 The 16-colour / 4-bit palette (25/50/75/100% red, green and blue plus grays),
 two-row per-palette calibration strip, caller-supplied affine/perspective
-rectification, a deterministic simulated CRT/TV view and bounded multi-frame
-reassembly are implemented. Automatic corner detection, stronger erasure
-recovery, a camera-device walk and any further palette-density experiment
-remain backlog.
+rectification, a deterministic simulated CRT/TV view, bounded multi-frame
+reassembly and interleaved XOR-parity erasure recovery are implemented.
+Automatic corner detection, a fuller Reed–Solomon erasure code, a camera-device
+walk and any further palette-density experiment remain backlog.
 
 ## Goal
 
