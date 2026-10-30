@@ -14,8 +14,9 @@ SemVer.
 - **Screen color-code core**: reusable 45×45 encoder/decoder with calibration
   and control cells, metadata-at-edges, payload-in-middle, SECDED ECC, CRC32,
   bounded RLE/raw compression and a synthetic camera round trip in
-  `--test-only`. `--color-code <text>` presents the frozen code fullscreen or
-  1:1 (`SPACE`, `F`, `ESC`) with a deterministic screenshot hook. Camera
+  `--test-only`, plus eight-way rotation/mirror auto-detection from the corner
+  controls. `--color-code <text>` presents the frozen code fullscreen or 1:1
+  (`SPACE`, `F`, `ESC`) with a deterministic screenshot hook. Perspective
   rectification and multi-frame reassembly remain backlog; see
   `docs/color_code_format.md`.
 

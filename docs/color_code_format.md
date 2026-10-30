@@ -73,12 +73,17 @@ image.height = height;
 image.originX = originX;
 image.originY = originY;
 image.cellSize = cellSize;
+image.autoOrientation = 1;   // try all 8 rotations/mirrors
 gX_ColorCode_Decode(&image, &result);
 ```
 
 Cell centres are sampled with a small aperture and corrected against the
-calibration row. The caller must provide a frame that fills the declared
-45×45 grid; arbitrary cropping is rejected.
+calibration row. With `autoOrientation`, the decoder tries the eight
+dihedral orientations (identity, 90°/180°/270°, horizontal/vertical mirror,
+transpose and anti-transpose) and selects the one whose four corner control
+markers match. The result reports the chosen `orientation`. The caller must
+provide a frame that fills the declared 45×45 grid; arbitrary cropping is
+rejected.
 
 ## Presentation
 
@@ -87,10 +92,10 @@ The code is static (frozen for capture); `SPACE` toggles fit/1:1, `F` toggles
 the window fullscreen and `ESC` closes it. `GX_COLOR_CODE_SHOT=/path.png` saves
 a deterministic capture at frame 10 for the presentation gate.
 
-Perspective rectification, rotation/mirror detection, camera-device capture and
-multi-frame playback remain backlog. The format is deliberately a reusable
-module rather than an editor-only panel, so it can serve a CLI/tool or an
-in-engine screen when normal stdout/stderr transport is not available.
+Perspective rectification, camera-device capture and multi-frame playback
+remain backlog. The format is deliberately a reusable module rather than an
+editor-only panel, so it can serve a CLI/tool or an in-engine screen when
+normal stdout/stderr transport is not available.
 
 ## Validation
 
@@ -100,6 +105,7 @@ in-engine screen when normal stdout/stderr transport is not available.
 - empty payloads and frame index/total round trips;
 - one-bit SECDED correction;
 - two-bit SECDED rejection;
+- all eight rotation/mirror orientations;
 - metadata CRC rejection;
 - low-confidence cell erasure rejection;
 - payload capacity and image geometry bounds.

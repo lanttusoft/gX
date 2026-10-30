@@ -1,9 +1,10 @@
 # Screen color-code transfer — backlog
 
 Status: **core encoder/decoder prototype implemented** (2026-10-30). The
-bounded C module, format layout and synthetic camera round trip live in
-[color_code_format.md](color_code_format.md). Camera rectification, multi-frame
-reassembly and a screen/editor presentation tool remain backlog.
+bounded C module, format layout, synthetic camera round trip and eight-way
+rotation/mirror detection live in [color_code_format.md](color_code_format.md).
+Perspective rectification, multi-frame reassembly and a camera-device walk
+remain backlog.
 
 ## Goal
 

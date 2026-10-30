@@ -347,7 +347,48 @@ static gX_I32 color_code_decompress(gX_U8 mode, const gX_U8 *source,
     return GX_COLOR_CODE_OK;
 }
 
-static gX_I32 color_code_sample(const gX_ColorCodeImage *image,
+static gX_I0 color_code_map_cell(gX_U32 row, gX_U32 col,
+    gX_I32 orientation, gX_U32 *imageRow, gX_U32 *imageCol)
+{
+    gX_U32 last = GX_COLOR_CODE_GRID - 1;
+    switch (orientation & 7)
+    {
+        case 1:
+            *imageRow = col;
+            *imageCol = last - row;
+            break;
+        case 2:
+            *imageRow = last - row;
+            *imageCol = last - col;
+            break;
+        case 3:
+            *imageRow = last - col;
+            *imageCol = row;
+            break;
+        case 4:
+            *imageRow = row;
+            *imageCol = last - col;
+            break;
+        case 5:
+            *imageRow = last - row;
+            *imageCol = col;
+            break;
+        case 6:
+            *imageRow = col;
+            *imageCol = row;
+            break;
+        case 7:
+            *imageRow = last - col;
+            *imageCol = last - row;
+            break;
+        default:
+            *imageRow = row;
+            *imageCol = col;
+            break;
+    }
+}
+
+static gX_I32 color_code_sample_pixel(const gX_ColorCodeImage *image,
     gX_U32 row, gX_U32 col, gX_F32 color[3])
 {
     if (!image || !color || !image->pixels || image->cellSize == 0)
@@ -380,8 +421,52 @@ static gX_I32 color_code_sample(const gX_ColorCodeImage *image,
     return GX_COLOR_CODE_OK;
 }
 
+static gX_I32 color_code_sample(const gX_ColorCodeImage *image,
+    gX_U32 row, gX_U32 col, gX_I32 orientation, gX_F32 color[3])
+{
+    gX_U32 imageRow = 0;
+    gX_U32 imageCol = 0;
+    color_code_map_cell(row, col, orientation, &imageRow, &imageCol);
+    return color_code_sample_pixel(image, imageRow, imageCol, color);
+}
+
+static gX_I32 color_code_palette_index(const gX_F32 color[3],
+    const gX_F32 black[3], const gX_F32 white[3], gX_U8 *index)
+{
+    if (!color || !black || !white || !index)
+        return GX_COLOR_CODE_ERR_ARGUMENT;
+    gX_F32 corrected[3];
+    for (gX_U32 channel = 0; channel < 3; channel++)
+    {
+        corrected[channel] = (color[channel] - black[channel])
+            * 255.0f / (white[channel] - black[channel]);
+        if (corrected[channel] < 0.0f) corrected[channel] = 0.0f;
+        if (corrected[channel] > 255.0f) corrected[channel] = 255.0f;
+    }
+    gX_F32 best = 1.0e30f;
+    gX_U8 bestIndex = 0;
+    for (gX_U8 candidate = 0; candidate < 4; candidate++)
+    {
+        gX_U8 r = 0;
+        gX_U8 g = 0;
+        gX_U8 b = 0;
+        gX_ColorCode_Palette(candidate, &r, &g, &b);
+        gX_F32 dr = corrected[0] - (gX_F32)r;
+        gX_F32 dg = corrected[1] - (gX_F32)g;
+        gX_F32 db = corrected[2] - (gX_F32)b;
+        gX_F32 distance = dr * dr + dg * dg + db * db;
+        if (distance < best)
+        {
+            best = distance;
+            bestIndex = candidate;
+        }
+    }
+    *index = best > GX_COLOR_CODE_MAX_DISTANCE ? 0xFF : bestIndex;
+    return GX_COLOR_CODE_OK;
+}
+
 static gX_I32 color_code_calibrate(const gX_ColorCodeImage *image,
-    gX_F32 black[3], gX_F32 white[3])
+    gX_I32 orientation, gX_F32 black[3], gX_F32 white[3])
 {
     gX_F32 blackSum[3] = {0.0f,0.0f,0.0f};
     gX_F32 whiteSum[3] = {0.0f,0.0f,0.0f};
@@ -392,7 +477,8 @@ static gX_I32 color_code_calibrate(const gX_ColorCodeImage *image,
         gX_F32 color[3];
         gX_U32 gridRow = GX_COLOR_CODE_QUIET;
         gX_U32 gridCol = GX_COLOR_CODE_QUIET + col;
-        if (color_code_sample(image, gridRow, gridCol, color) != GX_COLOR_CODE_OK)
+        if (color_code_sample(image, gridRow, gridCol, orientation, color)
+            != GX_COLOR_CODE_OK)
             return GX_COLOR_CODE_ERR_GEOMETRY;
         if (col & 1)
         {
@@ -421,11 +507,11 @@ static gX_I32 color_code_calibrate(const gX_ColorCodeImage *image,
 }
 
 static gX_I32 color_code_classify(const gX_ColorCodeImage *image,
-    gX_U8 *cells, gX_U16 *erased)
+    gX_I32 orientation, gX_U8 *cells, gX_U16 *erased)
 {
     gX_F32 black[3];
     gX_F32 white[3];
-    gX_I32 status = color_code_calibrate(image, black, white);
+    gX_I32 status = color_code_calibrate(image, orientation, black, white);
     if (status != GX_COLOR_CODE_OK) return status;
     *erased = 0;
     for (gX_U32 row = 0; row < GX_COLOR_CODE_GRID; row++)
@@ -433,46 +519,62 @@ static gX_I32 color_code_classify(const gX_ColorCodeImage *image,
         for (gX_U32 col = 0; col < GX_COLOR_CODE_GRID; col++)
         {
             gX_F32 color[3];
-            if (color_code_sample(image, row, col, color) != GX_COLOR_CODE_OK)
+            if (color_code_sample(image, row, col, orientation, color)
+                != GX_COLOR_CODE_OK)
                 return GX_COLOR_CODE_ERR_GEOMETRY;
-            gX_F32 corrected[3];
-            for (gX_U32 channel = 0; channel < 3; channel++)
-            {
-                corrected[channel] = (color[channel] - black[channel])
-                    * 255.0f / (white[channel] - black[channel]);
-                if (corrected[channel] < 0.0f) corrected[channel] = 0.0f;
-                if (corrected[channel] > 255.0f) corrected[channel] = 255.0f;
-            }
-            gX_F32 best = 1.0e30f;
-            gX_U8 bestIndex = 0;
-            for (gX_U8 index = 0; index < 4; index++)
-            {
-                gX_U8 r = 0;
-                gX_U8 g = 0;
-                gX_U8 b = 0;
-                gX_ColorCode_Palette(index, &r, &g, &b);
-                gX_F32 dr = corrected[0] - (gX_F32)r;
-                gX_F32 dg = corrected[1] - (gX_F32)g;
-                gX_F32 db = corrected[2] - (gX_F32)b;
-                gX_F32 distance = dr * dr + dg * dg + db * db;
-                if (distance < best)
-                {
-                    best = distance;
-                    bestIndex = index;
-                }
-            }
-            if (best > GX_COLOR_CODE_MAX_DISTANCE)
-            {
-                cells[row * GX_COLOR_CODE_GRID + col] = 0xFF;
-                (*erased)++;
-            }
-            else
-            {
-                cells[row * GX_COLOR_CODE_GRID + col] = bestIndex;
-            }
+            gX_U8 index = 0;
+            status = color_code_palette_index(color, black, white, &index);
+            if (status != GX_COLOR_CODE_OK) return status;
+            cells[row * GX_COLOR_CODE_GRID + col] = index;
+            if (index == 0xFF) (*erased)++;
         }
     }
     return GX_COLOR_CODE_OK;
+}
+
+static gX_I1 color_code_corner_color_matches(const gX_ColorCodeImage *image,
+    gX_I32 orientation, gX_U32 activeRow, gX_U32 activeCol,
+    const gX_U8 pattern[9], const gX_F32 black[3], const gX_F32 white[3])
+{
+    for (gX_U32 index = 0; index < 9; index++)
+    {
+        gX_U32 row = GX_COLOR_CODE_QUIET + activeRow + index / 3;
+        gX_U32 col = GX_COLOR_CODE_QUIET + activeCol + index % 3;
+        gX_F32 color[3];
+        if (color_code_sample(image, row, col, orientation, color)
+            != GX_COLOR_CODE_OK)
+            return 0;
+        gX_U8 palette = 0;
+        if (color_code_palette_index(color, black, white, &palette)
+            != GX_COLOR_CODE_OK)
+            return 0;
+        if (palette != pattern[index]) return 0;
+    }
+    return 1;
+}
+
+static gX_I1 color_code_orientation_matches(const gX_ColorCodeImage *image,
+    gX_I32 orientation)
+{
+    gX_F32 black[3];
+    gX_F32 white[3];
+    if (color_code_calibrate(image, orientation, black, white)
+        != GX_COLOR_CODE_OK)
+        return 0;
+    if (!color_code_corner_color_matches(image, orientation, 0, 0,
+            gX_ColorCodeCornerTL, black, white))
+        return 0;
+    if (!color_code_corner_color_matches(image, orientation, 0,
+            GX_COLOR_CODE_ACTIVE - 3, gX_ColorCodeCornerTR, black, white))
+        return 0;
+    if (!color_code_corner_color_matches(image, orientation,
+            GX_COLOR_CODE_ACTIVE - 3, 0, gX_ColorCodeCornerBL, black, white))
+        return 0;
+    if (!color_code_corner_color_matches(image, orientation,
+            GX_COLOR_CODE_ACTIVE - 3, GX_COLOR_CODE_ACTIVE - 3,
+            gX_ColorCodeCornerBR, black, white))
+        return 0;
+    return 1;
 }
 
 static gX_I1 color_code_corner_matches(const gX_U8 *cells, gX_U32 activeRow,
@@ -555,6 +657,7 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
     if (!image || !result || !image->pixels || image->cellSize == 0)
         return GX_COLOR_CODE_ERR_ARGUMENT;
     memset(result, 0, sizeof(*result));
+    result->orientation = -1;
     snprintf((char *)result->name, sizeof(result->name), "%s", "Color code result");
     snprintf((char *)result->description, sizeof(result->description), "%s",
         "Decoded screen transfer payload");
@@ -565,9 +668,26 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
         result->status = GX_COLOR_CODE_ERR_GEOMETRY;
         return result->status;
     }
+    gX_I32 orientation = 0;
+    if (image->autoOrientation)
+    {
+        gX_I1 found = 0;
+        for (gX_I32 candidate = 0; candidate < 8; candidate++)
+            if (color_code_orientation_matches(image, candidate))
+            {
+                orientation = candidate;
+                found = 1;
+                break;
+            }
+        if (!found)
+        {
+            result->status = GX_COLOR_CODE_ERR_GEOMETRY;
+            return result->status;
+        }
+    }
     gX_U8 cells[GX_COLOR_CODE_CELLS];
     gX_U16 erased = 0;
-    gX_I32 status = color_code_classify(image, cells, &erased);
+    gX_I32 status = color_code_classify(image, orientation, cells, &erased);
     if (status != GX_COLOR_CODE_OK)
     {
         result->status = status;
@@ -680,6 +800,7 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
     result->compressedLength = (gX_U16)compressedLength;
     result->frameIndex = meta[10];
     result->frameTotal = meta[11];
+    result->orientation = orientation;
     result->status = GX_COLOR_CODE_OK;
     return GX_COLOR_CODE_OK;
 }

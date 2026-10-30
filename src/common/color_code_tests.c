@@ -71,6 +71,66 @@ static gX_I32 test_decode(const gX_U8 *pixels, gX_ColorCodeResult *result)
     return gX_ColorCode_Decode(&image, result);
 }
 
+static gX_I32 test_decode_auto(const gX_U8 *pixels, gX_ColorCodeResult *result)
+{
+    gX_ColorCodeImage image = {0};
+    image.pixels = pixels;
+    image.width = TEST_WIDTH;
+    image.height = TEST_HEIGHT;
+    image.originX = TEST_ORIGIN;
+    image.originY = TEST_ORIGIN;
+    image.cellSize = TEST_CELL;
+    image.autoOrientation = 1;
+    return gX_ColorCode_Decode(&image, result);
+}
+
+static gX_U8 *test_transform(const gX_U8 *source, gX_I32 mode)
+{
+    gX_U8 *target = (gX_U8 *)gX_Calloc(TEST_WIDTH * TEST_HEIGHT * 4);
+    if (!target) return NULL;
+    for (gX_U32 y = 0; y < TEST_HEIGHT; y++)
+        for (gX_U32 x = 0; x < TEST_WIDTH; x++)
+        {
+            gX_U32 targetX = x;
+            gX_U32 targetY = y;
+            switch (mode)
+            {
+                case 1:
+                    targetX = TEST_WIDTH - 1 - y;
+                    targetY = x;
+                    break;
+                case 2:
+                    targetX = TEST_WIDTH - 1 - x;
+                    targetY = TEST_HEIGHT - 1 - y;
+                    break;
+                case 3:
+                    targetX = y;
+                    targetY = TEST_WIDTH - 1 - x;
+                    break;
+                case 4:
+                    targetX = TEST_WIDTH - 1 - x;
+                    break;
+                case 5:
+                    targetY = TEST_HEIGHT - 1 - y;
+                    break;
+                case 6:
+                    targetX = y;
+                    targetY = x;
+                    break;
+                case 7:
+                    targetX = TEST_WIDTH - 1 - y;
+                    targetY = TEST_HEIGHT - 1 - x;
+                    break;
+                default:
+                    break;
+            }
+            gX_U32 sourceOffset = (y * TEST_WIDTH + x) * 4;
+            gX_U32 targetOffset = (targetY * TEST_WIDTH + targetX) * 4;
+            memcpy(target + targetOffset, source + sourceOffset, 4);
+        }
+    return target;
+}
+
 static gX_I32 test_roundtrip(const gX_U8 *payload, gX_U32 length,
     gX_I32 expectedCompression)
 {
@@ -233,6 +293,39 @@ static gX_I32 test_erasure(const gX_U8 *payload, gX_U32 length)
     return errors;
 }
 
+static gX_I32 test_orientation(const gX_U8 *payload, gX_U32 length)
+{
+    gX_I32 errors = 0;
+    gX_ColorCodeFrame frame;
+    gX_I32 status = gX_ColorCode_Encode(payload, length, 0, 1, &frame);
+    if (status != GX_COLOR_CODE_OK) return 1;
+    gX_U8 *source = test_image(&frame, 0.90f, 9.0f);
+    if (!source) return 1;
+    for (gX_I32 mode = 0; mode < 8; mode++)
+    {
+        gX_U8 *pixels = test_transform(source, mode);
+        if (!pixels)
+        {
+            errors++;
+            break;
+        }
+        gX_ColorCodeResult result;
+        status = test_decode_auto(pixels, &result);
+        gX_Free(pixels);
+        if (status != GX_COLOR_CODE_OK || result.orientation != mode
+            || result.payloadLength != length
+            || memcmp(result.payload, payload, length) != 0)
+        {
+            gX_TraceLog(gX_LOG_ERROR,
+                "COLOR CODE 10 FAIL: orientation %d status=%d detected=%d",
+                mode, status, result.orientation);
+            errors++;
+        }
+    }
+    gX_Free(source);
+    return errors;
+}
+
 gX_I32 gX_Tests_ColorCode(gX_I0)
 {
     gX_I32 errors = 0;
@@ -249,6 +342,7 @@ gX_I32 gX_Tests_ColorCode(gX_I0)
     errors += test_bit_errors(raw, (gX_U32)strlen((const char *)raw), 3,
         GX_COLOR_CODE_ERR_ECC);
     errors += test_single_bit_matrix(raw, (gX_U32)strlen((const char *)raw));
+    errors += test_orientation(raw, (gX_U32)strlen((const char *)raw));
     errors += test_metadata_corruption(raw, (gX_U32)strlen((const char *)raw));
     errors += test_erasure(raw, (gX_U32)strlen((const char *)raw));
     gX_ColorCodeFrame frame;

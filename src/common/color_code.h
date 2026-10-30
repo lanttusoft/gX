@@ -74,6 +74,8 @@ typedef struct gX_ColorCodeFrame {
     gX_U8   frameTotal;
 } gX_ColorCodeFrame;
 
+//ai: orientation 0=identity, 1=90CW, 2=180, 3=270, 4=mirror H,
+//    5=mirror V, 6=transpose, 7=anti-transpose.
 //ai: decoded payload plus bounded diagnostics; no allocation escapes the call.
 typedef struct gX_ColorCodeResult {
     gX_I8   name[128];
@@ -85,6 +87,7 @@ typedef struct gX_ColorCodeResult {
     gX_U16  erasedCells;
     gX_U8   frameIndex;
     gX_U8   frameTotal;
+    gX_I32  orientation;
     gX_I32  status;
 } gX_ColorCodeResult;
 
@@ -98,6 +101,7 @@ typedef struct gX_ColorCodeImage {
     gX_U32       originX;
     gX_U32       originY;
     gX_U32       cellSize;
+    gX_I1        autoOrientation;
 } gX_ColorCodeImage;
 
 //ai: encode a bounded payload into a calibration/control/metadata/payload frame.

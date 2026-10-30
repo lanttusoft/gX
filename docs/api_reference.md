@@ -84,6 +84,7 @@ this source beta.
 - `gX_ColorCode_*` — bounded 45×45 screen-transfer frame:
   Encode/Decode/Render/Palette. Control/calibration cells, metadata-at-edges,
   payload-in-middle, SECDED ECC, CRC32 and raw/RLE compression; the decoder
+  auto-detects eight rotation/mirror orientations from corner controls and
   currently requires axis-aligned grid geometry. See
   `docs/color_code_format.md` and `--test-only`.
 - `gX_JSON_Schema*` / `gX_JSON_Load/Save` / `gX_JSON_*` / `gX_Marshal_*` —
