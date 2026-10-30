@@ -9,8 +9,8 @@ network/security protocol.
 
 ## Frame
 
-A frame is a fixed 45×45 cell grid. Each cell is one of eight palette entries and
-carries three bits.
+A frame is a fixed 45×45 cell grid. Each cell is one of sixteen palette entries
+and carries four bits.
 
 | Region | Cells | Purpose |
 | --- | --- | --- |
@@ -19,12 +19,13 @@ carries three bits.
 | Metadata | 3 rows inside the border | 26-byte header and header CRC |
 | Payload | 32 rows × 35 columns inside the metadata | SECDED-protected compressed payload |
 
-Palette: `0` black, `1` white, `2` full red, `3` half red, `4` full green,
-`5` half green, `6` full blue, `7` half blue. Cell bits are written
-most-significant-bit first. The four 3×3 corner markers are distinct patterns;
-the decoder validates them before reading metadata. The top border row cycles
-through all eight palette entries, so the decoder calibrates every colour
-reference directly instead of assuming a fixed black/white response.
+Palette: `0` black, `1` white, `2`–`5` red at 25/50/75/100%, `6`–`9` green at
+25/50/75/100%, `10`–`13` blue at 25/50/75/100%, `14` dark gray, `15` light gray.
+Cell bits are written most-significant-bit first. The four 3×3 corner markers
+are distinct patterns; the decoder validates them before reading metadata. Both
+horizontal border rows cycle through all sixteen palette entries, so the decoder
+calibrates every reference directly instead of assuming a fixed black/white
+response.
 
 ## Metadata
 
@@ -33,9 +34,9 @@ The 26-byte header is written into the first 104 metadata cells:
 | Offset | Size | Field |
 | --- | --- | --- |
 | 0 | 1 | Magic `0x43` |
-| 1 | 1 | Format version (`3`) |
+| 1 | 1 | Format version (`4`) |
 | 2 | 1 | Flags (`bit0` = multi-frame) |
-| 3 | 1 | Palette ID (`1` = 8-colour, 3-bit) |
+| 3 | 1 | Palette ID (`2` = 16-colour, 4-bit) |
 | 4 | 1 | Compression ID (`0` raw, `1` RLE) |
 | 5 | 1 | ECC ID (`1` = SECDED) |
 | 6 | 2 | Chunk length (LE) |
@@ -52,7 +53,7 @@ Unknown versions, palette IDs, ECC IDs and compression IDs fail closed.
 ## Multi-frame payloads
 
 `gX_ColorCode_EncodeMulti` splits a payload of up to **4096 bytes** into
-sequential 256-byte chunks and sets the same 16-bit payload ID and
+sequential 320-byte chunks and sets the same 16-bit payload ID and
 whole-payload CRC on every frame. `gX_ColorCode_Reassemble` accepts the decoded
 result set in any order, requires exactly `frameTotal` unique indices with one
 shared payload ID, concatenates in index order, enforces the output capacity
@@ -71,7 +72,7 @@ fails closed.
   arbitrary erasure patterns.
 - CRC32 covers the header, each chunk and the completed multi-frame payload
   separately.
-- A single frame is capped at **256 payload bytes**; a multi-frame payload is
+- A single frame is capped at **320 payload bytes**; a multi-frame payload is
   capped at **4096 bytes**. Compressed length, reassembly and decompression
   outputs are bounded.
 - Compression is a PackBits-style RLE. If RLE is not smaller, the encoder uses
@@ -156,7 +157,7 @@ visual/robustness fixture, not a physical CRT or camera model.
 - all eight rotation/mirror orientations;
 - affine and true keystone perspective warps via supplied corners;
 - per-channel tint/white-balance gains and biases;
-- full/half red, green and blue palette levels plus calibration-strip coverage;
+- 25/50/75/100% red, green and blue levels plus calibration-strip coverage;
 - simulated-CRT scanline/phosphor/noise/chroma/vignette decode across three seeds;
 - multi-frame complete/shuffled/incomplete/duplicate/mixed-ID/bad-CRC sets;
 - metadata CRC rejection;

@@ -27,12 +27,20 @@ def palette_counts(pixels):
     colors = {
         "black": (0, 0, 0),
         "white": (255, 255, 255),
-        "red_full": (220, 40, 40),
-        "red_half": (110, 20, 20),
-        "green_full": (40, 200, 80),
-        "green_half": (20, 100, 40),
-        "blue_full": (40, 80, 220),
-        "blue_half": (20, 40, 110),
+        "red_25": (55, 10, 10),
+        "red_50": (110, 20, 20),
+        "red_75": (165, 30, 30),
+        "red_100": (220, 40, 40),
+        "green_25": (10, 50, 20),
+        "green_50": (20, 100, 40),
+        "green_75": (30, 150, 60),
+        "green_100": (40, 200, 80),
+        "blue_25": (10, 20, 55),
+        "blue_50": (20, 40, 110),
+        "blue_75": (30, 60, 165),
+        "blue_100": (40, 80, 220),
+        "gray_dark": (64, 64, 64),
+        "gray_light": (192, 192, 192),
     }
     counts = {}
     for name, color in colors.items():
@@ -74,9 +82,13 @@ def check_flat(image):
     counts = palette_counts(image)
     print("flat palette counts:", counts, flush=True)
     for name, minimum in (("black", 10000), ("white", 100),
-                          ("red_full", 20), ("red_half", 20),
-                          ("green_full", 20), ("green_half", 20),
-                          ("blue_full", 20), ("blue_half", 20)):
+                          ("red_25", 20), ("red_50", 20),
+                          ("red_75", 20), ("red_100", 20),
+                          ("green_25", 20), ("green_50", 20),
+                          ("green_75", 20), ("green_100", 20),
+                          ("blue_25", 20), ("blue_50", 20),
+                          ("blue_75", 20), ("blue_100", 20),
+                          ("gray_dark", 20), ("gray_light", 20)):
         if counts[name] < minimum:
             raise RuntimeError(f"flat {name} palette band too small: {counts[name]}")
     center = image[HEIGHT // 4:HEIGHT * 3 // 4,

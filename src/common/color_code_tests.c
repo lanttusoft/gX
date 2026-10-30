@@ -748,25 +748,34 @@ static gX_I32 test_palette_levels(const gX_U8 *payload, gX_U32 length)
     for (gX_U32 index = 0; index < GX_COLOR_CODE_PALETTE_SIZE; index++)
         gX_ColorCode_Palette((gX_U8)index, &palette[index][0],
             &palette[index][1], &palette[index][2]);
-    if (!(palette[2][0] > palette[3][0]
-        && palette[4][1] > palette[5][1]
-        && palette[6][2] > palette[7][2]))
+    if (!(palette[5][0] > palette[4][0] && palette[4][0] > palette[3][0]
+            && palette[3][0] > palette[2][0]
+        && palette[9][1] > palette[8][1] && palette[8][1] > palette[7][1]
+            && palette[7][1] > palette[6][1]
+        && palette[13][2] > palette[12][2] && palette[12][2] > palette[11][2]
+            && palette[11][2] > palette[10][2]))
     {
-        gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 24 FAIL: full/half levels collapse");
+        gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 24 FAIL: quarter levels collapse");
         errors++;
     }
     gX_ColorCodeFrame frame;
     gX_I32 status = gX_ColorCode_Encode(payload, length, 0, 1, &frame);
     if (status != GX_COLOR_CODE_OK) return errors + 1;
     gX_I1 seen[GX_COLOR_CODE_PALETTE_SIZE] = {0};
-    for (gX_U32 col = 3; col < GX_COLOR_CODE_ACTIVE - 3; col++)
+    for (gX_U32 row = 0; row < 2; row++)
     {
-        gX_U32 cell = (GX_COLOR_CODE_QUIET *
-            GX_COLOR_CODE_GRID) + GX_COLOR_CODE_QUIET + col;
-        gX_U8 value = frame.cells[cell];
-        if (value != (gX_U8)((col - 3) % GX_COLOR_CODE_PALETTE_SIZE))
-            errors++;
-        if (value < GX_COLOR_CODE_PALETTE_SIZE) seen[value] = 1;
+        gX_U32 gridRow = row == 0
+            ? GX_COLOR_CODE_QUIET
+            : GX_COLOR_CODE_QUIET + GX_COLOR_CODE_ACTIVE - 1;
+        for (gX_U32 col = 3; col < GX_COLOR_CODE_ACTIVE - 3; col++)
+        {
+            gX_U32 cell = gridRow * GX_COLOR_CODE_GRID
+                + GX_COLOR_CODE_QUIET + col;
+            gX_U8 value = frame.cells[cell];
+            if (value != (gX_U8)((col - 3) % GX_COLOR_CODE_PALETTE_SIZE))
+                errors++;
+            if (value < GX_COLOR_CODE_PALETTE_SIZE) seen[value] = 1;
+        }
     }
     for (gX_U32 index = 0; index < GX_COLOR_CODE_PALETTE_SIZE; index++)
         if (!seen[index]) errors++;

@@ -43,12 +43,20 @@ gX_I0 gX_ColorCode_Palette(gX_U8 index, gX_U8 *r, gX_U8 *g, gX_U8 *b)
     gX_U8 colors[GX_COLOR_CODE_PALETTE_SIZE][3] = {
         {0,0,0},
         {255,255,255},
-        {220,40,40},
+        {55,10,10},
         {110,20,20},
-        {40,200,80},
+        {165,30,30},
+        {220,40,40},
+        {10,50,20},
         {20,100,40},
+        {30,150,60},
+        {40,200,80},
+        {10,20,55},
+        {20,40,110},
+        {30,60,165},
         {40,80,220},
-        {20,40,110}
+        {64,64,64},
+        {192,192,192}
     };
     gX_U8 pick = index < GX_COLOR_CODE_PALETTE_SIZE ? index : 0;
     if (r) *r = colors[pick][0];
@@ -109,7 +117,7 @@ static gX_U8 color_code_parity(gX_U16 value)
 static gX_I0 color_code_set_cell(gX_U8 *cells, gX_U32 row, gX_U32 col, gX_U8 value)
 {
     if (row < GX_COLOR_CODE_GRID && col < GX_COLOR_CODE_GRID)
-        cells[row * GX_COLOR_CODE_GRID + col] = (gX_U8)(value & 7);
+        cells[row * GX_COLOR_CODE_GRID + col] = (gX_U8)(value & 15);
 }
 
 static gX_I0 color_code_corner(gX_U8 *cells, gX_U32 activeRow,
@@ -136,10 +144,16 @@ static gX_I0 color_code_frame_controls(gX_U8 *cells)
         color_code_set_cell(cells, GX_COLOR_CODE_QUIET + index,
             GX_COLOR_CODE_QUIET + GX_COLOR_CODE_ACTIVE - 1, value);
     }
-    for (gX_U32 col = 3; col < GX_COLOR_CODE_ACTIVE - 3; col++)
-        color_code_set_cell(cells, GX_COLOR_CODE_QUIET,
-            GX_COLOR_CODE_QUIET + col,
-            (gX_U8)((col - 3) % GX_COLOR_CODE_PALETTE_SIZE));
+    for (gX_U32 row = 0; row < 2; row++)
+    {
+        gX_U32 gridRow = row == 0
+            ? GX_COLOR_CODE_QUIET
+            : GX_COLOR_CODE_QUIET + GX_COLOR_CODE_ACTIVE - 1;
+        for (gX_U32 col = 3; col < GX_COLOR_CODE_ACTIVE - 3; col++)
+            color_code_set_cell(cells, gridRow,
+                GX_COLOR_CODE_QUIET + col,
+                (gX_U8)((col - 3) % GX_COLOR_CODE_PALETTE_SIZE));
+    }
     color_code_corner(cells, 0, 0, gX_ColorCodeCornerTL);
     color_code_corner(cells, 0, GX_COLOR_CODE_ACTIVE - 3, gX_ColorCodeCornerTR);
     color_code_corner(cells, GX_COLOR_CODE_ACTIVE - 3, 0, gX_ColorCodeCornerBL);
@@ -578,19 +592,24 @@ static gX_I32 color_code_calibrate(const gX_ColorCodeImage *image,
 {
     gX_F32 sum[GX_COLOR_CODE_PALETTE_SIZE][3] = {{0.0f}};
     gX_U32 count[GX_COLOR_CODE_PALETTE_SIZE] = {0};
-    for (gX_U32 col = 3; col < GX_COLOR_CODE_ACTIVE - 3; col++)
+    for (gX_U32 row = 0; row < 2; row++)
     {
-        gX_F32 color[3];
-        gX_U32 gridRow = GX_COLOR_CODE_QUIET;
-        gX_U32 gridCol = GX_COLOR_CODE_QUIET + col;
-        if (color_code_sample(image, gridRow, gridCol, orientation, homography,
-                color) != GX_COLOR_CODE_OK)
-            return GX_COLOR_CODE_ERR_GEOMETRY;
-        gX_U32 entry = (col - 3) % GX_COLOR_CODE_PALETTE_SIZE;
-        sum[entry][0] += color[0];
-        sum[entry][1] += color[1];
-        sum[entry][2] += color[2];
-        count[entry]++;
+        gX_U32 gridRow = row == 0
+            ? GX_COLOR_CODE_QUIET
+            : GX_COLOR_CODE_QUIET + GX_COLOR_CODE_ACTIVE - 1;
+        for (gX_U32 col = 3; col < GX_COLOR_CODE_ACTIVE - 3; col++)
+        {
+            gX_F32 color[3];
+            gX_U32 gridCol = GX_COLOR_CODE_QUIET + col;
+            if (color_code_sample(image, gridRow, gridCol, orientation,
+                    homography, color) != GX_COLOR_CODE_OK)
+                return GX_COLOR_CODE_ERR_GEOMETRY;
+            gX_U32 entry = (col - 3) % GX_COLOR_CODE_PALETTE_SIZE;
+            sum[entry][0] += color[0];
+            sum[entry][1] += color[1];
+            sum[entry][2] += color[2];
+            count[entry]++;
+        }
     }
     for (gX_U32 entry = 0; entry < GX_COLOR_CODE_PALETTE_SIZE; entry++)
     {
@@ -707,9 +726,9 @@ gX_I32 gX_ColorCode_EncodeChunk(const gX_U8 *chunk, gX_U32 chunkLength,
     gX_U8 meta[GX_COLOR_CODE_META_BYTES];
     memset(meta, 0, sizeof(meta));
     meta[0] = 0x43;
-    meta[1] = 3;
+    meta[1] = 4;
     meta[2] = frameTotal > 1 ? 1 : 0;
-    meta[3] = 1;
+    meta[3] = 2;
     meta[4] = compressed[0];
     meta[5] = 1;
     color_code_put_u16(meta + 6, (gX_U16)chunkLength);
@@ -935,12 +954,12 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
         metaBits, GX_COLOR_CODE_META_BITS);
     gX_U8 meta[GX_COLOR_CODE_META_BYTES];
     color_code_bits_to_bytes(metaBits, GX_COLOR_CODE_META_BYTES, meta);
-    if (meta[0] != 0x43 || meta[1] != 3)
+    if (meta[0] != 0x43 || meta[1] != 4)
     {
         result->status = GX_COLOR_CODE_ERR_VERSION;
         return result->status;
     }
-    if (meta[3] != 1 || meta[5] != 1 || meta[2] > 1)
+    if (meta[3] != 2 || meta[5] != 1 || meta[2] > 1)
     {
         result->status = GX_COLOR_CODE_ERR_PALETTE;
         return result->status;

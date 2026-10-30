@@ -26,11 +26,12 @@ SemVer.
   duplicate, mixed-ID and bad-CRC sets, and the presentation cycles frames
   with pause/step controls. Automatic corner detection remains backlog; see
   `docs/color_code_format.md`.
-- **Screen color-code 8-colour palette**: three bits per cell encode black,
-  white, full/half red, full/half green and full/half blue. The top control
-  border cycles every palette entry so the decoder calibrates each reference
-  directly; per-channel tint/white-balance tests and a calibration-strip
-  coverage test run in `--test-only`. Format metadata is now v3.
+- **Screen color-code 16-colour palette**: four bits per cell encode black,
+  white, 25/50/75/100% red, green and blue, plus dark/light gray. Both
+  horizontal control borders cycle every palette entry so the decoder
+  calibrates each reference directly; per-channel tint/white-balance tests and
+  a two-row calibration-strip coverage test run in `--test-only`. Format
+  metadata is now v4; a single frame carries up to 320 bytes.
 
 ## [0.20.0] - 2026-10-30
 
