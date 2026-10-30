@@ -609,6 +609,9 @@ gX_U32  makeAmount;
     //opencode: right-edge inset (px) the docked viewport must leave free for
     //   host panels (the GFX editor's inspector); 0 for every other template.
     gX_F32 viewportRightInset;
+    //opencode: additional left-edge inset; the GFX editor widens/shrinks the
+    //   dock with its scene panel and uses -320 for focus mode.
+    gX_F32 viewportLeftInset;
     
 #if GX_GUI_USE_POOLS
     //opencode: pool-based element/module system — experimental, replaces per-element
@@ -703,6 +706,7 @@ gX_I1 gX_GUI_Dock_Cramped_Check(gX_I0);
 //   docked viewport, so host panels never cover the scene. Refreshes only when
 //   the value changes.
 gX_I0 gX_GUI_Viewport_SetRightInset(gX_F32 inset);
+gX_I0 gX_GUI_Viewport_SetLeftInset(gX_F32 inset);
 gX_F32v2 gX_GUI_ScreenToGame(gX_F32 sx, gX_F32 sy);
 gX_Rectangle gX_GUI_GameToScreen(gX_Rectangle r);
 gX_Rectangle gX_GUI_ViewportBox_Get(gX_I0);

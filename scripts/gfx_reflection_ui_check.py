@@ -127,14 +127,14 @@ def edit_with_ui(preset, temp_root, width, height, confirm=None,
     for stale in screenshot_dir.glob("gXss_*.png"):
         stale.unlink()
     surfaceX = width - 301
-    surfaceY = height - 782
+    surfaceY = height - 550
     modeX = width - 296
-    modeY = height - 690
+    modeY = height - 458
     #opencode: combo rows sit on ~18px pitch; aim at measured row centers
     #   (Off 335-351 -> height-667, Planar only 388-405 -> height-614). The
     #   previous -660/-608 sat 1-3px from row boundaries, so a window-height
     #   rounding flip or a shifted popup selected the neighbouring mode.
-    modeOptionY = height - (667 if targetMode == "Off" else 614)
+    modeOptionY = height - (433 if targetMode == "Off" else 376)
     actions = [
         f"0.8 move {surfaceX} {surfaceY} 250",
         f"1.2 click {surfaceX} {surfaceY}",
@@ -145,13 +145,11 @@ def edit_with_ui(preset, temp_root, width, height, confirm=None,
     ]
     if toggleFollow:
         followX = width - 362
-        #opencode: the follow checkbox square spans 585-603 at the calibrated
-        #   height; height-416 is its center (the old -420 sat near the top).
-        followY = height - 416
+        #opencode: selection-first inspector moves the surface controls below
+        #   the document block; height-186 is the follow checkbox center.
+        followY = height - 186
         actions.extend((f"4.0 move {followX} {followY} 250",
                         f"4.4 click {followX} {followY}"))
-    saveX = width - 252
-    actions.extend((f"5.0 move {saveX} 102 250", f"5.4 click {saveX} 102"))
     if confirm:
         actions.append(f"7.8 click {confirm[0]} {confirm[1]}")
     environment = dict(os.environ)
@@ -164,6 +162,8 @@ def edit_with_ui(preset, temp_root, width, height, confirm=None,
         "DISPLAY": os.environ.get("DISPLAY", ":1"),
         "GX_FIXED_DT": "0.0166666667",
         "GX_GFX_PRESET_LOAD": str(preset),
+        "GX_GFX_PRESET_SAVE_UI": str(preset),
+        "GX_GFX_PRESET_SAVE_UI_FRAME": "330",
         "GX_AI_INPUT": ";".join(actions),
         "GX_SCREENSHOT_DIR": str(screenshot_dir),
         "GX_SHOT_FRAME": str(frame),
@@ -204,7 +204,8 @@ def reload_and_save(preset, output, temp_root):
         environment.pop(key, None)
     environment.update({
         "DISPLAY": os.environ.get("DISPLAY", ":1"),
-        "GX_FRAMES": "3",
+        "GX_EDITOR_DEFAULT_SCENE": "0",
+        "GX_FRAMES": "6",
         "GX_GFX_PRESET_BATCH": str(manifest),
     })
     audit_window_env(environment)

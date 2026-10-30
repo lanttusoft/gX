@@ -136,6 +136,9 @@ def scene_env(env=None, clean=False, **extra):
     if clean:
         strip_hooks(result)
     result["GX_NO_SETTINGS_SAVE"] = "1"
+    #ai: audits keep the deterministic demo scene; the composed editor
+    #    showcase is a manual/authoring default, not a gate fixture.
+    result.setdefault("GX_EDITOR_DEFAULT_SCENE", "0")
     result["DISPLAY"] = display()
     if os.environ.get("GX_AUDIT_ONSCREEN") != "1":
         result.setdefault("GX_AUDIT_WINDOW", "hidden")

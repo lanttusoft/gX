@@ -16,8 +16,13 @@ def overwrite_button_centers(imagePath):
     pixels = np.asarray(Image.open(Path(imagePath)).convert("RGB"))
     height, width = pixels.shape[:2]
     red, green, blue = pixels[:, :, 0], pixels[:, :, 1], pixels[:, :, 2]
-    buttonColor = ((red >= 30) & (red <= 50) & (green >= 58)
-                   & (green <= 90) & (blue >= 95) & (blue <= 122))
+    blueButton = ((red >= 30) & (red <= 50) & (green >= 58)
+                  & (green <= 90) & (blue >= 95) & (blue <= 122))
+    #ai: the editor's plum palette uses a darker button fill; keep both the
+    #    default and editor identities detectable.
+    plumButton = ((red >= 40) & (red <= 70) & (green >= 25)
+                  & (green <= 55) & (blue >= 60) & (blue <= 95))
+    buttonColor = blueButton | plumButton
     x0, x1 = int(width * 0.25), int(width * 0.75)
     y0, y1 = int(height * 0.17), int(height * 0.45)
     columnCounts = buttonColor[y0:y1, x0:x1].sum(axis=0)

@@ -261,7 +261,8 @@ gX_I32 gX_Settings_Init(gX_I0) {
     settings.windowHeight = maindata.windowHeight;
     settings.renderScale = maindata.renderScale;
     //opencode: initialize accessible defaults for the editor tools.
-    settings.toolUiScale = 1.0f;
+    //  125% keeps the 13px base readable at 1024x768 and 1920x1080.
+    settings.toolUiScale = 1.25f;
     settings.toolAssetRoots[0] = 0;
     settings.toolGlLevel = 0;
     settings.toolKeyboardNav = 1;
@@ -307,7 +308,7 @@ gX_I32 gX_Settings_Reset(gX_I0) {
     settings.windowHeight = maindata.windowHeight;
     settings.renderScale  = maindata.renderScale;
     //opencode: reset tool readability and navigation preferences with settings.
-    settings.toolUiScale  = 1.0f;
+    settings.toolUiScale  = 1.25f;
     settings.toolAssetRoots[0] = 0;
     settings.toolGlLevel = 0;
     settings.toolKeyboardNav = 1;

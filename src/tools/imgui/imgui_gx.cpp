@@ -284,11 +284,17 @@ static gX_I0 gX_Tools_ImGui_Accessibility_Apply(gX_I0)
         s_imguiThemeApplied = -1;
     }
     gX_Tools_ImGui_Theme_Apply();
+    //opencode: disabled controls need to remain legible, and keyboard focus
+    //  must stay visible while navigation is enabled.
+    ImGui::GetStyle().DisabledAlpha = 0.75f;
     ImGuiIO &io = ImGui::GetIO();
-    if (settings.toolKeyboardNav)
+    if (settings.toolKeyboardNav) {
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    else
+        io.ConfigNavCursorVisibleAlways = true;
+    } else {
         io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
+        io.ConfigNavCursorVisibleAlways = false;
+    }
 }
 
 //opencode: apply persistent editor accessibility preferences through ImGui's
@@ -386,8 +392,8 @@ extern "C" gX_I0 gX_Tools_ImGui_AccessibilityMenu(gX_I0)
         settings.dirtyFlag = 1;
     }
     ImGui::TextDisabled("Selection previews immediately; save settings to keep it.");
-    if (ImGui::MenuItem("Reset UI scale to 100%")) {
-        settings.toolUiScale = 1.0f;
+    if (ImGui::MenuItem("Reset UI scale to 125%")) {
+        settings.toolUiScale = 1.25f;
         settings.dirtyFlag = 1;
         gX_Tools_ImGui_UIScale_Request(settings.toolUiScale);
     }

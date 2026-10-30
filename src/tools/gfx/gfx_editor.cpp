@@ -78,6 +78,7 @@
 #include "../../wrappers/camera.h"
 
 #include "../imgui/imgui.h"
+#include "../imgui/imgui_gx_widgets.h"
 #include "../background/bg_panel.h"
 #include "../imgui/rlImGui.h"
 
@@ -100,6 +101,51 @@ extern "C" gX_I0 gX_Tools_ImGui_Aero_MenuBar(gX_I0);
 #if defined(__GNUC__)
 #pragma GCC optimize("Os")
 #endif
+
+//ai: editor-local plum/lavender/amber palette; accessible themes stay untouched.
+static gX_I32 gfx_editor_palette_push(gX_I0)
+{
+    if (settings.uiThemePreset != GX_SETTINGS_UI_THEME_DEFAULT) return 0;
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.92f, 1.00f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_TextDisabled, ImVec4(0.74f, 0.70f, 0.86f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.055f, 0.040f, 0.090f, 0.96f));
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.075f, 0.055f, 0.115f, 0.94f));
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.070f, 0.050f, 0.110f, 0.98f));
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.38f, 0.30f, 0.52f, 0.85f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.12f, 0.09f, 0.18f, 0.95f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.18f, 0.13f, 0.27f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.24f, 0.17f, 0.34f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.08f, 0.06f, 0.13f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.16f, 0.11f, 0.24f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(0.07f, 0.05f, 0.11f, 0.96f));
+    ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(0.98f, 0.72f, 0.32f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(0.72f, 0.55f, 0.92f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(0.98f, 0.72f, 0.32f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.14f, 0.30f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.28f, 0.20f, 0.40f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.38f, 0.27f, 0.52f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.20f, 0.15f, 0.30f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.28f, 0.21f, 0.40f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.36f, 0.26f, 0.50f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.45f, 0.36f, 0.62f, 0.70f));
+    ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.14f, 0.10f, 0.21f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_TabHovered, ImVec4(0.24f, 0.17f, 0.34f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_TabSelected, ImVec4(0.30f, 0.21f, 0.44f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_TabSelectedOverline, ImVec4(0.98f, 0.72f, 0.32f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_TabDimmedSelected, ImVec4(0.20f, 0.15f, 0.30f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, ImVec4(0.06f, 0.045f, 0.09f, 0.60f));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, ImVec4(0.32f, 0.24f, 0.44f, 0.90f));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ImVec4(0.42f, 0.32f, 0.56f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, ImVec4(0.52f, 0.40f, 0.68f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_NavHighlight, ImVec4(1.00f, 0.78f, 0.40f, 1.00f));
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, ImVec4(0.38f, 0.28f, 0.54f, 0.60f));
+    return 33;
+}
+
+static gX_I0 gfx_editor_palette_pop(gX_I32 count)
+{
+    if (count > 0) ImGui::PopStyleColor(count);
+}
 
 static gX_I32 s_selLight = -1;
 //opencode: scene-content selections for editable decals and particle emitters.
@@ -128,7 +174,7 @@ static float s_sunElev = 45.0f, s_sunAzim = 135.0f;
 static gX_I1 s_sunInit = 0;
 //opencode: v0.6.10 — editor preset path/status. The default stays inside the
 //   existing tools resource directory so a first Save works without setup.
-static gX_I8 s_presetPath[256] = "resources/tools/gfx_editor.json";
+static gX_I8 s_presetPath[256] = "resources/tools/gfx_showcase.json";
 static gX_I8 s_presetStatus[160] = { 0 };
 static gX_I1 s_presetStatusOK = 1;
 //opencode: transient search, selection, and filesystem index for the preset browser.
@@ -145,11 +191,36 @@ static gX_I1 s_presetConfirmPending = 0;
 //opencode: existing preset files require an explicit overwrite confirmation.
 static gX_I1 s_presetOverwritePending = 0;
 static gX_I1 s_headlessPresetSaveDone = 0;
+//ai: audit hook — open the real save dialog without depending on panel geometry.
+static gX_I1 s_headlessPresetSaveUiDone = 0;
 static gX_I1 s_headlessPresetLoadDone = 0;
 static gX_I1 s_headlessSnapshotSmokeDone = 0;
 static gX_I1 s_scenePanelOpen = 1;
 static gX_I1 s_inspectorPanelOpen = 1;
+//ai: one-action viewport focus; remembers which panels were open.
+static gX_I1 s_focusViewport = 0;
+static gX_I1 s_focusSavedScene = 1;
+static gX_I1 s_focusSavedInspector = 1;
 static gX_I1 s_pickEnabled = 1;
+//ai: resolved panel widths for the shortcut footer's safe center.
+static gX_F32 s_footerSceneW = 0.0f;
+static gX_F32 s_footerInspectorW = 0.0f;
+
+//ai: focus viewport hides both side panels and restores the prior panel state.
+static gX_I0 gfx_focus_viewport_set(gX_I1 on)
+{
+    if (on == s_focusViewport) return;
+    if (on) {
+        s_focusSavedScene = s_scenePanelOpen;
+        s_focusSavedInspector = s_inspectorPanelOpen;
+        s_scenePanelOpen = 0;
+        s_inspectorPanelOpen = 0;
+    } else {
+        s_scenePanelOpen = s_focusSavedScene;
+        s_inspectorPanelOpen = s_focusSavedInspector;
+    }
+    s_focusViewport = on;
+}
 //opencode: the editor free camera temporarily gives mouse and keyboard to gX camera input.
 static gX_I1 s_freeCameraActive = 0;
 static gX_I32 s_moveAxis = 0;
@@ -963,7 +1034,7 @@ static gX_I0 gfx_preset_assets_release(gX_I0) {
 
 //opencode: the preset browser uses the same explicit replace confirmation as typed paths.
 static gX_I0 gfx_preset_browser_popup(gX_I0) {
-    if (ImGui::Button("Browse...")) {
+    if (ImGui::Button("Browse")) {
         gfx_preset_assets_scan();
         s_presetSearch[0] = 0;
         ImGui::OpenPopup("GFX Preset Browser");
@@ -2415,8 +2486,13 @@ static gX_I0 gfx_preset_panel(gX_RendererGFX *gfx) {
         ImGui::OpenPopup("Confirm GFX preset overwrite");
         s_presetOverwritePending = 0;
     }
-    ImGui::SetNextItemWidth(-92.0f);
-    ImGui::InputText("path", s_presetPath, sizeof(s_presetPath));
+    //ai: leave real room for the scaled Browse button instead of clipping it.
+    gX_F32 browseWidth = ImGui::CalcTextSize("Browse").x
+        + ImGui::GetStyle().FramePadding.x * 2.0f
+        + ImGui::GetStyle().ItemSpacing.x + 6.0f;
+    ImGui::SetNextItemWidth(-browseWidth);
+    ImGui::InputTextWithHint("##presetPath", "preset path",
+        s_presetPath, sizeof(s_presetPath));
     ImGui::SameLine();
     gfx_preset_browser_popup();
     if (s_presetConfirmPending) {
@@ -2435,7 +2511,10 @@ static gX_I0 gfx_preset_panel(gX_RendererGFX *gfx) {
         ImGui::OpenPopup("Confirm GFX preset load");
     }
     ImGui::SameLine();
-    if (ImGui::Button("Save preset")) gfx_preset_save(gfx);
+    if (gX_Tools_ImGui_GradientButton("Save preset", ImVec2(0.0f, 0.0f),
+            IM_COL32(178, 120, 54, 255), IM_COL32(96, 58, 88, 255),
+            IM_COL32(255, 244, 224, 255)))
+        gfx_preset_save(gfx);
     if (ImGui::Button("Load preset")) ImGui::OpenPopup("Confirm GFX preset load");
     if (s_presetStatus[0]) {
         ImVec4 color = s_presetStatusOK
@@ -2922,14 +3001,16 @@ static gX_I0 gfx_model_history_panel(gX_RendererGFX *gfx,
     ImGui::SameLine();
     if (ImGui::Button("Redo")) gfx_model_history_step(index, model, 1);
     ImGui::TextDisabled("undo=%d redo=%d · Ctrl+Z / Ctrl+Y", s_modelUndoCount, s_modelRedoCount);
-    ImGui::SliderInt("snapshot slot", &s_modelSnapshotSlot, 0, GX_GFX_SNAPSHOT_CAP - 1);
-    ImGui::InputText("snapshot name", s_modelSnapshotName, sizeof(s_modelSnapshotName));
-    if (ImGui::Button("Save snapshot")) gfx_model_snapshot_save(gfx, model, index);
-    ImGui::SameLine();
     gX_GFX_Model_Snapshot *snapshot = &s_modelSnapshots[s_modelSnapshotSlot];
-    if (ImGui::Button("Restore snapshot") && snapshot->valid
-        && snapshot->modelIndex == index) gfx_model_snapshot_restore(gfx, model, index);
-    if (snapshot->valid) ImGui::TextDisabled("slot: %s | model + camera + renderer", snapshot->name);
+    if (ImGui::CollapsingHeader("Snapshots")) {
+        ImGui::SliderInt("snapshot slot", &s_modelSnapshotSlot, 0, GX_GFX_SNAPSHOT_CAP - 1);
+        ImGui::InputText("snapshot name", s_modelSnapshotName, sizeof(s_modelSnapshotName));
+        if (ImGui::Button("Save snapshot")) gfx_model_snapshot_save(gfx, model, index);
+        ImGui::SameLine();
+        if (ImGui::Button("Restore snapshot") && snapshot->valid
+            && snapshot->modelIndex == index) gfx_model_snapshot_restore(gfx, model, index);
+        if (snapshot->valid) ImGui::TextDisabled("slot: %s | model + camera + renderer", snapshot->name);
+    }
 }
 
 //opencode: capture the selected model's editable state before authoring edits.
@@ -5949,8 +6030,6 @@ static gX_I0 gfx_model_list_panel(gX_RendererGFX *gfx) {
         if (gfx_model_at(gfx, (gX_I32)mi)) nModels++;
     ImGui::SeparatorText("Scene models");
     ImGui::Text("models: %u / %u", nModels, gfx->models.amount);
-    gfx_asset_browser_button(gfx);
-    ImGui::SameLine();
     if (ImGui::Button("Duplicate") && s_selModel >= 0) {
         gX_RendererGFX_Model *source = gfx_model_at(gfx, s_selModel);
         if (source && source->path[0]) {
@@ -5972,21 +6051,6 @@ static gX_I0 gfx_model_list_panel(gX_RendererGFX *gfx) {
         s_modelRevertModel = -1;
         s_modelRevertValid = 0;
     }
-    if (ImGui::CollapsingHeader("Add model by path")) {
-        ImGui::InputTextWithHint("model path", "type a model file path",
-            s_modelPath, sizeof(s_modelPath));
-        if (ImGui::Button("Add typed model path")) {
-            if (strlen(s_modelPath) >= sizeof(gX_TextLine)) {
-                gX_TraceLog(gX_LOG_WARNING, "GfxEd: model path exceeds 127 characters");
-            } else if (gfx_preset_file_exists(s_modelPath)) {
-                gX_I32 index = gX_RendererGFX_Model_Add(gfx, s_modelPath);
-                if (index >= 0) { s_selModel = index; s_selLight = -1; }
-                else gX_TraceLog(gX_LOG_WARNING, "GfxEd: model heap is full");
-            } else {
-                gX_TraceLog(gX_LOG_WARNING, "GfxEd: model not found '%s'", s_modelPath);
-            }
-        }
-    }
     gX_F32 modelListHeight = ImGui::GetTextLineHeightWithSpacing() * 10.0f
         + ImGui::GetStyle().WindowPadding.y * 2.0f;
     ImGui::BeginChild("GfxModelList", ImVec2(0, modelListHeight), true);
@@ -6002,44 +6066,6 @@ static gX_I0 gfx_model_list_panel(gX_RendererGFX *gfx) {
         }
     }
     ImGui::EndChild();
-    //opencode: UX pass — one-click 3D text on the selected model.
-    if (ImGui::Button("Add 3D text") && s_selModel >= 0) {
-        gX_RendererGFX_Model *selected = gfx_model_at(gfx, s_selModel);
-        if (selected) {
-            if (selected->params.textString[0] == '\0')
-            {
-                snprintf(selected->params.textString,
-                    sizeof(selected->params.textString), "Label");
-                selected->params.textAnchorTop = 1;
-                selected->params.textFit = 1;
-                selected->params.textShadowColor = (gX_Color){0,0,0,220};
-                selected->params.textShadowPixels = 2.0f;
-            }
-            selected->params.textVisible = 1;
-            selected->params.textBillboard = 1;
-            gX_TraceLog(gX_LOG_INFO, "GfxEd: 3D text enabled on model %d",
-                s_selModel);
-        }
-    }
-    ImGui::SameLine();
-    ImGui::TextDisabled("New labels start above the model");
-    //opencode: blockout primitives — no asset files, straight from GenMesh*.
-    static const gX_I8 *primitiveNames[] = {
-        "cube", "plane", "sphere", "cylinder", "cone", "torus" };
-    ImGui::SetNextItemWidth(-1.0f);
-    ImGui::Combo("##primitive", &s_primitiveType, primitiveNames, 6);
-    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
-    ImGui::DragFloat("size##primitive", &s_primitiveSize, 0.05f, 0.05f, 50.0f);
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(90.0f);
-    ImGui::DragInt("detail##primitive", &s_primitiveDetail, 0.1f, 0, 12);
-    if (ImGui::Button("Add primitive")) {
-        if (gfx_primitive_add(gfx, s_primitiveType, s_primitiveSize,
-                s_primitiveDetail) < 0)
-            gX_TraceLog(gX_LOG_ERROR, "GfxEd: primitive generation failed");
-    }
-    ImGui::SameLine();
-    ImGui::TextDisabled("procedural, no asset file");
 }
 
 //opencode: model motion-path helpers are defined with the orbit authoring below.
@@ -6638,7 +6664,6 @@ static gX_I0 gfx_models_panel(gX_RendererGFX *gfx) {
         model->useTextures = s_modelRevertUseTextures;
     }
     ImGui::TextDisabled("Revert restores the state captured on selection.");
-    gfx_model_history_panel(gfx, model, s_selModel);
     if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
         gfx_model_translate_controls(model);
         //opencode: the motion path owns the position while it is enabled.
@@ -7198,6 +7223,16 @@ static gX_I0 gfx_preset_headless_hooks(gX_RendererGFX *gfx) {
         s_presetPath[sizeof(s_presetPath) - 1] = 0;
         gfx_preset_save_commit(gfx);
         s_headlessPresetSaveDone = 1;
+    }
+    const char *saveUiPath = getenv("GX_GFX_PRESET_SAVE_UI");
+    const char *saveUiFrame = getenv("GX_GFX_PRESET_SAVE_UI_FRAME");
+    gX_U32 saveUiAt = saveUiFrame ? (gX_U32)atoi(saveUiFrame) : 3;
+    if (saveUiPath && saveUiPath[0] && !s_headlessPresetSaveUiDone
+        && maindata.frameCount >= saveUiAt) {
+        strncpy(s_presetPath, saveUiPath, sizeof(s_presetPath) - 1);
+        s_presetPath[sizeof(s_presetPath) - 1] = 0;
+        gfx_preset_save(gfx);
+        s_headlessPresetSaveUiDone = 1;
     }
 }
 
@@ -7827,13 +7862,20 @@ static gX_I0 gfx_editor_shortcut_footer(gX_RendererGFX *Gfx,
     //   so keep authoring overlays out of it.
     if (s_renderApplied) return;
     gX_Rectangle Viewport = gX_GUI_ViewportBox_Get();
-    gX_F32 MaxWidth = Viewport.width - 24.0f;
-    if (MaxWidth < 240.0f) MaxWidth = 240.0f;
+    gX_F32 leftBound = (!FreeCamera && s_scenePanelOpen) ? s_footerSceneW : Viewport.x;
+    gX_F32 rightBound = (!FreeCamera && s_inspectorPanelOpen)
+        ? (gX_F32)maindata.windowWidth - s_footerInspectorW
+        : Viewport.x + Viewport.width;
+    //ai: no safe stage area at high zoom/narrow widths; Help keeps the shortcuts.
+    if (rightBound <= leftBound + 260.0f) return;
+    gX_F32 MaxWidth = rightBound - leftBound - 24.0f;
+    if (MaxWidth < 320.0f) return;
+    if (MaxWidth > 460.0f) MaxWidth = 460.0f;
     ImGui::SetNextWindowPos(
-        ImVec2(Viewport.x + Viewport.width * 0.5f,
+        ImVec2((leftBound + rightBound) * 0.5f,
             Viewport.y + Viewport.height - 10.0f),
         ImGuiCond_Always, ImVec2(0.5f, 1.0f));
-    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f),
+    ImGui::SetNextWindowSizeConstraints(ImVec2(MaxWidth, 0.0f),
         ImVec2(MaxWidth, FLT_MAX));
     ImGui::SetNextWindowBgAlpha(0.9f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(9.0f, 6.0f));
@@ -8681,14 +8723,6 @@ static gX_I0 gfx_scene_quick_controls(gX_RendererGFX *Gfx) {
 //   remain in the Lights inspector tab.
 static gX_I0 gfx_scene_lights_panel(gX_RendererGFX *gfx) {
     ImGui::SeparatorText("Lights");
-    if (ImGui::Button("Add light")) {
-        gX_I32 index = gX_RendererGFX_Light_Add(gfx);
-        if (index >= 0) {
-            s_selLight = index;
-            s_selModel = -1;
-        }
-    }
-    ImGui::SameLine();
     if (ImGui::Button("Remove selected") && s_selLight >= 0) {
         gX_RendererGFX_Light_Remove(gfx, (gX_U32)s_selLight);
         s_selLight = -1;
@@ -8719,17 +8753,6 @@ static gX_I0 gfx_scene_lights_panel(gX_RendererGFX *gfx) {
 static gX_I0 gfx_scene_cameras_panel(gX_RendererGFX *gfx) {
     (void)gfx;
     ImGui::SeparatorText("Cameras");
-    if (ImGui::Button("Add camera")
-        && s_cameraCount < GX_GFX_EDITOR_CAMERAS) {
-        gX_GFX_Editor_Camera *cameraEntry = &s_cameras[s_cameraCount];
-        memset(cameraEntry, 0, sizeof(*cameraEntry));
-        snprintf((char *)cameraEntry->name, sizeof(cameraEntry->name),
-            "Camera %d", s_cameraCount + 1);
-        cameraEntry->view = camera.camera3D;
-        s_selectedCamera = s_cameraCount;
-        s_cameraCount++;
-    }
-    ImGui::SameLine();
     if (ImGui::Button("Remove##camera") && s_selectedCamera >= 0) {
         for (gX_I32 ci = s_selectedCamera; ci + 1 < s_cameraCount; ci++)
             s_cameras[ci] = s_cameras[ci + 1];
@@ -8776,6 +8799,85 @@ static gX_I0 gfx_scene_cameras_panel(gX_RendererGFX *gfx) {
             else ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1.0f), "%s", s_renderStatus);
         }
     }
+}
+
+//ai: create hub — imports and object creation are separate from the scene tree.
+static gX_I0 gfx_scene_create_panel(gX_RendererGFX *gfx) {
+    //ai: stack the create actions when the scaled panel cannot fit one row.
+    gX_I1 narrowCreate = ImGui::GetContentRegionAvail().x < 430.0f;
+    gfx_asset_browser_button(gfx);
+    if (!narrowCreate) ImGui::SameLine();
+    if (gX_Tools_ImGui_GradientButton("Add light", ImVec2(0.0f, 0.0f),
+            IM_COL32(64, 44, 92, 255), IM_COL32(34, 26, 54, 255),
+            IM_COL32(238, 232, 255, 255))) {
+        gX_I32 index = gX_RendererGFX_Light_Add(gfx);
+        if (index >= 0) {
+            s_selLight = index;
+            s_selModel = -1;
+        }
+    }
+    ImGui::SameLine();
+    if (gX_Tools_ImGui_GradientButton("Add camera", ImVec2(0.0f, 0.0f),
+            IM_COL32(64, 44, 92, 255), IM_COL32(34, 26, 54, 255),
+            IM_COL32(238, 232, 255, 255))
+        && s_cameraCount < GX_GFX_EDITOR_CAMERAS) {
+        gX_GFX_Editor_Camera *cameraEntry = &s_cameras[s_cameraCount];
+        memset(cameraEntry, 0, sizeof(*cameraEntry));
+        snprintf((char *)cameraEntry->name, sizeof(cameraEntry->name),
+            "Camera %d", s_cameraCount + 1);
+        cameraEntry->view = camera.camera3D;
+        s_selectedCamera = s_cameraCount;
+        s_cameraCount++;
+    }
+    if (ImGui::CollapsingHeader("Add model by path")) {
+        ImGui::InputTextWithHint("model path", "type a model file path",
+            s_modelPath, sizeof(s_modelPath));
+        if (ImGui::Button("Add typed model path")) {
+            if (strlen(s_modelPath) >= sizeof(gX_TextLine)) {
+                gX_TraceLog(gX_LOG_WARNING, "GfxEd: model path exceeds 127 characters");
+            } else if (gfx_preset_file_exists(s_modelPath)) {
+                gX_I32 index = gX_RendererGFX_Model_Add(gfx, s_modelPath);
+                if (index >= 0) { s_selModel = index; s_selLight = -1; }
+                else gX_TraceLog(gX_LOG_WARNING, "GfxEd: model heap is full");
+            } else {
+                gX_TraceLog(gX_LOG_WARNING, "GfxEd: model not found '%s'", s_modelPath);
+            }
+        }
+    }
+    if (gX_Tools_ImGui_GradientButton("Add 3D text", ImVec2(0.0f, 0.0f),
+            IM_COL32(64, 44, 92, 255), IM_COL32(34, 26, 54, 255),
+            IM_COL32(238, 232, 255, 255)) && s_selModel >= 0) {
+        gX_RendererGFX_Model *selected = gfx_model_at(gfx, s_selModel);
+        if (selected) {
+            if (selected->params.textString[0] == '\0') {
+                snprintf(selected->params.textString,
+                    sizeof(selected->params.textString), "Label");
+                selected->params.textAnchorTop = 1;
+                selected->params.textFit = 1;
+                selected->params.textShadowColor = (gX_Color){0,0,0,220};
+                selected->params.textShadowPixels = 2.0f;
+            }
+            selected->params.textVisible = 1;
+            selected->params.textBillboard = 1;
+            gX_TraceLog(gX_LOG_INFO, "GfxEd: 3D text enabled on model %d",
+                s_selModel);
+        }
+    }
+    gfx_text_disabled_wrapped("New labels start above the selected model.");
+    static const gX_I8 *primitiveNames[] = {
+        "cube", "plane", "sphere", "cylinder", "cone", "torus" };
+    ImGui::SetNextItemWidth(-1.0f);
+    ImGui::Combo("##primitive", &s_primitiveType, primitiveNames, 6);
+    ImGui::DragFloat("size##primitive", &s_primitiveSize, 0.05f, 0.05f, 50.0f);
+    ImGui::DragInt("detail##primitive", &s_primitiveDetail, 0.1f, 0, 12);
+    if (gX_Tools_ImGui_GradientButton("Add primitive",
+            ImVec2(0.0f, 0.0f), IM_COL32(178, 120, 54, 255),
+            IM_COL32(96, 58, 88, 255), IM_COL32(255, 244, 224, 255))) {
+        if (gfx_primitive_add(gfx, s_primitiveType, s_primitiveSize,
+                s_primitiveDetail) < 0)
+            gX_TraceLog(gX_LOG_ERROR, "GfxEd: primitive generation failed");
+    }
+    gfx_text_disabled_wrapped("Procedural mesh; no asset file.");
 }
 
 //opencode: prefab library UI — save the selected model + nearby lights, then
@@ -9326,12 +9428,12 @@ static gX_I0 gfx_raymarch_panel(gX_RendererRaymarch *rm) {
         if (ImGui::Checkbox("hybrid depth (opaque)##rm", &hybridDepth))
             gX_Renderer_RaymarchDepth_Set(hybridDepth);
         gfx_raymarch_item_evidence("hybrid_depth");
-        ImGui::TextDisabled("Experimental: shared camera, full resolution, after GFX effects.");
+        gfx_text_disabled_wrapped("Experimental: shared camera, full resolution, after GFX effects.");
         bool sharedDepth = renderer.state.raymarchDepth == 2;
         if (ImGui::Checkbox("shared scene depth (experimental)##rm", &sharedDepth))
             gX_Renderer_RaymarchDepth_Set(sharedDepth ? 2 : 0);
         gfx_raymarch_item_evidence("shared_depth");
-        ImGui::TextDisabled("Before effects; normals opt-in, no SDF motion vectors yet.");
+        gfx_text_disabled_wrapped("Before effects; normals opt-in, no SDF motion vectors yet.");
         ImGui::BeginDisabled(renderer.state.raymarchDepth != 0);
         bool raymarchView = renderer.raymarch.state.DRAW_ALL != 0;
         if (ImGui::Checkbox("view raymarch module##rm", &raymarchView)) {
@@ -9378,7 +9480,7 @@ static gX_I0 gfx_raymarch_panel(gX_RendererRaymarch *rm) {
             }
             ImGui::EndCombo();
         }
-        ImGui::TextDisabled("Quality adjusts resolution, steps and bounces; features stay unchanged.");
+        gfx_text_disabled_wrapped("Quality adjusts resolution, steps and bounces; features stay unchanged.");
         //ai: proxy wireframe mode — stop the SDF march, draw line proxies.
         bool proxy = rm->flags.enableProxy != 0;
         if (ImGui::Checkbox("proxy wireframe##rm", &proxy))
@@ -10329,7 +10431,7 @@ static gX_I0 gfx_scene_panel(gX_RendererGFX *gfx) {
     bool pick = s_pickEnabled != 0;
     if (ImGui::Checkbox("Pick models and lights with mouse", &pick))
         s_pickEnabled = pick ? 1 : 0;
-    ImGui::TextDisabled("Click a model or light marker; drag to move it.");
+    gfx_text_disabled_wrapped("Click a model or light marker; drag to move it.");
     gX_RendererGFX_Model *model = gfx_model_at(gfx, s_selModel);
     gX_RendererGFX_Light *light = gfx_light_at(gfx, s_selLight);
     if (model || light) {
@@ -10337,29 +10439,90 @@ static gX_I0 gfx_scene_panel(gX_RendererGFX *gfx) {
             if (model) gfx_camera_frame_model(model);
             else gfx_camera_frame_light(light);
         }
+        ImGui::SameLine();
     }
-    if (ImGui::Button("Enter free camera", ImVec2(-FLT_MIN, 0.0f)))
+    if (ImGui::Button("Enter free camera"))
         gfx_free_camera_set(1);
-    gfx_model_list_panel(gfx);
-    gfx_scene_lights_panel(gfx);
-    gfx_scene_cameras_panel(gfx);
-    gfx_scene_sources_panel(gfx);
-    gfx_scene_prefabs_panel(gfx);
-    gfx_scene_texture_panel(gfx);
-    gfx_scene_export_panel(gfx);
-    gfx_scene_gl_panel(gfx);
+    ImGui::Separator();
+    if (ImGui::CollapsingHeader("Scene", ImGuiTreeNodeFlags_DefaultOpen)) {
+        gfx_model_list_panel(gfx);
+        gfx_scene_lights_panel(gfx);
+        gfx_scene_cameras_panel(gfx);
+    }
+    if (ImGui::CollapsingHeader("Create", ImGuiTreeNodeFlags_DefaultOpen)) {
+        gfx_scene_create_panel(gfx);
+        gfx_scene_prefabs_panel(gfx);
+        gfx_scene_sources_panel(gfx);
+    }
+    if (ImGui::CollapsingHeader("Renderer", ImGuiTreeNodeFlags_DefaultOpen)) {
+        gX_RendererRaymarch *rm = gfx_raymarch_active();
+        if (rm) gfx_raymarch_panel(rm);
+        if (renderer.ppLoaded) gfx_pp_panel(&renderer.pp);
+        gfx_scene_texture_panel(gfx);
+        gfx_scene_gl_panel(gfx);
+        gfx_scene_stats_panel(gfx);
+        ImGui::SeparatorText("Viewport helpers");
+        bool grid = gfx->state.SHOW_GRID != 0;
+        bool boxes = gfx->state.SHOW_BOUNDING_BOX != 0;
+        bool skeleton = gfx->state.SHOW_SKELETON != 0;
+        bool markers = gfx->state.SHOW_LIGHT_MARKERS != 0;
+        if (ImGui::Checkbox("grid", &grid)) gfx->state.SHOW_GRID = grid ? 1 : 0;
+        if (ImGui::Checkbox("bounding boxes", &boxes)) gfx->state.SHOW_BOUNDING_BOX = boxes ? 1 : 0;
+        if (ImGui::Checkbox("skeleton", &skeleton)) gfx->state.SHOW_SKELETON = skeleton ? 1 : 0;
+        if (ImGui::Checkbox("light markers", &markers)) gfx->state.SHOW_LIGHT_MARKERS = markers ? 1 : 0;
+        ImGui::TextDisabled("Camera: middle-drag orbit, Shift+middle-drag pan, wheel zoom.");
+        gX_Tools_BG_PanelBody(1, 1);
+        gfx_polisher_panel();
+    }
+    if (ImGui::CollapsingHeader("Document")) {
+        gfx_scene_export_panel(gfx);
+    }
+}
+
+//ai: selection-first inspector — selected-object actions are above global UI.
+static gX_I0 gfx_editor_selection_panel(gX_RendererGFX *gfx) {
+    gX_RendererGFX_Model *model = gfx_model_at(gfx, s_selModel);
+    gX_RendererGFX_Light *light = gfx_light_at(gfx, s_selLight);
+    ImGui::SeparatorText("Selection");
+    gX_Tools_ImGui_GradientAccent(IM_COL32(74, 48, 98, 255),
+        IM_COL32(224, 170, 82, 255), 2.0f);
+    if (model) {
+        ImGui::Text("%d: %s", s_selModel, gfx_model_basename(model->path));
+        ImGui::TextDisabled("model");
+    } else if (light) {
+        ImGui::Text("%d: %s", s_selLight, gfx_light_type_name(light->type));
+        ImGui::TextDisabled("light");
+    } else if (s_selectedCamera >= 0 && s_selectedCamera < s_cameraCount) {
+        ImGui::Text("%d: %.*s", s_selectedCamera,
+            (gX_I32)sizeof(s_cameras[s_selectedCamera].name),
+            s_cameras[s_selectedCamera].name);
+        ImGui::TextDisabled("camera");
+    } else {
+        ImGui::TextDisabled("Nothing selected");
+    }
+    if (model || light) {
+        if (ImGui::Button("Frame")) {
+            if (model) gfx_camera_frame_model(model);
+            else gfx_camera_frame_light(light);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Remove")) {
+            if (model) {
+                gX_RendererGFX_Model_Remove(gfx, (gX_U32)s_selModel);
+                s_selModel = -1;
+                s_modelRevertModel = -1;
+                s_modelRevertValid = 0;
+                gfx_model_history_reset();
+                gfx_model_snapshots_clear();
+            } else {
+                gX_RendererGFX_Light_Remove(gfx, (gX_U32)s_selLight);
+                s_selLight = -1;
+            }
+        }
+    }
     gfx_scene_quick_controls(gfx);
-    gfx_scene_stats_panel(gfx);
-    ImGui::SeparatorText("Viewport helpers");
-    bool grid = gfx->state.SHOW_GRID != 0;
-    bool boxes = gfx->state.SHOW_BOUNDING_BOX != 0;
-    bool skeleton = gfx->state.SHOW_SKELETON != 0;
-    bool markers = gfx->state.SHOW_LIGHT_MARKERS != 0;
-    if (ImGui::Checkbox("grid", &grid)) gfx->state.SHOW_GRID = grid ? 1 : 0;
-    if (ImGui::Checkbox("bounding boxes", &boxes)) gfx->state.SHOW_BOUNDING_BOX = boxes ? 1 : 0;
-    if (ImGui::Checkbox("skeleton", &skeleton)) gfx->state.SHOW_SKELETON = skeleton ? 1 : 0;
-    if (ImGui::Checkbox("light markers", &markers)) gfx->state.SHOW_LIGHT_MARKERS = markers ? 1 : 0;
-    ImGui::TextDisabled("Camera: middle-drag orbit, Shift+middle-drag pan, wheel zoom.");
+    //ai: history is a common task; keep it above the lab tabs at 1024.
+    if (model) gfx_model_history_panel(gfx, model, s_selModel);
 }
 
 //opencode: hold other editor actions while a browser target is captured.
@@ -10370,6 +10533,10 @@ static gX_I0 gfx_menu_bar(gX_RendererGFX *gfx) {
     gX_Tools_ImGui_Aero_MenuBar();
     //opencode: expose the same scale and navigation controls in the GFX editor.
     gX_Tools_ImGui_AccessibilityMenu();
+    //ai: visible focus-view escape; the menu item remains for discoverability.
+    if (ImGui::SmallButton(s_focusViewport ? "Exit focus" : "Focus view"))
+        gfx_focus_viewport_set(!s_focusViewport);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Hide both side panels (F6)");
     if (ImGui::BeginMenu("File")) {
         if (ImGui::MenuItem("Save preset", "Ctrl+S") && gfx) gfx_preset_save(gfx);
         if (ImGui::MenuItem("Load preset...", "Ctrl+O")) {
@@ -10407,8 +10574,17 @@ static gX_I0 gfx_menu_bar(gX_RendererGFX *gfx) {
     if (ImGui::BeginMenu("View")) {
         bool scene = s_scenePanelOpen != 0;
         bool inspector = s_inspectorPanelOpen != 0;
-        if (ImGui::Checkbox("Scene panel", &scene)) s_scenePanelOpen = scene ? 1 : 0;
-        if (ImGui::Checkbox("Inspector panel", &inspector)) s_inspectorPanelOpen = inspector ? 1 : 0;
+        if (ImGui::Checkbox("Scene panel", &scene)) {
+            s_scenePanelOpen = scene ? 1 : 0;
+            s_focusViewport = 0;
+        }
+        if (ImGui::Checkbox("Inspector panel", &inspector)) {
+            s_inspectorPanelOpen = inspector ? 1 : 0;
+            s_focusViewport = 0;
+        }
+        if (ImGui::MenuItem(s_focusViewport ? "Exit focus viewport" : "Focus viewport",
+                "F6", s_focusViewport))
+            gfx_focus_viewport_set(!s_focusViewport);
         if (gfx) {
             bool gizmo = gfx->state.SHOW_GIZMO != 0;
             bool boxes = gfx->state.SHOW_BOUNDING_BOX != 0;
@@ -10448,6 +10624,7 @@ static gX_I0 gfx_menu_bar(gX_RendererGFX *gfx) {
         ImGui::Text("F frames the selection; Delete removes it.");
         ImGui::Text("Middle-drag orbits; Shift+middle-drag pans; wheel zooms.");
         ImGui::Text("World > Camera enters free camera; Esc returns to authoring.");
+        ImGui::Text("F6 hides both side panels for a full-stage view.");
         ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
@@ -10478,7 +10655,14 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
     s_sunInit = 0;
     s_scenePanelOpen = 1;
     s_inspectorPanelOpen = 1;
+    s_focusViewport = 0;
+    s_focusSavedScene = 1;
+    s_focusSavedInspector = 1;
     s_pickEnabled = 1;
+    //ai: headless capture hook for the focus-viewport state.
+    const char *focusEnv = getenv("GX_EDITOR_FOCUS_VIEWPORT");
+    if (focusEnv && focusEnv[0] && focusEnv[0] != '0')
+        gfx_focus_viewport_set(1);
     s_freeCameraActive = 0;
     input.toolCameraInputEnabled = 0;
     s_moveAxis = 0;
@@ -10492,6 +10676,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
     s_presetStatus[0] = 0;
     s_presetOverwritePending = 0;
     s_headlessPresetSaveDone = 0;
+    s_headlessPresetSaveUiDone = 0;
     s_headlessPresetLoadDone = 0;
     s_headlessSnapshotSmokeDone = 0;
 #if gX_ENABLE_RENDERER == 1
@@ -10507,6 +10692,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
 extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0);
 extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
 #if gX_ENABLE_RENDERER == 1
+    gX_I32 palette = gfx_editor_palette_push();
     //opencode: Escape exits free camera; a direct cursor toggle also restores
     //   authoring mode.
     if (s_freeCameraActive && (input.keyboard.keys[gX_KEY_ESCAPE].state.PRESSED
@@ -10519,6 +10705,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     if (s_freeCameraActive) {
         gfx_free_camera_overlay();
         gfx_editor_shortcut_footer(0, 1);
+        gfx_editor_palette_pop(palette);
         return;
     }
     if (s_assetThumbnailClearPending) {
@@ -10527,6 +10714,8 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     }
     gX_RendererGFX *gfx = gfx_state();
     gfx_camera_render_tick(gfx);
+    if (input.keyboard.keys[gX_KEY_F6].state.PRESSED)
+        gfx_focus_viewport_set(!s_focusViewport);
     gfx_menu_bar(gfx);
 #ifndef NDEBUG
     gX_Tools_Gfx_BugReport_Test();
@@ -10546,19 +10735,42 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     gX_F32 menuH = ImGui::GetFrameHeight();
     gX_F32 panelH = scrH - menuH;
     if (panelH < 100.0f) panelH = 100.0f;
-    gX_F32 sceneW = gui.viewportDocked ? gui.viewportBox.x : 340.0f;
-    if (sceneW < 320.0f) sceneW = 320.0f;
-    //opencode: scale the fixed inspector width with text so enlarged controls
-    //   retain enough room for labels and value fields.
+    //opencode: scale the fixed side panels with text so enlarged controls
+    //   retain room for labels, then cap them on narrow displays.
     gX_F32 uiScale = ImGui::GetStyle().FontScaleMain;
     if (uiScale < 1.0f) uiScale = 1.0f;
-    gX_F32 inspectorW = (gui.viewportDocked ? 380.0f : 400.0f) * uiScale;
+    //ai: 320/360 base keeps 1600/1920 dockable while the 1024 window
+    //   falls back to the overlay layout.
+    gX_F32 sceneW = 320.0f * uiScale;
+    if (sceneW < 280.0f) sceneW = 280.0f;
+    gX_F32 inspectorW = 360.0f * uiScale;
+    if (scrW < 1440.0f) {
+        //ai: high text scales need proportionally wider panels; otherwise
+        //   150/175% labels clip even though the text is readable.
+        gX_F32 extra = uiScale - 1.25f;
+        if (extra < 0.0f) extra = 0.0f;
+        if (extra > 0.5f) extra = 0.5f;
+        gX_F32 sceneCap = scrW * (0.28f + extra * 0.16f);
+        gX_F32 inspectorCap = scrW * (0.38f + extra * 0.16f);
+        if (sceneW > sceneCap) sceneW = sceneCap;
+        if (inspectorW > inspectorCap) inspectorW = inspectorCap;
+        if (sceneW < 260.0f) sceneW = 260.0f;
+        if (inspectorW < 340.0f) inspectorW = 340.0f;
+    }
     if (inspectorW > scrW - sceneW - 20.0f) inspectorW = scrW - sceneW - 20.0f;
     if (inspectorW < 320.0f) inspectorW = 320.0f;
+    //opencode: the scene panel owns the dock's left margin; focus mode
+    //   reclaims it by moving the margin to zero.
+    gX_F32 leftInset = 0.0f;
+    if (gui.viewportDocked)
+        leftInset = s_scenePanelOpen ? (sceneW - 320.0f) : -320.0f;
+    gX_GUI_Viewport_SetLeftInset(leftInset);
     //opencode: reserve the inspector's width in the dock so the scene fits the
     //   visible area instead of rendering behind the panel.
     gX_GUI_Viewport_SetRightInset(
         (gui.viewportDocked && s_inspectorPanelOpen) ? inspectorW : 0.0f);
+    s_footerSceneW = sceneW;
+    s_footerInspectorW = inspectorW;
     //opencode: harness hook — the dock-layout gate reads the resolved geometry.
     const gX_I8 *dockTrace = getenv("GX_DOCK_TRACE");
     if (dockTrace && dockTrace[0] && dockTrace[0] != '0'
@@ -10586,10 +10798,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
                 gfx_raymarch_panel(raymarch);
                 if (renderer.ppLoaded) gfx_pp_panel(&renderer.pp);
             } else if (gfx) {
-                gX_RendererRaymarch *rm = gfx_raymarch_active();
-                if (rm) gfx_raymarch_panel(rm);
                 gfx_scene_panel(gfx);
-                if (renderer.ppLoaded) gfx_pp_panel(&renderer.pp);
             } else {
                 gX_RendererRaymarch *rm = gfx_raymarch_active();
                 if (rm) gfx_raymarch_panel(rm);
@@ -10597,8 +10806,6 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
                 else if (!rm) ImGui::TextWrapped(
                     "No GFX state — open a GFX scene first (--gfx).");
             }
-            gX_Tools_BG_PanelBody(1, 1);
-            gfx_polisher_panel();
         }
         ImGui::End();
         s_scenePanelOpen = sceneOpen ? 1 : 0;
@@ -10614,9 +10821,13 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
             if (!gfx) {
                 ImGui::TextWrapped("No GFX state — open a GFX scene first (--gfx).");
             } else {
-                gfx_preset_panel(gfx);
-                ImGui::TextColored(ImVec4(0.45f, 0.90f, 0.60f, 1.0f), "LIVE");
-                ImGui::TextDisabled("Edit live; save preset.");
+                gfx_editor_selection_panel(gfx);
+                ImGui::Separator();
+                if (ImGui::CollapsingHeader("Document", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    gfx_preset_panel(gfx);
+                    ImGui::TextColored(ImVec4(0.45f, 0.90f, 0.60f, 1.0f), "LIVE");
+                    ImGui::TextDisabled("Edit live; save preset.");
+                }
                 ImGui::Separator();
                 ImGui::BeginChild("GfxInspectorContent", ImVec2(0, 0), false,
                     ImGuiWindowFlags_AlwaysVerticalScrollbar);
@@ -10627,9 +10838,9 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
                 ImGui::PushStyleColor(ImGuiCol_TabDimmedSelected, ImVec4(0.18f, 0.32f, 0.46f, 1.0f));
                 //opencode: task-oriented lab tabs keep the full renderer surface
                 //   available without forcing a narrow dock to show every section.
-                if (ImGui::BeginTabBar("GfxLabs", ImGuiTabBarFlags_None)) {
+                if (ImGui::BeginTabBar("GfxLabs", ImGuiTabBarFlags_FittingPolicyScroll)) {
                     if (ImGui::BeginTabItem("Models")) {
-                        if (ImGui::BeginTabBar("GfxModelSections", ImGuiTabBarFlags_None)) {
+                        if (ImGui::BeginTabBar("GfxModelSections", ImGuiTabBarFlags_FittingPolicyScroll)) {
                             if (ImGui::BeginTabItem("Model")) {
                                 gfx_models_panel(gfx);
                                 ImGui::EndTabItem();
@@ -10710,6 +10921,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     gfx_editor_shortcut_footer(gfx, 0);
     gfx_asset_browser_window(gfx);
     if (gfx) gfx_snapshot_headless_smoke(gfx);
+    gfx_editor_palette_pop(palette);
 #else
     ImGui::SetNextWindowPos(ImVec2(40.0f, ImGui::GetFrameHeight() + 40.0f), ImGuiCond_FirstUseEver);
     bool inspectorOpen = true;

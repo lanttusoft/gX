@@ -517,6 +517,20 @@ gX_I0 gX_GUI_Viewport_SetRightInset(gX_F32 inset) {
     gX_GUI_Viewport_Refresh();
 }
 
+//opencode: left inset is additive to the 320px editor dock; negative values
+//   reclaim space when a tool hides its left panel (clamped at 0 in Refresh).
+gX_I0 gX_GUI_Viewport_SetLeftInset(gX_F32 inset) {
+    if (!isfinite(inset)) inset = 0.0f;
+    if (inset == gui.viewportLeftInset) return;
+    gui.viewportLeftInset = inset;
+    gX_GUI_Viewport_Refresh();
+}
+
+static gX_F32 gX_GUI_Dock_LeftMargin(gX_I0) {
+    gX_F32 left = GX_DOCK_MARGIN_MIN + gui.viewportLeftInset;
+    return left > 0.0f ? left : 0.0f;
+}
+
 gX_I0 gX_GUI_Viewport_Refresh(gX_I0) {
     //opencode: use the live client size so decorated-window rounding cannot
     //   leave an asymmetric strip after the renderer-scene direct blit.
@@ -548,7 +562,7 @@ gX_I0 gX_GUI_Viewport_Refresh(gX_I0) {
     gX_F32 gh = (gX_F32)maindata.screenHeight;
     //opencode: shrink-to-fit the space beside the left dock minus the host's
     //   right-edge inset (scale >= MIN) so panels never cover the scene.
-    gX_F32 usable = ww - GX_DOCK_MARGIN_MIN - gui.viewportRightInset;
+    gX_F32 usable = ww - gX_GUI_Dock_LeftMargin() - gui.viewportRightInset;
     if (usable < 1.0f) usable = 1.0f;
     gX_F32 s = usable / gw;
     gX_F32 heightScale = wh / gh;
@@ -556,7 +570,12 @@ gX_I0 gX_GUI_Viewport_Refresh(gX_I0) {
     if (s < GX_DOCK_SCALE_MIN) s = GX_DOCK_SCALE_MIN;
     if (s > 1.0f) s = 1.0f;
     gX_F32 vw = gw * s, vh = gh * s;
-    gui.viewportBox = (gX_Rectangle){GX_DOCK_MARGIN_MIN, (wh - vh) * 0.5f, vw, vh};
+    gX_F32 left = gX_GUI_Dock_LeftMargin();
+    //opencode: focus mode hides both panels; center the scene instead of
+    //   leaving a one-sided black band at the old dock edge.
+    if (left <= 0.0f && gui.viewportRightInset <= 0.0f && vw < ww)
+        left = (ww - vw) * 0.5f;
+    gui.viewportBox = (gX_Rectangle){left, (wh - vh) * 0.5f, vw, vh};
 }
 
 //opencode: input owns game coords — ScreenToGame maps every frame in
@@ -603,6 +622,7 @@ gX_I32 gX_GUI_Load(gX_I0) {
 
     //opencode: v0.6.9 — viewport starts fullscreen (= old canvasBox behavior).
     gui.viewportDocked = false;
+    gui.viewportLeftInset = 0.0f;
     gX_GUI_Viewport_Refresh();
     
     //opencode: initialize default style / theme — C defaults live in
@@ -1103,12 +1123,13 @@ static gX_I1 gX_GUI_Composite_NeedsPingCapture(gX_U32 currentIndex) {
     return false;
 }
 
+static gX_I1 s_prevWant = 0;
+
 //opencode: v0.6.9 Phase B — dock widen/restore + RT realloc.
 static gX_U32 s_preDockW = 0, s_preDockH = 0;
 //opencode: dock hardening — size the window was widened to (restore the
 //   pre-dock size on close only if the user did not resize meanwhile).
 static gX_U32 s_dockW = 0, s_dockH = 0;
-static gX_I1 s_prevWant = 0;
 //opencode: settle grace after OUR SetSize (engage/restore) — the WM applies
 //   resizes async; without it the live-size sync snaps maindata back to the
 //   stale OS size on the next frame, collapsing the dock (cramp fallback)
@@ -1163,7 +1184,7 @@ gX_I1 gX_GUI_Dock_Cramped_Check(gX_I0) {
     if (!gui.viewportDocked) return false;
     gX_F32 ww = (gX_F32)maindata.windowWidth;
     gX_F32 minViewportW = (gX_F32)maindata.screenWidth * GX_DOCK_SCALE_MIN;
-    if ((ww - GX_DOCK_MARGIN_MIN - gui.viewportRightInset) >= minViewportW)
+    if ((ww - gX_GUI_Dock_LeftMargin() - gui.viewportRightInset) >= minViewportW)
         return false;
     gui.viewportDocked = 0;
     gX_GUI_Viewport_Refresh();
@@ -1226,7 +1247,7 @@ static gX_I0 gX_GUI_Dock_Update(gX_I0) {
             tw = th * 16.0f / 9.0f;
         }
         gX_F32 gw = (gX_F32)maindata.screenWidth;
-        gX_F32 availableW = tw - GX_DOCK_MARGIN_MIN - gui.viewportRightInset;
+        gX_F32 availableW = tw - gX_GUI_Dock_LeftMargin() - gui.viewportRightInset;
         gX_F32 dockScale = availableW / gw;
         gX_F32 heightScale = th / (gX_F32)maindata.screenHeight;
         if (dockScale > heightScale) dockScale = heightScale;

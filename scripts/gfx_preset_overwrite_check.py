@@ -31,7 +31,7 @@ def run_save(preset, output, actions, frame=180):
     environment = audit.scene_env({
         "GX_FIXED_DT": "0.0166666667",
         "GX_GFX_PRESET_LOAD": str(preset),
-        "GX_AI_INPUT": actions,
+        "GX_GFX_PRESET_SAVE_UI": str(preset),
         "GX_SCREENSHOT_DIR": str(output),
         "GX_SHOT_FRAME": str(frame),
     })
@@ -68,15 +68,13 @@ def main():
                 shutil.copyfile(SOURCE, preset)
                 beforePrompt = hashlib.sha256(preset.read_bytes()).hexdigest()
                 promptDir = root / "prompt"
-                promptLog = run_save(preset, promptDir,
-                    "0.8 click 1568 103", frame=90)
+                promptLog = run_save(preset, promptDir, "", frame=90)
                 promptShots = list(promptDir.glob("gXss_*.png"))
                 if not promptShots:
                     raise RuntimeError("overwrite prompt screenshot missing")
                 imagePath = max(promptShots, key=lambda path: path.stat().st_mtime)
                 width, height = Image.open(imagePath).size
                 overwriteX, cancelX, dialogY = overwrite_button_centers(imagePath)
-                saveX, saveY = width - round(width * 0.132), round(height * 0.102)
                 #ai: the PP unit test also logs "Saving preset (new schema) to";
                 #   match the GFX module tag so the marker is unambiguous.
                 if "[GFX] Saving preset (new schema) to" in promptLog:
@@ -85,7 +83,6 @@ def main():
                     raise RuntimeError("opening the overwrite prompt changed file bytes")
 
                 cancelLog = run_save(preset, root / "cancel", ";".join((
-                    f"0.8 click {saveX} {saveY}",
                     f"1.8 click {cancelX} {dialogY}",
                 )))
                 if "[GFX] Saving preset (new schema) to" in cancelLog:
@@ -94,7 +91,6 @@ def main():
                     raise RuntimeError("Cancel changed the existing preset bytes")
 
                 confirmLog = run_save(preset, root / "confirm", ";".join((
-                    f"0.8 click {saveX} {saveY}",
                     f"1.8 click {overwriteX} {dialogY}",
                 )))
                 if "[GFX] Saving preset (new schema) to" not in confirmLog:

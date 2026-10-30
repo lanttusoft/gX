@@ -127,7 +127,10 @@ def main():
         rows = MAP_RE.findall(probe)
         if not rows:
             raise RuntimeError("material map Browse trace missing")
-        emissive = rows[-1][2]
+        #ai: pick override 0 explicitly; the panel may show several rows and
+        #    the browser marker is indexed to the selected override.
+        row = next((entry for entry in rows if entry[0] == "0"), rows[0])
+        emissive = row[2]
         bounds = [float(value) for value in emissive.split(",")]
         click_x = int((bounds[0] + bounds[2]) / 2)
         click_y = int((bounds[1] + bounds[3]) / 2)

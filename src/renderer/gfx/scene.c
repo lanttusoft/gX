@@ -38,6 +38,7 @@
 #include "../../common/path.h"
 #include "scene.h"
 #include "model.h"
+#include "schema.h"
 #include "light.h"
 #include "boilerplate.h"
 #include "texture.h"
@@ -1621,6 +1622,16 @@ gX_I32 gX_RendererGFX_Scene_AddDemoContent(gX_RendererGFX *gfx)
         }
     }
     if (!isWaterLayout) gX_RendererGFX_Scene_PickerOverlap(gfx);
+    //ai: the editor opens the composed showcase unless an explicit preset or
+    //   the audit-friendly GX_EDITOR_DEFAULT_SCENE=0 opt-out is present.
+    const char *editorPreset = getenv("GX_GFX_PRESET_LOAD");
+    const char *editorDefault = getenv("GX_EDITOR_DEFAULT_SCENE");
+    if (!isWaterLayout && arguments.hasGfxEditor
+        && (!editorDefault || strcmp(editorDefault, "0") != 0)
+        && (!editorPreset || !editorPreset[0])
+        && gX_RendererGFX_Preset_Load_New(gfx,
+            "resources/tools/gfx_showcase.json") == 0)
+        return 0;
 
     //opencode: instancing matrix fixture — the OFF arm draws one ordinary
     //   cube and the ON arm draws the same cube as a deterministic 4x4 grid.

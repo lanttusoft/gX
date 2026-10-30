@@ -6,6 +6,21 @@ SemVer.
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-10-30
+
+### Added
+- **GFX editor rework, phases 1–5**: split Scene/Create/Renderer/Document
+  panes, plum/lavender/amber identity, composed showcase default, peer-review
+  gate, responsive/accessible scaling, and focus-view mode. Internal re-review:
+  workflow 8.0, product 8.0, accessibility 8.2 (A- each); release target met
+  for the technical preview.
+- **Small-resolution patchwork gate**: `make gfx-patchwork-check` for fast
+  visual A/B and limit scans.
+
+### Changed
+- Default tool UI scale is now 125%; disabled/focus states are brighter, and
+  keyboard navigation keeps the shared amber focus cursor visible.
+
 ## [0.18.1] - 2026-10-30
 
 ### Added

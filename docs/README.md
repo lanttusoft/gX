@@ -9,6 +9,8 @@ Start here:
   audit contract and provenance.
 - [AI policy](ai_policy.md) — contribution marking, asset provenance and the
   license stance for AI-assisted work.
+- [Peer-review gate](peer_review_gate.md) — three-lens UX/editor review:
+  7/10 minimum, 8/10 target, with evidence.
 - [AI usage and limitations](ai_disclosure.md) — what AI assisted with,
   review limits and the as-is disclaimer.
 - [License](../LICENSE), [third-party notices](../license/NOTICE.md), [generated attributions](../license/ATTRIBUTIONS.md), [provenance source](../license/provenance.json).
@@ -58,6 +60,8 @@ Start here:
 - [Offline bug reports](bug_reporting.md)
 - [gX debug colors — magic-color registry](debug_colors.md)
 - [gX — editors and tooling surfaces](editors.md)
+- [GFX editor rework](gfx_editor_rework.md) — hierarchy, identity, showcase and
+  accessibility phases.
 - [gX v0.2 Front-End Design Specification](frontend_design.md)
 - [GUI Template Audit (v0.1.40)](gui_audit.md)
 - [gX GUI Audit - 2026-09-12 (v0.6.32)](gui_audit_2026-09.md)
