@@ -89,6 +89,8 @@ this source beta.
   CRC32 and raw/RLE compression; the decoder
   auto-detects eight rotation/mirror orientations from corner controls and
   accepts caller-supplied affine/perspective corners for rectification.
+  `Detect` segments a dark-background frame by border-colour distance and
+  returns the full-grid quad for perspective + auto-orientation decoding.
   `EncodeMulti`/`Reassemble` add ordered 4096-byte payloads with payload IDs,
   chunk CRCs and a whole-payload CRC. `gX_ColorCodeTv_*` — `Render` produces
   the deterministic simulated-CRT view used by `--color-code-tv` and the TV

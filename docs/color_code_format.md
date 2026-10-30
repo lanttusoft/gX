@@ -117,8 +117,30 @@ image.corners[6] = bl.x; image.corners[7] = bl.y;
 ```
 
 The decoder reconstructs the homography and samples through it. Perspective
-mode rejects `autoOrientation` because the corner order is already caller
-defined; a future slice can combine both.
+corners are in **image order**, so they can be combined with
+`autoOrientation` to find the logical rotation/mirroring.
+
+## Automatic detection
+
+For a code on a dark, roughly uniform background with a margin around the
+quiet zone, `gX_ColorCode_Detect` samples the image border for the background
+colour, segments pixels that differ from it, and returns the extreme
+TL/TR/BR/BL points of the full-grid quad. The quiet zone is part of the
+segmented region, so no active-area expansion is needed:
+
+```c
+gX_ColorCodeDetection detection;
+gX_ColorCode_Detect(rgba, width, height, &detection);
+image.perspective = 1;
+image.autoOrientation = 1;
+memcpy(image.corners, detection.corners, sizeof(image.corners));
+gX_ColorCode_Decode(&image, &result);
+```
+
+This is a bounded detector: it assumes the code is the dominant
+background-contrasting region and does not handle arbitrary clutter, partial
+occlusion, a code touching the image border, or a bright background. The
+flat and simulated-CRT owned fixtures are covered in `--test-only`.
 
 ## Presentation
 
@@ -130,11 +152,12 @@ current frame. `GX_COLOR_CODE_SHOT=/path.png` saves a deterministic capture
 (default frame 10; `GX_COLOR_CODE_SHOT_FRAME=N` selects another) for the
 presentation gate.
 
-Caller-supplied perspective rectification is implemented. Automatic corner
-detection, camera-device capture and multi-frame playback remain backlog. The
-format is deliberately a reusable module rather than an editor-only panel, so
-it can serve a CLI/tool or an in-engine screen when normal stdout/stderr
-transport is not available.
+Caller-supplied perspective rectification, automatic dark-background corner
+detection, a deterministic simulated CRT/TV view and multi-frame playback are
+implemented. Camera-device capture and arbitrary-clutter detection remain
+backlog. The format is deliberately a reusable module rather than an
+editor-only panel, so it can serve a CLI/tool or an in-engine screen when
+normal stdout/stderr transport is not available.
 
 ## Simulated TV
 
@@ -158,6 +181,7 @@ visual/robustness fixture, not a physical CRT or camera model.
 - two-bit SECDED rejection;
 - all eight rotation/mirror orientations;
 - affine and true keystone perspective warps via supplied corners;
+- automatic flat-background and simulated-CRT corner detection;
 - per-channel tint/white-balance gains and biases;
 - 25/50/75/100% red, green and blue levels plus calibration-strip coverage;
 - one erased data byte per block, different-block recovery and same-block

@@ -26,6 +26,7 @@
 
 #include "common/alloc.h"
 #include "common/color_code.h"
+#include "common/color_code_detect.h"
 #include "common/color_code_tv.h"
 #include "common/log.h"
 
@@ -806,6 +807,90 @@ static gX_I32 test_palette_levels(const gX_U8 *payload, gX_U32 length)
     return errors;
 }
 
+static gX_I32 test_detection(const gX_U8 *payload, gX_U32 length,
+    gX_I1 tv)
+{
+    gX_I32 errors = 0;
+    gX_ColorCodeFrame frame;
+    gX_I32 status = gX_ColorCode_Encode(payload, length, 0, 1, &frame);
+    if (status != GX_COLOR_CODE_OK) return 1;
+    const gX_U32 width = 1024;
+    const gX_U32 height = 768;
+    gX_U8 *pixels = (gX_U8 *)gX_Calloc(width * height * 4);
+    if (!pixels) return 1;
+    if (tv)
+    {
+        gX_F32 corners[8];
+        status = gX_ColorCodeTv_Render(&frame, pixels, width, height,
+            0x1234u, corners);
+    }
+    else
+    {
+        for (gX_U32 index = 0; index < width * height; index++)
+        {
+            pixels[index * 4 + 0] = 8;
+            pixels[index * 4 + 1] = 8;
+            pixels[index * 4 + 2] = 12;
+            pixels[index * 4 + 3] = 255;
+        }
+        status = gX_ColorCode_Render(&frame, pixels, width, height,
+            152, 24, 16);
+    }
+    if (status != GX_COLOR_CODE_OK)
+    {
+        gX_Free(pixels);
+        return 1;
+    }
+    gX_ColorCodeDetection detection;
+    status = gX_ColorCode_Detect(pixels, width, height, &detection);
+    if (status != GX_COLOR_CODE_OK)
+    {
+        gX_TraceLog(gX_LOG_ERROR,
+            "COLOR CODE 25 FAIL: detect tv=%d status=%d foreground=%u",
+            tv, status, detection.foregroundPixels);
+        gX_Free(pixels);
+        return errors + 1;
+    }
+    gX_ColorCodeImage image = {0};
+    image.pixels = pixels;
+    image.width = width;
+    image.height = height;
+    image.perspective = 1;
+    image.autoOrientation = 1;
+    memcpy(image.corners, detection.corners, sizeof(detection.corners));
+    gX_ColorCodeResult result;
+    status = gX_ColorCode_Decode(&image, &result);
+    gX_Free(pixels);
+    if (status != GX_COLOR_CODE_OK || result.payloadLength != length
+        || memcmp(result.payload, payload, length) != 0)
+    {
+        gX_TraceLog(gX_LOG_ERROR,
+            "COLOR CODE 26 FAIL: detect-decode tv=%d status=%d foreground=%u",
+            tv, status, detection.foregroundPixels);
+        errors++;
+    }
+    return errors;
+}
+
+static gX_I32 test_detection_empty(void)
+{
+    const gX_U32 width = 256;
+    const gX_U32 height = 256;
+    gX_U8 *pixels = (gX_U8 *)gX_Calloc(width * height * 4);
+    if (!pixels) return 1;
+    for (gX_U32 index = 0; index < width * height; index++)
+    {
+        pixels[index * 4 + 0] = 7;
+        pixels[index * 4 + 1] = 7;
+        pixels[index * 4 + 2] = 9;
+        pixels[index * 4 + 3] = 255;
+    }
+    gX_ColorCodeDetection detection;
+    gX_I32 status = gX_ColorCode_Detect(pixels, width, height, &detection);
+    gX_Free(pixels);
+    return status == GX_COLOR_CODE_ERR_GEOMETRY ? 0 : 1;
+}
+
 gX_I32 gX_Tests_ColorCode(gX_I0)
 {
     gX_I32 errors = 0;
@@ -826,6 +911,9 @@ gX_I32 gX_Tests_ColorCode(gX_I0)
     errors += test_perspective(raw, (gX_U32)strlen((const char *)raw));
     errors += test_perspective_matrix(raw, (gX_U32)strlen((const char *)raw));
     errors += test_tv(raw, (gX_U32)strlen((const char *)raw));
+    errors += test_detection(raw, (gX_U32)strlen((const char *)raw), 0);
+    errors += test_detection(raw, (gX_U32)strlen((const char *)raw), 1);
+    errors += test_detection_empty();
     errors += test_multiframe();
     errors += test_tint(raw, (gX_U32)strlen((const char *)raw),
         0.85f, 0.95f, 1.10f, 10.0f, 5.0f, 20.0f);

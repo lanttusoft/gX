@@ -890,11 +890,6 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
     const gX_F32 *projection = NULL;
     if (image->perspective)
     {
-        if (image->autoOrientation)
-        {
-            result->status = GX_COLOR_CODE_ERR_ARGUMENT;
-            return result->status;
-        }
         gX_I32 status = color_code_homography(image, homography);
         if (status != GX_COLOR_CODE_OK)
         {

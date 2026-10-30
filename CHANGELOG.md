@@ -34,6 +34,11 @@ SemVer.
   metadata is now v5; a single frame carries up to 304 bytes and uses SECDED
   plus interleaved XOR parity to recover one erased byte per block, with
   same-block double erasures failing closed.
+- **Screen color-code automatic detection**: `gX_ColorCode_Detect` segments a
+  dark-background frame by colour distance from the sampled border and returns
+  the full-grid quad. Combined with perspective and auto-orientation decoding,
+  it covers flat and simulated-CRT fixtures; arbitrary clutter, bright
+  backgrounds and camera-device capture remain backlog.
 
 ## [0.20.0] - 2026-10-30
 
