@@ -114,6 +114,7 @@ set(GX_SOURCES
     src/common/polisher.c
     src/common/data.c
     src/common/color_code.c
+    src/common/color_code_tv.c
     src/common/color_code_tests.c
     src/common/threading.c
     src/common/utils/billboard.c

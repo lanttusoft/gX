@@ -113,6 +113,18 @@ format is deliberately a reusable module rather than an editor-only panel, so
 it can serve a CLI/tool or an in-engine screen when normal stdout/stderr
 transport is not available.
 
+## Simulated TV
+
+`gX_ColorCodeTv_Render` maps the code onto a tilted 4:3 CRT-style screen and
+applies deterministic scanlines, an RGB phosphor mask, a small chroma shift,
+grain and vignette. It returns the projected grid corners for the perspective
+decoder. `./build/gX_build --color-code-tv <text>` shows the same view in the
+standalone presentation window.
+
+The TV decode test renders three fixed noise seeds and requires each to decode
+back to the original payload through the caller-supplied corners. This is a
+visual/robustness fixture, not a physical CRT or camera model.
+
 ## Validation
 
 `./build/gX_build --test-only` covers:
@@ -123,6 +135,7 @@ transport is not available.
 - two-bit SECDED rejection;
 - all eight rotation/mirror orientations;
 - affine and true keystone perspective warps via supplied corners;
+- simulated-CRT scanline/phosphor/noise/chroma/vignette decode across three seeds;
 - metadata CRC rejection;
 - low-confidence cell erasure rejection;
 - payload capacity and image geometry bounds.

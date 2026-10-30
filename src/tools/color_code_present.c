@@ -26,6 +26,7 @@
 
 #include "common/alloc.h"
 #include "common/color_code.h"
+#include "common/color_code_tv.h"
 #include "common/enum.h"
 #include "common/log.h"
 #include "wrappers/wrappers.h"
@@ -34,7 +35,7 @@
 #define GX_COLOR_CODE_SHOT_FRAME   10
 
 //ai: static 1:1/fit presentation loop; no animation, so every captured frame is frozen.
-gX_I32 gX_ColorCode_Present(const gX_I8 *payload)
+gX_I32 gX_ColorCode_Present(const gX_I8 *payload, gX_I1 tv)
 {
     if (!payload) return 1;
     gX_U32 length = (gX_U32)strlen((const char *)payload);
@@ -53,18 +54,28 @@ gX_I32 gX_ColorCode_Present(const gX_I8 *payload)
         gX_TraceLog(gX_LOG_ERROR, "COLOR_CODE: encode failed (%d)", status);
         return 1;
     }
-    gX_U32 size = GX_COLOR_CODE_GRID * GX_COLOR_CODE_PRESENT_CELL;
-    gX_U8 *pixels = (gX_U8 *)gX_Calloc(size * size * 4);
+    gX_U32 width = tv ? 1024 : GX_COLOR_CODE_GRID * GX_COLOR_CODE_PRESENT_CELL;
+    gX_U32 height = tv ? 768 : width;
+    gX_U8 *pixels = (gX_U8 *)gX_Calloc(width * height * 4);
     if (!pixels) return 1;
-    status = gX_ColorCode_Render(&frame, pixels, size, size, 0, 0,
-        GX_COLOR_CODE_PRESENT_CELL);
+    if (tv)
+    {
+        gX_F32 corners[8];
+        status = gX_ColorCodeTv_Render(&frame, pixels, width, height,
+            0x5A17u, corners);
+    }
+    else
+    {
+        status = gX_ColorCode_Render(&frame, pixels, width, height, 0, 0,
+            GX_COLOR_CODE_PRESENT_CELL);
+    }
     if (status != GX_COLOR_CODE_OK)
     {
         gX_TraceLog(gX_LOG_ERROR, "COLOR_CODE: render failed (%d)", status);
         gX_Free(pixels);
         return 1;
     }
-    gX_Texture texture = gX_Texture_LoadFromData(size, size, pixels);
+    gX_Texture texture = gX_Texture_LoadFromData(width, height, pixels);
     gX_Free(pixels);
     if (texture.id == 0)
     {

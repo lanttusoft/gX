@@ -18,8 +18,11 @@ SemVer.
   controls and caller-supplied affine/perspective rectification through four
   projected grid corners. `--color-code <text>` presents the frozen code
   fullscreen or 1:1 (`SPACE`, `F`, `ESC`) with a deterministic screenshot
-  hook. Automatic corner detection and multi-frame reassembly remain backlog;
-  see `docs/color_code_format.md`.
+  hook. `gX_ColorCodeTv_Render` / `--color-code-tv <text>` add a deterministic
+  simulated CRT with a tilted screen, scanlines, phosphor mask, chroma shift,
+  grain and vignette; three fixed noise seeds decode through the projected
+  corners. Automatic corner detection and multi-frame reassembly remain
+  backlog; see `docs/color_code_format.md`.
 
 ## [0.20.0] - 2026-10-30
 

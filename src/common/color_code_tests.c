@@ -26,6 +26,7 @@
 
 #include "common/alloc.h"
 #include "common/color_code.h"
+#include "common/color_code_tv.h"
 #include "common/log.h"
 
 #define TEST_WIDTH  408
@@ -542,6 +543,47 @@ static gX_I32 test_orientation(const gX_U8 *payload, gX_U32 length)
     return errors;
 }
 
+static gX_I32 test_tv(const gX_U8 *payload, gX_U32 length)
+{
+    gX_I32 errors = 0;
+    gX_ColorCodeFrame frame;
+    gX_I32 status = gX_ColorCode_Encode(payload, length, 0, 1, &frame);
+    if (status != GX_COLOR_CODE_OK) return 1;
+    const gX_U32 width = 1024;
+    const gX_U32 height = 768;
+    gX_U8 *pixels = (gX_U8 *)gX_Calloc(width * height * 4);
+    if (!pixels) return 1;
+    for (gX_U32 seed = 0; seed < 3; seed++)
+    {
+        gX_F32 corners[8];
+        status = gX_ColorCodeTv_Render(&frame, pixels, width, height,
+            seed * 7919u, corners);
+        if (status != GX_COLOR_CODE_OK)
+        {
+            errors++;
+            break;
+        }
+        gX_ColorCodeImage image = {0};
+        image.pixels = pixels;
+        image.width = width;
+        image.height = height;
+        image.perspective = 1;
+        memcpy(image.corners, corners, sizeof(corners));
+        gX_ColorCodeResult result;
+        status = gX_ColorCode_Decode(&image, &result);
+        if (status != GX_COLOR_CODE_OK || result.payloadLength != length
+            || memcmp(result.payload, payload, length) != 0)
+        {
+            gX_TraceLog(gX_LOG_ERROR,
+                "COLOR CODE 13 FAIL: TV seed %u status=%d payload=%u",
+                seed, status, result.payloadLength);
+            errors++;
+        }
+    }
+    gX_Free(pixels);
+    return errors;
+}
+
 gX_I32 gX_Tests_ColorCode(gX_I0)
 {
     gX_I32 errors = 0;
@@ -561,6 +603,7 @@ gX_I32 gX_Tests_ColorCode(gX_I0)
     errors += test_orientation(raw, (gX_U32)strlen((const char *)raw));
     errors += test_perspective(raw, (gX_U32)strlen((const char *)raw));
     errors += test_perspective_matrix(raw, (gX_U32)strlen((const char *)raw));
+    errors += test_tv(raw, (gX_U32)strlen((const char *)raw));
     errors += test_metadata_corruption(raw, (gX_U32)strlen((const char *)raw));
     errors += test_erasure(raw, (gX_U32)strlen((const char *)raw));
     gX_ColorCodeFrame frame;

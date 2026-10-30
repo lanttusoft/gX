@@ -3,7 +3,7 @@
 # Copyright (c) 2025-2026 lanttu, opencode
 # This file is part of gX. See LICENSE.
 
-#ai: standalone screen-code presentation smoke: exact size and all four palette bands.
+#ai: standalone screen-code presentation smoke: flat palette bands and simulated TV.
 import os
 import subprocess
 import sys
@@ -37,44 +37,73 @@ def palette_counts(pixels):
     return counts
 
 
+def run(mode, shot, temporary):
+    environment = dict(os.environ)
+    environment.pop("GX_AUDIT_WINDOW", None)
+    environment.update({
+        "GX_NO_SETTINGS_SAVE": "1",
+        "GX_FRAMES": "20",
+        "GX_COLOR_CODE_SHOT": str(shot),
+    })
+    command = [str(BIN), mode, "gX color code",
+               "--screenWidth", str(WIDTH), "--screenHeight", str(HEIGHT)]
+    result = subprocess.run(command, cwd=ROOT, env=environment,
+                            text=True, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, timeout=60)
+    log = audit.strip_ansi(result.stdout or "")
+    (temporary / (mode.lstrip('-') + ".log")).write_text(log)
+    if result.returncode != 0:
+        raise RuntimeError(f"{mode} exited {result.returncode}")
+    if not shot.is_file():
+        raise RuntimeError(f"{mode} did not write its screenshot")
+    image = np.asarray(Image.open(shot).convert("RGB"))
+    if image.shape != (HEIGHT, WIDTH, 3):
+        raise RuntimeError(f"{mode} size {image.shape} != {(HEIGHT, WIDTH, 3)}")
+    return image
+
+
+def check_flat(image):
+    counts = palette_counts(image)
+    print("flat palette counts:", counts, flush=True)
+    for name, minimum in (("black", 10000), ("white", 100),
+                          ("red", 20), ("blue", 20)):
+        if counts[name] < minimum:
+            raise RuntimeError(f"flat {name} palette band too small: {counts[name]}")
+    center = image[HEIGHT // 4:HEIGHT * 3 // 4,
+                   WIDTH // 4:WIDTH * 3 // 4]
+    colored = np.abs(center.astype(np.int32) - 24).max(axis=2) > 8
+    if float(colored.mean()) < 0.05:
+        raise RuntimeError("flat presentation code is not visible in the centre")
+
+
+def check_tv(image):
+    pixels = image.astype(np.int32)
+    red = pixels[..., 0]
+    green = pixels[..., 1]
+    blue = pixels[..., 2]
+    bright = int(((red + green + blue) > 300).sum())
+    red_dominant = int(((red > green + 40) & (red > blue + 40)).sum())
+    blue_dominant = int(((blue > red + 40) & (blue > green + 20)).sum())
+    dark = int(((red + green + blue) < 90).sum())
+    print("tv bands:", {"bright": bright, "red": red_dominant,
+                        "blue": blue_dominant, "dark": dark}, flush=True)
+    if bright < 1000:
+        raise RuntimeError("TV presentation has too few bright pixels")
+    if red_dominant < 20 or blue_dominant < 20:
+        raise RuntimeError("TV presentation lost its red/blue palette bands")
+    if dark < 10000:
+        raise RuntimeError("TV presentation lost its dark background")
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="color_code_present_",
                                      dir="/tmp/opencode") as temporary:
         out = Path(temporary)
-        shot = out / "present.png"
-        environment = dict(os.environ)
-        environment.pop("GX_AUDIT_WINDOW", None)
-        environment.update({
-            "GX_NO_SETTINGS_SAVE": "1",
-            "GX_FRAMES": "20",
-            "GX_COLOR_CODE_SHOT": str(shot),
-        })
-        command = [str(BIN), "--color-code", "gX color code",
-                   "--screenWidth", str(WIDTH), "--screenHeight", str(HEIGHT)]
-        result = subprocess.run(command, cwd=ROOT, env=environment,
-                                text=True, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, timeout=60)
-        log = audit.strip_ansi(result.stdout or "")
-        (out / "present.log").write_text(log)
-        if result.returncode != 0:
-            raise RuntimeError(f"presentation exited {result.returncode}")
-        if not shot.is_file():
-            raise RuntimeError("presentation did not write its screenshot")
-        image = np.asarray(Image.open(shot).convert("RGB"))
-        if image.shape != (HEIGHT, WIDTH, 3):
-            raise RuntimeError(f"presentation size {image.shape} != {(HEIGHT, WIDTH, 3)}")
-        counts = palette_counts(image)
-        print("palette counts:", counts, flush=True)
-        for name, minimum in (("black", 10000), ("white", 100),
-                              ("red", 20), ("blue", 20)):
-            if counts[name] < minimum:
-                raise RuntimeError(f"{name} palette band too small: {counts[name]}")
-        center = image[HEIGHT // 4:HEIGHT * 3 // 4,
-                       WIDTH // 4:WIDTH * 3 // 4]
-        colored = np.abs(center.astype(np.int32) - 24).max(axis=2) > 8
-        if float(colored.mean()) < 0.05:
-            raise RuntimeError("presentation code is not visible in the centre")
-    print("COLOR_CODE_PRESENT_CHECK: PASS (1024x768, four palette bands, centred)")
+        flat = run("--color-code", out / "flat.png", out)
+        check_flat(flat)
+        tv = run("--color-code-tv", out / "tv.png", out)
+        check_tv(tv)
+    print("COLOR_CODE_PRESENT_CHECK: PASS (flat palette bands + simulated TV)")
     return 0
 
 

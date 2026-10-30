@@ -59,6 +59,7 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
         "      --test-only            Run unit tests and exit (no window)\n"
         "      --color-code <text>    Show a screen color code; SPACE fit/1:1,\n"
         "                             F fullscreen, ESC close\n"
+        "      --color-code-tv <text> Same, displayed through a simulated CRT/TV\n"
         "      --ai-screenshot-final  Headless capture: screenshot + exit after\n"
         "                             180 frames (vision verification/parity audits)\n"
         "      --ai-screenshot-after <n>  Same, capture at frame n\n"
@@ -182,6 +183,7 @@ gX_I32 gX_Parse(int argc, char **argv) {
         {"disableAudio",no_argument,        NULL, 0},
         {"test-only",   no_argument,        NULL, 0},
         {"color-code",  required_argument,  NULL, 0},
+        {"color-code-tv", required_argument, NULL, 0},
         {"ai-screenshot-final", no_argument, NULL, 0},
         {"ai-screenshot-after", required_argument, NULL, 0},
         {"layout-dump", required_argument, NULL, 0},
@@ -297,6 +299,14 @@ gX_I32 gX_Parse(int argc, char **argv) {
                 }
                 if (!strcmp(long_options[option_index].name,"color-code")) {
                     arguments.hasColorCode = true;
+                    arguments.colorCodeTv = false;
+                    snprintf(arguments.colorCodePayload,
+                        sizeof(arguments.colorCodePayload), "%s",
+                        optarg ? optarg : "");
+                }
+                if (!strcmp(long_options[option_index].name,"color-code-tv")) {
+                    arguments.hasColorCode = true;
+                    arguments.colorCodeTv = true;
                     snprintf(arguments.colorCodePayload,
                         sizeof(arguments.colorCodePayload), "%s",
                         optarg ? optarg : "");
