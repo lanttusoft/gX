@@ -178,6 +178,9 @@ def make_schema_probe():
         "glossMapID": -1,
         "excludeFromPlanarCapture": True,
         "reflectionPlaneFollowsModel": True,
+        #opencode: pin the per-model surface controls for imported one-sided art.
+        "doubleSided": True,
+        "flipNormals": True,
         #opencode: pin the custom label-font path round-trip.
         "textFontPath": "resources/font/EuropeanTeletext.ttf",
         #opencode: pin the model motion-path round-trip.

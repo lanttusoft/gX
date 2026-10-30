@@ -6,6 +6,12 @@ SemVer.
 
 ## [Unreleased]
 
+### Added
+- **Per-model surface controls**: `doubleSided` disables backface culling for
+  color, depth/shadow, instanced and planar draws; `flipNormals` inverts the
+  shaded normal without changing winding. Both are editable per model,
+  default off, and persist in presets.
+
 ## [0.20.0] - 2026-10-30
 
 ### Added

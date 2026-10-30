@@ -121,8 +121,13 @@ assimp export "Character.dae" Character.glb -fglb2
   collapsing vertices. Retarget or reduce to ≤128 joints when the model must
   animate.
 - Assimp omits `doubleSided` and usually `alphaMode`; closed meshes are
-  unaffected, but hair/card layers may need a manual double-sided or alpha
-  pass.
+  unaffected, but hair/card layers may need the per-model **double-sided**
+  surface toggle (color, depth/shadow, instanced and planar paths) or an
+  alpha pass.
+- Some exporters invert normals or bake a mirrored transform into the mesh.
+  The per-model **flip normals** toggle inverts the shaded normal without
+  changing triangle winding, so culling stays predictable while lighting
+  follows the visible side.
 - Assimp applies the COLLADA `<up_axis>` through a root rotation. Assets
   authored in a different axis (for example a world map whose geometry lies
   in X/Y) still need a scene-level rotation after import.

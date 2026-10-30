@@ -242,6 +242,14 @@ using clamped `reflectionBias × Fresnel` instead of adding the environment
 term. HDR radiance is not clamped; planar reflection behavior is unchanged.
 This bounded mix is not a full energy-conserving BRDF.
 
+<!-- //ai: per-model surface controls for imported one-sided and flipped assets. -->
+Model parameters `doubleSided` and `flipNormals` default false; an old preset
+that omits them loads unchanged. `doubleSided` disables backface culling for
+that model's color, depth/shadow, instanced and planar-fill draws.
+`flipNormals` inverts the standard vertex-path shading normal without changing
+triangle winding or culling. Both values round-trip through the GFX preset
+schema.
+
 <!-- //ai: cubemap inspection reads actual face HDR without the replacement-color audit. -->
 `GX_CUBEMAP_HDR_PREFIX=/tmp/.../capture` enables diagnostic float RGBA
 readback of the six actual cubemap faces on the 30th `RenderEx` capture,

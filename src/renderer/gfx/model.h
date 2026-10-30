@@ -151,6 +151,9 @@ typedef struct gX_RendererGFX_Model_Parameters {
     //   and Cook-Torrance PBR. Per-model flag, lets existing presets keep
     //   their Phong shading while new models opt into PBR.
     gX_I1   usePBR;
+    //ai: per-model surface controls for imported/one-sided assets.
+    gX_I1   doubleSided;
+    gX_I1   flipNormals;
 
     gX_F32 shininess;
     

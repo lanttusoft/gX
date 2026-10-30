@@ -231,6 +231,8 @@ typedef struct gX_RendererGFX_ShaderLocs {
     
     //opencode: flat shading toggle
     gX_I32  enableFlatLoc;
+    //ai: per-model normal inversion for inside-out / authored-flipped meshes.
+    gX_I32  flipNormalsLoc;
 
     //opencode: reflection bias multiplier
     gX_I32  reflectionBiasLoc;

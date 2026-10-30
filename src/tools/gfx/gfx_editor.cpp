@@ -6023,6 +6023,12 @@ static gX_I0 gfx_model_surface_panel(gX_RendererGFX *gfx) {
             "Tag two facing planar mirrors A/B for simultaneous captures; "
             "each samples the other's history bounce.");
     }
+    gX_I1 doubleSided = model->params.doubleSided ? 1 : 0;
+    if (ImGui::Checkbox("double-sided", (bool *)&doubleSided))
+        model->params.doubleSided = doubleSided ? 1 : 0;
+    gX_I1 flipNormals = model->params.flipNormals ? 1 : 0;
+    if (ImGui::Checkbox("flip normals", (bool *)&flipNormals))
+        model->params.flipNormals = flipNormals ? 1 : 0;
     gX_I1 alphaTest = model->params.enableAlphaTest ? 1 : 0;
     if (ImGui::Checkbox("alpha test", (bool *)&alphaTest)) model->params.enableAlphaTest = alphaTest ? 1 : 0;
     ImGui::DragFloat("alpha cutoff", &model->params.alphaCutoff, 0.01f, 0.0f, 1.0f);

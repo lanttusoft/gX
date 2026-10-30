@@ -830,6 +830,9 @@ gX_I32 gX_RendererGFX_Model_Init(gX_RendererGFX_Model *model, const gX_I8 *path)
     memset(model->params.poseOverrides, 0, sizeof(model->params.poseOverrides));
     //opencode: default to Phong (legacy) for backward compat with existing presets
     model->params.usePBR = false;
+    //ai: per-model surface controls stay off for legacy presets.
+    model->params.doubleSided = false;
+    model->params.flipNormals = false;
     //opencode: M6 - quality snapshot starts empty (nothing forced yet)
     model->qualitySaved = false;
     model->savedUsePBR = false;
@@ -1786,6 +1789,11 @@ gX_I0 gX_RendererGFX_Model_Draw(gX_RendererGFX_Model *model, gX_RendererGFX *gfx
         }
         if (!depthMode && (gfx->shader.shader.id == 0 || !gfx->shader.loaded)) return;
         if (depthMode && (gfx->depth.shader.id == 0 || !gfx->depth.loaded)) return;
+        //ai: authored double-sided models keep their backfaces in color/depth.
+        gX_I1 cullWas = gX_RHI_IsEnabled(gX_RHI_CULL_FACE);
+        gX_I32 cullMode = 0;
+        gX_RHI_GetIntegerv(gX_RHI_CULL_FACE_MODE, &cullMode);
+        if (model->params.doubleSided) gX_RHI_Disable(gX_RHI_CULL_FACE);
         gX_Model m = model->model;
         //opencode: guard against NULL meshMaterial (raylib may not populate it
         //   for all model types, e.g., certain GLB exports). The instanced
@@ -1844,6 +1852,11 @@ gX_I0 gX_RendererGFX_Model_Draw(gX_RendererGFX_Model *model, gX_RendererGFX *gfx
         gX_Shader_SetValue_Int(shaderProg, rshader->locations.oracleBounceLoc,
             (getenv("GX_T_ORACLE_BOUNCE") && getenv("GX_T_ORACLE_BOUNCE")[0] != '0'
             && !oracleGpuOn) ? 1 : 0);
+        //ai: invert the shaded normal only; winding/culling stay authored.
+        if (!depthMode && rshader->locations.flipNormalsLoc >= 0)
+            gX_Shader_SetValue_Int(shaderProg,
+                rshader->locations.flipNormalsLoc,
+                model->params.flipNormals ? 1 : 0);
         
         //opencode: per-model uniforms via individual glUniform* calls (the
         //   UBO branch was deleted: glGetUniformBlockIndex always returns
@@ -2653,6 +2666,14 @@ gX_I0 gX_RendererGFX_Model_Draw(gX_RendererGFX_Model *model, gX_RendererGFX *gfx
             if (!blendWasEnabled) gX_RHI_Disable(gX_RHI_BLEND);
             if (depthMaskWas) gX_RHI_Depth_Write(1);
         }
+        if (model->params.doubleSided) {
+            if (cullWas) {
+                gX_RHI_Enable(gX_RHI_CULL_FACE);
+                gX_RHI_Cull_Mode((gX_U32)cullMode);
+            } else {
+                gX_RHI_Disable(gX_RHI_CULL_FACE);
+            }
+        }
     }
 }
 
@@ -2841,6 +2862,15 @@ gX_I0 gX_RendererGFX_Model_DrawInstanced(gX_RendererGFX *gfx, gX_U32 modelIndex,
     if (instanceCount > 64) instanceCount = 64;
     gX_RendererGFX_Model *model = gX_Heap_SeekPtr_Index(&gfx->models, modelIndex);
     if (!model || !model->loaded) return;
+    //ai: the instanced path applies the same per-model surface controls.
+    gX_I1 cullWas = gX_RHI_IsEnabled(gX_RHI_CULL_FACE);
+    gX_I32 cullMode = 0;
+    gX_RHI_GetIntegerv(gX_RHI_CULL_FACE_MODE, &cullMode);
+    if (model->params.doubleSided) gX_RHI_Disable(gX_RHI_CULL_FACE);
+    if (gfx->shader.locations.flipNormalsLoc >= 0)
+        gX_Shader_SetValue_Int(gfx->shader.shader,
+            gfx->shader.locations.flipNormalsLoc,
+            model->params.flipNormals ? 1 : 0);
 
     //opencode: upload instanceCount + instanceMatrices uniforms.
     //   instanceMatrices is uploaded element-by-element, each with GL_TRUE transpose.
@@ -2928,6 +2958,14 @@ gX_I0 gX_RendererGFX_Model_DrawInstanced(gX_RendererGFX *gfx, gX_U32 modelIndex,
     gX_Shader_SetValue_Int(gfx->shader.shader, gfx->shader.locations.instanceCountLoc, 0);
 
     m.transform = savedTransform;
+    if (model->params.doubleSided) {
+        if (cullWas) {
+            gX_RHI_Enable(gX_RHI_CULL_FACE);
+            gX_RHI_Cull_Mode((gX_U32)cullMode);
+        } else {
+            gX_RHI_Disable(gX_RHI_CULL_FACE);
+        }
+    }
 }
 
 //opencode: dynamic scene management via heap

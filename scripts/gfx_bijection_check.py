@@ -154,6 +154,10 @@ def make_probe(path):
         "worldGapThreshold": 1.75,
     })
     document["bloom"].update({"knee": 0.27})
+    document["models"][0]["params"].update({
+        "doubleSided": True,
+        "flipNormals": True,
+    })
     path.write_text(json.dumps(document, indent=2) + "\n")
 
 
