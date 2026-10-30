@@ -143,6 +143,39 @@ static gX_I32 test_bit_errors(const gX_U8 *payload, gX_U32 length,
     return errors;
 }
 
+static gX_I32 test_single_bit_matrix(const gX_U8 *payload, gX_U32 length)
+{
+    gX_I32 errors = 0;
+    for (gX_U32 bit = 0; bit < GX_COLOR_CODE_ECC_BITS; bit++)
+    {
+        gX_ColorCodeFrame frame;
+        gX_I32 status = gX_ColorCode_Encode(payload, length, 0, 1, &frame);
+        if (status != GX_COLOR_CODE_OK) return errors + 1;
+        gX_U32 flatCell = bit / 2;
+        gX_U32 cellBit = 1 - (bit & 1);
+        gX_U32 row = GX_COLOR_CODE_DATA_START_ROW
+            + flatCell / GX_COLOR_CODE_INNER;
+        gX_U32 col = GX_COLOR_CODE_QUIET + GX_COLOR_CODE_BORDER
+            + flatCell % GX_COLOR_CODE_INNER;
+        frame.cells[row * GX_COLOR_CODE_GRID + col] ^= (gX_U8)(1u << cellBit);
+        gX_U8 *pixels = test_image(&frame, 0.89f, 10.0f);
+        if (!pixels) return errors + 1;
+        gX_ColorCodeResult result;
+        status = test_decode(pixels, &result);
+        gX_Free(pixels);
+        if (status != GX_COLOR_CODE_OK || result.correctedBits != 1
+            || result.payloadLength != length
+            || memcmp(result.payload, payload, length) != 0)
+        {
+            gX_TraceLog(gX_LOG_ERROR,
+                "COLOR CODE 9 FAIL: single-bit position %u status=%d corrected=%u",
+                bit, status, result.correctedBits);
+            errors++;
+        }
+    }
+    return errors;
+}
+
 static gX_I32 test_metadata_corruption(const gX_U8 *payload, gX_U32 length)
 {
     gX_I32 errors = 0;
@@ -215,6 +248,7 @@ gX_I32 gX_Tests_ColorCode(gX_I0)
         GX_COLOR_CODE_OK);
     errors += test_bit_errors(raw, (gX_U32)strlen((const char *)raw), 3,
         GX_COLOR_CODE_ERR_ECC);
+    errors += test_single_bit_matrix(raw, (gX_U32)strlen((const char *)raw));
     errors += test_metadata_corruption(raw, (gX_U32)strlen((const char *)raw));
     errors += test_erasure(raw, (gX_U32)strlen((const char *)raw));
     gX_ColorCodeFrame frame;
