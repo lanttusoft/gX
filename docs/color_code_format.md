@@ -80,11 +80,17 @@ Cell centres are sampled with a small aperture and corrected against the
 calibration row. The caller must provide a frame that fills the declared
 45×45 grid; arbitrary cropping is rejected.
 
-Perspective rectification, rotation/mirror detection, camera-device capture,
-multi-frame playback and a screen presentation tool remain backlog. The format
-is deliberately a reusable module rather than an editor-only panel, so it can
-serve a CLI/tool or an in-engine screen when normal stdout/stderr transport is
-not available.
+## Presentation
+
+`./build/gX_build --color-code <text>` opens a standalone presentation window.
+The code is static (frozen for capture); `SPACE` toggles fit/1:1, `F` toggles
+the window fullscreen and `ESC` closes it. `GX_COLOR_CODE_SHOT=/path.png` saves
+a deterministic capture at frame 10 for the presentation gate.
+
+Perspective rectification, rotation/mirror detection, camera-device capture and
+multi-frame playback remain backlog. The format is deliberately a reusable
+module rather than an editor-only panel, so it can serve a CLI/tool or an
+in-engine screen when normal stdout/stderr transport is not available.
 
 ## Validation
 

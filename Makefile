@@ -92,6 +92,8 @@ check: all
 	python3 scripts/test_gfx_tonemap_controls.py
 	#ai: conservative mesh bounds and per-model cache lifetime (owned native controls).
 	python3 scripts/gfx_mesh_culling_check.py --native-only
+	#ai: standalone screen-code presentation smoke — exact size + palette bands.
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/color_code_present_check.py
 	@echo "== [gX CI] scene smoke (title + gfx + y2k, 60 frames each) =="
 	DISPLAY=$${DISPLAY:-:1} GX_FRAMES=60 GX_NO_SETTINGS_SAVE=1 timeout 60 ./build/gX_build --screenWidth 1024 --screenHeight 768 --title >/dev/null 2>&1
 	DISPLAY=$${DISPLAY:-:1} GX_FRAMES=60 GX_NO_SETTINGS_SAVE=1 timeout 60 ./build/gX_build --screenWidth 1024 --screenHeight 768 --gfx >/dev/null 2>&1
@@ -1054,6 +1056,12 @@ water-ci-check: all
 water-check: all
 	@echo "== [gX CI] water object-reflection pin =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_water_check.py
+
+#ai: standalone screen-code presentation smoke (normally part of make check).
+.PHONY: color-code-check
+color-code-check: all
+	@echo "== [gX CI] color-code presentation =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/color_code_present_check.py
 
 #opencode: feature scoreboard (completeness/correctness/hardness).
 #   Full run includes median timing plus the matrix + bloom audit + reflect

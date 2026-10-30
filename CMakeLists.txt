@@ -222,6 +222,8 @@ set(GX_SOURCES
     src/tools/gfx/water_panel.cpp
     src/tools/gfx/glass_panel.cpp
     src/tools/tools.c
+    #ai: standalone screen-code presentation mode.
+    src/tools/color_code_present.c
     #ai: shared crosshair/tool mode (GMod-style toolgun) for editors.
     src/tools/toolgun.c
     src/gui/style.c
