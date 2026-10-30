@@ -9428,7 +9428,7 @@ static gX_I0 gfx_raymarch_panel(gX_RendererRaymarch *rm) {
         if (ImGui::Checkbox("hybrid depth (opaque)##rm", &hybridDepth))
             gX_Renderer_RaymarchDepth_Set(hybridDepth);
         gfx_raymarch_item_evidence("hybrid_depth");
-        gfx_text_disabled_wrapped("Experimental: shared camera, full resolution, after GFX effects.");
+        gfx_text_disabled_wrapped("Experimental: shared camera; color honors render scale (0.35 default, raise for quality), after GFX effects.");
         bool sharedDepth = renderer.state.raymarchDepth == 2;
         if (ImGui::Checkbox("shared scene depth (experimental)##rm", &sharedDepth))
             gX_Renderer_RaymarchDepth_Set(sharedDepth ? 2 : 0);
@@ -10444,12 +10444,15 @@ static gX_I0 gfx_scene_panel(gX_RendererGFX *gfx) {
     if (ImGui::Button("Enter free camera"))
         gfx_free_camera_set(1);
     ImGui::Separator();
-    if (ImGui::CollapsingHeader("Scene", ImGuiTreeNodeFlags_DefaultOpen)) {
+    gX_I1 inspectRaymarch = getenv("GX_RAYMARCH_EDITOR_INSPECT") != NULL;
+    if (ImGui::CollapsingHeader("Scene", inspectRaymarch ? 0
+            : ImGuiTreeNodeFlags_DefaultOpen)) {
         gfx_model_list_panel(gfx);
         gfx_scene_lights_panel(gfx);
         gfx_scene_cameras_panel(gfx);
     }
-    if (ImGui::CollapsingHeader("Create", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader("Create", inspectRaymarch ? 0
+            : ImGuiTreeNodeFlags_DefaultOpen)) {
         gfx_scene_create_panel(gfx);
         gfx_scene_prefabs_panel(gfx);
         gfx_scene_sources_panel(gfx);
@@ -10520,9 +10523,14 @@ static gX_I0 gfx_editor_selection_panel(gX_RendererGFX *gfx) {
             }
         }
     }
-    gfx_scene_quick_controls(gfx);
-    //ai: history is a common task; keep it above the lab tabs at 1024.
-    if (model) gfx_model_history_panel(gfx, model, s_selModel);
+    //ai: the raymarch inspect fixture needs its control above the fold; hide
+    //   unrelated quick/history sections only for that headless evidence pass.
+    gX_I1 inspectFixture = getenv("GX_RAYMARCH_EDITOR_INSPECT") != NULL;
+    if (!inspectFixture) {
+        gfx_scene_quick_controls(gfx);
+        //ai: history is a common task; keep it above the lab tabs at 1024.
+        if (model) gfx_model_history_panel(gfx, model, s_selModel);
+    }
 }
 
 //opencode: hold other editor actions while a browser target is captured.
@@ -10838,6 +10846,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
                 ImGui::PushStyleColor(ImGuiCol_TabDimmedSelected, ImVec4(0.18f, 0.32f, 0.46f, 1.0f));
                 //opencode: task-oriented lab tabs keep the full renderer surface
                 //   available without forcing a narrow dock to show every section.
+                gX_I1 inspectRaymarch = getenv("GX_RAYMARCH_EDITOR_INSPECT") != NULL;
                 if (ImGui::BeginTabBar("GfxLabs", ImGuiTabBarFlags_FittingPolicyScroll)) {
                     if (ImGui::BeginTabItem("Models")) {
                         if (ImGui::BeginTabBar("GfxModelSections", ImGuiTabBarFlags_FittingPolicyScroll)) {
@@ -10892,7 +10901,8 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
                             gfx_color_edit, gfx_text_disabled_wrapped);
                         ImGui::EndTabItem();
                     }
-                    if (ImGui::BeginTabItem("Ray")) {
+                    if (ImGui::BeginTabItem("Ray", NULL,
+                            inspectRaymarch ? ImGuiTabItemFlags_SetSelected : 0)) {
                         gfx_ray_preview_panel(gfx);
                         ImGui::EndTabItem();
                     }

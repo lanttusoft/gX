@@ -27,7 +27,7 @@
 const gX_I8 *gX_Data_String_gX =                        "gX";
 const gX_I8 *gX_Data_String_gX_name =                   "gX: graphics eXtension or game eXperiment?";
 const gX_I8 *gX_Data_String_gX_description =            "extends a graphics or game library";
-const gX_I8 *gX_Data_String_gX_version =                "0.19.0 beta";
+const gX_I8 *gX_Data_String_gX_version =                "0.19.1 beta";
 const gX_I8 *gX_Data_String_gX_license =                "GPL-3.0-or-later";
 const gX_I8 *gX_Data_String_gX_copyright =              "Copyright © 2023-2026 lanttu";
 const gX_I8 *gX_Data_String_gX_copyright_nosymbol =     "Copyright (c) 2023-2026 lanttu";

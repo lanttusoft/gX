@@ -6,6 +6,18 @@ SemVer.
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-10-30
+
+### Fixed
+- **Hybrid raymarch performance**: hybrid color now honors the module's
+  `renderScale` (default 0.35) instead of forcing full output resolution.
+  Measured on the reference scene at 1600x900, hybrid dropped from ~59 ms to
+  ~20 ms; shared-depth mode remains full-res because it writes the frame depth.
+  Raise the render scale to 0.5+ when overlay sharpness matters.
+- **Raymarch depth inspect gate**: the headless editor fixture now selects the
+  Ray tab and collapses unrelated left-pane sections, keeping the hybrid/shared
+  depth controls visible after the Phase 4 layout changes.
+
 ## [0.19.0] - 2026-10-30
 
 ### Added

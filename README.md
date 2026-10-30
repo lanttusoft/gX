@@ -6,7 +6,7 @@ demo resources; story/game content and private development history are not part
 of this repository. The beta does not include the cast/broadcast demo; Battle remains a
 generic engine demo.
 
-- Version: see `readme.txt` (`v0.19.0` beta).
+- Version: see `readme.txt` (`v0.19.1` beta).
 - License: GPLv3; third-party notices in `license/NOTICE.md`.
 - Build: `./build.sh`; unit tests: `./build/gX_build --test-only`;
   fast checks: `make check-fast`.

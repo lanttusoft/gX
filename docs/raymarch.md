@@ -105,9 +105,12 @@ The mode uses an SDF
 overlay tested against the current HDR raster depth. The shared external
 perspective camera overrides the module camera. Primary hit distance is
 converted to view-axis depth and compared with reconstructed raster depth;
-misses preserve GFX sky and raster hits in front remain untouched. This path
-uses full output resolution regardless of the module render-scale setting;
-proxy mode is bypassed. Standalone and historical color compositing are unchanged.
+misses preserve GFX sky and raster hits in front remain untouched. The
+hybrid color layer honors `parameters.renderScale` (default 0.35) and upscales
+from the private HDR buffer; 0.5 or higher is recommended when overlay
+sharpness matters. Shared-depth mode still runs at full output resolution
+because it writes the frame's depth attachment. Proxy mode is bypassed.
+Standalone and historical color compositing are unchanged.
 
 Mode 1 is **opaque visibility only**, after raster effects: no shared SDF depth,
 normals or materials are exported to SSAO/SSR/TAA/bloom, no cross-renderer
@@ -407,7 +410,8 @@ and debugging a scene's geometry. Presets persist the flag
 ## Performance, profiling, hardware
 
 - The module renders at `parameters.renderScale` (default 0.35) and upscales;
-  that is the main quality/cost knob.
+  that is the main quality/cost knob. Hybrid color honors it; shared-depth
+  mode remains full-res.
 - `--raymarch-profile=<csv>` writes the module's own GPU timers;
   `make raymarch-benchmark` measures quality and feature rows
   (`make raymarch-benchmark-check` validates the artifact and the

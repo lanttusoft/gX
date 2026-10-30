@@ -1843,7 +1843,11 @@ static gX_I0 rm_draw(gX_RendererRaymarch *rm, gX_RenderTexture *outputRT,
     gX_U16 rh = target.texture.height;
     gX_RenderTexture *renderTarget = &target;
 
-    if (!hybridMode && rm->parameters.renderScale > 0.0f && rm->parameters.renderScale < 1.0f) {
+    //ai: hybrid color is a compositor overlay and can use the module's
+    //   low-res buffer; shared-depth mode still needs full-res depth writes.
+    if ((!hybridMode || hybridMode == 1)
+        && rm->parameters.renderScale > 0.0f
+        && rm->parameters.renderScale < 1.0f) {
         gX_U16 hw = (gX_U16)((gX_F32)rw * rm->parameters.renderScale + 0.5f);
         gX_U16 hh = (gX_U16)((gX_F32)rh * rm->parameters.renderScale + 0.5f);
         if (hw < 1) hw = 1;
