@@ -572,7 +572,7 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
             gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
             b.currentElement->stateRendering.RECT_NO_DRAW = true;
             gX_GUI_Builder_Text_Begin(&b);
-                gX_GUI_Builder_Text_Set(&b, "gX ENGINE  /  v0.19.1 BETA");
+                gX_GUI_Builder_Text_Set(&b, "gX ENGINE  /  v0.20.1 BETA");
                 b.currentElement->stateRendering.TEXT_CENTER_X = true;
                 if (b.curText) { b.curText->fontSize = 14; b.curText->color = gui.style.title2.subtitleText; b.curText->autoShrink = true; }
                 gX_GUI_Builder_Text_Shadow(&b, true);
