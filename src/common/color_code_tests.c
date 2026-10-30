@@ -584,6 +584,129 @@ static gX_I32 test_tv(const gX_U8 *payload, gX_U32 length)
     return errors;
 }
 
+static gX_I32 test_multiframe(void)
+{
+    gX_I32 errors = 0;
+    const gX_U32 length = 500;
+    gX_U8 payload[500];
+    for (gX_U32 index = 0; index < length; index++)
+        payload[index] = (gX_U8)((index * 37u + 11u) & 0xFFu);
+    gX_ColorCodeFrame *frames = (gX_ColorCodeFrame *)gX_Calloc(
+        sizeof(gX_ColorCodeFrame) * GX_COLOR_CODE_MAX_MULTI_FRAMES);
+    gX_ColorCodeResult *results = (gX_ColorCodeResult *)gX_Calloc(
+        sizeof(gX_ColorCodeResult) * GX_COLOR_CODE_MAX_MULTI_FRAMES);
+    if (!frames || !results)
+    {
+        gX_Free(frames);
+        gX_Free(results);
+        return 1;
+    }
+    gX_U32 count = 0;
+    gX_I32 status = gX_ColorCode_EncodeMulti(payload, length, frames,
+        GX_COLOR_CODE_MAX_MULTI_FRAMES, &count);
+    if (status != GX_COLOR_CODE_OK || count != 4)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 14 FAIL: multi encode %d count=%u",
+            status, count);
+        errors++;
+        goto cleanup;
+    }
+    for (gX_U32 index = 0; index < count; index++)
+    {
+        gX_U8 *pixels = test_image(&frames[index], 0.90f, 8.0f);
+        if (!pixels)
+        {
+            errors++;
+            goto cleanup;
+        }
+        status = test_decode(pixels, &results[index]);
+        gX_Free(pixels);
+        if (status != GX_COLOR_CODE_OK)
+        {
+            gX_TraceLog(gX_LOG_ERROR,
+                "COLOR CODE 15 FAIL: frame %u decode %d", index, status);
+            errors++;
+            goto cleanup;
+        }
+    }
+    gX_U8 rebuilt[GX_COLOR_CODE_MAX_MULTI_PAYLOAD];
+    gX_U32 rebuiltLength = 0;
+    status = gX_ColorCode_Reassemble(results, count, rebuilt,
+        sizeof(rebuilt), &rebuiltLength);
+    if (status != GX_COLOR_CODE_OK || rebuiltLength != length
+        || memcmp(rebuilt, payload, length) != 0)
+    {
+        gX_TraceLog(gX_LOG_ERROR,
+            "COLOR CODE 16 FAIL: reassembly %d length=%u", status, rebuiltLength);
+        errors++;
+    }
+    gX_ColorCodeResult *shuffled = (gX_ColorCodeResult *)gX_Calloc(
+        sizeof(gX_ColorCodeResult) * GX_COLOR_CODE_MAX_MULTI_FRAMES);
+    if (!shuffled)
+    {
+        errors++;
+        goto cleanup;
+    }
+    for (gX_U32 index = 0; index < count; index++)
+        shuffled[index] = results[count - 1 - index];
+    rebuiltLength = 0;
+    status = gX_ColorCode_Reassemble(shuffled, count, rebuilt,
+        sizeof(rebuilt), &rebuiltLength);
+    if (status != GX_COLOR_CODE_OK || rebuiltLength != length
+        || memcmp(rebuilt, payload, length) != 0)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 17 FAIL: shuffled reassembly %d", status);
+        errors++;
+    }
+    if (gX_ColorCode_Reassemble(results, count - 1, rebuilt,
+            sizeof(rebuilt), &rebuiltLength) != GX_COLOR_CODE_ERR_METADATA)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 18 FAIL: incomplete set accepted");
+        errors++;
+    }
+    for (gX_U32 index = 0; index < count; index++)
+        shuffled[index] = results[index];
+    shuffled[1] = shuffled[0];
+    if (gX_ColorCode_Reassemble(shuffled, count, rebuilt,
+            sizeof(rebuilt), &rebuiltLength) != GX_COLOR_CODE_ERR_METADATA)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 19 FAIL: duplicate frame accepted");
+        errors++;
+    }
+    for (gX_U32 index = 0; index < count; index++)
+        shuffled[index] = results[index];
+    shuffled[1].payloadID ^= 1;
+    if (gX_ColorCode_Reassemble(shuffled, count, rebuilt,
+            sizeof(rebuilt), &rebuiltLength) != GX_COLOR_CODE_ERR_METADATA)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 20 FAIL: mixed payload IDs accepted");
+        errors++;
+    }
+    for (gX_U32 index = 0; index < count; index++)
+        shuffled[index] = results[index];
+    shuffled[0].fullPayloadCRC ^= 1;
+    shuffled[1].fullPayloadCRC ^= 1;
+    shuffled[2].fullPayloadCRC ^= 1;
+    shuffled[3].fullPayloadCRC ^= 1;
+    if (gX_ColorCode_Reassemble(shuffled, count, rebuilt,
+            sizeof(rebuilt), &rebuiltLength) != GX_COLOR_CODE_ERR_CHECKSUM)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 21 FAIL: bad whole-payload CRC accepted");
+        errors++;
+    }
+    if (gX_ColorCode_Reassemble(results, count, rebuilt, 100,
+            &rebuiltLength) != GX_COLOR_CODE_ERR_CAPACITY)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 22 FAIL: small capacity accepted");
+        errors++;
+    }
+    gX_Free(shuffled);
+cleanup:
+    gX_Free(frames);
+    gX_Free(results);
+    return errors;
+}
+
 gX_I32 gX_Tests_ColorCode(gX_I0)
 {
     gX_I32 errors = 0;
@@ -604,6 +727,7 @@ gX_I32 gX_Tests_ColorCode(gX_I0)
     errors += test_perspective(raw, (gX_U32)strlen((const char *)raw));
     errors += test_perspective_matrix(raw, (gX_U32)strlen((const char *)raw));
     errors += test_tv(raw, (gX_U32)strlen((const char *)raw));
+    errors += test_multiframe();
     errors += test_metadata_corruption(raw, (gX_U32)strlen((const char *)raw));
     errors += test_erasure(raw, (gX_U32)strlen((const char *)raw));
     gX_ColorCodeFrame frame;

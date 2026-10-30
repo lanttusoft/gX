@@ -37,21 +37,25 @@ def palette_counts(pixels):
     return counts
 
 
-def run(mode, shot, temporary):
+def run(mode, shot, temporary, payload="gX color code", frames=20,
+        shot_frame=None, tag=None):
     environment = dict(os.environ)
     environment.pop("GX_AUDIT_WINDOW", None)
     environment.update({
         "GX_NO_SETTINGS_SAVE": "1",
-        "GX_FRAMES": "20",
+        "GX_FRAMES": str(frames),
         "GX_COLOR_CODE_SHOT": str(shot),
     })
-    command = [str(BIN), mode, "gX color code",
+    if shot_frame is not None:
+        environment["GX_COLOR_CODE_SHOT_FRAME"] = str(shot_frame)
+    command = [str(BIN), mode, payload,
                "--screenWidth", str(WIDTH), "--screenHeight", str(HEIGHT)]
     result = subprocess.run(command, cwd=ROOT, env=environment,
                             text=True, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, timeout=60)
+                            stderr=subprocess.STDOUT, timeout=90)
     log = audit.strip_ansi(result.stdout or "")
-    (temporary / (mode.lstrip('-') + ".log")).write_text(log)
+    name = tag or mode.lstrip('-')
+    (temporary / (name + ".log")).write_text(log)
     if result.returncode != 0:
         raise RuntimeError(f"{mode} exited {result.returncode}")
     if not shot.is_file():
@@ -59,7 +63,7 @@ def run(mode, shot, temporary):
     image = np.asarray(Image.open(shot).convert("RGB"))
     if image.shape != (HEIGHT, WIDTH, 3):
         raise RuntimeError(f"{mode} size {image.shape} != {(HEIGHT, WIDTH, 3)}")
-    return image
+    return image, log
 
 
 def check_flat(image):
@@ -95,15 +99,32 @@ def check_tv(image):
         raise RuntimeError("TV presentation lost its dark background")
 
 
+def check_multiframe(out):
+    payload = "".join(chr(65 + (index % 26)) for index in range(500))
+    first, first_log = run("--color-code", out / "multi_a.png", out,
+                           payload=payload, frames=130, shot_frame=5,
+                           tag="multi_a")
+    second, second_log = run("--color-code", out / "multi_b.png", out,
+                             payload=payload, frames=130, shot_frame=65,
+                             tag="multi_b")
+    if "COLOR_CODE: 4 frame(s)" not in first_log:
+        raise RuntimeError("multi-frame presentation did not encode four frames")
+    if "COLOR_CODE: frame 2/4" not in second_log:
+        raise RuntimeError("multi-frame presentation did not advance to frame 2")
+    if float(np.abs(first.astype(np.int32) - second.astype(np.int32)).mean()) < 1.0:
+        raise RuntimeError("multi-frame presentation frames did not change")
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="color_code_present_",
                                      dir="/tmp/opencode") as temporary:
         out = Path(temporary)
-        flat = run("--color-code", out / "flat.png", out)
+        flat, _ = run("--color-code", out / "flat.png", out)
         check_flat(flat)
-        tv = run("--color-code-tv", out / "tv.png", out)
+        tv, _ = run("--color-code-tv", out / "tv.png", out)
         check_tv(tv)
-    print("COLOR_CODE_PRESENT_CHECK: PASS (flat palette bands + simulated TV)")
+        check_multiframe(out)
+    print("COLOR_CODE_PRESENT_CHECK: PASS (flat palette bands + simulated TV + multi-frame)")
     return 0
 
 

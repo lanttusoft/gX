@@ -694,18 +694,19 @@ static gX_I1 color_code_corner_matches(const gX_U8 *cells, gX_U32 activeRow,
     return 1;
 }
 
-gX_I32 gX_ColorCode_Encode(const gX_U8 *payload, gX_U32 length,
-    gX_U32 frameIndex, gX_U32 frameTotal, gX_ColorCodeFrame *frame)
+gX_I32 gX_ColorCode_EncodeChunk(const gX_U8 *chunk, gX_U32 chunkLength,
+    gX_U16 payloadID, gX_U32 fullPayloadCRC, gX_U32 frameIndex,
+    gX_U32 frameTotal, gX_ColorCodeFrame *frame)
 {
-    if (!payload || !frame || length > GX_COLOR_CODE_MAX_PAYLOAD
-        || frameTotal == 0 || frameIndex >= frameTotal)
+    if (!chunk || !frame || chunkLength > GX_COLOR_CODE_MAX_PAYLOAD
+        || frameTotal == 0 || frameTotal > 255 || frameIndex >= frameTotal)
         return GX_COLOR_CODE_ERR_ARGUMENT;
     memset(frame, 0, sizeof(*frame));
     snprintf((char *)frame->name, sizeof(frame->name), "%s", "Color code frame");
     snprintf((char *)frame->description, sizeof(frame->description), "%s",
         "45x45 screen transfer frame");
     gX_U8 compressed[GX_COLOR_CODE_MAX_COMPRESSED];
-    gX_U32 compressedLength = color_code_compress(payload, length,
+    gX_U32 compressedLength = color_code_compress(chunk, chunkLength,
         compressed, sizeof(compressed));
     if (compressedLength == 0) return GX_COLOR_CODE_ERR_CAPACITY;
     if (compressedLength * GX_COLOR_CODE_ECC_BITS > GX_COLOR_CODE_DATA_BITS)
@@ -713,17 +714,19 @@ gX_I32 gX_ColorCode_Encode(const gX_U8 *payload, gX_U32 length,
     gX_U8 meta[GX_COLOR_CODE_META_BYTES];
     memset(meta, 0, sizeof(meta));
     meta[0] = 0x43;
-    meta[1] = 1;
-    meta[2] = 0;
+    meta[1] = 2;
+    meta[2] = frameTotal > 1 ? 1 : 0;
     meta[3] = 0;
     meta[4] = compressed[0];
     meta[5] = 1;
-    color_code_put_u16(meta + 6, (gX_U16)length);
+    color_code_put_u16(meta + 6, (gX_U16)chunkLength);
     color_code_put_u16(meta + 8, (gX_U16)compressedLength);
     meta[10] = (gX_U8)frameIndex;
     meta[11] = (gX_U8)frameTotal;
-    color_code_put_u32(meta + 12, color_code_crc32(payload, length));
-    color_code_put_u32(meta + 16, color_code_crc32(meta, 16));
+    color_code_put_u16(meta + 12, payloadID);
+    color_code_put_u32(meta + 14, color_code_crc32(chunk, chunkLength));
+    color_code_put_u32(meta + 18, fullPayloadCRC);
+    color_code_put_u32(meta + 22, color_code_crc32(meta, 22));
     color_code_frame_controls(frame->cells);
     gX_U8 metaBits[GX_COLOR_CODE_META_BITS];
     color_code_bytes_to_bits(meta, GX_COLOR_CODE_META_BYTES, metaBits);
@@ -746,12 +749,105 @@ gX_I32 gX_ColorCode_Encode(const gX_U8 *payload, gX_U32 length,
         dataCells, GX_COLOR_CODE_DATA_CELLS);
     color_code_grid_from_flat(frame->cells, GX_COLOR_CODE_DATA_ACTIVE_ROW,
         GX_COLOR_CODE_DATA_ROWS, dataCells);
-    frame->payloadLength = (gX_U16)length;
+    frame->payloadLength = (gX_U16)chunkLength;
     frame->compressedLength = (gX_U16)compressedLength;
     frame->compression = compressed[0];
     frame->palette = 0;
     frame->frameIndex = (gX_U8)frameIndex;
     frame->frameTotal = (gX_U8)frameTotal;
+    frame->payloadID = payloadID;
+    frame->fullPayloadCRC = fullPayloadCRC;
+    return GX_COLOR_CODE_OK;
+}
+
+gX_I32 gX_ColorCode_Encode(const gX_U8 *payload, gX_U32 length,
+    gX_U32 frameIndex, gX_U32 frameTotal, gX_ColorCodeFrame *frame)
+{
+    if (!payload) return GX_COLOR_CODE_ERR_ARGUMENT;
+    return gX_ColorCode_EncodeChunk(payload, length, 0,
+        color_code_crc32(payload, length), frameIndex, frameTotal, frame);
+}
+
+gX_I32 gX_ColorCode_EncodeMulti(const gX_U8 *payload, gX_U32 length,
+    gX_ColorCodeFrame *frames, gX_U32 maxFrames, gX_U32 *frameCount)
+{
+    if (!payload || !frames || !frameCount
+        || length > GX_COLOR_CODE_MAX_MULTI_PAYLOAD)
+        return GX_COLOR_CODE_ERR_ARGUMENT;
+    if (length == 0)
+    {
+        if (maxFrames < 1) return GX_COLOR_CODE_ERR_CAPACITY;
+        *frameCount = 1;
+        return gX_ColorCode_EncodeChunk(payload, 0, 0, 0, 0, 1, &frames[0]);
+    }
+    gX_U32 count = (length + GX_COLOR_CODE_MAX_PAYLOAD - 1)
+        / GX_COLOR_CODE_MAX_PAYLOAD;
+    if (count > maxFrames || count > 255)
+        return GX_COLOR_CODE_ERR_CAPACITY;
+    gX_U32 fullCRC = color_code_crc32(payload, length);
+    gX_U16 payloadID = (gX_U16)(fullCRC & 0xFFFFu);
+    if (payloadID == 0) payloadID = 0xFFFFu;
+    gX_U32 offset = 0;
+    for (gX_U32 index = 0; index < count; index++)
+    {
+        gX_U32 chunkLength = length - offset;
+        if (chunkLength > GX_COLOR_CODE_MAX_PAYLOAD)
+            chunkLength = GX_COLOR_CODE_MAX_PAYLOAD;
+        gX_I32 status = gX_ColorCode_EncodeChunk(payload + offset, chunkLength,
+            payloadID, fullCRC, index, count, &frames[index]);
+        if (status != GX_COLOR_CODE_OK) return status;
+        offset += chunkLength;
+    }
+    *frameCount = count;
+    return GX_COLOR_CODE_OK;
+}
+
+gX_I32 gX_ColorCode_Reassemble(const gX_ColorCodeResult *frames,
+    gX_U32 frameCount, gX_U8 *payload, gX_U32 capacity,
+    gX_U32 *payloadLength)
+{
+    if (!frames || !payload || !payloadLength || frameCount == 0
+        || frameCount > 255)
+        return GX_COLOR_CODE_ERR_ARGUMENT;
+    gX_U8 frameTotal = frames[0].frameTotal;
+    gX_U16 payloadID = frames[0].payloadID;
+    gX_U32 fullCRC = frames[0].fullPayloadCRC;
+    if (frameTotal != frameCount || frames[0].status != GX_COLOR_CODE_OK)
+        return GX_COLOR_CODE_ERR_METADATA;
+    gX_U8 seen[255];
+    memset(seen, 0, sizeof(seen));
+    for (gX_U32 index = 0; index < frameCount; index++)
+    {
+        if (frames[index].status != GX_COLOR_CODE_OK)
+            return frames[index].status;
+        if (frames[index].frameTotal != frameTotal
+            || frames[index].payloadID != payloadID
+            || frames[index].fullPayloadCRC != fullCRC
+            || frames[index].frameIndex >= frameTotal
+            || seen[frames[index].frameIndex])
+            return GX_COLOR_CODE_ERR_METADATA;
+        seen[frames[index].frameIndex] = 1;
+    }
+    gX_U32 total = 0;
+    for (gX_U32 frameIndex = 0; frameIndex < frameTotal; frameIndex++)
+    {
+        const gX_ColorCodeResult *source = NULL;
+        for (gX_U32 index = 0; index < frameCount; index++)
+            if (frames[index].frameIndex == frameIndex)
+            {
+                source = &frames[index];
+                break;
+            }
+        if (!source) return GX_COLOR_CODE_ERR_METADATA;
+        if (total + source->payloadLength > capacity
+            || total + source->payloadLength > GX_COLOR_CODE_MAX_MULTI_PAYLOAD)
+            return GX_COLOR_CODE_ERR_CAPACITY;
+        memcpy(payload + total, source->payload, source->payloadLength);
+        total += source->payloadLength;
+    }
+    if (color_code_crc32(payload, total) != fullCRC)
+        return GX_COLOR_CODE_ERR_CHECKSUM;
+    *payloadLength = total;
     return GX_COLOR_CODE_OK;
 }
 
@@ -846,17 +942,17 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
         metaBits, GX_COLOR_CODE_META_BITS);
     gX_U8 meta[GX_COLOR_CODE_META_BYTES];
     color_code_bits_to_bytes(metaBits, GX_COLOR_CODE_META_BYTES, meta);
-    if (meta[0] != 0x43 || meta[1] != 1)
+    if (meta[0] != 0x43 || meta[1] != 2)
     {
         result->status = GX_COLOR_CODE_ERR_VERSION;
         return result->status;
     }
-    if (meta[2] != 0 || meta[3] != 0 || meta[5] != 1)
+    if (meta[3] != 0 || meta[5] != 1 || meta[2] > 1)
     {
         result->status = GX_COLOR_CODE_ERR_PALETTE;
         return result->status;
     }
-    if (color_code_crc32(meta, 16) != color_code_get_u32(meta + 16))
+    if (color_code_crc32(meta, 22) != color_code_get_u32(meta + 22))
     {
         result->status = GX_COLOR_CODE_ERR_CHECKSUM;
         return result->status;
@@ -916,7 +1012,7 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
         return result->status;
     }
     if (decodedLength != payloadLength
-        || color_code_crc32(payload, decodedLength) != color_code_get_u32(meta + 12))
+        || color_code_crc32(payload, decodedLength) != color_code_get_u32(meta + 14))
     {
         result->status = GX_COLOR_CODE_ERR_CHECKSUM;
         return result->status;
@@ -926,6 +1022,8 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
     result->compressedLength = (gX_U16)compressedLength;
     result->frameIndex = meta[10];
     result->frameTotal = meta[11];
+    result->payloadID = color_code_get_u16(meta + 12);
+    result->fullPayloadCRC = color_code_get_u32(meta + 18);
     result->orientation = orientation;
     result->status = GX_COLOR_CODE_OK;
     return GX_COLOR_CODE_OK;

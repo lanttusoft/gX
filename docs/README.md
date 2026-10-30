@@ -60,8 +60,8 @@ Start here:
 - [Offline bug reports](bug_reporting.md)
 - [Screen color-code format v1](color_code_format.md) — bounded encoder/decoder
   prototype (calibration, metadata, SECDED, CRC32, RLE; synthetic camera test)
-  plus the standalone `--color-code` and simulated-CRT `--color-code-tv`
-  presentation modes.
+  plus the standalone `--color-code` / simulated-CRT `--color-code-tv`
+  presentation modes and bounded multi-frame reassembly.
 - [gX debug colors — magic-color registry](debug_colors.md)
 - [gX — editors and tooling surfaces](editors.md)
 - [GFX editor rework](gfx_editor_rework.md) — hierarchy, identity, showcase and

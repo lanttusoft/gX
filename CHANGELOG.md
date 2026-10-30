@@ -21,8 +21,11 @@ SemVer.
   hook. `gX_ColorCodeTv_Render` / `--color-code-tv <text>` add a deterministic
   simulated CRT with a tilted screen, scanlines, phosphor mask, chroma shift,
   grain and vignette; three fixed noise seeds decode through the projected
-  corners. Automatic corner detection and multi-frame reassembly remain
-  backlog; see `docs/color_code_format.md`.
+  corners. Multi-frame payloads up to 4096 bytes carry a payload ID and
+  whole-payload CRC; reassembly accepts any frame order, rejects incomplete,
+  duplicate, mixed-ID and bad-CRC sets, and the presentation cycles frames
+  with pause/step controls. Automatic corner detection remains backlog; see
+  `docs/color_code_format.md`.
 
 ## [0.20.0] - 2026-10-30
 

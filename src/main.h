@@ -102,7 +102,7 @@ typedef struct gX_MainArguments {
     //ai: --color-code <payload> — standalone screen-code presentation mode.
     gX_I1   hasColorCode;
     gX_I1   colorCodeTv;
-    gX_TextLine256 colorCodePayload;
+    gX_I8   colorCodePayload[4097];
     gX_I1   hasEsDumpShader;    //opencode: --es-dump-shader <in.frag> <out> —
                                 //   ES-rewrite frag dump for oracle Mode B
     gX_I8   esDumpPath[512];

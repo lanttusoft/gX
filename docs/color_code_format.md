@@ -26,26 +26,39 @@ black/white calibration samples for a per-channel gain/offset correction.
 
 ## Metadata
 
-The 20-byte header is written into the first 80 metadata cells:
+The 26-byte header is written into the first 104 metadata cells:
 
 | Offset | Size | Field |
 | --- | --- | --- |
 | 0 | 1 | Magic `0x43` |
-| 1 | 1 | Format version (`1`) |
-| 2 | 1 | Flags (reserved, `0`) |
+| 1 | 1 | Format version (`2`) |
+| 2 | 1 | Flags (`bit0` = multi-frame) |
 | 3 | 1 | Palette ID (`0` = 4-colour) |
 | 4 | 1 | Compression ID (`0` raw, `1` RLE) |
 | 5 | 1 | ECC ID (`1` = SECDED) |
-| 6 | 2 | Uncompressed payload length (LE) |
+| 6 | 2 | Chunk length (LE) |
 | 8 | 2 | Compressed length including mode byte (LE) |
 | 10 | 1 | Frame index |
 | 11 | 1 | Frame total |
-| 12 | 4 | Payload CRC32 (LE) |
-| 16 | 4 | Header CRC32 over bytes 0–15 (LE) |
+| 12 | 2 | Payload ID (LE) |
+| 14 | 4 | Chunk CRC32 (LE) |
+| 18 | 4 | Whole-payload CRC32 (LE) |
+| 22 | 4 | Header CRC32 over bytes 0–21 (LE) |
 
 Unknown versions, palette IDs, ECC IDs and compression IDs fail closed.
-`frameTotal` supports a future multi-frame payload; v1 does not reassemble a
-sequence.
+
+## Multi-frame payloads
+
+`gX_ColorCode_EncodeMulti` splits a payload of up to **4096 bytes** into
+sequential 160-byte chunks and sets the same 16-bit payload ID and
+whole-payload CRC on every frame. `gX_ColorCode_Reassemble` accepts the decoded
+result set in any order, requires exactly `frameTotal` unique indices with one
+shared payload ID, concatenates in index order, enforces the output capacity
+and verifies the whole-payload CRC. A missing, duplicate or mixed-payload set
+fails closed.
+
+`--color-code <text>` cycles multi-frame payloads once per second; `P` pauses,
+`LEFT`/`RIGHT` step frames and the window title reports the current index.
 
 ## Integrity and bounds
 
@@ -54,9 +67,11 @@ sequence.
 - Low-confidence cells are classified as erasures. Metadata/data erasures fail
   closed with a distinct status; the first slice does not pretend to recover
   arbitrary erasure patterns.
-- CRC32 covers the header and the uncompressed payload separately.
-- Payload length is capped at **160 bytes**, compressed length at the cell
-  budget, and every decoder output/decompression step is bounded.
+- CRC32 covers the header, each chunk and the completed multi-frame payload
+  separately.
+- A single frame is capped at **160 payload bytes**; a multi-frame payload is
+  capped at **4096 bytes**. Compressed length, reassembly and decompression
+  outputs are bounded.
 - Compression is a PackBits-style RLE. If RLE is not smaller, the encoder uses
   raw mode. Compression is not encryption.
 
@@ -103,9 +118,12 @@ defined; a future slice can combine both.
 ## Presentation
 
 `./build/gX_build --color-code <text>` opens a standalone presentation window.
-The code is static (frozen for capture); `SPACE` toggles fit/1:1, `F` toggles
-the window fullscreen and `ESC` closes it. `GX_COLOR_CODE_SHOT=/path.png` saves
-a deterministic capture at frame 10 for the presentation gate.
+`SPACE` toggles fit/1:1, `F` toggles the window fullscreen and `ESC` closes it.
+Single-frame codes are static/frozen; multi-frame payloads cycle once per
+second, with `P` to pause and `LEFT`/`RIGHT` to step. The title reports the
+current frame. `GX_COLOR_CODE_SHOT=/path.png` saves a deterministic capture
+(default frame 10; `GX_COLOR_CODE_SHOT_FRAME=N` selects another) for the
+presentation gate.
 
 Caller-supplied perspective rectification is implemented. Automatic corner
 detection, camera-device capture and multi-frame playback remain backlog. The
@@ -136,6 +154,7 @@ visual/robustness fixture, not a physical CRT or camera model.
 - all eight rotation/mirror orientations;
 - affine and true keystone perspective warps via supplied corners;
 - simulated-CRT scanline/phosphor/noise/chroma/vignette decode across three seeds;
+- multi-frame complete/shuffled/incomplete/duplicate/mixed-ID/bad-CRC sets;
 - metadata CRC rejection;
 - low-confidence cell erasure rejection;
 - payload capacity and image geometry bounds.

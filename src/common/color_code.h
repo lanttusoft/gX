@@ -34,7 +34,7 @@ extern "C" {
 #define GX_COLOR_CODE_QUIET             2
 #define GX_COLOR_CODE_BORDER            3
 #define GX_COLOR_CODE_META_ROWS         3
-#define GX_COLOR_CODE_META_BYTES        20
+#define GX_COLOR_CODE_META_BYTES        26
 #define GX_COLOR_CODE_ACTIVE            (GX_COLOR_CODE_GRID - 2 * GX_COLOR_CODE_QUIET)
 #define GX_COLOR_CODE_INNER             (GX_COLOR_CODE_ACTIVE - 2 * GX_COLOR_CODE_BORDER)
 #define GX_COLOR_CODE_CELLS             (GX_COLOR_CODE_GRID * GX_COLOR_CODE_GRID)
@@ -47,6 +47,8 @@ extern "C" {
 #define GX_COLOR_CODE_ECC_BITS          13
 #define GX_COLOR_CODE_MAX_COMPRESSED    (GX_COLOR_CODE_DATA_BITS / GX_COLOR_CODE_ECC_BITS)
 #define GX_COLOR_CODE_MAX_PAYLOAD       160
+#define GX_COLOR_CODE_MAX_MULTI_PAYLOAD 4096
+#define GX_COLOR_CODE_MAX_MULTI_FRAMES  ((GX_COLOR_CODE_MAX_MULTI_PAYLOAD + GX_COLOR_CODE_MAX_PAYLOAD - 1) / GX_COLOR_CODE_MAX_PAYLOAD)
 #define GX_COLOR_CODE_MAX_IMAGE_BYTES   (64 * 1024 * 1024)
 
 #define GX_COLOR_CODE_OK                 0
@@ -72,6 +74,8 @@ typedef struct gX_ColorCodeFrame {
     gX_U8   palette;
     gX_U8   frameIndex;
     gX_U8   frameTotal;
+    gX_U16  payloadID;
+    gX_U32  fullPayloadCRC;
 } gX_ColorCodeFrame;
 
 //ai: orientation 0=identity, 1=90CW, 2=180, 3=270, 4=mirror H,
@@ -87,6 +91,8 @@ typedef struct gX_ColorCodeResult {
     gX_U16  erasedCells;
     gX_U8   frameIndex;
     gX_U8   frameTotal;
+    gX_U16  payloadID;
+    gX_U32  fullPayloadCRC;
     gX_I32  orientation;
     gX_I32  status;
 } gX_ColorCodeResult;
@@ -110,6 +116,20 @@ typedef struct gX_ColorCodeImage {
 //ai: encode a bounded payload into a calibration/control/metadata/payload frame.
 gX_I32 gX_ColorCode_Encode(const gX_U8 *payload, gX_U32 length,
     gX_U32 frameIndex, gX_U32 frameTotal, gX_ColorCodeFrame *frame);
+
+//ai: encode one multi-frame chunk with its payload ID and whole-payload CRC.
+gX_I32 gX_ColorCode_EncodeChunk(const gX_U8 *chunk, gX_U32 chunkLength,
+    gX_U16 payloadID, gX_U32 fullPayloadCRC, gX_U32 frameIndex,
+    gX_U32 frameTotal, gX_ColorCodeFrame *frame);
+
+//ai: split a bounded payload into sequential frames; returns the frame count.
+gX_I32 gX_ColorCode_EncodeMulti(const gX_U8 *payload, gX_U32 length,
+    gX_ColorCodeFrame *frames, gX_U32 maxFrames, gX_U32 *frameCount);
+
+//ai: concatenate a complete decoded frame set in index order and verify it.
+gX_I32 gX_ColorCode_Reassemble(const gX_ColorCodeResult *frames,
+    gX_U32 frameCount, gX_U8 *payload, gX_U32 capacity,
+    gX_U32 *payloadLength);
 
 //ai: decode an axis-aligned camera image with explicit grid geometry.
 gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
