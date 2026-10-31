@@ -42,6 +42,12 @@ class ChangelogTests(unittest.TestCase):
                 "  truth; `scripts/gates.py` adds list and plan.\n")
         self.assertEqual(self.classify(text), "patch")
 
+    def test_model_does_not_match_mode(self):
+        text = ("## [0.26.3] - 2026-10-31\n\n"
+                "### Changed\n"
+                "- **Planar triage**: the model reflects in the mirror.\n")
+        self.assertEqual(self.classify(text), "patch")
+
     def test_changed_capacity_is_minor(self):
         text = ("## [0.26.0] - 2026-10-31\n\n"
                 "### Changed\n"
