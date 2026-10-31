@@ -75,31 +75,33 @@ def parse_changelog(text):
 def changelog_findings(categories):
     findings = []
     for category, entries in categories.items():
-        text = " ".join(entries).lower()
-        reason = f"CHANGELOG {category}: {text[:100]}"
-        if category == "added":
-            tooling = any(word in text for word in (
-                "policy", "tooling", "script", "test", "documentation", "docs"))
-            findings.append({
-                "level": "patch" if tooling else "minor",
-                "reason": reason,
-            })
-        elif category == "changed":
-            feature = any(word in text for word in (
-                "new", "opt-in", "cap", "capacity", "mode", "format", "api",
-                "behavior", "palette", "payload"))
-            findings.append({
-                "level": "minor" if feature else "patch",
-                "reason": reason,
-            })
-        elif category == "fixed":
-            findings.append({"level": "patch", "reason": reason})
-        elif category == "removed":
-            findings.append({"level": "major", "reason": reason})
-        elif category == "deprecated":
-            findings.append({"level": "minor", "reason": reason})
-        elif category == "security":
-            findings.append({"level": "patch", "reason": reason})
+        for entry in entries:
+            text = entry.lower()
+            reason = f"CHANGELOG {category}: {text[:100]}"
+            if category == "added":
+                tooling = any(word in text for word in (
+                    "policy", "tooling", "script", "test", "documentation",
+                    "docs"))
+                findings.append({
+                    "level": "patch" if tooling else "minor",
+                    "reason": reason,
+                })
+            elif category == "changed":
+                feature = any(word in text for word in (
+                    "new", "opt-in", "cap", "capacity", "mode", "format",
+                    "api", "behavior", "palette", "payload"))
+                findings.append({
+                    "level": "minor" if feature else "patch",
+                    "reason": reason,
+                })
+            elif category == "fixed":
+                findings.append({"level": "patch", "reason": reason})
+            elif category == "removed":
+                findings.append({"level": "major", "reason": reason})
+            elif category == "deprecated":
+                findings.append({"level": "minor", "reason": reason})
+            elif category == "security":
+                findings.append({"level": "patch", "reason": reason})
     return findings
 
 
