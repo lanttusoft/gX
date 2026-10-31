@@ -46,11 +46,13 @@ REFERENCE_CONTRAST_RATIO = 4.0
 CAPTURE_PASS_MEAN = 1.0
 
 
-def make_fixture(path, cameras, view):
+def make_fixture(path, cameras, view, state=None):
     document = json.loads(PRESET.read_text())
     document["camera"] = view
     document["cameras"] = [{"name": name, "description": "", "view": camera}
                            for name, camera in cameras]
+    if state:
+        document["state"].update(state)
     path.write_text(json.dumps(document, indent=2) + "\n")
 
 
@@ -96,8 +98,20 @@ def main():
             drag_fixture = temp_root / "cameras_drag.json"
             make_fixture(drag_fixture, [("View match", VIEW_CAMERA),
                                         ("Other", OTHER_CAMERA)],
-                {"position": [0.0, 12.0, 16.0], "target": [0.0, 0.0, 0.0],
+                {"position": [0.0, 20.0, 28.0], "target": [0.0, 0.0, 0.0],
                  "up": [0.0, 1.0, 0.0], "fovy": 50.0, "projection": 0})
+            marker_view = {"position": [0.0, 20.0, 28.0],
+                           "target": [0.0, 0.0, 0.0],
+                           "up": [0.0, 1.0, 0.0], "fovy": 50.0,
+                           "projection": 0}
+            marker_on = temp_root / "markers_on.json"
+            marker_off = temp_root / "markers_off.json"
+            make_fixture(marker_on,
+                [("View match", VIEW_CAMERA), ("Other", OTHER_CAMERA)],
+                marker_view, state={"SHOW_CAMERA_MARKERS": True})
+            make_fixture(marker_off,
+                [("View match", VIEW_CAMERA), ("Other", OTHER_CAMERA)],
+                marker_view, state={"SHOW_CAMERA_MARKERS": False})
             render_a = temp_root / "camera_a.png"
             render_b = temp_root / "camera_b.png"
             render_sized = temp_root / "camera_sized.png"
@@ -114,14 +128,28 @@ def main():
                     "GX_GFX_RENDER_CAMERA_SIZE": "320x180"})
                 log_drag, code_drag = run_editor(drag_fixture,
                     {"GX_GFX_CAMERA_DRAG_CHECK": "1"})
+                #opencode: headless audit windows stay undocked, so the side
+                #   panels overlap the pillarboxed viewport. Focus mode hides
+                #   them and makes the clean camera render comparable.
+                focus = {"GX_EDITOR_FOCUS_VIEWPORT": "1"}
                 shot_dir = temp_root / "reference"
                 shot_dir.mkdir()
-                log_ref, code_ref = run_editor(fixture, {}, shot_dir=shot_dir,
+                log_ref, code_ref = run_editor(fixture, focus, shot_dir=shot_dir,
                                                shot_frame=SHOT_FRAME)
+                marker_on_dir = temp_root / "markers_on"
+                marker_on_dir.mkdir()
+                log_marker_on, code_marker_on = run_editor(marker_on, focus,
+                    shot_dir=marker_on_dir, shot_frame=SHOT_FRAME)
+                marker_off_dir = temp_root / "markers_off"
+                marker_off_dir.mkdir()
+                log_marker_off, code_marker_off = run_editor(marker_off, focus,
+                    shot_dir=marker_off_dir, shot_frame=SHOT_FRAME)
             if (code_a != 0 or code_b != 0 or code_ref != 0 or code_sized != 0
-                    or code_drag != 0):
+                    or code_drag != 0 or code_marker_on != 0
+                    or code_marker_off != 0):
                 raise RuntimeError(f"editor runs failed ({code_a}/{code_b}/"
-                                   f"{code_ref}/{code_sized}/{code_drag})")
+                                   f"{code_ref}/{code_sized}/{code_drag}/"
+                                   f"{code_marker_on}/{code_marker_off})")
             for log, index in ((log_a, "0"), (log_b, "1")):
                 if f"queued index={index}" not in log:
                     raise RuntimeError(f"render request trace missing for "
@@ -163,6 +191,32 @@ def main():
             #   target; target drag moves only the target).
             if "GFX_CAMERA_DRAG_CHECK: PASS" not in log_drag:
                 raise RuntimeError("camera marker drag did not pass")
+
+            #opencode: the marker toggle must change the editor frame — the
+            #   marker-on capture differs from marker-off inside the viewport.
+            marker_shots_on = sorted(marker_on_dir.glob("gXss_*.png"))
+            marker_shots_off = sorted(marker_off_dir.glob("gXss_*.png"))
+            if not marker_shots_on or not marker_shots_off:
+                raise RuntimeError("camera marker screenshots missing")
+            marker_frame_on = np.asarray(
+                Image.open(marker_shots_on[-1]).convert("RGB"), dtype=np.float32)
+            marker_frame_off = np.asarray(
+                Image.open(marker_shots_off[-1]).convert("RGB"), dtype=np.float32)
+            if marker_frame_on.shape != marker_frame_off.shape:
+                raise RuntimeError("camera marker captures changed size")
+            marker_match = re.findall(
+                r"GFX_DOCK:.*viewport=\((\d+),(\d+),(\d+),(\d+)\)",
+                log_marker_on)
+            if not marker_match:
+                raise RuntimeError("camera marker dock trace missing")
+            mx, my, mw, mh = (int(value) for value in marker_match[-1])
+            marker_on_crop = marker_frame_on[my:my + mh, mx:mx + mw]
+            marker_off_crop = marker_frame_off[my:my + mh, mx:mx + mw]
+            changed = int((np.abs(marker_on_crop - marker_off_crop).mean(axis=2)
+                           > 20.0).sum())
+            if changed < 150:
+                raise RuntimeError(f"camera markers not visible "
+                                   f"({changed} changed pixels)")
 
             reference = None
             shots = sorted((shot_dir).glob("gXss_*.png"))

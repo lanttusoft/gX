@@ -3858,6 +3858,18 @@ static gX_F32v3 gfx_vec3_cross(gX_F32v3 a, gX_F32v3 b) {
         a.x * b.y - a.y * b.x};
 }
 
+static gX_F32v3 gfx_vec3_sub(gX_F32v3 a, gX_F32v3 b) {
+    return (gX_F32v3){a.x - b.x, a.y - b.y, a.z - b.z};
+}
+
+static gX_F32v3 gfx_vec3_add(gX_F32v3 a, gX_F32v3 b) {
+    return (gX_F32v3){a.x + b.x, a.y + b.y, a.z + b.z};
+}
+
+static gX_F32v3 gfx_vec3_scale(gX_F32v3 v, gX_F32 factor) {
+    return (gX_F32v3){v.x * factor, v.y * factor, v.z * factor};
+}
+
 static gX_F32 gfx_vec3_dot(gX_F32v3 a, gX_F32v3 b) {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
@@ -4071,6 +4083,27 @@ static gX_F32v3 gfx_camera_forward(gX_Camera3D *cam) {
         cam->target.x - cam->position.x,
         cam->target.y - cam->position.y,
         cam->target.z - cam->position.z});
+}
+
+//opencode: project a world point into window coordinates inside the docked
+//   viewport; points behind the live camera or off the stage are hidden.
+static gX_I1 gfx_editor_world_to_window(gX_F32v3 world, ImVec2 *out) {
+    gX_Rectangle viewport = gX_GUI_ViewportBox_Get();
+    if (viewport.width <= 1.0f || viewport.height <= 1.0f) return 0;
+    gX_F32v3 relative = gfx_vec3_sub(world, camera.camera3D.position);
+    if (gfx_vec3_dot(gfx_camera_forward(&camera.camera3D), relative) <= 0.001f)
+        return 0;
+    gX_F32 renderWidth = (maindata.renderWidth > 0)
+        ? (gX_F32)maindata.renderWidth : 1.0f;
+    gX_F32 renderHeight = (maindata.renderHeight > 0)
+        ? (gX_F32)maindata.renderHeight : 1.0f;
+    gX_F32v2 screen = gX_Camera_GetWorldToScreen(world, camera.camera3D);
+    gX_F32 x = viewport.x + screen.x / renderWidth * viewport.width;
+    gX_F32 y = viewport.y + screen.y / renderHeight * viewport.height;
+    if (x < viewport.x || x > viewport.x + viewport.width
+        || y < viewport.y || y > viewport.y + viewport.height) return 0;
+    *out = ImVec2(x, y);
+    return 1;
 }
 
 //opencode: log completed pan/orbit gestures for deterministic editor tests.
@@ -4366,31 +4399,49 @@ static gX_I0 gfx_editor_handle_commit(gX_RendererGFX *gfx) {
     }
 }
 
-//opencode: authored-camera markers — the selected camera's position and
-//   target are grabbable in the viewport (camera-facing drag plane).
-static gX_I1 gfx_editor_camera_marker_pick(gX_F32v2 gameMouse, gX_I32 *outKind,
-    gX_F32v3 *outPosition) {
-    if (s_selectedCamera < 0 || s_selectedCamera >= s_cameraCount) return 0;
-    const gX_GFX_Editor_Camera *entry = &s_cameras[s_selectedCamera];
+//opencode: authored-camera markers — every visible camera position is
+//   grabbable, and the selected camera's target handle stays draggable.
+static gX_I1 gfx_editor_camera_marker_pick(gX_RendererGFX *gfx,
+    ImVec2 windowMouse, gX_I32 *outKind, gX_F32v3 *outPosition,
+    gX_I32 *outCamera) {
+    if (!gfx || !gfx->state.SHOW_CAMERA_MARKERS || s_cameraCount <= 0) return 0;
     gX_F32 best = 12.0f * 12.0f;
     gX_I32 bestKind = 0;
+    gX_I32 bestCamera = -1;
     gX_F32v3 bestPosition = {0.0f, 0.0f, 0.0f};
-    for (gX_I32 kind = 1; kind <= 2; kind++) {
-        gX_F32v3 world = (kind == 1) ? entry->view.position
-                                     : entry->view.target;
-        gX_F32v2 screen = gX_Camera_GetWorldToScreen(world, camera.camera3D);
-        gX_F32 dx = screen.x - gameMouse.x;
-        gX_F32 dy = screen.y - gameMouse.y;
+    for (gX_I32 ci = 0; ci < s_cameraCount; ci++) {
+        ImVec2 screen;
+        if (!gfx_editor_world_to_window(s_cameras[ci].view.position, &screen))
+            continue;
+        gX_F32 dx = screen.x - windowMouse.x;
+        gX_F32 dy = screen.y - windowMouse.y;
         gX_F32 distance = dx * dx + dy * dy;
         if (distance < best) {
             best = distance;
-            bestKind = kind;
-            bestPosition = world;
+            bestKind = 1;
+            bestCamera = ci;
+            bestPosition = s_cameras[ci].view.position;
+        }
+    }
+    if (s_selectedCamera >= 0 && s_selectedCamera < s_cameraCount) {
+        ImVec2 screen;
+        if (gfx_editor_world_to_window(s_cameras[s_selectedCamera].view.target,
+                &screen)) {
+            gX_F32 dx = screen.x - windowMouse.x;
+            gX_F32 dy = screen.y - windowMouse.y;
+            gX_F32 distance = dx * dx + dy * dy;
+            if (distance < best) {
+                best = distance;
+                bestKind = 2;
+                bestCamera = s_selectedCamera;
+                bestPosition = s_cameras[s_selectedCamera].view.target;
+            }
         }
     }
     if (bestKind == 0) return 0;
     *outKind = bestKind;
-    *outPosition = bestPosition;
+    if (outPosition) *outPosition = bestPosition;
+    if (outCamera) *outCamera = bestCamera;
     return 1;
 }
 
@@ -4775,8 +4826,15 @@ static gX_I0 gfx_editor_viewport_input(gX_RendererGFX *gfx) {
     //opencode: camera markers are grabbable before path handles and object
     //   picking — the camera is explicitly selected while they show.
     gX_I32 cameraKind = 0;
+    gX_I32 cameraIndex = -1;
     gX_F32v3 cameraMarker = {0.0f, 0.0f, 0.0f};
-    if (gfx_editor_camera_marker_pick(gameMouse, &cameraKind, &cameraMarker)) {
+    if (gfx_editor_camera_marker_pick(gfx, mouse, &cameraKind, &cameraMarker,
+            &cameraIndex)) {
+        if (cameraIndex >= 0 && cameraIndex != s_selectedCamera) {
+            s_selectedCamera = cameraIndex;
+            s_selModel = -1;
+            s_selLight = -1;
+        }
         gX_Ray cameraRay = gX_Mouse_GetRay(gameMouse, camera.camera3D);
         s_dragPlanePoint = cameraMarker;
         s_dragPlaneNormal = gfx_camera_forward(&camera.camera3D);
@@ -6913,6 +6971,10 @@ static gX_I1 *gfx_state_flag_resolve(gX_RendererGFX *gfx, const gX_I8 *name) {
     if (strcmp((const char *)name, "ENABLE_WATER") == 0) return &gfx->state.ENABLE_WATER;
     if (strcmp((const char *)name, "ENABLE_GODRAYS") == 0)
         return &gfx->state.ENABLE_GODRAYS;
+    if (strcmp((const char *)name, "SHOW_CAMERA_MARKERS") == 0)
+        return &gfx->state.SHOW_CAMERA_MARKERS;
+    if (strcmp((const char *)name, "SHOW_LIGHT_MARKERS") == 0)
+        return &gfx->state.SHOW_LIGHT_MARKERS;
     gX_RendererGFX_Model *model0 = gfx_model_at(gfx, 0);
     if (!model0) return NULL;
     if (strcmp((const char *)name, "MODEL0_PLANAR_REFLECTION") == 0)
@@ -6932,7 +6994,8 @@ static gX_I1 gfx_state_flag_known(const gX_I8 *name) {
         "ENABLE_REFLECTIONS", "ENABLE_BLOOM", "ENABLE_SSAO", "ENABLE_SHADOWS",
         "ENABLE_POINT_SHADOWS", "ENABLE_FOG", "ENABLE_VOLUME_FOG",
         "ENABLE_PARTICLES", "ENABLE_MOTION_BLUR", "ENABLE_DOF", "ENABLE_WATER",
-        "ENABLE_GODRAYS", "MODEL0_PLANAR_REFLECTION",
+        "ENABLE_GODRAYS", "SHOW_CAMERA_MARKERS", "SHOW_LIGHT_MARKERS",
+        "MODEL0_PLANAR_REFLECTION",
         "MODEL0_NONPLANAR_REFLECTION", "MODEL0_ENABLE_REFLECTIONS",
         "MODEL0_RECEIVE_SSR",
     };
@@ -7035,16 +7098,40 @@ static gX_I0 gfx_preset_headless_hooks(gX_RendererGFX *gfx) {
     if (cameraDragCheck && cameraDragCheck[0] && !s_headlessCameraDragDone
         && maindata.frameCount >= 10) {
         gX_I32 pickKind = 0;
+        gX_I32 pickCamera = -1;
         gX_F32v3 pickPosition = {0.0f, 0.0f, 0.0f};
         gX_I1 picked = 0;
         gX_I32 posMoved = 0;
         gX_I32 targetMoved = 0;
+        gX_I32 allCameras = 0;
+        gX_I1 hidden = 0;
+        ImVec2 firstScreen = ImVec2(0.0f, 0.0f);
+        gX_I1 firstVisible = 0;
         if (s_cameraCount > 0) {
+            gfx->state.SHOW_CAMERA_MARKERS = 1;
             s_selectedCamera = 0;
-            gX_F32v2 screen = gX_Camera_GetWorldToScreen(
-                s_cameras[0].view.position, camera.camera3D);
-            picked = gfx_editor_camera_marker_pick(screen, &pickKind,
-                &pickPosition);
+            ImVec2 secondScreen = ImVec2(0.0f, 0.0f);
+            firstVisible = gfx_editor_world_to_window(
+                s_cameras[0].view.position, &firstScreen);
+            gX_I1 secondVisible = (s_cameraCount > 1)
+                ? gfx_editor_world_to_window(s_cameras[1].view.position,
+                    &secondScreen) : 0;
+            picked = firstVisible && gfx_editor_camera_marker_pick(gfx,
+                firstScreen, &pickKind, &pickPosition, &pickCamera);
+            allCameras = (picked && pickCamera == 0) ? 1 : 0;
+            if (s_cameraCount > 1) {
+                gX_I32 secondKind = 0;
+                gX_I32 secondCamera = -1;
+                gX_F32v3 secondPosition = {0.0f, 0.0f, 0.0f};
+                allCameras = (allCameras && secondVisible
+                    && gfx_editor_camera_marker_pick(gfx, secondScreen,
+                        &secondKind, &secondPosition, &secondCamera)
+                    && secondKind == 1 && secondCamera == 1) ? 1 : 0;
+            }
+            gfx->state.SHOW_CAMERA_MARKERS = 0;
+            hidden = (firstVisible && !gfx_editor_camera_marker_pick(gfx,
+                firstScreen, &pickKind, &pickPosition, &pickCamera)) ? 1 : 0;
+            gfx->state.SHOW_CAMERA_MARKERS = 1;
             if (picked && pickKind == 1) {
                 gX_F32v3 before = s_cameras[0].view.position;
                 gX_F32v3 targetBefore = s_cameras[0].view.target;
@@ -7057,12 +7144,15 @@ static gX_I0 gfx_preset_headless_hooks(gX_RendererGFX *gfx) {
                     && s_cameras[0].view.target.y == targetBefore.y
                     && s_cameras[0].view.target.z == targetBefore.z) ? 1 : 0;
                 s_draggingCamera = 0;
-                gX_F32v2 targetScreen = gX_Camera_GetWorldToScreen(
-                    s_cameras[0].view.target, camera.camera3D);
+                ImVec2 targetScreen = ImVec2(0.0f, 0.0f);
                 gX_I32 targetKind = 0;
+                gX_I32 targetCamera = -1;
                 gX_F32v3 targetPick = {0.0f, 0.0f, 0.0f};
-                if (gfx_editor_camera_marker_pick(targetScreen, &targetKind,
-                        &targetPick) && targetKind == 2) {
+                if (gfx_editor_world_to_window(s_cameras[0].view.target,
+                        &targetScreen)
+                    && gfx_editor_camera_marker_pick(gfx, targetScreen,
+                        &targetKind, &targetPick, &targetCamera)
+                    && targetKind == 2) {
                     gX_F32v3 targetStart = s_cameras[0].view.target;
                     s_draggingCamera = 1;
                     s_dragCameraKind = 2;
@@ -7074,11 +7164,19 @@ static gX_I0 gfx_preset_headless_hooks(gX_RendererGFX *gfx) {
                 }
             }
         }
-        gX_I1 pass = (picked && pickKind == 1 && posMoved && targetMoved) ? 1 : 0;
+        gX_I1 pass = (picked && pickKind == 1 && posMoved && targetMoved
+            && allCameras && hidden) ? 1 : 0;
+        gX_Rectangle dragViewport = gX_GUI_ViewportBox_Get();
         gX_TraceLog(pass ? gX_LOG_NOTICE : gX_LOG_ERROR,
-            "GFX_CAMERA_DRAG_CHECK: %s picked=%d kind=%d posMoved=%d "
-            "targetMoved=%d", pass ? "PASS" : "FAIL", picked, pickKind,
-            posMoved, targetMoved);
+            "GFX_CAMERA_DRAG_CHECK: %s picked=%d kind=%d camera=%d "
+            "posMoved=%d targetMoved=%d allCameras=%d hidden=%d "
+            "viewport=(%.1f,%.1f,%.1f,%.1f) render=%dx%d firstVisible=%d "
+            "first=(%.1f,%.1f)",
+            pass ? "PASS" : "FAIL", picked, pickKind, pickCamera, posMoved,
+            targetMoved, allCameras, hidden, dragViewport.x, dragViewport.y,
+            dragViewport.width, dragViewport.height,
+            (gX_I32)maindata.renderWidth, (gX_I32)maindata.renderHeight,
+            (gX_I32)firstVisible, firstScreen.x, firstScreen.y);
         s_headlessCameraDragDone = 1;
     }
     const char *uiTheme = getenv("GX_GFX_UI_THEME");
@@ -7868,17 +7966,123 @@ static gX_I0 gfx_editor_shortcut_hint(const char *KeyText,
 }
 
 //opencode: keep current viewport, transform, and save shortcuts visible.
-//opencode: viewport overlay — the selected camera's position/target markers.
-static gX_I0 gfx_editor_camera_markers_draw(gX_I0) {
-    if (s_renderApplied) return;
-    if (s_selectedCamera < 0 || s_selectedCamera >= s_cameraCount) return;
+//opencode: build a compact world-space frustum so authored cameras read as 3D
+//   objects and keep a steady screen size at any distance.
+static gX_I1 gfx_editor_camera_frustum_corners(
+    const gX_GFX_Editor_Camera *entry, gX_F32v3 corners[4]) {
+    gX_F32v3 position = entry->view.position;
+    gX_F32v3 forward = gfx_vec3_normalize(
+        gfx_vec3_sub(entry->view.target, position));
+    if (gfx_vec3_dot(forward, forward) < 0.5f) return 0;
+    gX_F32v3 hint = gfx_vec3_normalize(entry->view.up);
+    if (gfx_vec3_dot(hint, hint) < 0.5f) hint = (gX_F32v3){0.0f, 1.0f, 0.0f};
+    gX_F32v3 right = gfx_vec3_normalize(gfx_vec3_cross(forward, hint));
+    if (gfx_vec3_dot(right, right) < 0.5f) {
+        hint = (fabsf(forward.y) > 0.9f)
+            ? (gX_F32v3){0.0f, 0.0f, 1.0f} : (gX_F32v3){0.0f, 1.0f, 0.0f};
+        right = gfx_vec3_normalize(gfx_vec3_cross(forward, hint));
+    }
+    gX_F32v3 up = gfx_vec3_normalize(gfx_vec3_cross(right, forward));
+    gX_F32v3 toEye = gfx_vec3_sub(position, camera.camera3D.position);
+    gX_F32 distance = sqrtf(gfx_vec3_dot(toEye, toEye));
+    gX_F32 depth = distance * 0.08f;
+    if (depth < 0.4f) depth = 0.4f;
+    if (depth > 2.5f) depth = 2.5f;
+    gX_Rectangle viewport = gX_GUI_ViewportBox_Get();
+    gX_F32 aspect = (viewport.height > 1.0f)
+        ? viewport.width / viewport.height : 1.0f;
+    gX_F32 fovy = entry->view.fovy;
+    if (fovy < 15.0f) fovy = 15.0f;
+    if (fovy > 120.0f) fovy = 120.0f;
+    gX_F32 halfHeight = tanf(fovy * 0.5f * gX_DEG2RAD) * depth;
+    gX_F32 halfWidth = halfHeight * aspect;
+    gX_F32v3 center = gfx_vec3_add(position, gfx_vec3_scale(forward, depth));
+    gX_F32v3 rightOffset = gfx_vec3_scale(right, halfWidth);
+    gX_F32v3 upOffset = gfx_vec3_scale(up, halfHeight);
+    corners[0] = gfx_vec3_add(gfx_vec3_add(center, rightOffset), upOffset);
+    corners[1] = gfx_vec3_add(gfx_vec3_sub(center, rightOffset), upOffset);
+    corners[2] = gfx_vec3_sub(gfx_vec3_sub(center, rightOffset), upOffset);
+    corners[3] = gfx_vec3_sub(gfx_vec3_add(center, rightOffset), upOffset);
+    return 1;
+}
+
+//opencode: draw one authored camera as a labelled frustum; the selected
+//   camera also shows its target handle so the existing drag stays visible.
+static gX_I0 gfx_editor_camera_marker_draw_one(ImDrawList *draw,
+    const gX_GFX_Editor_Camera *entry, gX_I32 index, gX_I1 selected,
+    ImVec2 origin) {
+    ImVec2 position;
+    if (!gfx_editor_world_to_window(entry->view.position, &position)) return;
+    ImVec2 localPosition = ImVec2(position.x - origin.x, position.y - origin.y);
+    ImU32 lineColor = selected ? IM_COL32(255, 196, 92, 170)
+                               : IM_COL32(120, 200, 240, 110);
+    ImU32 pointColor = (selected && s_draggingCamera
+        && s_dragCameraKind == 1) ? IM_COL32(255, 245, 190, 255)
+        : (selected ? IM_COL32(255, 208, 110, 255)
+                    : IM_COL32(120, 220, 255, 235));
+    ImU32 ringColor = selected ? IM_COL32(255, 196, 92, 255)
+                               : IM_COL32(96, 158, 198, 190);
+    gX_F32v3 corners[4];
+    if (gfx_editor_camera_frustum_corners(entry, corners)) {
+        ImVec2 screenCorners[4];
+        gX_I1 complete = 1;
+        for (gX_I32 ci = 0; ci < 4; ci++) {
+            if (!gfx_editor_world_to_window(corners[ci], &screenCorners[ci])) {
+                complete = 0;
+                break;
+            }
+            screenCorners[ci] = ImVec2(screenCorners[ci].x - origin.x,
+                screenCorners[ci].y - origin.y);
+        }
+        if (complete) {
+            draw->AddPolyline(screenCorners, 4, lineColor,
+                ImDrawFlags_Closed, 1.0f);
+            for (gX_I32 ci = 0; ci < 4; ci++)
+                draw->AddLine(localPosition, screenCorners[ci], lineColor,
+                    1.0f);
+        }
+    }
+    if (selected) {
+        ImVec2 target;
+        if (gfx_editor_world_to_window(entry->view.target, &target)) {
+            ImVec2 localTarget = ImVec2(target.x - origin.x,
+                target.y - origin.y);
+            draw->AddLine(localPosition, localTarget,
+                IM_COL32(180, 150, 255, 100), 1.0f);
+            draw->AddCircleFilled(localTarget, 4.5f,
+                (s_draggingCamera && s_dragCameraKind == 2)
+                    ? IM_COL32(255, 245, 190, 255)
+                    : IM_COL32(200, 160, 255, 235), 12);
+            draw->AddCircle(localTarget, 7.0f,
+                IM_COL32(160, 120, 220, 200), 12, 1.0f);
+        }
+    }
+    draw->AddCircleFilled(localPosition, selected ? 5.5f : 4.0f, pointColor,
+        16);
+    draw->AddCircle(localPosition, selected ? 9.0f : 7.0f, ringColor, 16,
+        selected ? 2.0f : 1.0f);
+    char label[160];
+    snprintf(label, sizeof(label), "%d  %s", index, entry->name);
+    ImVec2 textSize = ImGui::CalcTextSize(label);
+    ImVec2 textPosition = ImVec2(localPosition.x + 12.0f,
+        localPosition.y - textSize.y * 0.5f);
+    draw->AddRectFilled(ImVec2(textPosition.x - 4.0f,
+        textPosition.y - 2.0f), ImVec2(textPosition.x + textSize.x + 4.0f,
+        textPosition.y + textSize.y + 2.0f),
+        selected ? IM_COL32(24, 18, 10, 190) : IM_COL32(8, 14, 24, 130),
+        3.0f);
+    draw->AddText(textPosition,
+        selected ? IM_COL32(255, 224, 160, 255)
+                 : IM_COL32(210, 230, 245, 225), label);
+}
+
+//opencode: viewport overlay — every authored camera's position/frustum,
+//   selected last so its target handle stays on top.
+static gX_I0 gfx_editor_camera_markers_draw(gX_RendererGFX *gfx) {
+    if (s_renderApplied || !gfx || !gfx->state.SHOW_CAMERA_MARKERS) return;
+    if (s_cameraCount <= 0) return;
     gX_Rectangle viewport = gX_GUI_ViewportBox_Get();
     if (viewport.width <= 1.0f || viewport.height <= 1.0f) return;
-    const gX_GFX_Editor_Camera *entry = &s_cameras[s_selectedCamera];
-    gX_Rectangle positionScreen = gX_GUI_GameToScreen((gX_Rectangle){
-        entry->view.position.x, entry->view.position.y, 1.0f, 1.0f});
-    gX_Rectangle targetScreen = gX_GUI_GameToScreen((gX_Rectangle){
-        entry->view.target.x, entry->view.target.y, 1.0f, 1.0f});
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration
         | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav
         | ImGuiWindowFlags_NoFocusOnAppearing
@@ -7890,17 +8094,18 @@ static gX_I0 gfx_editor_camera_markers_draw(gX_I0) {
     if (ImGui::Begin("GFX Camera Markers", 0, flags)) {
         ImDrawList *draw = ImGui::GetWindowDrawList();
         ImVec2 origin = ImGui::GetWindowPos();
-        ImVec2 position = ImVec2(origin.x + positionScreen.x - viewport.x,
-            origin.y + positionScreen.y - viewport.y);
-        ImVec2 target = ImVec2(origin.x + targetScreen.x - viewport.x,
-            origin.y + targetScreen.y - viewport.y);
-        draw->AddLine(position, target, IM_COL32(120, 220, 255, 120), 1.0f);
-        draw->AddCircleFilled(position, 5.0f,
-            (s_draggingCamera && s_dragCameraKind == 1)
-                ? IM_COL32(255, 220, 120, 255) : IM_COL32(120, 220, 255, 220));
-        draw->AddCircleFilled(target, 4.0f,
-            (s_draggingCamera && s_dragCameraKind == 2)
-                ? IM_COL32(255, 220, 120, 255) : IM_COL32(200, 160, 255, 220));
+        draw->PushClipRect(origin, ImVec2(origin.x + viewport.width,
+            origin.y + viewport.height), true);
+        for (gX_I32 pass = 0; pass < 2; pass++) {
+            for (gX_I32 ci = 0; ci < s_cameraCount; ci++) {
+                gX_I1 selected = (ci == s_selectedCamera) ? 1 : 0;
+                if ((pass == 0 && selected) || (pass == 1 && !selected))
+                    continue;
+                gfx_editor_camera_marker_draw_one(draw, &s_cameras[ci], ci,
+                    selected, origin);
+            }
+        }
+        draw->PopClipRect();
     }
     ImGui::End();
 }
@@ -8270,6 +8475,8 @@ static gX_I0 gfx_debug_panel(gX_RendererGFX *gfx) {
         if (ImGui::Checkbox("skeleton", (bool *)&skeleton)) gfx->state.SHOW_SKELETON = skeleton ? 1 : 0;
         gX_I1 markers = gfx->state.SHOW_LIGHT_MARKERS ? 1 : 0;
         if (ImGui::Checkbox("light markers", (bool *)&markers)) gfx->state.SHOW_LIGHT_MARKERS = markers ? 1 : 0;
+        gX_I1 cameraMarkers = gfx->state.SHOW_CAMERA_MARKERS ? 1 : 0;
+        if (ImGui::Checkbox("camera markers", (bool *)&cameraMarkers)) gfx->state.SHOW_CAMERA_MARKERS = cameraMarkers ? 1 : 0;
         gX_I1 wire = gfx->state.ENABLE_WIREFRAME ? 1 : 0;
         if (ImGui::Checkbox("wireframe", (bool *)&wire)) gfx->state.ENABLE_WIREFRAME = wire ? 1 : 0;
     }
@@ -8800,8 +9007,10 @@ static gX_I0 gfx_scene_lights_panel(gX_RendererGFX *gfx) {
 
 //opencode: compact camera list + render controls for the left scene panel.
 static gX_I0 gfx_scene_cameras_panel(gX_RendererGFX *gfx) {
-    (void)gfx;
     ImGui::SeparatorText("Cameras");
+    gX_I1 cameraMarkers = gfx->state.SHOW_CAMERA_MARKERS ? 1 : 0;
+    if (ImGui::Checkbox("show markers", (bool *)&cameraMarkers))
+        gfx->state.SHOW_CAMERA_MARKERS = cameraMarkers ? 1 : 0;
     if (ImGui::Button("Remove##camera") && s_selectedCamera >= 0) {
         for (gX_I32 ci = s_selectedCamera; ci + 1 < s_cameraCount; ci++)
             s_cameras[ci] = s_cameras[ci + 1];
@@ -10646,9 +10855,11 @@ static gX_I0 gfx_menu_bar(gX_RendererGFX *gfx) {
             bool gizmo = gfx->state.SHOW_GIZMO != 0;
             bool boxes = gfx->state.SHOW_BOUNDING_BOX != 0;
             bool skeleton = gfx->state.SHOW_SKELETON != 0;
+            bool cameraMarkers = gfx->state.SHOW_CAMERA_MARKERS != 0;
             if (ImGui::Checkbox("Transform gizmo", &gizmo)) gfx->state.SHOW_GIZMO = gizmo ? 1 : 0;
             if (ImGui::Checkbox("Bounding boxes", &boxes)) gfx->state.SHOW_BOUNDING_BOX = boxes ? 1 : 0;
             if (ImGui::Checkbox("Skeleton overlay", &skeleton)) gfx->state.SHOW_SKELETON = skeleton ? 1 : 0;
+            if (ImGui::Checkbox("Camera markers", &cameraMarkers)) gfx->state.SHOW_CAMERA_MARKERS = cameraMarkers ? 1 : 0;
         }
         ImGui::EndMenu();
     }
@@ -10675,6 +10886,7 @@ static gX_I0 gfx_menu_bar(gX_RendererGFX *gfx) {
         if (ImGui::MenuItem("Report bug...", "F10")) gX_BugReport.open = 1;
         ImGui::Separator();
         ImGui::TextWrapped("Click-drag a visible model or light marker to translate on the selected plane.");
+        ImGui::TextWrapped("Camera markers (View > Camera markers) show every authored camera; drag a position or target handle to reframe it.");
         ImGui::TextWrapped("Hold X/Y/Z + drag for world-axis translation. Hold R + drag to rotate; R+X/Y/Z constrains the rotation axis. Hold S + drag to scale uniformly; S+X/Y/Z scales one axis.");
         ImGui::Text("Move buttons and numeric controls are in Inspector > Models.");
         ImGui::Text("Ctrl during drag snaps; Alt+G/R/S resets position/rotation/scale.");
@@ -10976,7 +11188,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
         ImGui::End();
         s_inspectorPanelOpen = inspectorOpen ? 1 : 0;
     }
-    gfx_editor_camera_markers_draw();
+    gfx_editor_camera_markers_draw(gfx);
     gfx_editor_shortcut_footer(gfx, 0);
     gfx_asset_browser_window(gfx);
     if (gfx) gfx_snapshot_headless_smoke(gfx);
