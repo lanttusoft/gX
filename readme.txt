@@ -115,6 +115,13 @@ block) registers browse-only external roots; nothing is copied into the repo
 is opt-in: `GX_GL43_CONTEXT=1 ./build/gX_build --gfx-editor`; the editor's
 GL level panel persists the preference.
 
+Independence
+------------
+gX is an independent project. It is not affiliated with, endorsed by, or
+sponsored by any third-party game, ARG, series, company, or trademark.
+References to public works are descriptive and nominative; no association,
+sponsorship, or endorsement is implied.
+
 License
 -------
 gX is licensed under GPLv3 (see LICENSE).
