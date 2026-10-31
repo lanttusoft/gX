@@ -7,6 +7,9 @@ SemVer.
 ## [Unreleased]
 
 ### Added
+- **Color-code palette-density study**: `scripts/color_code_palette_experiment.py`
+  compares 4/8/16-colour capacity and noise margins; the 8-colour middle option
+  is recommended as an opt-in future mode, not a default change.
 - **Color-code clutter detection**: `gX_ColorCode_DetectClutter` scans the
   four 3x3 control patterns across bounded scales/positions, extrapolates the
   full-grid quad and accepts only a decoding candidate; bright backgrounds and
