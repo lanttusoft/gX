@@ -45,6 +45,18 @@ existing codes. Status edits preserve legacy indentation and reject duplicate
 top-level `status_code` lines. Reports remain local and gitignored, including
 their status changes.
 
+## Triage conventions
+
+A report becomes **FIXED** only after the behavior is verified against current
+code or release notes; cite that evidence in the private triage log. Severity
+describes the original impact and is not rewritten when a fix lands.
+
+Feature proposals are titled `[FEATURE REQUEST]` and stay **OPEN** until the
+capability exists; they are not bugs and must not be closed on intent alone.
+The form's type list has no proposal category, so they keep `type: Other`.
+Use `--feature` / `--no-feature` to separate them, and read
+`open_feature_requests` from `summary` when counting open defects.
+
 Reports include UTC submission time, the runtime engine-version label, and
 the preset path. The label comes from `gX_Data_String_gX_version` and must
 match `readme.txt`; it is not an exact Git revision, so record the revision
