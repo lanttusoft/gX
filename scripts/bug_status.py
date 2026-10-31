@@ -15,12 +15,15 @@ import tempfile
 #ai: these numeric values are the persisted report lifecycle contract.
 STATUS_LABELS = {0: 'OPEN', 1: 'FIXED'}
 STATUS_CODES = {'OPEN': 0, 'FIXED': 1, '0': 0, '1': 1}
-STATUS_LINE = re.compile(r'(?m)^(  "status_code"[ \t]*:[ \t]*)-?\d+([ \t]*,?)[ \t]*$')
+STATUS_LINE = re.compile(r'(?m)^([ \t]*"status_code"[ \t]*:[ \t]*)-?\d+([ \t]*,?)[ \t]*$')
 
 
 #ai: absent codes remain backward-compatible as OPEN until initialization writes them explicitly.
 def read_report(path):
-    document = json.loads(path.read_text(encoding='utf-8'))
+    text = path.read_text(encoding='utf-8')
+    if len(STATUS_LINE.findall(text)) > 1:
+        raise ValueError(str(path) + ': duplicate top-level status_code lines')
+    document = json.loads(text)
     if not isinstance(document, dict):
         raise ValueError(str(path) + ': report root must be an object')
     code = document.get('status_code', 0)

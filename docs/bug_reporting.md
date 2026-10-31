@@ -30,8 +30,9 @@ python3 scripts/bug_status.py set report-1791055042-0.json 1
 
 `python3 scripts/bug_status.py initialize` is an idempotent migration for new
 legacy reports: it adds `0` only where the field is missing and preserves
-existing codes. Reports remain local and gitignored, including their status
-changes.
+existing codes. Status edits preserve legacy indentation and reject duplicate
+top-level `status_code` lines. Reports remain local and gitignored, including
+their status changes.
 
 Reports include UTC submission time, the runtime engine-version label, and
 the preset path. The label comes from `gX_Data_String_gX_version` and must

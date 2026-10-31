@@ -11,6 +11,9 @@ SemVer.
   matches the release label, and version consistency checks cover the runtime
   string and UI labels. New reports from v0.21.1 record `0.21.1 beta` instead
   of the stale `0.19.1 beta`.
+- **Bug-status writer**: legacy reports with one-space `status_code`
+  indentation now update in place instead of gaining a duplicate JSON key;
+  duplicate status lines are rejected. `test_bug_status.py` covers both.
 
 ## [0.21.0] - 2026-10-31
 

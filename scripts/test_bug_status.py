@@ -32,6 +32,23 @@ class BugStatusTests(unittest.TestCase):
             self.assertEqual((previous, code), (1, 0))
             self.assertEqual(read_report(legacy)[1], 0)
 
+    def test_single_space_status_is_replaced_without_duplicate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'report-3-0.json'
+            path.write_text('{\n "status_code": 0,\n "title":"single-space"\n}\n')
+            previous, code = set_status(path, 'FIXED')
+            self.assertEqual((previous, code), (0, 1))
+            text = path.read_text()
+            self.assertEqual(text.count('"status_code"'), 1)
+            self.assertEqual(read_report(path)[1], 1)
+
+    def test_duplicate_status_lines_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'report-4-0.json'
+            path.write_text('{\n "status_code": 0,\n "status_code": 1,\n "title":"duplicate"\n}\n')
+            with self.assertRaises(ValueError):
+                read_report(path)
+
     def test_invalid_status_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'report-1-0.json'
