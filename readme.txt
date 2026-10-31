@@ -1,7 +1,7 @@
 gX — a distilled game engine
 =============================
 
-v0.26.1 (beta)
+v0.26.2 (beta)
 
 gX is the release-bound distillation of gameX (the research engine): the same
 engine architecture without the tech debt, raylib-only, scoped to engine core
