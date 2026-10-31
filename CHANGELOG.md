@@ -4,6 +4,33 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.27.0] - 2026-10-31
+
+Release-Class: minor
+
+### Added
+- **Editor camera markers**: `SHOW_CAMERA_MARKERS` (**View → Camera markers**,
+  **Renderer → Debug → Viewport**, and the scene Cameras panel) draws every
+  authored scene camera as a labelled world-space frustum. Clicking a marker
+  selects the camera; dragging its position handle reframes it, and the
+  selected camera's target handle remains draggable. The overlay is skipped
+  for render captures and stays off by default.
+- **GitHub contribution templates**: the issue forms capture build mode,
+  frequency and impact; the PR checklist covers release class, provenance,
+  API/enum docs and AI disclosure; the issue chooser routes security, support,
+  conduct and documentation contacts.
+
+### Changed
+- **Camera-render gate**: the headless reference capture now uses focus mode so
+  the undocked audit window no longer overlaps the clean render with side
+  panels. The gate also pins marker visibility, all-camera picking and the
+  position/target drag behavior.
+
+### Fixed
+- **Editor camera markers**: marker positions now use the real
+  world-to-screen projection and viewport scale instead of passing world
+  coordinates through the game-screen transform.
+
 ## [0.26.3] - 2026-10-31
 
 Release-Class: patch
