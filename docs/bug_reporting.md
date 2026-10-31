@@ -132,6 +132,29 @@ Files are not automatically deleted or retried. No uploads, telemetry,
 autosaves, resource copies or program dumps are performed. `bugs/` is
 gitignored to protect private reports.
 
+## Replaying a report
+
+`scripts/bug_replay.py` merges a report's diagnostics (camera, renderer state,
+SSR/SSAO/fog/bloom/reflection sections) into a temporary preset and renders it
+with the editor scene. This reproduces the reported view without editing the
+live scene:
+
+```bash
+python3 scripts/bug_replay.py bugs/report-<id>.json
+python3 scripts/bug_replay.py bugs/report-<id>.json \
+  --preset resources/tools/gfx_editor.json --out /tmp/opencode/replay.png
+python3 scripts/bug_replay.py bugs/report-<id>.json \
+  --preset-out /tmp/opencode/replay-preset.json
+```
+
+The report's `preset` path is used by default; pass `--preset` when the
+private scene is unavailable. The merged preset stays under `/tmp/opencode`
+and is deleted after the run unless `--preset-out` is given. The screenshot
+defaults to `/tmp/opencode/replay-<report>.png`. Reports, merged presets and
+captures can contain private scene content; never commit them. The tool does
+not modify the report or the source scene. Its merge path is covered by
+`scripts/test_bug_replay.py` and `make bug-replay-check`.
+
 ## Validation and next steps
 
 `make gfx-bug-report-check` exercises the real writer through an opt-in Debug

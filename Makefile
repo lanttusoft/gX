@@ -50,6 +50,7 @@ all:
 	bash build.sh $(BUILD_TYPE)
 
 check: all
+	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	@if [ ! -d ../proofs ]; then \
 	  echo "gX public source beta: full 'make check' needs the proof tree (../proofs)."; \
 	  echo "Use 'make check-fast' for the public source-beta CI."; \
@@ -185,6 +186,7 @@ hw-report-check:
 #opencode: fast inner-loop counterpart to check; preserves the full check
 #   target and its Release-size, resource/copyright, and Lean admission gates.
 check-fast: all
+	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	@echo "== [gX fast] unit tests =="
 	./build/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/gX_build --test-only && exit 1)
 	@echo "== [gX fast] attribution =="
@@ -1099,6 +1101,11 @@ fog-volume-check: all
 uniform-trace-check: all
 	@echo "== [gX CI] uniform type trace =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/uniform_trace_check.py
+
+#opencode: bug-report replay merge path (no private report or GPU needed).
+.PHONY: bug-replay-check
+bug-replay-check:
+	python3 -m unittest discover -s scripts -p test_bug_replay.py
 
 #opencode: wireframe placement pin — difference gates pass garbage, only
 #   a bbox gate catches misplacement. Requires a live GPU display.
