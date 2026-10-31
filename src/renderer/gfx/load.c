@@ -289,6 +289,7 @@ gX_I0 gX_RendererGFX_Load_SetDefaults(gX_RendererGFX *gfx)
     gfx->state.SHOW_BOUNDING_BOX = false; //opencode: debug toggle, off by default
     gfx->state.SHOW_SKELETON = false;     //opencode: bind-pose bone overlay, off by default
     gfx->state.SHOW_LIGHT_MARKERS = false;
+    gfx->state.SHOW_CAMERA_MARKERS = false; //opencode: editor viewport overlay, off by default
     gfx->common.pickedModelIndex = -1;
     gfx->common.battleScene = false;
     gfx->common.physicsScene = false;

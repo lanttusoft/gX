@@ -810,6 +810,7 @@ static gX_SchemaField gfx_state_fields[] = {
     GX_SCHEMA_BOOL("SHOW_BOUNDING_BOX",        gX_RendererGFX_State, SHOW_BOUNDING_BOX),
     GX_SCHEMA_BOOL("SHOW_SKELETON",            gX_RendererGFX_State, SHOW_SKELETON),
     GX_SCHEMA_BOOL("SHOW_LIGHT_MARKERS",       gX_RendererGFX_State, SHOW_LIGHT_MARKERS),
+    GX_SCHEMA_BOOL("SHOW_CAMERA_MARKERS",      gX_RendererGFX_State, SHOW_CAMERA_MARKERS),
     GX_SCHEMA_BOOL("ENABLE_WIREFRAME",         gX_RendererGFX_State, ENABLE_WIREFRAME),
     GX_SCHEMA_BOOL("ENABLE_WATER",             gX_RendererGFX_State, ENABLE_WATER),
     GX_SCHEMA_F32("exposure",                  gX_RendererGFX_State, exposure),

@@ -164,6 +164,17 @@ Phase 5 status (2026-10-30, re-review):
   the narrow inspector.
 - The editor is release-grade for the v0.19 **technical preview**.
 
+## Camera markers
+
+<!-- //ai: viewport-authored camera positions, frustums and drag handles. -->
+
+**View → Camera markers** (also **Renderer → Debug → Viewport**) draws every
+authored scene camera as a labelled world-space frustum. Clicking a marker
+selects that camera; dragging its position handle reframes the camera, and the
+selected camera's target handle remains draggable. The overlay is editor-only,
+is skipped for render captures, and is controlled by the schema flag
+`SHOW_CAMERA_MARKERS` (off by default).
+
 ## Peer-review gate
 
 The reusable contract is [`peer_review_gate.md`](peer_review_gate.md). For this

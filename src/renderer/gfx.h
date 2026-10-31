@@ -177,6 +177,8 @@ typedef struct gX_RendererGFX_State {
     gX_I1   SHOW_BOUNDING_BOX;
     gX_I1   SHOW_SKELETON;      //opencode: bind-pose bone overlay for rigged models
     gX_I1   SHOW_LIGHT_MARKERS;
+    //opencode: authored-camera positions/frustums in the editor viewport.
+    gX_I1   SHOW_CAMERA_MARKERS;
     gX_I1   ENABLE_WIREFRAME;   //opencode: renders all models as wireframe overlay
     
     //opencode: decal rendering toggle
