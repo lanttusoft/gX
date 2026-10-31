@@ -78,11 +78,11 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
         "                             GX_T_LEDORBIT/BLINK/HUE electives)\n"
         "      --showcase-y2k         Showcase: opt-in Bryce/Y2K abstract terrain\n"
         "                             study (glass, metal, neon; live editor-ready)\n"
-        "      --forest               Showcase: dead-forest testbed (~36 gameX trees\n"
+        "      --forest               Showcase: dead-forest testbed (~36 guest trees\n"
         "                             via GX_ASSETS guest fallback, thick fog;\n"
-        "                             set GX_ASSETS=/path/to/gameX/resources)\n"
+        "                             set GX_ASSETS=<external-assets>/resources)\n"
         "      --lake                 Showcase: forest-ringed lake (water plane,\n"
-        "                             banks, ~26 gameX trees, thin fog)\n"
+        "                             banks, ~26 guest trees, thin fog)\n"
         "      --help                 Show this help and exit\n"
         "      --textwriter           Jump to textwriter scene\n"
         "      --synthvis             Jump to synth visualizer scene (playable\n"
@@ -524,7 +524,7 @@ if (!strcmp(long_options[option_index].name,"guest-model")) {
                     arguments.showcase = true;
                     arguments.showcaseY2K = true;
                 }
-                //opencode: dead-forest testbed - 110 gameX trees via the
+                //opencode: dead-forest testbed - 110 guest trees via the
                 //   GX_ASSETS guest fallback + thick volume fog (batch read)
                 if (!strcmp(long_options[option_index].name,"forest")) {
                     arguments.masterIndex = gX_SCENE_RENDERER_GFX;

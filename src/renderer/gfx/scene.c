@@ -841,8 +841,8 @@ gX_I32 gX_RendererGFX_Scene_AddDemoContent(gX_RendererGFX *gfx)
 
     //opencode: --forest dead-forest testbed. Matte ground (no mirror: 110
     //   trees through the planar pass would triple an already heavy frame)
-    //   + gameX tree.glb instances (guest fallback via GX_ASSETS, NOT
-    //   vendored) scattered by a local LCG (fixed seed, hermetic).
+    //   + optional guest tree.glb instances (in-tree or GX_ASSETS
+    //   fallback) scattered by a local LCG (fixed seed, hermetic).
     //   SPACING IS LOAD-BEARING: canopies span +-4..8u (scale-dependent),
     //   so 7u Poisson made a solid thicket with tips at the lens (mush
     //   frames). 18u spacing in r10..62 gives an open stand (~36 trees:
@@ -934,9 +934,8 @@ gX_I32 gX_RendererGFX_Scene_AddDemoContent(gX_RendererGFX *gfx)
                 gX_RendererGFX_Model *m = gX_Heap_Add_Push_NoPtr(&gfx->models);
                 if (!m) continue;
                 gX_I8 path[256];
-                //opencode: silent-hill fix — tree.glb is a guest asset
-                //   (absent in-tree: loads failed, empty fog slab).
-                //   Fall back to in-tree cone so forest/lake work hermetic.
+                //opencode: tree.glb is optional; fall back to the in-tree
+                //   cone so forest/lake still work when it is absent.
                 //   Cones read tiny at tree scale: stretch tall when the
                 //   fallback is active (dead-trunk silhouette, not a rock).
                 gX_I1 useFallback = 0;
@@ -1154,9 +1153,8 @@ gX_I32 gX_RendererGFX_Scene_AddDemoContent(gX_RendererGFX *gfx)
                 gX_RendererGFX_Model *m = gX_Heap_Add_Push_NoPtr(&gfx->models);
                 if (!m) continue;
                 gX_I8 path[256];
-                //opencode: silent-hill fix — tree.glb is a guest asset
-                //   (absent in-tree: loads failed, empty fog slab).
-                //   Fall back to in-tree cone so forest/lake work hermetic.
+                //opencode: tree.glb is optional; fall back to the in-tree
+                //   cone so forest/lake still work when it is absent.
                 {
                     FILE *probe = fopen(GX_RESOURCE_DIR "/model/tree.glb", "rb");
                     if (probe) {
