@@ -68,7 +68,7 @@ Features
   editor on vendored Dear ImGui — build templates and re-skin the title
   without leaving the running engine
 - gfx editor (--gfx-editor, **work in progress / technical preview**): scene authoring on the live renderer — models and
-  lights, authored cameras with render-to-image, per-material overrides with
+  lights, authored cameras with render-to-image and viewport markers, per-material overrides with
   map browsing, 3D text labels, blockout primitives (GenMesh*), prefabs
   (radius-captured model + light bundles), decals, particle emitters, and
   browse-only guest asset roots; themes include a Frutiger Aero preset
