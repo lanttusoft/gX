@@ -1,3 +1,4 @@
+# //ai: structured public feature intake with scope fields.
 name: Feature request
 description: Propose a focused engine, renderer, or tooling improvement.
 title: "[feature]: "
@@ -12,7 +13,7 @@ body:
     id: problem
     attributes:
       label: Problem
-      description: What is missing or painful today?
+      description: What is missing or painful today? Include the workflow it affects.
     validations:
       required: true
   - type: textarea
@@ -22,16 +23,39 @@ body:
       description: Describe the behavior and public surface, not just the implementation.
     validations:
       required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Engine core
+        - Renderer / shaders
+        - GFX editor / authoring tools
+        - Asset pipeline / importers
+        - Build, tests, or audits
+        - Documentation
+        - Other
+    validations:
+      required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives / scope
-      description: Existing workarounds, affected subsystems, and what is explicitly out of scope.
+      label: Alternatives / out of scope
+      description: Existing workarounds, affected subsystems, and what this proposal explicitly does not cover.
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Willing to contribute?
+      options:
+        - "No"
+        - "Yes, with guidance"
+        - "Yes, I can open a PR"
+        - Unsure
   - type: input
     id: version
     attributes:
       label: gX version / commit
-      placeholder: v0.18.0
+      placeholder: v0.26.3
   - type: checkboxes
     id: checks
     attributes:

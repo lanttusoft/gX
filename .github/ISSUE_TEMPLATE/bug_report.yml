@@ -1,5 +1,6 @@
+# //ai: structured public bug intake with privacy and impact fields.
 name: Bug report
-description: Report a reproducible gX engine or tooling defect.
+description: Report a reproducible gX engine, renderer, or tooling defect.
 title: "[bug]: "
 body:
   - type: markdown
@@ -9,13 +10,30 @@ body:
         vulnerability-reporting channel in `SECURITY.md`.
 
         Remove credentials, private paths, personal data, and gameX material
-        from logs and attachments before submitting.
+        from logs and attachments before submitting. One issue per report.
+
+        The GFX editor can save a local diagnostic report with **Help →
+        Report bug…** (F10). Inspect its JSON and optional screenshot before
+        attaching them; they may contain private scene context.
   - type: input
     id: version
     attributes:
       label: gX version / commit
       description: Release tag or exact commit where the issue reproduces.
-      placeholder: v0.18.0 or 6d4cdcd
+      placeholder: v0.26.3 or 87a0817
+    validations:
+      required: true
+  - type: dropdown
+    id: build
+    attributes:
+      label: Build
+      description: How was this binary built?
+      options:
+        - ./build.sh
+        - make (Debug)
+        - make release
+        - Release archive / package
+        - Other (describe in Actual behavior)
     validations:
       required: true
   - type: dropdown
@@ -25,8 +43,10 @@ body:
       options:
         - Linux (X11)
         - Linux (Wayland)
+        - Linux (headless / offscreen)
         - Windows
         - macOS
+        - Steam Deck
         - Other
     validations:
       required: true
@@ -38,11 +58,17 @@ body:
       placeholder: Mesa 25.x, RADV, OpenGL 4.6
     validations:
       required: true
+  - type: input
+    id: preset
+    attributes:
+      label: Scene / preset
+      description: Public preset path or a short description. Do not attach private scenes.
+      placeholder: resources/tools/gfx_editor.json
   - type: textarea
     id: steps
     attributes:
       label: Reproduction steps
-      description: Minimal steps from a clean build or checkout.
+      description: Minimal numbered steps from a clean build or checkout.
       placeholder: |
         1. ./build.sh
         2. ./build/gX_build --gfx
@@ -59,13 +85,38 @@ body:
     id: actual
     attributes:
       label: Actual behavior
+      description: Include the exact error, visual result, or crash site.
+    validations:
+      required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Frequency
+      options:
+        - Always
+        - Intermittent
+        - Once
+        - Unknown
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      description: Impact, not frequency. Triage may revise this.
+      options:
+        - Low — cosmetic or minor inconvenience
+        - Medium — feature impaired, workaround exists
+        - High — core task blocked or repeated crashes
+        - Critical — data loss/corruption or security/privacy risk
+        - Unsure
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
       label: Logs / evidence
-      description: Relevant output, crash trace, screenshot, or capture. Redact private data.
+      description: Relevant output, crash trace, screenshot, or diagnostic JSON. Redact private data.
       render: text
   - type: checkboxes
     id: checks
@@ -74,6 +125,8 @@ body:
       options:
         - label: I searched existing issues for the same problem.
           required: true
+        - label: I can reproduce this on the current release or `main`.
+          required: false
         - label: I removed credentials, private paths, and private assets from this report.
           required: true
         - label: This is not a security vulnerability.

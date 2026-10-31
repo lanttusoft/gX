@@ -1,8 +1,18 @@
+# //ai: route security, support, conduct and docs contacts before templates.
 blank_issues_enabled: false
 contact_links:
   - name: Security report
     url: https://github.com/lanttusoft/gX/security/advisories/new
     about: Report suspected vulnerabilities privately; do not open a public issue.
+  - name: Support and contact
+    url: https://github.com/lanttusoft/gX/blob/main/SUPPORT.md
+    about: Where to ask for help, report a problem, or route a private concern.
+  - name: Contributing
+    url: https://github.com/lanttusoft/gX/blob/main/CONTRIBUTING.md
+    about: Build, test, code style, licensing, provenance, and AI-contribution rules.
+  - name: Code of conduct
+    url: https://github.com/lanttusoft/gX/blob/main/CODE_OF_CONDUCT.md
+    about: Expected behavior and how to report a conduct concern privately.
   - name: Documentation
     url: https://github.com/lanttusoft/gX/blob/main/docs/README.md
     about: Build, renderer, tooling, and API documentation.
