@@ -737,6 +737,82 @@ cleanup:
     return errors;
 }
 
+static gX_I32 test_multiframe_large(gX_I0)
+{
+    gX_I32 errors = 0;
+    const gX_U32 length = 8192;
+    gX_U8 *payload = (gX_U8 *)gX_Calloc(length);
+    gX_ColorCodeFrame *frames = (gX_ColorCodeFrame *)gX_Calloc(
+        sizeof(gX_ColorCodeFrame) * GX_COLOR_CODE_MAX_MULTI_FRAMES);
+    gX_ColorCodeResult *results = (gX_ColorCodeResult *)gX_Calloc(
+        sizeof(gX_ColorCodeResult) * GX_COLOR_CODE_MAX_MULTI_FRAMES);
+    if (!payload || !frames || !results)
+    {
+        gX_Free(payload);
+        gX_Free(frames);
+        gX_Free(results);
+        return 1;
+    }
+    for (gX_U32 index = 0; index < length; index++)
+        payload[index] = (gX_U8)((index * 37u + 11u) & 0xFFu);
+    gX_U32 count = 0;
+    gX_I32 status = gX_ColorCode_EncodeMulti(payload, length, frames,
+        GX_COLOR_CODE_MAX_MULTI_FRAMES, &count);
+    if (status != GX_COLOR_CODE_OK || count != 27)
+    {
+        errors++;
+        goto cleanup;
+    }
+    for (gX_U32 index = 0; index < count; index++)
+    {
+        gX_U8 *pixels = test_image(&frames[index], 0.90f, 8.0f);
+        if (!pixels)
+        {
+            errors++;
+            goto cleanup;
+        }
+        status = test_decode(pixels, &results[index]);
+        gX_Free(pixels);
+        if (status != GX_COLOR_CODE_OK)
+        {
+            errors++;
+            goto cleanup;
+        }
+    }
+    gX_U8 rebuilt[GX_COLOR_CODE_MAX_MULTI_PAYLOAD];
+    gX_U32 rebuiltLength = 0;
+    status = gX_ColorCode_Reassemble(results, count, rebuilt,
+        sizeof(rebuilt), &rebuiltLength);
+    if (status != GX_COLOR_CODE_OK || rebuiltLength != length
+        || memcmp(rebuilt, payload, length) != 0)
+        errors++;
+    gX_U8 *atCap = (gX_U8 *)gX_Calloc(GX_COLOR_CODE_MAX_MULTI_PAYLOAD);
+    gX_U8 *overCap = (gX_U8 *)gX_Calloc(
+        GX_COLOR_CODE_MAX_MULTI_PAYLOAD + 1);
+    if (!atCap || !overCap)
+        errors++;
+    else
+    {
+        if (gX_ColorCode_EncodeMulti(atCap,
+                GX_COLOR_CODE_MAX_MULTI_PAYLOAD, frames,
+                GX_COLOR_CODE_MAX_MULTI_FRAMES, &count)
+            != GX_COLOR_CODE_OK)
+            errors++;
+        if (gX_ColorCode_EncodeMulti(overCap,
+                GX_COLOR_CODE_MAX_MULTI_PAYLOAD + 1, frames,
+                GX_COLOR_CODE_MAX_MULTI_FRAMES, &count)
+            != GX_COLOR_CODE_ERR_ARGUMENT)
+            errors++;
+    }
+    gX_Free(atCap);
+    gX_Free(overCap);
+cleanup:
+    gX_Free(payload);
+    gX_Free(frames);
+    gX_Free(results);
+    return errors;
+}
+
 static gX_U8 *test_copy(const gX_U8 *source)
 {
     gX_U8 *copy = (gX_U8 *)gX_Calloc(TEST_WIDTH * TEST_HEIGHT * 4);
@@ -1428,6 +1504,38 @@ static gX_I32 test_8color_capacity(gX_I0)
     return errors;
 }
 
+static gX_I32 test_8color_multiframe_cap(gX_I0)
+{
+    gX_I32 errors = 0;
+    gX_U8 *payload = (gX_U8 *)gX_Calloc(GX_COLOR_CODE_MAX_MULTI_PAYLOAD);
+    gX_U8 *overCap = (gX_U8 *)gX_Calloc(
+        GX_COLOR_CODE_MAX_MULTI_PAYLOAD + 1);
+    gX_ColorCodeFrame *frames = (gX_ColorCodeFrame *)gX_Calloc(
+        sizeof(gX_ColorCodeFrame) * GX_COLOR_CODE_MAX_MULTI_FRAMES);
+    if (!payload || !overCap || !frames)
+    {
+        gX_Free(payload);
+        gX_Free(overCap);
+        gX_Free(frames);
+        return 1;
+    }
+    gX_U32 count = 0;
+    if (gX_ColorCode_EncodeMulti(payload,
+            GX_COLOR_CODE_MAX_MULTI_PAYLOAD, frames,
+            GX_COLOR_CODE_MAX_MULTI_FRAMES, &count)
+        != GX_COLOR_CODE_OK || count != 252)
+        errors++;
+    if (gX_ColorCode_EncodeMulti(overCap,
+            GX_COLOR_CODE_MAX_MULTI_PAYLOAD + 1, frames,
+            GX_COLOR_CODE_MAX_MULTI_FRAMES, &count)
+        != GX_COLOR_CODE_ERR_ARGUMENT)
+        errors++;
+    gX_Free(payload);
+    gX_Free(overCap);
+    gX_Free(frames);
+    return errors;
+}
+
 static gX_I32 test_8color_multiframe(gX_I0)
 {
     gX_I32 errors = 0;
@@ -1535,6 +1643,7 @@ static gX_I32 test_8color_roundtrip(const gX_U8 *payload, gX_U32 length)
     errors += test_erased_cells(payload, length, single, 1,
         GX_COLOR_CODE_OK, 1);
     errors += test_8color_multiframe();
+    errors += test_8color_multiframe_cap();
     errors += test_8color_capacity();
     errors += test_8color_rs(payload, length);
     gX_ColorCode_SetPaletteMode(GX_COLOR_CODE_PALETTE_16COLOR);
@@ -1570,6 +1679,7 @@ gX_I32 gX_Tests_ColorCode(gX_I0)
     errors += test_detection_empty();
     errors += test_clutter_detection(raw, (gX_U32)strlen((const char *)raw));
     errors += test_multiframe();
+    errors += test_multiframe_large();
     errors += test_tint(raw, (gX_U32)strlen((const char *)raw),
         0.85f, 0.95f, 1.10f, 10.0f, 5.0f, 20.0f);
     errors += test_tint(raw, (gX_U32)strlen((const char *)raw),

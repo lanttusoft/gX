@@ -90,6 +90,16 @@ gX_I32 gX_ColorCode_Present(const gX_I8 *payload, gX_I1 tv)
     gX_TraceLog(gX_LOG_NOTICE, "COLOR_CODE: ECC %d", gX_ColorCode_GetEccMode());
     gX_TraceLog(gX_LOG_NOTICE, "COLOR_CODE: PALETTE %d",
         gX_ColorCode_GetPaletteMode());
+    gX_U32 frameTicks = GX_COLOR_CODE_FRAME_TICKS;
+    const gX_I8 *ticksEnv = getenv("GX_COLOR_CODE_FRAME_TICKS");
+    if (ticksEnv && ticksEnv[0])
+    {
+        gX_I32 parsed = atoi(ticksEnv);
+        if (parsed > 0) frameTicks = (gX_U32)parsed;
+    }
+    else if (frameCount > 32)
+        frameTicks = 15;
+    gX_TraceLog(gX_LOG_NOTICE, "COLOR_CODE: interval %u ticks", frameTicks);
     gX_U32 width = tv ? 1024 : GX_COLOR_CODE_GRID * GX_COLOR_CODE_PRESENT_CELL;
     gX_U32 height = tv ? 768 : width;
     gX_U8 *pixels = (gX_U8 *)gX_Calloc(width * height * 4);
@@ -165,7 +175,7 @@ gX_I32 gX_ColorCode_Present(const gX_I8 *payload, gX_I1 tv)
             color_code_present_title(currentFrame, frameCount);
         }
         if (frameCount > 1 && !paused && frameTick > 0
-            && frameTick % GX_COLOR_CODE_FRAME_TICKS == 0)
+            && frameTick % frameTicks == 0)
         {
             currentFrame = (currentFrame + 1) % frameCount;
             status = color_code_present_render(&frames[currentFrame], tv,

@@ -74,15 +74,19 @@ palette ID and CRC agree.
 
 ## Multi-frame payloads
 
-`gX_ColorCode_EncodeMulti` splits a payload of up to **4096 bytes** into
-sequential chunks (304 bytes in mode 2, 228 in mode 3) and sets the same 16-bit
-payload ID and whole-payload CRC on every frame. `gX_ColorCode_Reassemble`
-accepts the decoded result set in any order, requires exactly `frameTotal`
-unique indices with one shared payload ID, concatenates in index order, enforces
-the output capacity and verifies the whole-payload CRC. A missing, duplicate or
-mixed-payload set fails closed. The worst case is 18 frames in 8-colour mode.
+`gX_ColorCode_EncodeMulti` splits a payload of up to **57344 bytes (56 KiB)**
+into sequential chunks (304 bytes in mode 2, 228 in mode 3) and sets the same
+16-bit payload ID and whole-payload CRC on every frame.
+`gX_ColorCode_Reassemble` accepts the decoded result set in any order, requires
+exactly `frameTotal` unique indices with one shared payload ID, concatenates in
+index order, enforces the output capacity and verifies the whole-payload CRC. A
+missing, duplicate or mixed-payload set fails closed. The worst case is 252
+frames in 8-colour mode (189 in 16-colour); `frameTotal` is one byte, so 255 is
+the hard ceiling.
 
-`--color-code <text>` cycles multi-frame payloads once per second; `P` pauses,
+`--color-code <text>` cycles multi-frame payloads once per second for small
+sets; sets larger than 32 frames advance every 15 ticks, and
+`GX_COLOR_CODE_FRAME_TICKS=N` overrides the interval. `P` pauses,
 `LEFT`/`RIGHT` step frames and the window title reports the current index.
 `--color-code-ecc rs` selects the opt-in Reed–Solomon erasure mode; the
 default remains SECDED + XOR. `--color-code-palette 8` selects the opt-in
@@ -106,7 +110,7 @@ fixed diagnostic record. A 20-byte example fits in one frame:
 The target fills the record and calls `gX_ColorCode_Encode`; the receiver
 decodes and parses it. Keep the schema versioned, keep secrets out of it, and
 remember that the payload is inert data — the decoder never executes it.
-Larger dumps can use `EncodeMulti`, up to 4096 bytes.
+Larger dumps can use `EncodeMulti`, up to 57344 bytes.
 
 ## Integrity and bounds
 
@@ -127,8 +131,8 @@ Larger dumps can use `EncodeMulti`, up to 4096 bytes.
   separately.
 - A single frame is capped at **304 payload bytes** in mode 2 (303 in RS mode)
   or **228 bytes** in mode 3 (227 in RS mode); a multi-frame payload is capped
-  at **4096 bytes**. Compressed length, reassembly and decompression outputs
-  are bounded.
+  at **57344 bytes (56 KiB)**. Compressed length, reassembly and decompression
+  outputs are bounded.
 - Compression is a PackBits-style RLE. If RLE is not smaller, the encoder uses
   raw mode. Compression is not encryption.
 

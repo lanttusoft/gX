@@ -96,8 +96,8 @@ this source beta.
   returns the full-grid quad for perspective + auto-orientation decoding;
   `DetectClutter` is a bounded bright/clutter fallback that scans the four
   control patterns and accepts only a quad that decodes.
-  `EncodeMulti`/`Reassemble` add ordered 4096-byte payloads with payload IDs,
-  chunk CRCs and a whole-payload CRC. `SetEccMode`/`GetEccMode` select the
+  `EncodeMulti`/`Reassemble` add ordered payloads up to 56 KiB with payload
+  IDs, chunk CRCs and a whole-payload CRC. `SetEccMode`/`GetEccMode` select the
   opt-in RS(18,16) erasure layer (ECC ID 3) or the default SECDED + XOR layer
   (ECC ID 2). `SetPaletteMode`/`GetPaletteMode` select the default
   16-colour/4-bit palette (ID 2) or the opt-in 8-colour/3-bit high-contrast

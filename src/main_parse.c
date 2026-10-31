@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "main.h"
+#include "common/alloc.h"
 #include "common/enum.h"
 #include "common/color_code.h"
 #include "gui/style.h"
@@ -158,6 +159,30 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
 }
 
 gX_MainArguments arguments;
+
+//opencode: payloads can reach 56 KiB, so keep the CLI buffer off the static
+//   argument struct and allocate it only when --color-code is used.
+static gX_I1 color_code_payload_set(const char *payload)
+{
+    if (!payload) payload = "";
+    if (strlen(payload) > GX_COLOR_CODE_MAX_MULTI_PAYLOAD)
+    {
+        fprintf(stderr, "PARSE: --color-code payload exceeds %d bytes\n",
+            (gX_I32)GX_COLOR_CODE_MAX_MULTI_PAYLOAD);
+        return 0;
+    }
+    if (!arguments.colorCodePayload)
+        arguments.colorCodePayload = (gX_I8 *)gX_Calloc(
+            GX_COLOR_CODE_MAX_MULTI_PAYLOAD + 1);
+    if (!arguments.colorCodePayload)
+    {
+        fprintf(stderr, "PARSE: --color-code payload allocation failed\n");
+        return 0;
+    }
+    snprintf((char *)arguments.colorCodePayload,
+        GX_COLOR_CODE_MAX_MULTI_PAYLOAD + 1, "%s", payload);
+    return 1;
+}
 
 gX_I32 gX_Parse(int argc, char **argv);
 gX_I32 gX_Parse(int argc, char **argv) {
@@ -305,16 +330,12 @@ gX_I32 gX_Parse(int argc, char **argv) {
                 if (!strcmp(long_options[option_index].name,"color-code")) {
                     arguments.hasColorCode = true;
                     arguments.colorCodeTv = false;
-                    snprintf(arguments.colorCodePayload,
-                        sizeof(arguments.colorCodePayload), "%s",
-                        optarg ? optarg : "");
+                    if (!color_code_payload_set(optarg)) return 0;
                 }
                 if (!strcmp(long_options[option_index].name,"color-code-tv")) {
                     arguments.hasColorCode = true;
                     arguments.colorCodeTv = true;
-                    snprintf(arguments.colorCodePayload,
-                        sizeof(arguments.colorCodePayload), "%s",
-                        optarg ? optarg : "");
+                    if (!color_code_payload_set(optarg)) return 0;
                 }
                 if (!strcmp(long_options[option_index].name,"color-code-ecc")) {
                     if (optarg && !strcmp(optarg, "rs"))

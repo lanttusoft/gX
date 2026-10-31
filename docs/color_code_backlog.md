@@ -17,8 +17,8 @@ the 4-colour/2-bit accessibility mode remain backlog.
 ## Goal
 
 Transfer a small bounded payload (for example a scene preset, a short text
-blob or a few KiB of configuration) from gX to a camera/phone without a
-network. The screen is the sender; the camera is the receiver. The primary
+blob or up to 56 KiB of configuration via multi-frame) from gX to a
+camera/phone without a network. The screen is the sender; the camera is the receiver. The primary
 case is a target with a screen but no usable text channel — a real
 N64/PS1/PS2-class console, a devkit, a kiosk or an embedded board. On a desktop,
 logs, serial, a file or the clipboard are cheaper. This is not a replacement
