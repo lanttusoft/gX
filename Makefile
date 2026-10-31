@@ -1094,6 +1094,12 @@ fog-volume-check: all
 	@echo "== [gX CI] fog volume visibility/tint =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/fog_volume_check.py
 
+#opencode: opt-in uniform-type attribution (names wrong-type uploads).
+.PHONY: uniform-trace-check
+uniform-trace-check: all
+	@echo "== [gX CI] uniform type trace =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/uniform_trace_check.py
+
 #opencode: wireframe placement pin — difference gates pass garbage, only
 #   a bbox gate catches misplacement. Requires a live GPU display.
 wireframe-check: all

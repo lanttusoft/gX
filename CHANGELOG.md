@@ -7,6 +7,9 @@ SemVer.
 ## [0.23.0] - 2026-10-31
 
 ### Added
+- **Uniform-type attribution**: `GX_UNIFORM_TRACE=1` checks each upload
+  against the shader's active GL type and names any mismatch;
+  `make uniform-trace-check` runs it over the showcase scenes.
 - **Fog-volume color and scene-fog matching**: the GFX fog volume gains an
   in-scatter tint, a `matchSceneFog` toggle that follows the scene fog color,
   and a "visible defaults" editor action. `fog_volume_check.py` pins default
