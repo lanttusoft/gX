@@ -31,6 +31,7 @@ class BugReplayTests(unittest.TestCase):
             "diagnostics": {
                 "state": {"ENABLE_SSR": True},
                 "camera": {"position": [1, 2, 3], "target": [4, 5, 6]},
+                "render_camera": {"position": [7, 8, 9], "target": [10, 11, 12]},
                 "ssr": {"maxSteps": 64},
                 "fogVolume": {"density": 0.02, "color": [255, 0, 0, 255]},
             },
@@ -38,8 +39,8 @@ class BugReplayTests(unittest.TestCase):
         merged = bug_replay.merge_report(base, report)
         self.assertTrue(merged["state"]["ENABLE_SSR"])
         self.assertFalse(merged["state"]["ENABLE_FOG"])
-        self.assertEqual(merged["camera"]["position"], [1, 2, 3])
-        self.assertEqual(merged["cameras"][0]["view"]["position"], [1, 2, 3])
+        self.assertEqual(merged["camera"]["position"], [7, 8, 9])
+        self.assertEqual(merged["cameras"][0]["view"]["position"], [7, 8, 9])
         self.assertEqual(merged["ssr"]["maxSteps"], 64)
         self.assertEqual(merged["ssr"]["stepSize"], 0.25)
         self.assertEqual(merged["fogVolume"]["density"], 0.02)
@@ -47,6 +48,14 @@ class BugReplayTests(unittest.TestCase):
         self.assertEqual(merged["models"][0]["path"], "resources/model/cube.glb")
         self.assertFalse(base["state"]["ENABLE_SSR"])
         self.assertEqual(base["camera"]["position"], [0, 1, 0])
+
+    def test_camera_falls_back_to_editor_camera(self):
+        base = {"camera": {"position": [0, 1, 0]}}
+        report = {"diagnostics": {
+            "camera": {"position": [1, 2, 3]},
+        }}
+        merged = bug_replay.merge_report(base, report)
+        self.assertEqual(merged["camera"]["position"], [1, 2, 3])
 
     def test_missing_diagnostics_is_rejected(self):
         with self.assertRaises(ValueError):

@@ -593,6 +593,18 @@ typedef struct gX_GFX_Editor_Camera {
 static gX_GFX_Editor_Camera s_cameras[GX_GFX_EDITOR_CAMERAS];
 static gX_I32 s_cameraCount = 0;
 static gX_I32 s_selectedCamera = -1;
+
+//ai: the report's live camera is the free/editor view; the selected scene
+//   camera is the one a Render action uses. Keep both for exact replay.
+static gX_I1 gX_Tools_Gfx_BugReport_RenderCamera(gX_Camera3D *View,
+    gX_I32 *Index, const gX_I8 **Name)
+{
+    if (s_selectedCamera < 0 || s_selectedCamera >= s_cameraCount) return 0;
+    if (View) *View = s_cameras[s_selectedCamera].view;
+    if (Index) *Index = s_selectedCamera;
+    if (Name) *Name = s_cameras[s_selectedCamera].name;
+    return 1;
+}
 static gX_I8 s_renderOutput[512] = "screenshot/render.png";
 //opencode: render output size — 0 keeps the docked viewport crop size, a
 //   positive pair rescales the crop (delivery/thumbnail formats).

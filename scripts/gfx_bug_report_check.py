@@ -106,11 +106,21 @@ def main():
             state=next(d['diagnostics'] for d in documents if 'diagnostics' in d)
             allowed={'name','description','created_date','created_time','state','ssao','csm','ssr',
                      'reflection','godray','fogVolume','lensflare','bloom','fog','camera','editor',
-                     'viewport_x','viewport_y','viewport_width','viewport_height','selected_model'}
-            require(set(state)==allowed,'diagnostic snapshot leaked assets or omitted expected fields')
+                     'viewport_x','viewport_y','viewport_width','viewport_height','selected_model',
+                     'render_camera','render_camera_index','render_camera_name'}
+            optional={'render_camera','render_camera_index','render_camera_name'}
+            require(optional.isdisjoint(set(state)) or optional.issubset(set(state)),
+                'render camera metadata must be present as a complete set')
+            require(set(state) <= allowed,'diagnostic snapshot leaked assets or unknown fields')
+            require((allowed - optional) <= set(state),'diagnostic snapshot omitted expected fields')
             require(state['viewport_width']>0 and state['viewport_height']>0,'live viewport missing')
             require(isinstance(state['selected_model'],(int,float)),'selection missing')
             require('position' in state['camera'] and 'target' in state['camera'],'live camera missing')
+            if 'render_camera' in state:
+                require('position' in state['render_camera']
+                    and 'target' in state['render_camera'],'render camera missing')
+                require(isinstance(state['render_camera_index'],(int,float))
+                    and isinstance(state['render_camera_name'],str),'render camera identity missing')
             require('useGTAO' in state['ssao'] and 'useSSGI' in state['ssao'],'GI state missing')
             require('maxSteps' in state['ssr'] and 'intensity' in state['bloom'],'effect tuning missing')
             for d in documents:
