@@ -177,12 +177,29 @@ def code_cell_samples(image):
     return np.array(samples)
 
 
+def check_subset(out, palette, palette_id, subset, label, filename):
+    image, log = run("--color-code", out / filename, out,
+                     palette=palette, tag=label)
+    if f"COLOR_CODE: PALETTE {palette_id}" not in log:
+        raise RuntimeError(
+            f"{label} presentation did not select palette ID {palette_id}")
+    seen = {name: 0 for name in subset}
+    for sample in code_cell_samples(image):
+        distances = {name: float(np.abs(sample - np.asarray(color)).max())
+                     for name, color in subset.items()}
+        best = min(distances, key=distances.get)
+        if distances[best] > 6.0:
+            raise RuntimeError(
+                f"{label} cell sample {sample.round(1)} is outside the subset")
+        seen[best] += 1
+    print(f"{label} cell counts:", seen, flush=True)
+    for name, count in seen.items():
+        if count < 1:
+            raise RuntimeError(f"{label} presentation missing {name}")
+
+
 def check_8color(out):
-    image, log = run("--color-code", out / "8color.png", out,
-                     palette="8", tag="8color")
-    if "COLOR_CODE: PALETTE 3" not in log:
-        raise RuntimeError("8-colour presentation did not select palette ID 3")
-    subset = {
+    check_subset(out, "8", 3, {
         "black": (0, 0, 0),
         "white": (255, 255, 255),
         "red_50": (110, 20, 20),
@@ -191,20 +208,27 @@ def check_8color(out):
         "blue_50": (20, 40, 110),
         "blue_100": (40, 80, 220),
         "gray_light": (192, 192, 192),
-    }
-    seen = {name: 0 for name in subset}
-    for sample in code_cell_samples(image):
-        distances = {name: float(np.abs(sample - np.asarray(color)).max())
-                     for name, color in subset.items()}
-        best = min(distances, key=distances.get)
-        if distances[best] > 6.0:
-            raise RuntimeError(
-                f"8-colour cell sample {sample.round(1)} is outside the subset")
-        seen[best] += 1
-    print("8-colour cell counts:", seen, flush=True)
-    for name, count in seen.items():
-        if count < 1:
-            raise RuntimeError(f"8-colour presentation missing {name}")
+    }, "8-colour", "8color.png")
+
+
+def check_4color(out):
+    check_subset(out, "4", 4, {
+        "black": (0, 0, 0),
+        "white": (255, 255, 255),
+        "red_100": (220, 40, 40),
+        "blue_100": (40, 80, 220),
+    }, "4-colour", "4color.png")
+
+
+def check_file_payload(out):
+    path = out / "payload.bin"
+    path.write_bytes(bytes(range(256)) * 4)
+    _, log = run("--color-code-file", out / "file.png", out,
+                 payload=str(path), tag="file")
+    if "COLOR_CODE: payload 1024 bytes" not in log:
+        raise RuntimeError("file payload was not read as 1024 bytes")
+    if "COLOR_CODE: 4 frame(s)" not in log:
+        raise RuntimeError("file payload did not encode four frames")
 
 
 def main():
@@ -215,11 +239,13 @@ def main():
         check_flat(flat)
         check_rs(out)
         check_8color(out)
+        check_4color(out)
+        check_file_payload(out)
         tv, _ = run("--color-code-tv", out / "tv.png", out)
         check_tv(tv)
         check_multiframe(out)
         check_multiframe_large(out)
-    print("COLOR_CODE_PRESENT_CHECK: PASS (16/8-colour bands + simulated TV + multi-frame)")
+    print("COLOR_CODE_PRESENT_CHECK: PASS (16/8/4-colour bands + file payload + simulated TV + multi-frame)")
     return 0
 
 

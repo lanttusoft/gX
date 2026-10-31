@@ -59,12 +59,13 @@ middle: a visible robustness gain for a quarter of the payload.
 2. The **opt-in 8-colour, 3-bit-per-cell palette** is implemented as palette
    ID 3: it has its own 8-entry calibration strip, uses 3 bits per cell for
    metadata and payload, and reuses the existing SECDED/RS layers.
-3. Treat 4 colours as a poor-camera/accessibility mode, not a general default;
-   it remains unimplemented.
+3. The **opt-in 4-colour, 2-bit-per-cell palette** is implemented as palette
+   ID 4 for poor cameras/accessibility: black, white, blue-100 and red-100,
+   with a 4-entry calibration strip and 151-byte payloads.
 4. Do not change the default based on this table alone: the simulation is
-   pre-ECC and excludes blur/JPEG/occlusion. The 8-colour mode is covered by
-   the synthetic round-trip/erasure tests and the presentation check; a camera
-   walk is still backlog.
+   pre-ECC and excludes blur/JPEG/occlusion. The 8- and 4-colour modes are
+   covered by synthetic round-trip/erasure tests and the presentation check; a
+   camera walk is still backlog.
 
 ## Implementation
 
@@ -72,14 +73,18 @@ middle: a visible robustness gain for a quarter of the payload.
   blue-100, red-100, green-100, blue-50, red-50, light gray).
 - 3 bits per cell for both metadata and payload; the 26-byte header uses 70
   cells instead of 52.
-- The calibration strips cycle the eight-entry subset, and the decoder tries
-  the 4-bit/16-colour header first, then the 3-bit/8-colour header.
-- Single-frame caps: 228 payload bytes with SECDED+XOR, 227 with RS(18,16).
+- Palette ID 4; subset indices `0, 1, 13, 5` (black, white, blue-100,
+  red-100), 2 bits per cell, 104 metadata cells and a 4-entry calibration
+  strip.
+- The decoder tries the 4-bit/16-colour header first, then the 3-bit/8-colour
+  and 2-bit/4-colour headers.
+- Single-frame caps: 228 payload bytes with SECDED+XOR (227 with RS) in mode
+  3; 151 bytes in mode 4.
 - API: `gX_ColorCode_SetPaletteMode` / `GetPaletteMode`; CLI:
-  `--color-code-palette 8` (default `16`).
+  `--color-code-palette 8` or `4` (default `16`).
 
 ## Backlog
 
 - Re-run the experiment with blur/JPEG/occlusion and a real camera capture.
-- Consider the 4-colour/2-bit accessibility mode only if the camera walk shows
-  it is needed.
+- Validate the 4-colour mode against a real CRT/phone camera before treating it
+  as the accessibility default.

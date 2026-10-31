@@ -64,9 +64,11 @@ Start here:
   capacity and noise-margin comparison.
 - [Screen color-code backlog](color_code_backlog.md) — detection, capacity and
   camera-walk items that remain open.
+- [Color-code hardware capture checklist](color_code_hardware.md) — real
+  CRT/console/camera validation steps.
 - [Screen color-code format](color_code_format.md) — bounded 16-colour/4-bit
-  and opt-in 8-colour/3-bit encoder/decoder for screen-only hardware
-  diagnostics (per-palette calibration, metadata,
+  and opt-in 8-colour/3-bit and 4-colour/2-bit encoder/decoder for screen-only
+  hardware diagnostics (per-palette calibration, metadata,
   SECDED plus interleaved XOR-parity or RS(18,16) erasure recovery, CRC32, RLE,
   automatic dark-background detection; tint/white-balance and synthetic camera
   tests) plus the standalone `--color-code` / simulated-CRT `--color-code-tv`

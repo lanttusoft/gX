@@ -9,6 +9,18 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **Color-code 4-colour/2-bit mode**: opt-in palette ID 4 uses black, white,
+  blue-100 and red-100 with 2 bits per cell, 4-entry calibration strips and
+  151-byte payloads. The decoder auto-detects it alongside the 16- and 8-colour
+  modes.
+- **Diagnostic record API**: `gX_ColorCode_Diagnostic_Pack` /
+  `gX_ColorCode_Diagnostic_Unpack` handle the shipped 20-byte record (magic,
+  schema version, flags, scene ID, build hash, error code, frame counter).
+- **Binary color-code payload input**: `--color-code-file <path>` reads up to
+  56 KiB, including NUL bytes; the presentation path now carries an explicit
+  payload length.
+- **Hardware capture checklist**: `docs/color_code_hardware.md` covers target
+  modes, capture setup, decode evidence and pass criteria.
 - **Version policy and change classifier**: `docs/versioning.md` defines the
   official MAJOR/MINOR/PATCH rules; `scripts/version_suggest.py` inspects the
   diff, commit subjects and CHANGELOG categories and recommends a bump;
@@ -17,8 +29,9 @@ Release-Class: minor
 
 ### Changed
 - **Color-code multi-frame payload cap**: raised from 4096 bytes to 57344
-  bytes (56 KiB), with a worst case of 252 frames in 8-colour mode. Large sets
-  advance faster in the presentation and honor `GX_COLOR_CODE_FRAME_TICKS`.
+  bytes (56 KiB), with a worst case of 255 frames in 4-colour mode (252 in
+  8-colour, 189 in 16-colour). Large sets advance faster in the presentation
+  and honor `GX_COLOR_CODE_FRAME_TICKS`.
 
 ## [0.25.0] - 2026-10-31
 

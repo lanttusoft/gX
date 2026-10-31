@@ -102,6 +102,8 @@ typedef struct gX_MainArguments {
     //ai: --color-code <payload> — standalone screen-code presentation mode.
     gX_I1   hasColorCode;
     gX_I1   colorCodeTv;
+    gX_I1   hasColorCodeFile;
+    gX_I8   colorCodeFilePath[512];
     gX_I32  colorCodeEcc;      //opencode: 0=default, 2=SECDED+XOR, 3=RS
     gX_I32  colorCodePalette;  //opencode: 0=default, 2=16-colour, 3=8-colour
     gX_I8  *colorCodePayload;  //opencode: heap buffer, MAX_MULTI_PAYLOAD + 1

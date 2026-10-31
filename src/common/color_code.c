@@ -47,6 +47,12 @@ static const gX_U8 gX_ColorCode8Palette[GX_COLOR_CODE_8COLOR_SIZE] = {
 static const gX_U8 gX_ColorCode8Member[GX_COLOR_CODE_PALETTE_SIZE] = {
     1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1
 };
+static const gX_U8 gX_ColorCode4Palette[GX_COLOR_CODE_4COLOR_SIZE] = {
+    0, 1, 13, 5
+};
+static const gX_U8 gX_ColorCode4Member[GX_COLOR_CODE_PALETTE_SIZE] = {
+    1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0
+};
 
 gX_I0 gX_ColorCode_Palette(gX_U8 index, gX_U8 *r, gX_U8 *g, gX_U8 *b)
 {
@@ -111,6 +117,42 @@ static gX_I0 color_code_put_u32(gX_U8 *data, gX_U32 value)
     data[1] = (gX_U8)((value >> 8) & 0xFF);
     data[2] = (gX_U8)((value >> 16) & 0xFF);
     data[3] = (gX_U8)((value >> 24) & 0xFF);
+}
+
+gX_I32 gX_ColorCode_Diagnostic_Pack(const gX_ColorCodeDiagnostic *diagnostic,
+    gX_U8 *payload, gX_U32 capacity, gX_U32 *length)
+{
+    if (!diagnostic || !payload || !length)
+        return GX_COLOR_CODE_ERR_ARGUMENT;
+    if (capacity < GX_COLOR_CODE_DIAGNOSTIC_SIZE)
+        return GX_COLOR_CODE_ERR_CAPACITY;
+    color_code_put_u32(payload, GX_COLOR_CODE_DIAGNOSTIC_MAGIC);
+    payload[4] = GX_COLOR_CODE_DIAGNOSTIC_VERSION;
+    payload[5] = diagnostic->flags;
+    color_code_put_u16(payload + 6, diagnostic->sceneID);
+    color_code_put_u32(payload + 8, diagnostic->buildHash);
+    color_code_put_u32(payload + 12, diagnostic->errorCode);
+    color_code_put_u32(payload + 16, diagnostic->frameCounter);
+    *length = GX_COLOR_CODE_DIAGNOSTIC_SIZE;
+    return GX_COLOR_CODE_OK;
+}
+
+gX_I32 gX_ColorCode_Diagnostic_Unpack(const gX_U8 *payload, gX_U32 length,
+    gX_ColorCodeDiagnostic *diagnostic)
+{
+    if (!payload || !diagnostic || length < GX_COLOR_CODE_DIAGNOSTIC_SIZE)
+        return GX_COLOR_CODE_ERR_ARGUMENT;
+    if (color_code_get_u32(payload) != GX_COLOR_CODE_DIAGNOSTIC_MAGIC)
+        return GX_COLOR_CODE_ERR_METADATA;
+    if (payload[4] != GX_COLOR_CODE_DIAGNOSTIC_VERSION)
+        return GX_COLOR_CODE_ERR_VERSION;
+    diagnostic->schemaVersion = payload[4];
+    diagnostic->flags = payload[5];
+    diagnostic->sceneID = color_code_get_u16(payload + 6);
+    diagnostic->buildHash = color_code_get_u32(payload + 8);
+    diagnostic->errorCode = color_code_get_u32(payload + 12);
+    diagnostic->frameCounter = color_code_get_u32(payload + 16);
+    return GX_COLOR_CODE_OK;
 }
 
 static gX_U8 color_code_parity(gX_U16 value)
@@ -258,7 +300,8 @@ gX_I32 gX_ColorCode_GetEccMode(gX_I0)
 gX_I32 gX_ColorCode_SetPaletteMode(gX_I32 mode)
 {
     if (mode != GX_COLOR_CODE_PALETTE_16COLOR
-        && mode != GX_COLOR_CODE_PALETTE_8COLOR)
+        && mode != GX_COLOR_CODE_PALETTE_8COLOR
+        && mode != GX_COLOR_CODE_PALETTE_4COLOR)
         return GX_COLOR_CODE_ERR_ARGUMENT;
     s_colorCodePaletteMode = mode;
     return GX_COLOR_CODE_OK;
@@ -271,18 +314,28 @@ gX_I32 gX_ColorCode_GetPaletteMode(gX_I0)
 
 static gX_U32 color_code_bits_per_cell(gX_U8 palette)
 {
-    return palette == GX_COLOR_CODE_PALETTE_8COLOR
-        ? GX_COLOR_CODE_BITS_PER_CELL_8 : GX_COLOR_CODE_BITS_PER_CELL_16;
+    if (palette == GX_COLOR_CODE_PALETTE_4COLOR)
+        return GX_COLOR_CODE_BITS_PER_CELL_4;
+    if (palette == GX_COLOR_CODE_PALETTE_8COLOR)
+        return GX_COLOR_CODE_BITS_PER_CELL_8;
+    return GX_COLOR_CODE_BITS_PER_CELL_16;
 }
 
 static gX_U32 color_code_data_bits(gX_U8 palette)
 {
-    return palette == GX_COLOR_CODE_PALETTE_8COLOR
-        ? GX_COLOR_CODE_DATA_BITS_8 : GX_COLOR_CODE_DATA_BITS_16;
+    if (palette == GX_COLOR_CODE_PALETTE_4COLOR)
+        return GX_COLOR_CODE_DATA_BITS_4;
+    if (palette == GX_COLOR_CODE_PALETTE_8COLOR)
+        return GX_COLOR_CODE_DATA_BITS_8;
+    return GX_COLOR_CODE_DATA_BITS_16;
 }
 
 static gX_U32 color_code_max_payload_for(gX_U8 palette, gX_I32 ecc)
 {
+    if (palette == GX_COLOR_CODE_PALETTE_4COLOR)
+        return ecc == GX_COLOR_CODE_ECC_RS
+            ? GX_COLOR_CODE_4COLOR_RS_MAX_PAYLOAD
+            : GX_COLOR_CODE_4COLOR_MAX_PAYLOAD;
     if (palette == GX_COLOR_CODE_PALETTE_8COLOR)
         return ecc == GX_COLOR_CODE_ECC_RS
             ? GX_COLOR_CODE_8COLOR_RS_MAX_PAYLOAD
@@ -332,13 +385,17 @@ static gX_I0 color_code_frame_controls(gX_U8 *cells, gX_U8 palette)
         gX_U32 gridRow = row == 0
             ? GX_COLOR_CODE_QUIET
             : GX_COLOR_CODE_QUIET + GX_COLOR_CODE_ACTIVE - 1;
-        gX_U32 cycle = palette == GX_COLOR_CODE_PALETTE_8COLOR
-            ? GX_COLOR_CODE_8COLOR_SIZE : GX_COLOR_CODE_PALETTE_SIZE;
+        gX_U32 cycle = palette == GX_COLOR_CODE_PALETTE_4COLOR
+            ? GX_COLOR_CODE_4COLOR_SIZE
+            : palette == GX_COLOR_CODE_PALETTE_8COLOR
+                ? GX_COLOR_CODE_8COLOR_SIZE : GX_COLOR_CODE_PALETTE_SIZE;
         for (gX_U32 col = 3; col < GX_COLOR_CODE_ACTIVE - 3; col++)
         {
             gX_U32 slot = (col - 3) % cycle;
-            gX_U8 value = palette == GX_COLOR_CODE_PALETTE_8COLOR
-                ? gX_ColorCode8Palette[slot] : (gX_U8)slot;
+            gX_U8 value = palette == GX_COLOR_CODE_PALETTE_4COLOR
+                ? gX_ColorCode4Palette[slot]
+                : palette == GX_COLOR_CODE_PALETTE_8COLOR
+                    ? gX_ColorCode8Palette[slot] : (gX_U8)slot;
             color_code_set_cell(cells, gridRow, GX_COLOR_CODE_QUIET + col,
                 value);
         }
@@ -781,8 +838,10 @@ static gX_I32 color_code_calibrate(const gX_ColorCodeImage *image,
 {
     gX_F32 sum[GX_COLOR_CODE_PALETTE_SIZE][3] = {{0.0f}};
     gX_U32 count[GX_COLOR_CODE_PALETTE_SIZE] = {0};
-    gX_U32 cycle = paletteMode == GX_COLOR_CODE_PALETTE_8COLOR
-        ? GX_COLOR_CODE_8COLOR_SIZE : GX_COLOR_CODE_PALETTE_SIZE;
+    gX_U32 cycle = paletteMode == GX_COLOR_CODE_PALETTE_4COLOR
+        ? GX_COLOR_CODE_4COLOR_SIZE
+        : paletteMode == GX_COLOR_CODE_PALETTE_8COLOR
+            ? GX_COLOR_CODE_8COLOR_SIZE : GX_COLOR_CODE_PALETTE_SIZE;
     for (gX_U32 row = 0; row < 2; row++)
     {
         gX_U32 gridRow = row == 0
@@ -796,8 +855,10 @@ static gX_I32 color_code_calibrate(const gX_ColorCodeImage *image,
                     homography, color) != GX_COLOR_CODE_OK)
                 return GX_COLOR_CODE_ERR_GEOMETRY;
             gX_U32 slot = (col - 3) % cycle;
-            gX_U32 entry = paletteMode == GX_COLOR_CODE_PALETTE_8COLOR
-                ? gX_ColorCode8Palette[slot] : slot;
+            gX_U32 entry = paletteMode == GX_COLOR_CODE_PALETTE_4COLOR
+                ? gX_ColorCode4Palette[slot]
+                : paletteMode == GX_COLOR_CODE_PALETTE_8COLOR
+                    ? gX_ColorCode8Palette[slot] : slot;
             sum[entry][0] += color[0];
             sum[entry][1] += color[1];
             sum[entry][2] += color[2];
@@ -808,6 +869,9 @@ static gX_I32 color_code_calibrate(const gX_ColorCodeImage *image,
         sizeof(gX_F32) * GX_COLOR_CODE_PALETTE_SIZE * 3);
     for (gX_U32 entry = 0; entry < GX_COLOR_CODE_PALETTE_SIZE; entry++)
     {
+        if (paletteMode == GX_COLOR_CODE_PALETTE_4COLOR
+            && !gX_ColorCode4Member[entry])
+            continue;
         if (paletteMode == GX_COLOR_CODE_PALETTE_8COLOR
             && !gX_ColorCode8Member[entry])
             continue;
@@ -951,8 +1015,10 @@ static gX_I32 color_code_metadata_read(const gX_ColorCodeImage *image,
         palette, subset, subsetSize, GX_COLOR_CODE_META_ACTIVE_ROW,
         GX_COLOR_CODE_META_ROWS, metaCells);
     if (status != GX_COLOR_CODE_OK) return status;
-    gX_U32 metaCellCount = bitsPerCell == GX_COLOR_CODE_BITS_PER_CELL_8
-        ? GX_COLOR_CODE_META_CELLS_8 : GX_COLOR_CODE_META_CELLS;
+    gX_U32 metaCellCount = bitsPerCell == GX_COLOR_CODE_BITS_PER_CELL_4
+        ? GX_COLOR_CODE_META_CELLS_4
+        : bitsPerCell == GX_COLOR_CODE_BITS_PER_CELL_8
+            ? GX_COLOR_CODE_META_CELLS_8 : GX_COLOR_CODE_META_CELLS;
     for (gX_U32 index = 0; index < metaCellCount; index++)
         if (metaCells[index] == 0xFF) return GX_COLOR_CODE_ERR_ERASURE;
     gX_U8 metaBits[GX_COLOR_CODE_META_BITS];
@@ -1221,7 +1287,7 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
     {
         gX_I1 found = 0;
         for (gX_U8 mode = GX_COLOR_CODE_PALETTE_16COLOR;
-            mode <= GX_COLOR_CODE_PALETTE_8COLOR && !found; mode++)
+            mode <= GX_COLOR_CODE_PALETTE_4COLOR && !found; mode++)
         {
             for (gX_I32 candidate = 0; candidate < 8; candidate++)
                 if (color_code_orientation_matches(image, candidate,
@@ -1240,6 +1306,7 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
     }
     gX_F32 palette16[GX_COLOR_CODE_PALETTE_SIZE][3];
     gX_F32 palette8[GX_COLOR_CODE_PALETTE_SIZE][3];
+    gX_F32 palette4[GX_COLOR_CODE_PALETTE_SIZE][3];
     gX_I32 status = color_code_calibrate(image, orientation, projection,
         GX_COLOR_CODE_PALETTE_16COLOR, palette16);
     if (status != GX_COLOR_CODE_OK)
@@ -1254,15 +1321,26 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
         result->status = status;
         return result->status;
     }
+    status = color_code_calibrate(image, orientation, projection,
+        GX_COLOR_CODE_PALETTE_4COLOR, palette4);
+    if (status != GX_COLOR_CODE_OK)
+    {
+        result->status = status;
+        return result->status;
+    }
     gX_U8 meta[GX_COLOR_CODE_META_BYTES];
     gX_U8 meta4[GX_COLOR_CODE_META_BYTES] = {0};
     gX_U8 meta8[GX_COLOR_CODE_META_BYTES] = {0};
+    gX_U8 meta2[GX_COLOR_CODE_META_BYTES] = {0};
     gX_I32 status4 = color_code_metadata_read(image, orientation, projection,
         palette16, NULL, GX_COLOR_CODE_PALETTE_SIZE,
         GX_COLOR_CODE_BITS_PER_CELL_16, GX_COLOR_CODE_PALETTE_16COLOR, meta4);
     gX_I32 status8 = color_code_metadata_read(image, orientation, projection,
         palette8, gX_ColorCode8Palette, GX_COLOR_CODE_8COLOR_SIZE,
         GX_COLOR_CODE_BITS_PER_CELL_8, GX_COLOR_CODE_PALETTE_8COLOR, meta8);
+    gX_I32 status2 = color_code_metadata_read(image, orientation, projection,
+        palette4, gX_ColorCode4Palette, GX_COLOR_CODE_4COLOR_SIZE,
+        GX_COLOR_CODE_BITS_PER_CELL_4, GX_COLOR_CODE_PALETTE_4COLOR, meta2);
     gX_U8 paletteMode = GX_COLOR_CODE_PALETTE_16COLOR;
     gX_U32 bitsPerCell = GX_COLOR_CODE_BITS_PER_CELL_16;
     if (status4 == GX_COLOR_CODE_OK)
@@ -1275,18 +1353,34 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
         paletteMode = GX_COLOR_CODE_PALETTE_8COLOR;
         bitsPerCell = GX_COLOR_CODE_BITS_PER_CELL_8;
     }
+    else if (status2 == GX_COLOR_CODE_OK)
+    {
+        memcpy(meta, meta2, sizeof(meta));
+        paletteMode = GX_COLOR_CODE_PALETTE_4COLOR;
+        bitsPerCell = GX_COLOR_CODE_BITS_PER_CELL_4;
+    }
     else
     {
-        result->status = (meta4[0] == 0x43
-            && (meta4[1] == 5 || meta4[1] == 6)) ? status4 : status8;
+        if (meta4[0] == 0x43 && (meta4[1] == 5 || meta4[1] == 6))
+            result->status = status4;
+        else if (meta8[0] == 0x43 && (meta8[1] == 5 || meta8[1] == 6))
+            result->status = status8;
+        else
+            result->status = status2;
         return result->status;
     }
-    const gX_U8 *subset = paletteMode == GX_COLOR_CODE_PALETTE_8COLOR
-        ? gX_ColorCode8Palette : NULL;
-    gX_U32 subsetSize = paletteMode == GX_COLOR_CODE_PALETTE_8COLOR
-        ? GX_COLOR_CODE_8COLOR_SIZE : GX_COLOR_CODE_PALETTE_SIZE;
-    const gX_F32 (*palette)[3] = paletteMode == GX_COLOR_CODE_PALETTE_8COLOR
-        ? palette8 : palette16;
+    const gX_U8 *subset = paletteMode == GX_COLOR_CODE_PALETTE_4COLOR
+        ? gX_ColorCode4Palette
+        : paletteMode == GX_COLOR_CODE_PALETTE_8COLOR
+            ? gX_ColorCode8Palette : NULL;
+    gX_U32 subsetSize = paletteMode == GX_COLOR_CODE_PALETTE_4COLOR
+        ? GX_COLOR_CODE_4COLOR_SIZE
+        : paletteMode == GX_COLOR_CODE_PALETTE_8COLOR
+            ? GX_COLOR_CODE_8COLOR_SIZE : GX_COLOR_CODE_PALETTE_SIZE;
+    const gX_F32 (*palette)[3] = paletteMode == GX_COLOR_CODE_PALETTE_4COLOR
+        ? palette4
+        : paletteMode == GX_COLOR_CODE_PALETTE_8COLOR
+            ? palette8 : palette16;
     gX_U8 cells[GX_COLOR_CODE_CELLS];
     gX_U16 erased = 0;
     status = color_code_classify(image, orientation, projection, palette,
@@ -1312,8 +1406,10 @@ gX_I32 gX_ColorCode_Decode(const gX_ColorCodeImage *image,
     gX_U8 metaCells[GX_COLOR_CODE_META_REGION_CELLS];
     color_code_grid_to_flat(cells, GX_COLOR_CODE_META_ACTIVE_ROW,
         GX_COLOR_CODE_META_ROWS, metaCells);
-    gX_U32 metaCellCount = bitsPerCell == GX_COLOR_CODE_BITS_PER_CELL_8
-        ? GX_COLOR_CODE_META_CELLS_8 : GX_COLOR_CODE_META_CELLS;
+    gX_U32 metaCellCount = bitsPerCell == GX_COLOR_CODE_BITS_PER_CELL_4
+        ? GX_COLOR_CODE_META_CELLS_4
+        : bitsPerCell == GX_COLOR_CODE_BITS_PER_CELL_8
+            ? GX_COLOR_CODE_META_CELLS_8 : GX_COLOR_CODE_META_CELLS;
     for (gX_U32 index = 0; index < metaCellCount; index++)
         if (metaCells[index] == 0xFF)
         {
@@ -1516,14 +1612,18 @@ gX_I32 gX_ColorCode_Render(const gX_ColorCodeFrame *frame, gX_U8 *pixels,
         {
             gX_U8 value = frame->cells[row * GX_COLOR_CODE_GRID + col];
             gX_U8 index = value;
-            if (frame->palette == GX_COLOR_CODE_PALETTE_8COLOR
-                && row >= GX_COLOR_CODE_QUIET + GX_COLOR_CODE_BORDER
+            if (row >= GX_COLOR_CODE_QUIET + GX_COLOR_CODE_BORDER
                 && row < GX_COLOR_CODE_QUIET + GX_COLOR_CODE_BORDER
                     + GX_COLOR_CODE_META_ROWS + GX_COLOR_CODE_DATA_ROWS
                 && col >= GX_COLOR_CODE_QUIET + GX_COLOR_CODE_BORDER
                 && col < GX_COLOR_CODE_QUIET + GX_COLOR_CODE_BORDER
                     + GX_COLOR_CODE_INNER)
-                index = gX_ColorCode8Palette[value & 7];
+            {
+                if (frame->palette == GX_COLOR_CODE_PALETTE_4COLOR)
+                    index = gX_ColorCode4Palette[value & 3];
+                else if (frame->palette == GX_COLOR_CODE_PALETTE_8COLOR)
+                    index = gX_ColorCode8Palette[value & 7];
+            }
             gX_U8 r = 0;
             gX_U8 g = 0;
             gX_U8 b = 0;
