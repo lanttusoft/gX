@@ -876,6 +876,8 @@ static gX_SchemaField gfx_fogvolume_fields[] = {
     GX_SCHEMA_F32("heightFalloff", gX_RendererGFX_FogVolume, heightFalloff),
     GX_SCHEMA_F32("scattering",   gX_RendererGFX_FogVolume, scattering),
     GX_SCHEMA_F32("hgAsymmetry",  gX_RendererGFX_FogVolume, hgAsymmetry),
+    GX_SCHEMA_COLOR("color",      gX_RendererGFX_FogVolume, color),
+    GX_SCHEMA_BOOL("matchSceneFog", gX_RendererGFX_FogVolume, matchSceneFog),
 };
 
 static gX_SchemaField gfx_lensflare_fields[] = {

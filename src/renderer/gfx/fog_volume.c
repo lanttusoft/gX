@@ -57,6 +57,18 @@
 #include "../../rhi/rhi_gl.h"
 //opencode: v0.3.8 - per-frame cascade copies (extracted so the fog LUT
 //   pass and the main gen share one refresh per frame)
+//ai: scene fog color can drive the volume tint without a second source of truth.
+static gX_I0 FogVolume_UploadColor(gX_RendererGFX *gfx)
+{
+    if (gfx->fogVolume.matchSceneFog)
+        gfx->fogVolume.color = gfx->fog.color;
+    if (gfx->fogVolume.genColorLoc >= 0)
+        gX_RHI_Uniform_Vec3(gfx->fogVolume.genColorLoc,
+            gfx->fogVolume.color.r / 255.0f,
+            gfx->fogVolume.color.g / 255.0f,
+            gfx->fogVolume.color.b / 255.0f);
+}
+
 gX_I0 gX_RendererGFX_FogVolume_UpdateCascadeCopies(gX_RendererGFX *gfx)
 {
     if (!gfx->state.ENABLE_VOLUME_FOG) return;
@@ -381,6 +393,7 @@ gX_I0 gX_RendererGFX_FogVolume_Draw(gX_RendererGFX *gfx)
         gX_RHI_Uniform_Float(gfx->fogVolume.genDensityLoc, gfx->fogVolume.density);
         gX_RHI_Uniform_Float(gfx->fogVolume.genHeightFalloffLoc, gfx->fogVolume.heightFalloff);
         gX_RHI_Uniform_Float(gfx->fogVolume.genScatteringLoc, gfx->fogVolume.scattering);
+        FogVolume_UploadColor(gfx);
         gX_RHI_Uniform_Vec2(gfx->fogVolume.genResLoc, (gX_F32)gw, (gX_F32)gh);
         gX_RHI_UniformMatrix(gfx->fogVolume.genInvProjLoc, 1, 1, &invProj.m0);
         gX_RHI_UniformMatrix(gfx->fogVolume.genInvViewLoc, 1, 1, &invView.m0);
@@ -521,6 +534,7 @@ gX_I0 gX_RendererGFX_FogVolume_LutPass(gX_RendererGFX *gfx)
         gX_RHI_Uniform_Float(gfx->fogVolume.genDensityLoc, gfx->fogVolume.density);
         gX_RHI_Uniform_Float(gfx->fogVolume.genHeightFalloffLoc, gfx->fogVolume.heightFalloff);
         gX_RHI_Uniform_Float(gfx->fogVolume.genScatteringLoc, gfx->fogVolume.scattering);
+        FogVolume_UploadColor(gfx);
         gX_RHI_Uniform_Vec2(gfx->fogVolume.genResLoc, (gX_F32)lw, (gX_F32)lh);
         gX_RHI_UniformMatrix(gfx->fogVolume.genInvProjLoc, 1, 1, &lutInvProj.m0);
         gX_RHI_UniformMatrix(gfx->fogVolume.genInvViewLoc, 1, 1, &lutInvView.m0);
@@ -622,6 +636,7 @@ gX_I0 gX_RendererGFX_FogVolume_PlanarFog(gX_RendererGFX *gfx, gX_F32v3 camPos,
         gX_RHI_Uniform_Float(gfx->fogVolume.genDensityLoc, gfx->fogVolume.density);
         gX_RHI_Uniform_Float(gfx->fogVolume.genHeightFalloffLoc, gfx->fogVolume.heightFalloff);
         gX_RHI_Uniform_Float(gfx->fogVolume.genScatteringLoc, gfx->fogVolume.scattering);
+        FogVolume_UploadColor(gfx);
         gX_RHI_Uniform_Vec2(gfx->fogVolume.genResLoc, (gX_F32)gw, (gX_F32)gh);
         gX_RHI_UniformMatrix(gfx->fogVolume.genInvProjLoc, 1, 1, &invProj.m0);
         gX_RHI_UniformMatrix(gfx->fogVolume.genInvViewLoc, 1, 1, &invView.m0);
@@ -698,6 +713,7 @@ gX_I0 gX_RendererGFX_FogVolume_CacheLocs(gX_RendererGFX *gfx)
     gfx->fogVolume.genDensityLoc    = gX_Shader_GetLocation(genS, "density");
     gfx->fogVolume.genHeightFalloffLoc = gX_Shader_GetLocation(genS, "heightFalloff");
     gfx->fogVolume.genScatteringLoc = gX_Shader_GetLocation(genS, "scattering");
+    gfx->fogVolume.genColorLoc      = gX_Shader_GetLocation(genS, "fogColor");
     gfx->fogVolume.genResLoc        = gX_Shader_GetLocation(genS, "resolution");
     gfx->fogVolume.genCamPosLoc     = gX_Shader_GetLocation(genS, "cameraPos");
     gfx->fogVolume.genInvProjLoc    = gX_Shader_GetLocation(genS, "invProjection");

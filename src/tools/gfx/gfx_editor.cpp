@@ -7716,6 +7716,20 @@ static gX_I0 gfx_fogvolume_panel(gX_RendererGFX *gfx) {
     ImGui::DragFloat("height falloff", &gfx->fogVolume.heightFalloff, 0.05f, 0.1f, 20.0f);
     ImGui::DragFloat("scattering", &gfx->fogVolume.scattering, 0.01f, 0.0f, 1.0f);
     ImGui::DragFloat("hg asymmetry", &gfx->fogVolume.hgAsymmetry, 0.01f, -0.9f, 0.9f);
+    gfx_color_edit("color", &gfx->fogVolume.color);
+    gX_I1 matchFog = gfx->fogVolume.matchSceneFog ? 1 : 0;
+    if (ImGui::Checkbox("match scene fog color", (bool *)&matchFog))
+        gfx->fogVolume.matchSceneFog = matchFog ? 1 : 0;
+    if (ImGui::Button("visible defaults")) {
+        gfx->fogVolume.density = 0.003f;
+        gfx->fogVolume.heightFalloff = 1.2f;
+        gfx->fogVolume.scattering = 1.0f;
+        gfx->fogVolume.hgAsymmetry = 0.85f;
+        gfx->fogVolume.color = (gX_Color){255, 255, 255, 255};
+        gfx->fogVolume.matchSceneFog = 1;
+    }
+    ImGui::SameLine();
+    ImGui::TextDisabled("0.003 density; follows scene fog color");
 }
 
 //ai: browsing remains editor-owned; the leaf water panel receives only this action.
