@@ -13,6 +13,9 @@ SemVer.
   visibility, tint direction and scene-fog matching.
 
 ### Changed
+- **Water base color**: the shallow/deep water palette is blue-biased so a
+  white authoring tint reads as water rather than dark cyan; `water-check` now
+  pins blue >= green in the water region.
 - **Motion blur default**: strength raised from 1.0 to 2.0 across the engine
   default and shipped presets; the feature-matrix motion-blur row now requires
   at least 2% changed pixels (measured 3.65%, up from 0.84%).

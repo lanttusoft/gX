@@ -68,6 +68,16 @@ def main():
     off = capture(0)
     if on.shape != off.shape:
         raise RuntimeError(f"capture size mismatch: {on.shape} {off.shape}")
+    height, width = on.shape[:2]
+    water = on[int(height * 0.55):int(height * 0.95),
+               int(width * 0.20):int(width * 0.80)]
+    water_mean = water.mean(axis=(0, 1))
+    if water_mean[2] + 1.0 < water_mean[1]:
+        raise RuntimeError(
+            "water color is green/cyan-biased: "
+            f"RGB={tuple(round(float(v), 1) for v in water_mean)}")
+    print("water color: mean RGB "
+          f"{tuple(round(float(v), 1) for v in water_mean)}")
     diff = np.abs(on - off)
     print("                     mean   frac>2")
     results = {}
