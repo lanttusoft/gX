@@ -713,7 +713,7 @@ gX_I0 gX_RendererGFX_FogVolume_CacheLocs(gX_RendererGFX *gfx)
     gfx->fogVolume.genDensityLoc    = gX_Shader_GetLocation(genS, "density");
     gfx->fogVolume.genHeightFalloffLoc = gX_Shader_GetLocation(genS, "heightFalloff");
     gfx->fogVolume.genScatteringLoc = gX_Shader_GetLocation(genS, "scattering");
-    gfx->fogVolume.genColorLoc      = gX_Shader_GetLocation(genS, "fogColor");
+    gfx->fogVolume.genColorLoc      = gX_Shader_GetLocation(genS, "fogVolumeColor");
     gfx->fogVolume.genResLoc        = gX_Shader_GetLocation(genS, "resolution");
     gfx->fogVolume.genCamPosLoc     = gX_Shader_GetLocation(genS, "cameraPos");
     gfx->fogVolume.genInvProjLoc    = gX_Shader_GetLocation(genS, "invProjection");

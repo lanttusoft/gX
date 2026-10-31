@@ -26,6 +26,13 @@ SemVer.
   from ~16.4 ms to ~12.4 ms. The showcase preset keeps the full 96/0.25
   profile for reflection quality; the editor sliders still expose both.
 
+### Fixed
+- **Fog-volume tint uniform collision**: renamed the volume tint to
+  `fogVolumeColor`; the generic standard-shader pass was uploading a vec4
+  into the vec3 and emitting a startup `GL_INVALID_OPERATION`.
+- **Dead IBL BRDF uniform**: removed the unused `resolution` uniform and its
+  upload from the BRDF LUT path.
+
 ## [0.22.0] - 2026-10-31
 
 ### Added
