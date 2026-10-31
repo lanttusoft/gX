@@ -1062,6 +1062,12 @@ temporal-check-fast: all
 	@echo "== [gX fast] temporal stability subset =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_temporal_check.py --quick
 
+#opencode: SSGI camera-cut temporal lag gate (history vs current gather).
+.PHONY: ssgi-cut-check
+ssgi-cut-check: all
+	@echo "== [gX CI] SSGI camera-cut temporal lag =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/ssgi_cut_check.py
+
 #opencode: first-frame warmup pin (startup envelope: content by frame 7,
 #   one shape, settled by frame 12). Requires a live GPU display.
 warmup-check: all

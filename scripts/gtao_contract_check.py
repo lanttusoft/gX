@@ -72,7 +72,7 @@ def source_check():
             'GTAO temporal history outlier rejection missing')
     require('float acceptedHistory = historyInNeighborhood ? hist : cur;' in accum,
             'GTAO temporal reject fallback changed')
-    require('mix(0.85, 0.30, smoothstep(0.05, 0.25, velLen))' in accum,
+    require('mix(0.85, 0.0, smoothstep(0.05, 0.25, velLen))' in accum,
             'GTAO temporal blend weights or velocity thresholds changed')
     require('uniform int   cameraMoving = 0;' in accum
             and 'cameraMoving != 1 || abs(hist - cur) <= pad' in accum,

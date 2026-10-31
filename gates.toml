@@ -406,6 +406,14 @@ group = "render"
 cache = "content"
 description = "temporal audit gate."
 
+[gate.ssgi-temporal]
+script = "ssgi_cut_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "SSGI camera-cut temporal lag gate."
+
 [gate.material-maps]
 script = "material_maps_check.py"
 args = []
