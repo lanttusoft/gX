@@ -86,6 +86,15 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(
             check.numeric_class((0, 26, 0, ""), (0, 26, 0, "rc1")), "variant")
 
+    def test_stacked_release_baseline(self):
+        versions = [(0, 27, 0, ""), (0, 26, 0, ""), (0, 25, 0, "")]
+        self.assertEqual(
+            check.release_baseline((0, 27, 0, ""), (0, 25, 0, ""), versions),
+            (0, 26, 0, ""))
+        self.assertEqual(
+            check.release_baseline((0, 26, 0, ""), (0, 25, 0, ""), versions),
+            (0, 25, 0, ""))
+
     def test_declared_class(self):
         text = ("## [0.26.0] - 2026-10-31\n\n"
                 "Release-Class: minor\n\n"

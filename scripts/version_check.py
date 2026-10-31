@@ -123,6 +123,24 @@ def numeric_class(before, after):
     return "none"
 
 
+def changelog_versions():
+    versions = []
+    for match in HEADER_RE.finditer(CHANGELOG.read_text()):
+        version = parse(match.group(1))
+        if version and version not in versions:
+            versions.append(version)
+    return versions
+
+
+def release_baseline(readme, latest, versions):
+    candidates = [version for version in versions if version < readme]
+    if candidates:
+        candidate = max(candidates)
+        if candidate > latest:
+            return candidate
+    return latest
+
+
 def class_matches(declared, actual, after):
     if declared == actual:
         return True
@@ -218,14 +236,13 @@ def main():
                 issues.append(f"readme {format_version(readme)} != latest tag "
                               f"{format_version(latest)}")
             if readme >= POLICY_VERSION and readme >= latest:
-                previous = None
                 if readme > latest:
-                    previous = latest
+                    previous = release_baseline(readme, latest,
+                                                changelog_versions())
                 else:
                     older = sorted((version for version in tags
                                     if version != latest), reverse=True)
-                    if older:
-                        previous = older[0]
+                    previous = older[0] if older else None
                 if previous is not None:
                     declared = release_class(readme)
                     actual = numeric_class(previous, readme)

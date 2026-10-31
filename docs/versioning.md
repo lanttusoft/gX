@@ -125,3 +125,4 @@ FROM=v0.25.0 TO=v0.26.0 make version-gate
   now MINOR under this policy.
 - `v0.25.0` — MINOR: opt-in 8-colour/3-bit color-code mode.
 - `v0.26.0` — MINOR: multi-frame payload cap raised to 56 KiB.
+- `v0.26.1` — PATCH: gate manifest and changed-only planner.
