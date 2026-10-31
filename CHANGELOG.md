@@ -4,6 +4,28 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: patch
+
+### Added
+- **Sky azimuth gate**: `scripts/sky_azimuth_check.py` reads the
+  camera-independent equirectangular sky LUT and pins the sun-side peak, the
+  expected anti-solar Rayleigh/Belt-of-Venus lobe and the darkest 90-degree
+  columns. `make sky-azimuth-check` runs it.
+- **Thin-axis SSR gate**: `scripts/ssr_thin_check.py` reflects a 0.05×1.2×0.05
+  emissive pole in a public SSR floor fixture and requires a measurable mirror
+  change. `make ssr-thin-check` runs it.
+
+### Changed
+- **Sky-glow triage**: the reported anti-solar glow is the expected Rayleigh
+  phase plus the Belt-of-Venus term, not a direction/sign error. The gate
+  documents the expected ordering; a real visual preference for a softer
+  anti-lobe can be tuned separately.
+- **Planar/SSR triage**: the public thin-pole fixture reflects (3.1% mirror
+  change, 5,039 green pixels); the private `randomshit.json` axis report still
+  needs its exact model/camera content to reproduce.
+
 ## [0.26.2] - 2026-10-31
 
 Release-Class: patch

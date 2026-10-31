@@ -91,18 +91,19 @@ def changelog_findings(categories):
         for entry in entries:
             text = entry.lower()
             reason = f"CHANGELOG {category}: {text[:100]}"
+            tokens = set(re.findall(r"[a-z0-9-]+", text))
             if category == "added":
-                tooling = any(word in text for word in (
-                    "policy", "tooling", "script", "test", "documentation",
-                    "docs"))
+                tooling = bool(tokens & {
+                    "policy", "tooling", "script", "scripts", "test",
+                    "documentation", "docs"})
                 findings.append({
                     "level": "patch" if tooling else "minor",
                     "reason": reason,
                 })
             elif category == "changed":
-                feature = any(word in text for word in (
+                feature = bool(tokens & {
                     "new", "opt-in", "cap", "capacity", "mode", "format",
-                    "api", "behavior", "palette", "payload"))
+                    "api", "behavior", "palette", "payload"})
                 findings.append({
                     "level": "minor" if feature else "patch",
                     "reason": reason,
