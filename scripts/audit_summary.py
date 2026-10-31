@@ -22,11 +22,12 @@ from pathlib import Path
 
 import audit_common as audit
 import audit_cache
+import gate_manifest
 
 
 # (name, script, args, tier): "quick" runs by default, "full" joins with --full,
 #   "compute" is only selected explicitly (its opt-in build gate is separate).
-GATES = [
+FALLBACK_GATES = [
     ("bloom", "bloom_audit.py", ["--quick"], "quick"),
     ("scene-smoke", "gfx_scene_smoke.py", [], "quick"),
     ("matrix-quick", "gfx_feature_matrix.py", ["--quick"], "quick"),
@@ -73,9 +74,8 @@ GATES = [
     ("mirror-alignment", "gfx_mirror_alignment_check.py", [], "full"),
     ("grid", "gfx_grid_check.py", [], "full"),
     ("temporal", "gfx_temporal_check.py", ["--quick"], "full"),
-    ("materials", "materials_check.py", [], "full"),
+    ("material-maps", "material_maps_check.py", [], "full"),
     ("particle-velocity", "particle_velocity_check.py", [], "compute"),
-    ("rig-inspector", "gfx_rig_inspector_check.py", [], "full"),
     ("animation", "gfx_animation_check.py", [], "full"),
     ("label-font", "gfx_label_font_check.py", [], "full"),
     ("motion-path", "gfx_motion_path_check.py", [], "full"),
@@ -112,6 +112,20 @@ GATES = [
     ("skin-bones", "gfx_skin_bones_check.py", [], "full"),
     ("reflection-ui", "gfx_reflection_ui_check.py", [], "full"),
 ]
+
+GATES = []
+
+
+def load_gates():
+    global GATES
+    manifest = gate_manifest.load()
+    if manifest:
+        GATES = gate_manifest.as_tuples(manifest)
+    else:
+        GATES = [(name, script, script_args, (tier,), "content")
+                 for name, script, script_args, tier in FALLBACK_GATES]
+
+
 PASS_MARKERS = ("PASS", "PASSED")
 
 
@@ -147,10 +161,17 @@ def main():
                         help="print why each uncached gate will run")
     args = parser.parse_args()
 
+    try:
+        load_gates()
+    except (OSError, RuntimeError, ValueError) as error:
+        print(f"audit summary: manifest error: {error}", file=sys.stderr)
+        return 1
+
     names = {gate[0] for gate in GATES}
     if args.list:
-        for name, script, script_args, tier in GATES:
-            print(f"{name:20s} {tier:5s} {script} {' '.join(script_args)}")
+        for name, script, script_args, tiers, cache_policy in GATES:
+            print(f"{name:20s} {','.join(tiers):10s} {cache_policy:7s} "
+                  f"{script} {' '.join(script_args)}")
         return 0
     selected = set(names)
     if args.only:
@@ -160,9 +181,10 @@ def main():
             parser.error("unknown gate(s): " + ", ".join(unknown))
         selected &= requested
     elif not args.full:
-        selected = {gate[0] for gate in GATES if gate[3] == "quick"}
+        selected = {gate[0] for gate in GATES if "quick" in gate[3]}
     else:
-        selected = {gate[0] for gate in GATES if gate[3] in ("quick", "full")}
+        selected = {gate[0] for gate in GATES
+                    if "quick" in gate[3] or "full" in gate[3]}
     if not audit.BIN.is_file():
         print(f"AUDIT_SUMMARY: binary missing: {audit.BIN}", file=sys.stderr)
         return 1
@@ -179,15 +201,16 @@ def main():
     cache_base = audit_cache.base_digest() if use_cache else None
 
     def run_gate(gate):
-        name, script, script_args, tier = gate
+        name, script, script_args, tiers, cache_policy = gate
         script_path = Path(audit.ROOT) / "scripts" / script
         if not script_path.is_file():
             return {"gate": name, "ok": False, "seconds": 0.0,
                     "verdict": "script missing"}
+        use_gate_cache = use_cache and cache_policy == "content"
         parts = audit_cache.gate_parts(cache_base, script_path, script_args,
-                                       environment) if use_cache else None
-        key = audit_cache.key_from_parts(parts) if use_cache else None
-        if use_cache:
+                                       environment) if use_gate_cache else None
+        key = audit_cache.key_from_parts(parts) if use_gate_cache else None
+        if use_gate_cache:
             entry = audit_cache.lookup(cache, name, key)
             if entry:
                 return {"gate": name, "ok": True, "seconds": 0.0,
@@ -196,6 +219,8 @@ def main():
             if args.explain:
                 print(f"{name:20s} run ({audit_cache.explain(cache, name, parts)})",
                       flush=True)
+        elif args.explain:
+            print(f"{name:20s} run (cache={cache_policy})", flush=True)
         start = time.perf_counter()
         try:
             result = subprocess.run(
@@ -210,7 +235,7 @@ def main():
             ok = False
             verdict = f"timeout after {args.timeout:.0f}s"
         seconds = round(time.perf_counter() - start, 2)
-        if ok and use_cache:
+        if ok and use_gate_cache:
             audit_cache.store(cache, name, key, seconds, verdict, script, parts)
         return {"gate": name, "ok": ok, "seconds": seconds,
                 "verdict": verdict}

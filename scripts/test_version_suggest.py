@@ -35,6 +35,13 @@ class ChangelogTests(unittest.TestCase):
                 "- **Version policy and change classifier**: docs and script.\n")
         self.assertEqual(self.classify(text), "patch")
 
+    def test_multiline_tooling_is_patch(self):
+        text = ("## [0.27.0] - 2026-10-31\n\n"
+                "### Added\n"
+                "- **Gate manifest**: `gates.toml` is the source of\n"
+                "  truth; `scripts/gates.py` adds list and plan.\n")
+        self.assertEqual(self.classify(text), "patch")
+
     def test_changed_capacity_is_minor(self):
         text = ("## [0.26.0] - 2026-10-31\n\n"
                 "### Changed\n"
