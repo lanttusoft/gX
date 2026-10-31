@@ -289,8 +289,10 @@ void main()
     N = normalize(TBN * combinedNormal);
 
     // Shared water colors and foam
-    vec3 shallowColor = vec3(0.05, 0.25, 0.20) * waterTint;
-    vec3 deepColor    = vec3(0.00, 0.03, 0.06) * waterTint;
+    //opencode: blue-biased base so a white tint reads as water, not cyan;
+    //   the authoring tint still multiplies the result.
+    vec3 shallowColor = vec3(0.05, 0.20, 0.25) * waterTint;
+    vec3 deepColor    = vec3(0.00, 0.025, 0.075) * waterTint;
     float depthFactor = clamp((fragPosition.y + 2.0) * 0.5, 0.0, 1.0);
     vec3 waterColor = mix(deepColor, shallowColor, depthFactor);
 
