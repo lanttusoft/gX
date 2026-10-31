@@ -14,7 +14,7 @@ privacy checks are included.
 | Feature proposal | [Feature request form](../../issues/new?template=feature_request.yml) |
 | Suspected vulnerability | Private advisory link in `SECURITY.md`; never a public issue |
 | Conduct concern | Private message to the repository owner through their GitHub profile |
-| Everything else | Open a documentation or support issue using the closest template |
+| Everything else | Use the support and documentation contact links on the new-issue page |
 
 Do not use public issues for credentials, private paths, personal data, gameX
 assets, story content, or private scenes. For a conduct concern, avoid posting
