@@ -246,7 +246,9 @@ experimental status.
 - Pipeline: FogVolume must run AFTER SSR composite (SSR rewrites
   bloom.scene from pre-fog content).
 - Tunables live in schema: density / heightFalloff / scattering /
-  hgAsymmetry. Defaults subtle: density 0.01.
+  hgAsymmetry / color / matchSceneFog. Defaults: density 0.003, white
+  in-scatter tint, and `matchSceneFog` on so the scene fog color drives the
+  volume tint. The editor also exposes a "visible defaults" action.
 
 ## v0.3-M4 — SSGI: OPEN (2026-08-25)
 

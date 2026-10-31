@@ -48,6 +48,8 @@ typedef struct gX_RendererGFX_FogVolume {
     gX_F32      heightFalloff;//opencode: height decay (lower = fog stays low, default 5.0)
     gX_F32      scattering;   //opencode: sun-scattering strength (0.0-1.0, default 0.5)
     gX_F32      hgAsymmetry;  //opencode: v0.3-M3 — HG forward-scatter lobe (default 0.55)
+    gX_Color    color;        //opencode: in-scatter tint
+    gX_I1       matchSceneFog;//opencode: follow the scene fog color every frame
 
     gX_RendererGFX_Shader genShader;
     gX_RendererGFX_Shader blendShader;
@@ -62,6 +64,7 @@ typedef struct gX_RendererGFX_FogVolume {
     gX_I32  genDensityLoc;
     gX_I32  genHeightFalloffLoc;
     gX_I32  genScatteringLoc;
+    gX_I32  genColorLoc;
     gX_I32  genResLoc;
     gX_I32  genCamPosLoc;
     gX_I32  genInvProjLoc;

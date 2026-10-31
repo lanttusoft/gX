@@ -246,11 +246,12 @@ gX_I0 gX_RendererGFX_Load_SetDefaults(gX_RendererGFX *gfx)
     //opencode: v0.3.2 — CPU-culled tile clustering default-on; GX_NO_CLUSTER=1 falls back
     { const char* nc = getenv("GX_NO_CLUSTER"); gfx->state.ENABLE_CLUSTERED = !(nc && nc[0]=='1'); }
     gfx->state.ENABLE_VOLUME_FOG = false;
-    //opencode: default volume fog density tuned against the showcase horizon;
-    //   scene-specific forest/lake presets provide denser atmosphere.
-    gfx->fogVolume.density       = 0.0005f;
+    //opencode: visible when enabled; scene fog color drives the tint by default.
+    gfx->fogVolume.density       = 0.003f;
     gfx->fogVolume.scattering    = 1.0f;
     gfx->fogVolume.hgAsymmetry   = 0.7f;
+    gfx->fogVolume.color         = (gX_Color){255, 255, 255, 255};
+    gfx->fogVolume.matchSceneFog = true;
     gfx->fogVolume.enablePointLights = true;   //opencode: item-13
 
     //opencode: lens flares — off by default.

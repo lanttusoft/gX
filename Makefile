@@ -1088,6 +1088,12 @@ fog-light-check: all
 	@echo "== [gX CI] fog+light joint matrix =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/fog_light_check.py
 
+#opencode: GFX fog-volume default visibility, tint and scene-fog matching.
+.PHONY: fog-volume-check
+fog-volume-check: all
+	@echo "== [gX CI] fog volume visibility/tint =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/fog_volume_check.py
+
 #opencode: wireframe placement pin — difference gates pass garbage, only
 #   a bbox gate catches misplacement. Requires a live GPU display.
 wireframe-check: all

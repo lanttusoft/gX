@@ -4,6 +4,18 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+### Added
+- **Fog-volume color and scene-fog matching**: the GFX fog volume gains an
+  in-scatter tint, a `matchSceneFog` toggle that follows the scene fog color,
+  and a "visible defaults" editor action. `fog_volume_check.py` pins default
+  visibility, tint direction and scene-fog matching.
+
+### Changed
+- **Fog-volume defaults**: the default density is now `0.003` (was `0.0005`,
+  effectively invisible); the shipped `gfx_editor.json` preset follows.
+
 ## [0.22.0] - 2026-10-31
 
 ### Added

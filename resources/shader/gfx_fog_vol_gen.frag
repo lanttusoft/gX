@@ -11,6 +11,7 @@ uniform int clampLdr = 0;  //opencode: O-blowout - cap inscatter for post-ACES c
 uniform vec3  sunDir;          // direction toward the sun (normalized)
 uniform vec3  fogSunColor = vec3(1.0);
 uniform float fogSunBrightness = 1.0;
+uniform vec3  fogColor = vec3(1.0);  // in-scatter tint (scene fog color by default)
 uniform float density = 0.01;  // global fog density
 uniform float heightFalloff = 5.0;  // height decay factor (lower = fog stays low)
 uniform float scattering = 0.5;     // sun-scattering bias
@@ -221,7 +222,7 @@ void main() {
         visAccum += vis;
         hgLobe = max(hgLobe, cosTheta);
         float sunLum = stepDensity * scattering * phase * vis; //opencode: no xPI here - the HG phase is already 4PI-normalized; a second xPI below double-counted it (~x10 inscatter, white-out toward sun at density 0.01)
-        inscattered += fogSunColor * fogSunBrightness * sunLum * transmittance;
+        inscattered += fogSunColor * fogSunBrightness * fogColor * sunLum * transmittance;
         //opencode: item-13 - point/spot inscatter. Same recipe as the sun:
         //   HG phase toward the LIGHT (forward lobe = bright core, falloff
         //   = diffuse glow), same 0.15 isotropic floor, same attenuation
@@ -251,7 +252,7 @@ void main() {
             vec4 ptTile = fogPointShadowTile[li];
             float pvis = (ptTile.w > 0.5 && ld < ptTile.y)
                 ? fogPointVis(-ldir * ld, ptTile.y, ptTile.x) : 1.0;
-            inscattered += fogPointColor[li].rgb * fogPointColor[li].a
+            inscattered += fogPointColor[li].rgb * fogPointColor[li].a * fogColor
                          * stepDensity * scattering * ph * atten * pvis * transmittance;
         }
     }
