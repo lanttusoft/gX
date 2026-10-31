@@ -4,6 +4,14 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+### Added
+- **Bug-report triage filters and summary**: `scripts/bug_status.py list`
+  accepts `--status`, `--severity`, `--type`, `--feature` and `--no-feature`;
+  `summary [--json]` reports status, severity, type and feature-request counts
+  without exposing report contents. Filters and summaries are read-only.
+
 ## [0.21.1] - 2026-10-31
 
 ### Fixed

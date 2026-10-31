@@ -21,12 +21,23 @@ reported behavior has been verified fixed. The 34 reports present when this
 field was introduced were initialized to `0`; no issue is marked fixed based
 only on a suspected code change. Severity remains separate from status.
 
-List or change statuses without rewriting the report contents:
+List, filter, summarize or change statuses without rewriting the report contents:
 
 ```bash
 python3 scripts/bug_status.py list
+python3 scripts/bug_status.py list --status OPEN --severity Medium
+python3 scripts/bug_status.py list --type Rendering --no-feature
+python3 scripts/bug_status.py summary
+python3 scripts/bug_status.py summary --json
 python3 scripts/bug_status.py set report-1791055042-0.json 1
 ```
+
+`list` filters combine with AND; `--status` accepts `OPEN`/`FIXED` or `0`/`1`,
+and severity/type matching is case-insensitive. `--feature` selects reports
+whose title starts with `[FEATURE REQUEST]`; `--no-feature` excludes them.
+`summary` is read-only and reports totals plus severity/type counts for all
+reports and for open reports; `--json` emits the same counts for scripts. It
+never prints titles, descriptions or paths.
 
 `python3 scripts/bug_status.py initialize` is an idempotent migration for new
 legacy reports: it adds `0` only where the field is missing and preserves

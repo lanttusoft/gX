@@ -103,12 +103,105 @@ def _report_path(directory, name):
     return path
 
 
-#ai: local CLI lists, initializes, and explicitly transitions private reports.
+#ai: load the bounded report store once so list/summary share the same validation.
+def load_reports(directory):
+    return [(path, *read_report(path))
+            for path in sorted(directory.glob('report-*.json'))]
+
+
+#ai: feature requests are currently title-tagged; keep the classifier explicit.
+def is_feature(document):
+    return str(document.get('title', '')).strip().lower().startswith('[feature request]')
+
+
+#ai: list filters never rewrite or drop reports; they only select for display.
+def filter_reports(rows, status=None, severity=None, type_name=None, feature=None):
+    selected = []
+    for row in rows:
+        path, document, code = row
+        if status is not None and code != status:
+            continue
+        if severity and str(document.get('severity', '')).lower() != severity.lower():
+            continue
+        if type_name and str(document.get('type', '')).lower() != type_name.lower():
+            continue
+        if feature is not None and is_feature(document) != feature:
+            continue
+        selected.append(row)
+    return selected
+
+
+#ai: summary is read-only and bounded to the local report directory.
+def summarize(directory):
+    rows = load_reports(directory)
+    open_count = 0
+    fixed_count = 0
+    features = 0
+    open_features = 0
+    by_severity = {}
+    by_type = {}
+    open_by_severity = {}
+    open_by_type = {}
+    for _, document, code in rows:
+        severity = str(document.get('severity', '') or 'Unknown')
+        report_type = str(document.get('type', '') or 'Unknown')
+        feature = is_feature(document)
+        by_severity[severity] = by_severity.get(severity, 0) + 1
+        by_type[report_type] = by_type.get(report_type, 0) + 1
+        features += int(feature)
+        if code == 0:
+            open_count += 1
+            open_features += int(feature)
+            open_by_severity[severity] = open_by_severity.get(severity, 0) + 1
+            open_by_type[report_type] = open_by_type.get(report_type, 0) + 1
+        else:
+            fixed_count += 1
+    return {
+        'total': len(rows),
+        'open': open_count,
+        'fixed': fixed_count,
+        'feature_requests': features,
+        'open_feature_requests': open_features,
+        'by_severity': dict(sorted(by_severity.items())),
+        'open_by_severity': dict(sorted(open_by_severity.items())),
+        'by_type': dict(sorted(by_type.items())),
+        'open_by_type': dict(sorted(open_by_type.items())),
+    }
+
+
+#ai: status filters accept the same names and numbers as explicit set.
+def _status_value(value):
+    name = str(value).upper()
+    if name not in STATUS_CODES:
+        raise argparse.ArgumentTypeError('status must be 0 (OPEN) or 1 (FIXED)')
+    return STATUS_CODES[name]
+
+
+#ai: compact deterministic count line for human-readable summaries.
+def _format_counts(counts):
+    return ', '.join(name + '=' + str(value) for name, value in counts.items()) or 'none'
+
+
+#ai: local CLI lists, initializes, summarizes, and explicitly transitions private reports.
 def main():
-    parser = argparse.ArgumentParser(description='List and update local bug report statuses.')
+    parser = argparse.ArgumentParser(description='List, summarize and update local bug report statuses.')
     parser.add_argument('--directory', type=Path, default=Path('bugs'))
     commands = parser.add_subparsers(dest='command', required=True)
-    commands.add_parser('list', help='list reports and their status codes')
+    listing = commands.add_parser('list', help='list reports and their status codes')
+    listing.add_argument('--status', type=_status_value, metavar='OPEN|FIXED',
+                         help='only reports with this status')
+    listing.add_argument('--severity', metavar='SEVERITY',
+                         help='only reports with this severity (case-insensitive)')
+    listing.add_argument('--type', dest='type_name', metavar='TYPE',
+                         help='only reports with this type (case-insensitive)')
+    feature = listing.add_mutually_exclusive_group()
+    feature.add_argument('--feature', dest='feature', action='store_true',
+                         help='only [feature request] reports')
+    feature.add_argument('--no-feature', dest='feature', action='store_false',
+                         help='exclude [feature request] reports')
+    listing.set_defaults(feature=None)
+    summary = commands.add_parser('summary', help='count reports by status, severity and type')
+    summary.add_argument('--json', action='store_true', help='emit machine-readable JSON')
     commands.add_parser('initialize', help='add OPEN to reports missing a status code')
     update = commands.add_parser('set', help='explicitly set one report to OPEN or FIXED')
     update.add_argument('report')
@@ -120,12 +213,30 @@ def main():
         changed, total = initialize(args.directory)
         print('BUG_STATUS: initialized', changed, 'of', total, 'reports to OPEN where missing')
     elif args.command == 'list':
-        paths = sorted(args.directory.glob('report-*.json'))
-        for path in paths:
-            document, code = read_report(path)
+        rows = load_reports(args.directory)
+        selected = filter_reports(rows, status=args.status, severity=args.severity,
+                                  type_name=args.type_name, feature=args.feature)
+        for path, document, code in selected:
             print(path.name + ': ' + str(code) + ' ' + STATUS_LABELS[code]
                   + ' — ' + str(document.get('title', '(untitled)')))
-        print('BUG_STATUS:', len(paths), 'reports')
+        if len(selected) == len(rows):
+            print('BUG_STATUS:', len(rows), 'reports')
+        else:
+            print('BUG_STATUS:', len(selected), 'of', len(rows), 'reports')
+    elif args.command == 'summary':
+        result = summarize(args.directory)
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print('BUG_STATUS: total=' + str(result['total'])
+                  + ' open=' + str(result['open'])
+                  + ' fixed=' + str(result['fixed'])
+                  + ' feature_requests=' + str(result['feature_requests'])
+                  + ' open_feature_requests=' + str(result['open_feature_requests']))
+            print('  severity(all): ' + _format_counts(result['by_severity']))
+            print('  severity(open): ' + _format_counts(result['open_by_severity']))
+            print('  type(all): ' + _format_counts(result['by_type']))
+            print('  type(open): ' + _format_counts(result['open_by_type']))
     else:
         path = _report_path(args.directory, args.report)
         previous, code = set_status(path, args.status)

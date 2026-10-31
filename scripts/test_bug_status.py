@@ -4,11 +4,15 @@
 # This file is part of gX. See LICENSE.
 
 #ai: private bug-status operations preserve JSON content and default legacy reports to OPEN.
+from contextlib import redirect_stdout
+import io
+import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
-from bug_status import initialize, read_report, set_status
+from bug_status import filter_reports, initialize, is_feature, load_reports, main, read_report, set_status, summarize
 
 
 class BugStatusTests(unittest.TestCase):
@@ -58,6 +62,68 @@ class BugStatusTests(unittest.TestCase):
             path.write_text('{\n  "status_code": 2,\n  "title":"invalid"\n}\n')
             with self.assertRaises(ValueError):
                 read_report(path)
+
+    def test_filters_and_summary_are_read_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'report-1-0.json').write_text(
+                '{\n  "status_code": 0,\n  "title":"[FEATURE REQUEST] export",\n'
+                '  "severity":"Low",\n  "type":"Other"\n}\n')
+            (root / 'report-2-0.json').write_text(
+                '{\n  "status_code": 1,\n  "title":"fixed crash",\n'
+                '  "severity":"High",\n  "type":"Rendering"\n}\n')
+            (root / 'report-3-0.json').write_text(
+                '{\n  "status_code": 0,\n  "title":"open smear",\n'
+                '  "severity":"Medium",\n  "type":"Rendering"\n}\n')
+            rows = load_reports(root)
+            self.assertEqual([path.name for path, _, _ in filter_reports(rows, status=0)],
+                             ['report-1-0.json', 'report-3-0.json'])
+            self.assertEqual([path.name for path, _, _ in filter_reports(rows, severity='high')],
+                             ['report-2-0.json'])
+            self.assertEqual([path.name for path, _, _ in filter_reports(rows, type_name='rendering')],
+                             ['report-2-0.json', 'report-3-0.json'])
+            self.assertEqual([path.name for path, _, _ in filter_reports(rows, feature=True)],
+                             ['report-1-0.json'])
+            self.assertEqual([path.name for path, _, _ in filter_reports(rows, feature=False)],
+                             ['report-2-0.json', 'report-3-0.json'])
+            self.assertTrue(is_feature({'title': ' [Feature Request] x '}))
+            self.assertFalse(is_feature({'title': 'feature request without tag'}))
+            summary = summarize(root)
+            self.assertEqual(summary['total'], 3)
+            self.assertEqual((summary['open'], summary['fixed']), (2, 1))
+            self.assertEqual((summary['feature_requests'], summary['open_feature_requests']), (1, 1))
+            self.assertEqual(summary['by_severity'], {'High': 1, 'Low': 1, 'Medium': 1})
+            self.assertEqual(summary['open_by_severity'], {'Low': 1, 'Medium': 1})
+            self.assertEqual(summary['by_type'], {'Other': 1, 'Rendering': 2})
+            self.assertEqual(summary['open_by_type'], {'Other': 1, 'Rendering': 1})
+            self.assertEqual(read_report(root / 'report-1-0.json')[1], 0)
+
+    def test_cli_list_filters_and_summary_json(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'report-1-0.json').write_text(
+                '{\n  "status_code": 0,\n  "title":"[FEATURE REQUEST] export",\n'
+                '  "severity":"Low",\n  "type":"Other"\n}\n')
+            (root / 'report-2-0.json').write_text(
+                '{\n  "status_code": 1,\n  "title":"fixed crash",\n'
+                '  "severity":"High",\n  "type":"Rendering"\n}\n')
+            output = io.StringIO()
+            with patch('sys.argv', ['bug_status.py', '--directory', str(root),
+                                    'list', '--status', 'OPEN', '--no-feature']):
+                with redirect_stdout(output):
+                    main()
+            self.assertNotIn('export', output.getvalue())
+            self.assertNotIn('fixed crash', output.getvalue())
+            self.assertIn('BUG_STATUS: 0 of 2 reports', output.getvalue())
+            output = io.StringIO()
+            with patch('sys.argv', ['bug_status.py', '--directory', str(root),
+                                    'summary', '--json']):
+                with redirect_stdout(output):
+                    main()
+            result = json.loads(output.getvalue())
+            self.assertEqual((result['total'], result['open'], result['fixed']), (2, 1, 1))
+            self.assertEqual(result['feature_requests'], 1)
+
 
 
 if __name__ == '__main__':
