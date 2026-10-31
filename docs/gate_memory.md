@@ -1,6 +1,6 @@
 # Gate memory and audit/test unification
 
-Status: manifest + changed-only planner implemented (2026-10-31). The existing
+Status: manifest + changed-only planner + opt-in shared cache (2026-10-31). The existing
 `audit_summary.py` result cache is retained; this document records what it
 already does, what it misses, and how the unified gate manifest works.
 
@@ -36,6 +36,10 @@ reuse or a re-run inspectable.
   audit gates; an unmapped build input conservatively selects all gates.
 - Per-gate cache policy is honored: `cache = "never"` bypasses the cache for
   `profile` and `cache`; the rest use content-addressed passes.
+- `AUDIT_CACHE_DIR=/path` opts into a shared cache directory. Entries are
+  stored per gate and per content key, merged under a file lock and written
+  atomically, so parallel worktrees do not lose passes. The directory is not
+  part of a release archive; release/version gates still run clean.
 
 ## Cache key contract
 
@@ -96,8 +100,8 @@ release certificate.
   `src/common/` and `resources/tools/` still over-select.
 - `make check` still does not use the gate cache, and `version_check.TIERS`
   remains separate from the manifest.
-- There is no shared cache across worktrees or CI; the cache is local to
-  `build/`.
+- The shared cache is opt-in and local/CI-managed; there is no central
+  service or eviction policy yet.
 
 ## Unified gate manifest
 
@@ -144,6 +148,24 @@ Shared files invalidate every gate; an unmapped build input conservatively
 selects all gates; `docs/` changes select none. The manifest test rejects a
 missing gate script or unknown group.
 
+## Shared cache
+
+The cache is local to `build/` by default. To share passes across worktrees or
+CI jobs:
+
+```bash
+AUDIT_CACHE_DIR=/path/to/gx-audit-cache make audit-summary
+AUDIT_CACHE_DIR=/path/to/gx-audit-cache make audit-cache-show
+AUDIT_CACHE_DIR=/path/to/gx-audit-cache make audit-cache-clear
+```
+
+The cache file is `$AUDIT_CACHE_DIR/.audit_cache.json`; entries are keyed by
+gate name and the full content key, and `save()` merges the on-disk entries
+before an atomic replace. `AUDIT_CACHE_DIR` is excluded from the gate
+environment fingerprint. The shared cache is an optimization, not release
+evidence: `AUDIT_CACHE_DIR` must not be used for the
+version/release gate.
+
 ## Rollout
 
 1. **Cache correctness** (this slice): args, gate environment, stable hardware
@@ -156,9 +178,9 @@ missing gate script or unknown group.
 4. **`make check` memory** — pending: cache the deterministic, non-GPU steps
    first (unit tests, math, static audits). Keep Lean/Lake's own build cache
    and never cache release packaging or save/overwrite probes.
-5. **Changed-only and shared cache** — `--changed`/`--files` is in; an opt-in
-   shared cache directory for worktrees/CI remains. Key the shared cache by
-   the same parts, not by machine path.
+5. **Changed-only and shared cache** — `--changed`/`--files` and the opt-in
+   `AUDIT_CACHE_DIR` shared cache are in; a central CI cache/eviction policy
+   remains future work.
 
 ## Risks and mitigations
 

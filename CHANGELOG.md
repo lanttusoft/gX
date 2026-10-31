@@ -4,6 +4,21 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: patch
+
+### Added
+- **Shared audit cache**: `AUDIT_CACHE_DIR=/path` opts into a shared
+  content-addressed cache for worktrees/CI. Entries are stored per gate and
+  content key, merged under a file lock and written atomically; the cache path
+  is printed by `make audit-cache-show`.
+
+### Changed
+- Audit cache format v4 stores multiple keys per gate so a shared directory can
+  retain passes from different worktrees. Old format-v3 caches are ignored and
+  rebuilt.
+
 ## [0.26.2] - 2026-10-31
 
 Release-Class: patch

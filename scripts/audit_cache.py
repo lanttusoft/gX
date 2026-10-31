@@ -14,6 +14,7 @@
 #     python3 scripts/audit_cache.py --clear
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
@@ -25,7 +26,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-CACHE_VERSION = 3
+CACHE_VERSION = 4
 CACHE_PATH = ROOT / "build" / ".audit_cache.json"
 
 #ai: process-local memo — audit runs hash hundreds of requests but the inputs
@@ -49,8 +50,17 @@ GATE_ENV_PREFIXES = (
     "GX_", "AUDIT_", "LIBGL_", "MESA_", "__GLX", "__EGL", "NVIDIA_", "AMD_",
 )
 GATE_ENV_IGNORE = (
-    "AUDIT_CACHE", "AUDIT_JOBS", "GX_SCREENSHOT_DIR", "GX_SHOT_FRAME",
+    "AUDIT_CACHE", "AUDIT_CACHE_DIR", "AUDIT_JOBS", "GX_SCREENSHOT_DIR",
+    "GX_SHOT_FRAME",
 )
+
+
+def cache_path():
+    """Return the cache file; AUDIT_CACHE_DIR opts into a shared directory."""
+    directory = os.environ.get("AUDIT_CACHE_DIR")
+    if directory:
+        return Path(directory).expanduser().resolve() / ".audit_cache.json"
+    return CACHE_PATH
 
 
 def _hash_file(digest, path):
@@ -244,48 +254,111 @@ def gate_key(base, script_path, args=(), environment=None):
     return key_from_parts(gate_parts(base, script_path, args, environment))
 
 
+def _gate_entries(cache, name):
+    entries = cache.get("gates", {}).get(name, {})
+    if isinstance(entries, dict) and "key" in entries and "ok" in entries:
+        return {entries.get("key"): entries}
+    return entries if isinstance(entries, dict) else {}
+
+
 def explain(cache, name, parts):
     """Return a short reason a gate will run or reuse its cached pass."""
-    entry = cache.get("gates", {}).get(name)
+    key = key_from_parts(parts)
+    entries = _gate_entries(cache, name)
+    entry = entries.get(key)
     if not entry:
-        return "no cached pass"
+        if not entries:
+            return "no cached pass"
+        entry = max(entries.values(), key=lambda item: item.get("when", ""))
+        stored = entry.get("parts") or {}
+        for part in ("base", "script", "args", "env", "hardware"):
+            if stored.get(part) != parts.get(part):
+                return f"{part} changed"
+        return "no cached pass for this key"
     if not entry.get("ok"):
         return "cached entry is not a pass"
     stored = entry.get("parts") or {}
     for part in ("base", "script", "args", "env", "hardware"):
         if stored.get(part) != parts.get(part):
             return f"{part} changed"
-    if entry.get("key") != key_from_parts(parts):
-        return "key changed"
     return "fresh"
 
 
-def load():
+def _empty_cache():
+    return {"version": CACHE_VERSION, "gates": {}}
+
+
+def _lock_path(path):
+    return path.with_suffix(path.suffix + ".lock")
+
+
+@contextlib.contextmanager
+def _cache_lock(path):
+    """Best-effort process lock for shared-cache merge/write."""
+    lock_path = _lock_path(path)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        data = json.loads(CACHE_PATH.read_text())
+        import fcntl
+        with open(lock_path, "w") as handle:
+            fcntl.flock(handle, fcntl.LOCK_EX)
+            yield
+    except (ImportError, OSError):
+        yield
+
+
+def _merge_cache(target, source):
+    for name, entries in source.get("gates", {}).items():
+        if not isinstance(entries, dict):
+            continue
+        bucket = target.setdefault("gates", {}).setdefault(name, {})
+        for key, entry in entries.items():
+            if isinstance(entry, dict):
+                bucket[key] = entry
+
+
+def load():
+    path = cache_path()
+    try:
+        data = json.loads(path.read_text())
         if data.get("version") != CACHE_VERSION:
-            return {"version": CACHE_VERSION, "gates": {}}
+            return _empty_cache()
+        if not isinstance(data.get("gates"), dict):
+            return _empty_cache()
         return data
     except (OSError, ValueError):
-        return {"version": CACHE_VERSION, "gates": {}}
+        return _empty_cache()
 
 
 def save(data):
-    data["version"] = CACHE_VERSION
-    CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    CACHE_PATH.write_text(json.dumps(data, indent=2, sort_keys=True))
+    path = cache_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with _cache_lock(path):
+        disk = load()
+        _merge_cache(disk, data)
+        disk["version"] = CACHE_VERSION
+        temp = path.with_name(path.name + f".tmp.{os.getpid()}")
+        temp.write_text(json.dumps(disk, indent=2, sort_keys=True))
+        os.replace(temp, path)
 
 
 def clear():
-    try:
-        CACHE_PATH.unlink()
-    except OSError:
-        pass
+    path = cache_path()
+    for candidate in (path, _lock_path(path)):
+        try:
+            candidate.unlink()
+        except OSError:
+            pass
+    if path.parent.is_dir():
+        for temp in path.parent.glob(path.name + ".tmp.*"):
+            try:
+                temp.unlink()
+            except OSError:
+                pass
 
 
 def lookup(cache, name, key):
-    entry = cache.get("gates", {}).get(name)
-    if not entry or entry.get("key") != key or not entry.get("ok"):
+    entry = _gate_entries(cache, name).get(key)
+    if not entry or not entry.get("ok"):
         return None
     return entry
 
@@ -301,7 +374,7 @@ def store(cache, name, key, seconds, verdict, script, parts=None):
     }
     if parts is not None:
         entry["parts"] = parts
-    cache.setdefault("gates", {})[name] = entry
+    cache.setdefault("gates", {}).setdefault(name, {})[key] = entry
 
 
 def main():
@@ -319,28 +392,32 @@ def main():
         env = environment_digest()
         hardware = hardware_digest()
         gates = cache.get("gates", {})
+        print(f"cache: {cache_path()}")
+        total = 0
         current = 0
         for name in sorted(gates):
-            entry = gates[name]
-            script = ROOT / "scripts" / entry.get("script", "")
-            parts = entry.get("parts") or {}
-            reason = ""
-            if not parts:
-                reason = "no parts"
-            elif parts.get("base") != base:
-                reason = "base changed"
-            elif not script.is_file() or parts.get("script") != _file_digest(script):
-                reason = "script changed"
-            elif parts.get("env") != env:
-                reason = "env changed"
-            elif parts.get("hardware") != hardware:
-                reason = "hardware changed"
-            fresh = not reason
-            current += 1 if fresh else 0
-            status = "fresh" if fresh else f"stale ({reason})"
-            print(f"  {name:20s} {status:20s} "
-                  f"{entry.get('seconds', 0):6.1f}s  {entry.get('when', '')}")
-        print(f"audit cache: {current}/{len(gates)} fresh")
+            for key, entry in sorted(_gate_entries(cache, name).items()):
+                total += 1
+                script = ROOT / "scripts" / entry.get("script", "")
+                parts = entry.get("parts") or {}
+                reason = ""
+                if not parts:
+                    reason = "no parts"
+                elif parts.get("base") != base:
+                    reason = "base changed"
+                elif (not script.is_file()
+                      or parts.get("script") != _file_digest(script)):
+                    reason = "script changed"
+                elif parts.get("env") != env:
+                    reason = "env changed"
+                elif parts.get("hardware") != hardware:
+                    reason = "hardware changed"
+                fresh = not reason
+                current += 1 if fresh else 0
+                status = "fresh" if fresh else f"stale ({reason})"
+                print(f"  {name:20s} {key[:10]} {status:20s} "
+                      f"{entry.get('seconds', 0):6.1f}s  {entry.get('when', '')}")
+        print(f"audit cache: {current}/{total} fresh")
         return 0
     parser.print_help()
     return 1

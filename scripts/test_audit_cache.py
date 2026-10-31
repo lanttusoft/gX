@@ -4,6 +4,7 @@
 # This file is part of gX. See LICENSE.
 
 #ai: focused regressions for the source-input audit cache (AUD-06).
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -140,14 +141,46 @@ class GateKeyTests(unittest.TestCase):
                                      "AUDIT_CACHE": "0"})
             self.assertEqual(first, second)
 
+    def test_store_and_lookup_are_per_key(self):
+        cache = {"version": audit_cache.CACHE_VERSION, "gates": {}}
+        audit_cache.store(cache, "gate", "key-a", 1.0, "PASS",
+                          "gate.py", {"base": "a"})
+        self.assertIsNotNone(audit_cache.lookup(cache, "gate", "key-a"))
+        self.assertIsNone(audit_cache.lookup(cache, "gate", "key-b"))
+
+    def test_cache_path_honors_shared_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.dict(os.environ,
+                                 {"AUDIT_CACHE_DIR": directory}):
+                expected = Path(directory).resolve() / ".audit_cache.json"
+                self.assertEqual(audit_cache.cache_path(), expected)
+
+    def test_shared_save_merges_keys(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.dict(os.environ,
+                                 {"AUDIT_CACHE_DIR": directory}):
+                first = {"version": audit_cache.CACHE_VERSION, "gates": {
+                    "gate": {"key-a": {"key": "key-a", "ok": True,
+                                       "seconds": 1.0, "verdict": "PASS",
+                                       "script": "gate.py"}}}}
+                second = {"version": audit_cache.CACHE_VERSION, "gates": {
+                    "gate": {"key-b": {"key": "key-b", "ok": True,
+                                       "seconds": 2.0, "verdict": "PASS",
+                                       "script": "gate.py"}}}}
+                audit_cache.save(first)
+                audit_cache.save(second)
+                cache = audit_cache.load()
+                self.assertEqual(
+                    set(cache["gates"]["gate"]), {"key-a", "key-b"})
+
     def test_explain_reports_changed_part(self):
         with tempfile.TemporaryDirectory() as directory:
             script = self.make_script(directory)
             parts = audit_cache.gate_parts(
                 "base", script, ["--quick"], {"DISPLAY": ":1"})
-            cache = {"gates": {"gate": {
-                "key": audit_cache.key_from_parts(parts),
-                "ok": True, "parts": parts}}}
+            key = audit_cache.key_from_parts(parts)
+            cache = {"gates": {"gate": {key: {
+                "key": key, "ok": True, "parts": parts}}}}
             self.assertEqual(audit_cache.explain(cache, "gate", parts), "fresh")
             changed = dict(parts)
             changed["args"] = "different"
