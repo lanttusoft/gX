@@ -47,6 +47,9 @@ SemVer.
 - **Title and settings version label**: now reports v0.21.0 beta.
 - **Guest-asset wording**: help and comments use generic external-asset
   examples instead of naming a specific foreign project or private path.
+- **Independence disclaimer**: README/readme state that gX is not affiliated
+  with, endorsed by, or sponsored by any third-party game, ARG, series,
+  company, or trademark; public references are descriptive and nominative.
 
 ## [0.20.0] - 2026-10-30
 

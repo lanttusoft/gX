@@ -23,6 +23,13 @@ scaling are planned for a dedicated rework; expect significant improvements in
 future betas. Report issues with the version/tag, OS, GPU/driver and
 reproduction steps.
 
+## Independence
+
+gX is an independent project. It is not affiliated with, endorsed by, or
+sponsored by any third-party game, ARG, series, company, or trademark.
+References to public works are descriptive and nominative; no association,
+sponsorship, or endorsement is implied.
+
 ## Credits
 
 - **lanttu / lanttusoft** — artist and engine author
