@@ -127,3 +127,4 @@ FROM=v0.25.0 TO=v0.26.0 make version-gate
 - `v0.26.0` — MINOR: multi-frame payload cap raised to 56 KiB.
 - `v0.26.1` — PATCH: gate manifest and changed-only planner.
 - `v0.26.2` — PATCH: GTAO/SSGI fast-motion history rejection.
+- `v0.26.3` — PATCH: sky/SSR diagnostics and shared audit cache.
