@@ -1067,6 +1067,11 @@ gX_I0 gX_RendererGFX_Terrain_DrawMirror(gX_RendererGFX *gfx, gX_Matrix mirrorVP)
         gX_Shader ts = gfx->terrain.depthShader.shader;
         gX_Drawing_BeginShader(ts);
         Terrain_UploadUniforms(gfx, ts, invVP, mirrorVP, hillAmp);
+        //opencode: the mirror pass has its own screen-space mapping; the main
+        //   view's SSAO texture is not valid there and mirrored the AO field.
+        //   (The terrain shader has no mirrorFill flag, unlike standard.frag.)
+        if (gfx->terrain.shSsaoEnableLoc >= 0)
+            gX_Shader_SetValue_Int(ts, gfx->terrain.shSsaoEnableLoc, 0);
         gX_Drawing_DrawScreenQuad(0, 0, (gX_F32)maindata.renderWidth, (gX_F32)maindata.renderHeight);
         gX_Drawing_EndShader();
     }

@@ -78,6 +78,9 @@ static gX_U32 g_planarDepthTex = 0;
 static gX_RendererGFX *g_cubemap_gfx = NULL;
 //ai: classify capture contents across all six callback invocations.
 static gX_I1 g_cubemap_hasLocal = 0;
+//opencode: sky-only IBL capture — skip models and use the capture's own size.
+static gX_I1 g_cubemap_sky_only = 0;
+static gX_U32 g_cubemap_render_size = 0;
 
 //ai: compile-isolated coverage experiment; default builds contain no readback hooks.
 #if defined(GX_PROBE_COVERAGE_EXPERIMENT)
@@ -203,6 +206,8 @@ static gX_I0 gfx_cubemap_draw_face(gX_Camera3D *faceCam, gX_I32 faceIndex)
 {
     gX_RendererGFX *cgfx = g_cubemap_gfx;
     if (!cgfx) return;
+    gX_F32 captureSize = (gX_F32)(g_cubemap_render_size > 0
+        ? g_cubemap_render_size : cgfx->reflection.cubeSize);
 #if defined(GX_PROBE_COVERAGE_EXPERIMENT)
     gX_I1 drawSky = cgfx->state.ENABLE_PROCEDURAL_SKY;
     if (gfx_probe_proxy_split_enabled() && !cgfx->state.ENABLE_SSR) drawSky = 0;
@@ -232,17 +237,22 @@ static gX_I0 gfx_cubemap_draw_face(gX_Camera3D *faceCam, gX_I32 faceIndex)
         gX_RHI_Depth_Write(0);
         gX_RHI_Matrix_Mode(GX_RHI_MATRIX_PROJECTION);
         gX_RHI_Matrix_LoadIdentity();
-        gX_RHI_Matrix_Ortho(0, (gX_F32)cgfx->reflection.cubeSize,
-                            (gX_F32)cgfx->reflection.cubeSize, 0, 0.0, 1.0);
+        gX_RHI_Matrix_Ortho(0, captureSize, captureSize, 0, 0.0, 1.0);
         gX_RHI_Matrix_Mode(GX_RHI_MATRIX_MODELVIEW);
         gX_RHI_Matrix_LoadIdentity();
-        gfx_sky_upload_and_draw(cgfx, (gX_F32)cgfx->reflection.cubeSize,
-                                (gX_F32)cgfx->reflection.cubeSize, 0,
+        gfx_sky_upload_and_draw(cgfx, captureSize, captureSize, 0,
                                 (gX_F32v3){0.0f, 0.0f, 0.0f},
                                 gX_CUBEMAP_TARGETS[faceIndex],
                                 gX_CUBEMAP_UPS[faceIndex], 90.0f, 0);
         gX_RHI_Enable(gX_RHI_DEPTH_TEST);
         gX_RHI_Depth_Write(1);
+    }
+    //opencode: the IBL sky capture stops after the procedural sky; models are
+    //   not environment light and would darken/tint the irradiance map.
+    if (g_cubemap_sky_only)
+    {
+        gX_Batch_Flush();
+        return;
     }
 
 #if defined(GX_PROBE_COVERAGE_EXPERIMENT)
@@ -310,6 +320,70 @@ static gX_I0 gfx_cubemap_draw_face(gX_Camera3D *faceCam, gX_I32 faceIndex)
         gX_GL_Matrix_SetModelView(mainView);
         gX_GL_Matrix_SetProjection(mainProjection);
     }
+}
+
+//opencode: render a one-time, sky-only cubemap for PBR image-based lighting.
+//   The static image skybox is commonly much darker than the visible
+//   procedural sky; using it made metals black and dielectrics read like
+//   porcelain. This capture contains the procedural sky only (no models).
+gX_I0 gX_RendererGFX_IBL_PrepareSkyCube(gX_RendererGFX *gfx)
+{
+    if (!gfx || !gfx->state.ENABLE_ENV_AMBIENT) return;
+    if (!gfx->state.ENABLE_PROCEDURAL_SKY) return;
+    if (gfx->ibl.skyCubeReady && gfx->ibl.skyCube.id > 0) return;
+    if (gfx->proceduralSky.shader.id == 0) return;
+    const gX_U32 size = 64;
+    if (gfx->ibl.skyCube.id == 0) {
+        gX_U32 id = gX_RHI_Tex_CreateCubemap(size, gX_RHI_RGB16F,
+            gX_RHI_RGB, gX_RHI_FLOAT, (const gX_I8 *)"ibl_sky_cube");
+        if (id == 0) return;
+        gX_RHI_Tex_Param(id, gX_RHI_TEXTURE_CUBE_MAP,
+            gX_RHI_TEXTURE_MIN_FILTER, gX_RHI_LINEAR);
+        gX_RHI_Tex_Param(id, gX_RHI_TEXTURE_CUBE_MAP,
+            gX_RHI_TEXTURE_MAG_FILTER, gX_RHI_LINEAR);
+        gX_RHI_Tex_Param(id, gX_RHI_TEXTURE_CUBE_MAP,
+            gX_RHI_TEXTURE_WRAP_S, gX_RHI_CLAMP_TO_EDGE);
+        gX_RHI_Tex_Param(id, gX_RHI_TEXTURE_CUBE_MAP,
+            gX_RHI_TEXTURE_WRAP_T, gX_RHI_CLAMP_TO_EDGE);
+        gX_RHI_Tex_Param(id, gX_RHI_TEXTURE_CUBE_MAP,
+            gX_RHI_TEXTURE_WRAP_R, gX_RHI_CLAMP_TO_EDGE);
+        gfx->ibl.skyCube = (gX_Texture){
+            .id = id, .width = (gX_I32)size, .height = (gX_I32)size,
+            .mipmaps = 1, .format = gX_RHI_RGB16F};
+    }
+    gX_U32 fbo = 0, depthRbo = 0;
+    gX_RHI_FBO_Gen(1, &fbo);
+    depthRbo = gX_RHI_RBO_Create(size, size, gX_RHI_DEPTH_COMPONENT24);
+    if (fbo == 0 || depthRbo == 0) {
+        if (fbo) gX_RHI_FBO_Delete(fbo);
+        if (depthRbo) gX_RHI_RBO_Delete(depthRbo);
+        return;
+    }
+    gX_RHI_BindFBO(fbo);
+    gX_RHI_FBO_AttachDepthRBO(depthRbo);
+    gX_RHI_DrawBuffer(gX_RHI_COLOR_ATTACHMENT0);
+    gX_RHI_ReadBuffer(gX_RHI_COLOR_ATTACHMENT0);
+    if (!gX_RHI_FBO_IsComplete()) {
+        gX_TraceLog_GFX(gX_LOG_ERROR, "IBL sky cube FBO incomplete");
+        gX_RHI_FBO_Delete(fbo);
+        gX_RHI_RBO_Delete(depthRbo);
+        gX_RHI_UnbindFBO();
+        return;
+    }
+    g_cubemap_gfx = gfx;
+    g_cubemap_hasLocal = 0;
+    g_cubemap_sky_only = 1;
+    g_cubemap_render_size = size;
+    gX_Cubemap_RenderEx(gfx->ibl.skyCube, size,
+        (gX_F32v3){0.0f, 0.0f, 0.0f},
+        (gX_F32v3){0.0f, 0.0f, 0.0f},
+        gfx_cubemap_draw_face, fbo, depthRbo);
+    g_cubemap_sky_only = 0;
+    g_cubemap_render_size = 0;
+    gX_RHI_FBO_Delete(fbo);
+    gX_RHI_RBO_Delete(depthRbo);
+    gfx->ibl.skyCubeReady = 1;
+    gX_TraceLog_GFX(gX_LOG_NOTICE, "IBL sky cube captured (%ux%u)", size, size);
 }
 
 //opencode: point light shadow cubemap depth pass (6 faces, raw OpenGL)
@@ -902,6 +976,10 @@ gX_I0 gX_RendererGFX_Draw_PointShadows(gX_RendererGFX *gfx)
 gX_I0 gX_RendererGFX_Draw_Reflections(gX_RendererGFX *gfx)
 {
 
+    //opencode: PBR IBL source — generated once from the procedural sky. This
+    //   must run before the dynamic scene cube so the next update can generate
+    //   irradiance/prefilter from a sky-only environment.
+    gX_RendererGFX_IBL_PrepareSkyCube(gfx);
     //opencode: reflection audit — freshness flags reset EVERY frame, outside
     //   the ENABLE_REFLECTIONS gate: disabling reflections mid-run left
     //   filledThisFrame true forever, so the SSR aux path sampled a stale
@@ -2129,6 +2207,13 @@ static gX_I0 gfx_sky_upload_and_draw(gX_RendererGFX *gfx, gX_F32 w, gX_F32 h,
     }
     if (skyEquirectLoc >= 0)
         gX_Shader_SetValue_Int(sha, skyEquirectLoc, equirect ? 1 : 0);
+    //opencode: the procedural sky vertex path needs its own ortho MVP — the
+    //   cubemap/RT callers do not go through BeginTexture's matrix setup.
+    gX_I32 skyMvpLoc = gX_Shader_GetLocation(sha, "mvp");
+    if (skyMvpLoc >= 0) {
+        gX_Matrix skyOrtho = gX_Matrix_Ortho(0.0f, w, h, 0.0f, 0.0f, 1.0f);
+        gX_Shader_SetValue_Matrix(sha, skyMvpLoc, skyOrtho);
+    }
     gX_Drawing_DrawScreenQuad(0, 0, w, h);
     gX_Drawing_EndShader();
 }

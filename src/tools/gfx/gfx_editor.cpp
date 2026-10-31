@@ -2483,6 +2483,24 @@ static gX_I0 gfx_preset_load(gX_RendererGFX *gfx) {
         gfx_model_history_reset();
         gfx_model_snapshots_clear();
         s_sunInit = 0;
+        //opencode: PBR presets need the MEDIUM shader path (IBL/Fresnel/rim).
+        //   Raise before the next shader reload instead of leaving the preset
+        //   at LOW, where PBR compiled direct-only (black metals).
+        {
+            gX_I1 pbrNeeded = 0;
+            for (gX_U32 pbrIndex = 0; pbrIndex < gfx->models.amount; pbrIndex++) {
+                gX_RendererGFX_Model *pbrModel = gfx_model_at(gfx, (gX_I32)pbrIndex);
+                if (pbrModel && pbrModel->params.usePBR) pbrNeeded = 1;
+            }
+            if (pbrNeeded && gfx->state.shaderQuality < 1) {
+                //opencode: let the update quality guard raise and force the
+                //   reload; setting shaderQuality here would hide the change
+                //   from its prevQuality tracker.
+                gfx->state.qualityPreset = 1;
+                gX_TraceLog(gX_LOG_NOTICE,
+                    "PBR preset requests MEDIUM quality");
+            }
+        }
         gfx_preset_set_status("Preset loaded", 1);
     } else {
         gfx_preset_set_status("Preset load failed", 0);
@@ -5273,6 +5291,36 @@ static gX_I0 gfx_model_material_preset(gX_RendererGFX *gfx,
         model->params.blendOpacity = 0.34f;
         model->params.enableRefraction = 1;
         model->params.refractiveIndex = 1.5f;
+    } else if (preset == 4) {
+        //opencode: brushed steel — metal tint, medium roughness.
+        model->params.metalness = 0.90f;
+        model->params.roughness = 0.35f;
+        model->params.albedoTint = (gX_Color){175, 182, 188, 255};
+        model->params.enableReflections = 0;
+    } else if (preset == 5) {
+        //opencode: gold — metal tint, tight highlight.
+        model->params.metalness = 1.0f;
+        model->params.roughness = 0.22f;
+        model->params.albedoTint = (gX_Color){255, 190, 80, 255};
+        model->params.enableReflections = 0;
+    } else if (preset == 6) {
+        //opencode: copper — warm metal.
+        model->params.metalness = 1.0f;
+        model->params.roughness = 0.30f;
+        model->params.albedoTint = (gX_Color){220, 120, 80, 255};
+        model->params.enableReflections = 0;
+    } else if (preset == 7) {
+        //opencode: painted plastic — dielectric with a broad highlight.
+        model->params.metalness = 0.0f;
+        model->params.roughness = 0.35f;
+        model->params.albedoTint = (gX_Color){110, 165, 215, 255};
+        model->params.enableReflections = 0;
+    } else if (preset == 8) {
+        //opencode: concrete — rough dielectric.
+        model->params.metalness = 0.0f;
+        model->params.roughness = 0.95f;
+        model->params.albedoTint = (gX_Color){150, 145, 135, 255};
+        model->params.enableReflections = 0;
     } else {
         model->params.metalness = 0.25f;
         model->params.roughness = 0.18f;
@@ -5559,22 +5607,33 @@ static gX_I0 gfx_model_material_browser(gX_RendererGFX *gfx,
         s_selModel);
     ImGui::InputTextWithHint("##gfxMaterialSearch", "Search material presets...",
         s_materialSearch, sizeof(s_materialSearch));
-    static const gX_I8 *names[] = {"Mirror", "Matte", "Neon", "Glass"};
+    static const gX_I8 *names[] = {"Mirror", "Matte", "Neon", "Glass",
+        "Brushed steel", "Gold", "Copper", "Painted plastic", "Concrete"};
     static const gX_I8 *descriptions[] = {
         "Polished metal with the current albedo tint and environment reflection.",
         "Soft, non-reflective PBR surface.",
         "Pink emissive PBR surface with environment reflection.",
-        "Cyan tinted blend with refraction and environment reflection."};
+        "Cyan tinted blend with refraction and environment reflection.",
+        "Cool metal with a medium roughness highlight.",
+        "Warm metal with a tight, bright highlight.",
+        "Warm red metal with a broader highlight.",
+        "Dielectric paint with a broad, soft highlight.",
+        "Rough dielectric surface for floors and walls."};
     static const ImVec4 swatches[] = {
         ImVec4(0.78f, 0.82f, 0.88f, 1.0f),
         ImVec4(0.55f, 0.62f, 0.72f, 1.0f),
         ImVec4(1.0f, 0.12f, 0.65f, 1.0f),
-        ImVec4(0.45f, 0.88f, 1.0f, 0.55f)};
+        ImVec4(0.45f, 0.88f, 1.0f, 0.55f),
+        ImVec4(0.69f, 0.72f, 0.74f, 1.0f),
+        ImVec4(1.0f, 0.75f, 0.31f, 1.0f),
+        ImVec4(0.86f, 0.47f, 0.31f, 1.0f),
+        ImVec4(0.43f, 0.65f, 0.84f, 1.0f),
+        ImVec4(0.59f, 0.57f, 0.53f, 1.0f)};
     if (ImGui::BeginTable("GfxMaterialCards", 2,
             ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_BordersInnerH
                 | ImGuiTableFlags_SizingStretchSame)) {
         gX_U32 matching = 0;
-        for (gX_I32 preset = 0; preset < 4; preset++) {
+        for (gX_I32 preset = 0; preset < 9; preset++) {
             if (!gfx_text_search_matches(names[preset], s_materialSearch)
                 && !gfx_text_search_matches(descriptions[preset], s_materialSearch)) continue;
             matching++;
@@ -6785,7 +6844,16 @@ static gX_I0 gfx_models_panel(gX_RendererGFX *gfx) {
     }
     if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
         gX_I1 pbr = model->params.usePBR ? 1 : 0;
-        if (ImGui::Checkbox("use PBR", (bool *)&pbr)) model->params.usePBR = pbr ? 1 : 0;
+        if (ImGui::Checkbox("use PBR", (bool *)&pbr)) {
+            model->params.usePBR = pbr ? 1 : 0;
+            //opencode: PBR needs MEDIUM; LOW compiled direct-only PBR and
+            //   read as black metal / white porcelain. Raise on first use.
+            if (pbr && gfx->state.shaderQuality < 1) {
+                //opencode: the update guard raises and reloads; leave the
+                //   shaderQuality transition visible to it.
+                gfx->state.qualityPreset = 1;
+            }
+        }
         ImGui::DragFloat("albedo", &model->params.albedo, 0.01f, 0.0f, 2.0f);
         gfx_color_edit("albedo tint", &model->params.albedoTint);
         gX_I1 topTint = model->params.useTopTint ? 1 : 0;
@@ -8480,6 +8548,12 @@ static gX_I0 gfx_debug_panel(gX_RendererGFX *gfx) {
         if (ImGui::Checkbox("camera markers", (bool *)&cameraMarkers)) gfx->state.SHOW_CAMERA_MARKERS = cameraMarkers ? 1 : 0;
         gX_I1 wire = gfx->state.ENABLE_WIREFRAME ? 1 : 0;
         if (ImGui::Checkbox("wireframe", (bool *)&wire)) gfx->state.ENABLE_WIREFRAME = wire ? 1 : 0;
+    }
+    if (ImGui::CollapsingHeader("Shadows")) {
+        ImGui::SliderFloat("shadow diffuse", &gfx->state.shadowDiffuseBias, 0.0f, 1.0f);
+        ImGui::SliderFloat("shadow specular", &gfx->state.shadowSpecularBias, 0.0f, 1.0f);
+        ImGui::SliderFloat("PBR ambient shadow", &gfx->state.pbrShadowAmbient, 0.0f, 1.0f);
+        ImGui::TextDisabled("PBR ambient shadow pulls diffuse IBL down in cast shadows.");
     }
     if (ImGui::CollapsingHeader("Vertex attribute inspection")) {
         gX_I1 position = gfx->state.SHOW_POSITION ? 1 : 0;

@@ -25,3 +25,34 @@
   (correct by construction; old double-tonemap lifted mids).
 - BLOOM=0 raw bypass now presents linear (dark) - documented, accepted;
   rows recalibrated by their own gates (all held).
+
+## PBR lighting and material controls (2026-10-31)
+
+<!-- //ai: PBR source/IBL correction; user-facing shadow controls and gates. -->
+
+- **PBR requires MEDIUM shader quality.** LOW compiles the direct-only PBR
+  path (no IBL), which read as black metal or white porcelain. Loading a
+  preset with any `usePBR` model raises `qualityPreset`/`shaderQuality` to
+  MEDIUM, and enabling **use PBR** in the inspector raises it on the spot.
+- **IBL source is the procedural sky.** The old split-sum maps were generated
+  from the static image skybox, which is usually much darker than the visible
+  procedural sky. `gX_RendererGFX_IBL_PrepareSkyCube` renders a one-time,
+  sky-only cubemap from the procedural sky shader; the irradiance and
+  prefilter passes use it. The IBL cube-face rotation now uses the inverse
+  view (`transpose(mat3(captureView))`).
+- **IBL uniform locations are cached.** `irradianceMap`/`prefilterMap` were
+  missing from `gX_RendererGFX_Shader_Load_Locations`; the struct default `0`
+  bound the cubemaps to uniform 0 instead of the actual samplers.
+- **Shadow controls:** `shadowDiffuseBias` (0.85), `shadowSpecularBias`
+  (1.0) and `pbrShadowAmbient` (0.35) are schema fields with inspector
+  sliders. The PBR path applies the sun shadow to direct light and to the
+  diffuse IBL term, so cast shadows remain readable under a bright sky.
+- **Planar terrain mirror skips SSAO.** The mirror pass has its own screen
+  mapping; sampling the main-view SSAO map was the horizontally flipped AO
+  seen inside terrain reflections.
+- **God rays use scene depth.** The generation pass masks foreground pixels
+  and stops rays at geometry, so PBR specular highlights are not replayed as
+  light shafts. `make godray-check` now pins the depth mask.
+- **Gate:** `make pbr-check` renders a public PBR fixture, requires the
+  LOW→MEDIUM raise, checks procedural-sky IBL, material tint spread and a
+  measurable cast-shadow change.

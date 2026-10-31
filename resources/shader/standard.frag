@@ -355,6 +355,7 @@ uniform vec4 lightsCookieRects[32];  //opencode: per-light UV rect into the atla
 uniform int shadowMode = 0;
 uniform float shadowDiffuseBias = 0.5;
 uniform float shadowSpecularBias = 1.0;
+uniform float pbrShadowAmbient = 0.35;
 
 uniform float reflectionBias = 0.5;
 uniform vec2 resolution;
@@ -1524,6 +1525,7 @@ void main() {
         vec3 F0 = mix(vec3(0.04), albedo, metalness) * specularColor;
 
         // Sun (directional light)
+        float sunShadow = 0.0;
         {
             vec3 L = normalize(pos.lightpos);
             vec3 H = normalize(V + L);
@@ -1566,6 +1568,7 @@ void main() {
                 } else {
                     shad = gX_Shadow_PCF(fs_in.lightspaceFragPosition, N, L, shadowMap);
                 }
+                sunShadow = shad;
                 radiance *= (1.0 - shadowDiffuseBias * shad);
             }
             //opencode: contact shadows (spike 2) - multiply the SUN term
@@ -1589,6 +1592,9 @@ void main() {
             vec3 kD = (1.0 - F0) * (1.0 - metalness);
             vec3 irradiance = texture(irradianceMap, N).rgb;
             vec3 diffuseIBL = irradiance * albedo * kD;
+            //opencode: cast shadows also pull down diffuse sky ambient; pure split-sum
+            //   IBL is unshadowed and washed the PBR shadow out.
+            diffuseIBL *= 1.0 - sunShadow * clamp(pbrShadowAmbient, 0.0, 1.0);
             if (oraclePathActive == 1)
                 diffuseIBL = gX_Oracle_CosineEnvironment(N, albedo * kD, oracleRayCount);
             float lod = rough * 4.0;

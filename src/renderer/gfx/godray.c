@@ -97,6 +97,13 @@ gX_I0 gX_RendererGFX_Godray_Draw(gX_RendererGFX *gfx)
         //opencode: bind textures after BeginShader to avoid batch flush issues
         gX_Shader_SetValue_TextureSlot(genS, gfx->godray.genSceneColorLoc,
             gfx->bloom.hdrScene.wrapper.rt.texture, gX_GFX_TEXUNIT_SCENE);
+        //opencode: the generation pass uses scene depth to exclude foreground
+        //   PBR speculars from the ray source while keeping geometry occlusion.
+        gX_Shader_SetValue_TextureSlot(genS, gfx->godray.genSceneDepthLoc,
+            gfx->bloom.hdrScene.wrapper.rt.depth, gX_GFX_TEXUNIT_DEPTH);
+        gX_RHI_Shader_Use((gX_U32)genS.id);
+        gX_RHI_UniformInt(gfx->godray.genHasSceneDepthLoc,
+            gfx->bloom.hdrScene.wrapper.rt.depth.id > 0 ? 1 : 0);
         //opencode: upload sun screen position via direct GL (bypasses rlgl SetValue
         //   which has been observed to produce black output for float/int uniforms
         //   — see the R-2 hard-bug note). Direct glUniform is always correct.
@@ -154,6 +161,7 @@ gX_I0 gX_RendererGFX_Godray_CacheLocs(gX_RendererGFX *gfx)
     gX_Shader genS = gfx->godray.genShader.shader;
     gfx->godray.genSceneColorLoc  = gX_Shader_GetLocation(genS, "sceneColor");
     gfx->godray.genSceneDepthLoc  = gX_Shader_GetLocation(genS, "sceneDepth");
+    gfx->godray.genHasSceneDepthLoc= gX_Shader_GetLocation(genS, "hasSceneDepth");
     gfx->godray.genSunScreenPosLoc= gX_Shader_GetLocation(genS, "sunScreenPos");
     gfx->godray.genDensityLoc     = gX_Shader_GetLocation(genS, "rayDensity");
     gfx->godray.genDecayLoc       = gX_Shader_GetLocation(genS, "rayDecay");

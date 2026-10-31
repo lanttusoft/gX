@@ -211,6 +211,9 @@ gX_I0 gX_RendererGFX_Load_SetDefaults(gX_RendererGFX *gfx)
     //opencode: shader tuning constant defaults
     gfx->state.shadowBiasMax = gX_GFX_SHADOW_BIAS_MAX;
     gfx->state.shadowBiasMin = gX_GFX_SHADOW_BIAS_MIN;
+    gfx->state.shadowDiffuseBias = gX_GFX_SHADOW_DIFFUSE_BIAS_DEFAULT;
+    gfx->state.shadowSpecularBias = gX_GFX_SHADOW_SPECULAR_BIAS_DEFAULT;
+    gfx->state.pbrShadowAmbient = gX_GFX_PBR_SHADOW_AMBIENT_DEFAULT;
     gfx->state.parallaxMinLayers = gX_GFX_PARALLAX_MIN_LAYERS;
     gfx->state.parallaxMaxLayers = gX_GFX_PARALLAX_MAX_LAYERS;
     gfx->state.parallaxOffset = gX_GFX_PARALLAX_OFFSET;
@@ -796,6 +799,7 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     gX_RendererGFX_Shader_Init(&gfx->ibl.irradianceShader, 0, GX_PATH("shader", "gfx_ibl_irradiance.frag"));
     gX_RendererGFX_Shader_Init(&gfx->ibl.prefilterShader, 0, GX_PATH("shader", "gfx_ibl_prefilter.frag"));
     gfx->ibl.ready = false;
+    gfx->ibl.skyCubeReady = false;
 
     //opencode: bloom shaders and render textures
     gX_RendererGFX_Shader_Init(&gfx->bloom.extractShader, 0, GX_PATH("shader", "gfx_bloom_extract.frag"));
@@ -1002,6 +1006,9 @@ gX_I0 gX_RendererGFX_Unload_FreeRTs(gX_RendererGFX *gfx)
     if (gfx->ibl.irradianceMap.id > 0) gX_RHI_Tex_Delete(gfx->ibl.irradianceMap.id);
     if (gfx->ibl.prefilterMap.id > 0) gX_RHI_Tex_Delete(gfx->ibl.prefilterMap.id);
     if (gfx->ibl.dummyCubemap.id > 0) gX_RHI_Tex_Delete(gfx->ibl.dummyCubemap.id);
+    if (gfx->ibl.skyCube.id > 0) gX_RHI_Tex_Delete(gfx->ibl.skyCube.id);
+    gfx->ibl.skyCube = (gX_Texture){0};
+    gfx->ibl.skyCubeReady = false;
     gfx->ibl.ready = false;
 
     if (gfx->decalQuad.meshCount > 0) gX_Model_Unload(gfx->decalQuad);

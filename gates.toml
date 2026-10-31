@@ -702,6 +702,14 @@ group = "render"
 cache = "content"
 description = "camera-render audit gate."
 
+[gate.pbr]
+script = "pbr_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "pbr audit gate."
+
 [gate.bijection]
 script = "gfx_bijection_check.py"
 args = []
