@@ -283,6 +283,12 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
     if (getenv("GX_T_FOGPOINTS")) gfx->fogVolume.enablePointLights = (gX_I1)atoi(getenv("GX_T_FOGPOINTS"));
     //opencode: deterministic sun-radiance overrides for fog color/intensity probes.
     { const char* sb = getenv("GX_T_SUNBRIGHTNESS"); if (sb) gfx->sun.brightness = (gX_F32)atof(sb); }
+    //opencode: deterministic sun direction for sky/lighting probes (x,y,z).
+    {
+        const char *sd = getenv("GX_T_SUNDIR");
+        if (sd) sscanf(sd, "%f,%f,%f", &gfx->sun.dir.x, &gfx->sun.dir.y,
+            &gfx->sun.dir.z);
+    }
     {
         const char* sc = getenv("GX_T_SUNCOLOR");
         gX_I32 r, g, b;
@@ -311,6 +317,20 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
     {
         const gX_I8 *sd = getenv("GX_SKY_DENSITY");
         if (sd) gfx->sky.density = (gX_F32)atof(sd);
+    }
+    //opencode: deterministic sky-state overrides for the equirect sky probe.
+    {
+        const gX_I8 *si = getenv("GX_SKY_SUNINTENSITY");
+        const gX_I8 *st = getenv("GX_SKY_STARS");
+        const gX_I8 *tu = getenv("GX_SKY_TURBIDITY");
+        const gX_I8 *ho = getenv("GX_SKY_HORIZON");
+        if (si) gfx->sky.sunIntensity = (gX_F32)atof(si);
+        if (st) {
+            gfx->sky.starDensity = (gX_F32)atof(st);
+            gfx->sky.starBrightness = (gX_F32)atof(st);
+        }
+        if (tu) gfx->sky.turbidity = (gX_F32)atof(tu);
+        if (ho) gfx->sky.horizon = (gX_F32)atof(ho);
     }
     //opencode: silent-hill sky-off must live here, not scene setup:
     //   the defaults block above re-enables the procedural sky on the

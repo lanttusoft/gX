@@ -28,6 +28,15 @@ The control uses the existing showcase-y2k path, not a second sky renderer.
 It is not compared for sky-state content; it proves the control frame is
 finite and non-empty.
 
+## Azimuth response
+
+`scripts/sky_azimuth_check.py` uses the camera-independent equirectangular sky
+LUT (128×64) with a deterministic sun direction and no sun disk/stars. It
+checks that the sun-side column is the brightest, the anti-solar column carries
+the expected Rayleigh/Belt-of-Venus lobe at 1.1–1.9× the 90-degree side sky,
+and the 90-degree columns are the darkest. A sign flip or an over-strong
+anti-solar glow fails. Run `make sky-azimuth-check`.
+
 ## Commands
 
 Agent/local closure (synthetic tests only):

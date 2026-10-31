@@ -414,6 +414,14 @@ group = "render"
 cache = "content"
 description = "SSGI camera-cut temporal lag gate."
 
+[gate.sky-azimuth]
+script = "sky_azimuth_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "Equirect sky azimuth response gate."
+
 [gate.material-maps]
 script = "material_maps_check.py"
 args = []
