@@ -2523,6 +2523,11 @@ static gX_I0 gfx_preset_panel(gX_RendererGFX *gfx) {
         ImGui::OpenPopup("Confirm GFX preset load");
     }
     ImGui::SameLine();
+    if (ImGui::Button("Empty")) {
+        snprintf(s_presetPath, sizeof(s_presetPath), "%s", "resources/tools/empty.json");
+        ImGui::OpenPopup("Confirm GFX preset load");
+    }
+    ImGui::SameLine();
     if (gX_Tools_ImGui_GradientButton("Save preset", ImVec2(0.0f, 0.0f),
             IM_COL32(178, 120, 54, 255), IM_COL32(96, 58, 88, 255),
             IM_COL32(255, 244, 224, 255)))

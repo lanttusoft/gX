@@ -50,6 +50,7 @@ all:
 	bash build.sh $(BUILD_TYPE)
 
 check: all
+	python3 -m unittest discover -s scripts -p test_empty_scene.py
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	@if [ ! -d ../proofs ]; then \
 	  echo "gX public source beta: full 'make check' needs the proof tree (../proofs)."; \
@@ -186,6 +187,7 @@ hw-report-check:
 #opencode: fast inner-loop counterpart to check; preserves the full check
 #   target and its Release-size, resource/copyright, and Lean admission gates.
 check-fast: all
+	python3 -m unittest discover -s scripts -p test_empty_scene.py
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	@echo "== [gX fast] unit tests =="
 	./build/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/gX_build --test-only && exit 1)
@@ -1075,6 +1077,11 @@ color-code-check: all
 color-code-palette-check:
 	@echo "== [gX review] color-code palette density =="
 	python3 scripts/color_code_palette_experiment.py --check
+
+#opencode: shipped empty scene structure (no models/lights/cameras).
+.PHONY: empty-scene-check
+empty-scene-check:
+	python3 -m unittest discover -s scripts -p test_empty_scene.py
 
 #opencode: feature scoreboard (completeness/correctness/hardness).
 #   Full run includes median timing plus the matrix + bloom audit + reflect

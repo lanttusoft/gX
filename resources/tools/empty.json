@@ -1,0 +1,219 @@
+{
+ "name": "Empty scene",
+ "description": "No models, lights or cameras; a clean sky and camera for diagnostics.",
+ "created_date": "2026-09-22",
+ "created_time": "17:57:11",
+ "state": {
+  "SHOW_DEPTH_VISUALIZER": false,
+  "depthVisSource": 0,
+  "ENABLE_LIGHTING_AMBIENT": true,
+  "ENABLE_LIGHTING_DIFFUSE": true,
+  "ENABLE_LIGHTING_SPECULAR": true,
+  "ENABLE_MAP_ALBEDO": true,
+  "ENABLE_MAP_METALNESS": true,
+  "ENABLE_MAP_NORMAL": true,
+  "ENABLE_MAP_PARALLAX": true,
+  "ENABLE_DETAIL": false,
+  "ENABLE_FLAT": false,
+  "ENABLE_GOURAUD": false,
+  "ENABLE_PHONG": true,
+  "ENABLE_FOG": false,
+  "ENABLE_SHADOWS": false,
+  "ENABLE_REFLECTIONS": false,
+  "ENABLE_SKYBOX": false,
+  "ENABLE_PROCEDURAL_SKY": true,
+  "ENABLE_POINT_SHADOWS": false,
+  "ENABLE_COOKIES": false,
+  "ENABLE_BLOOM": false,
+  "ENABLE_SSR": false,
+  "ENABLE_SSR_AUXVIEW": false,
+  "ENABLE_MOTION_BLUR": false,
+  "ENABLE_DOF": false,
+  "ENABLE_TAA": false,
+  "ENABLE_SSAO": false,
+  "ENABLE_FXAA": false,
+  "ENABLE_CLUSTERED": true,
+  "ENABLE_AGX_TONEMAP": true,
+  "ENABLE_RIM": false,
+  "rimIntensity": 0.5,
+  "rimPower": 2.0,
+  "rimColor": [
+   255,
+   255,
+   255,
+   255
+  ],
+  "ENABLE_ENV_AMBIENT": false,
+  "envAmbientFactor": 0.30000001192092896,
+  "textureFilter": 1,
+  "shaderQuality": 0,
+  "mipmapBias": 0.0,
+  "msaaLevel": 0,
+  "qualityPreset": 0,
+  "ENABLE_PARTICLES": false,
+  "ENABLE_SNOWFALL": false,
+  "ENABLE_RAIN": false,
+  "ENABLE_FOGSPRITE": false,
+  "ENABLE_SPLAT": false,
+  "ENABLE_GODRAYS": false,
+  "ENABLE_VOLUME_FOG": false,
+  "ENABLE_LENS_FLARE": false,
+  "ENABLE_OCCLUSION_CULLING": false,
+  "ENABLE_BINDLESS": false,
+  "ENABLE_ACES_TONEMAP": true,
+  "ENABLE_GAMMA_CORRECTION": true,
+  "ENABLE_STENCIL": false,
+  "ENABLE_STENCIL_OUTLINE": false,
+  "ENABLE_FRUSTUM_CULLING": false,
+  "SHOW_POSITION": false,
+  "SHOW_TEXCOORD": false,
+  "SHOW_TEXCOORD2": false,
+  "SHOW_NORMAL": false,
+  "ENABLE_WATER": false,
+  "ENABLE_DECALS": false
+ },
+ "ssao": {
+  "radius": 0.5,
+  "bias": 0.02500000037252903,
+  "strength": 2.5,
+  "kernelSize": 32,
+  "useGTAO": true,
+  "useSSGI": true
+ },
+ "csm": {
+  "cascadeCount": 2,
+  "distance0": 10.0,
+  "distance1": 30.0,
+  "distance2": 60.0,
+  "distance3": 100.0
+ },
+ "ssr": {
+  "maxSteps": 64,
+  "stepSize": 0.5,
+  "maxDistance": 100.0,
+  "depthBias": 0.25,
+  "opacity": 0.800000011920929,
+  "roughness": 0.20000000298023224,
+  "maxLod": 2.5
+ },
+ "reflection": {
+  "bias": 0.5
+ },
+ "godray": {
+  "density": 64,
+  "decay": 0.8999999761581421,
+  "weight": 0.41999998688697815,
+  "exposure": 1.0
+ },
+ "fogVolume": {
+  "density": 0.003000000026077032,
+  "heightFalloff": 1.2000000476837158,
+  "scattering": 1.0,
+  "hgAsymmetry": 0.8500000238418579
+ },
+ "lensflare": {
+  "intensity": 1.0,
+  "dispersal": 1.0
+ },
+ "bloom": {
+  "threshold": 0.8500000238418579,
+  "intensity": 6.0,
+  "blurAmount": 1.0,
+  "exposure": 1.0,
+  "vignette": 0.5,
+  "saturation": 1.0,
+  "contrast": 1.0,
+  "autoExposure": true
+ },
+ "fog": {
+  "near": 5.0,
+  "far": 20.0,
+  "color": [
+   255,
+   255,
+   255,
+   255
+  ],
+  "heightDensity": 0.0,
+  "heightBase": 0.0
+ },
+ "detail": {
+  "uvScale": 8.0,
+  "strength": 0.0,
+  "distFade": 20.0
+ },
+ "motionBlur": {
+  "strength": 2.0,
+  "maxSamples": 16
+ },
+ "dof": {
+  "focalDistance": 5.0,
+  "focalRange": 2.0,
+  "maxRadius": 8.0
+ },
+ "taa": {
+  "blendFactor": 0.8500000238418579
+ },
+ "sky": {
+  "strength": 0.15000000596046448,
+  "color": [
+   200,
+   200,
+   255,
+   255
+  ],
+  "skyboxModelPath": "resources/model/primitive/cube.glb",
+  "altitude": 1.0,
+  "turbidity": 2.0,
+  "density": 2.200000047683716,
+  "hue": 0.0,
+  "horizon": 0.800000011920929,
+  "sunIntensity": 0.5,
+  "contrast": 1.5,
+  "starDensity": 1.0,
+  "starBrightness": 1.0,
+  "starTwinkle": 1.0
+ },
+ "sun": {
+  "dir": [
+   1.0,
+   -1.0,
+   1.0
+  ],
+  "color": [
+   255,
+   255,
+   255,
+   255
+  ],
+  "brightness": 1.0,
+  "castShadows": false
+ },
+ "models": [],
+ "lights": [],
+ "textures": [],
+ "cameras": [],
+ "camera": {
+  "position": [
+   4.0,
+   3.0,
+   6.0
+  ],
+  "target": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "up": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "fovy": 45.0,
+  "projection": 0
+ },
+ "editor": {
+  "usePP": false,
+  "useCompositor": false
+ }
+}
