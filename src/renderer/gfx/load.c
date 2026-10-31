@@ -683,7 +683,7 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
 
     //opencode: motion blur
     gfx->motionBlur.enable = true;
-    gfx->motionBlur.strength = 1.0f;
+    gfx->motionBlur.strength = 2.0f;
     gfx->motionBlur.maxSamples = 16;
     gfx->motionBlurPrevVP = gX_Matrix_Identity();
     gfx->taaPrevVP = gX_Matrix_Identity();   //opencode: TAA snapshot (own copy, see gfx.h)

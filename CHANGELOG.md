@@ -13,6 +13,9 @@ SemVer.
   visibility, tint direction and scene-fog matching.
 
 ### Changed
+- **Motion blur default**: strength raised from 1.0 to 2.0 across the engine
+  default and shipped presets; the feature-matrix motion-blur row now requires
+  at least 2% changed pixels (measured 3.65%, up from 0.84%).
 - **Fog-volume defaults**: the default density is now `0.003` (was `0.0005`,
   effectively invisible); the shipped `gfx_editor.json` preset follows.
 - **SSR authoring defaults**: the default/editor step profile is now 64 steps

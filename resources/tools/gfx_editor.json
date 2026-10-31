@@ -141,7 +141,7 @@
   "distFade": 20.0
  },
  "motionBlur": {
-  "strength": 1.0,
+  "strength": 2.0,
   "maxSamples": 16
  },
  "dof": {

@@ -122,7 +122,7 @@ ROWS = [
     # static scenes sit inside the default focal slab: provoke at focal 1.0
     ("dof", "--showcase", {"GX_T_DOF": "1", "GX_T_DOFFOCAL": "1.0"}, 0.005, 0.80, "provoked focal"),
     ("motionblur", "--showcase", {"GX_T_MOTIONBLUR": "1", "GX_CAM_SPIN": "3"},
-     0.0001, 0.80, "spun camera"),
+     0.02, 0.80, "spun camera; stronger default"),
     # envambient: upload verified live (flag=1 factor=0.3 loc=53); effect is
     # subtle in dark scenes (env~0.5 gray) — threshold documents, not proves
     ("envambient", "--showcase", {"GX_T_ENVAMBIENT": "1"}, 0.0, 0.95, "subtle; upload-verified"),
