@@ -1070,6 +1070,12 @@ color-code-check: all
 	@echo "== [gX CI] color-code presentation =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/color_code_present_check.py
 
+#opencode: palette-density study; advisory, not an admission gate.
+.PHONY: color-code-palette-check
+color-code-palette-check:
+	@echo "== [gX review] color-code palette density =="
+	python3 scripts/color_code_palette_experiment.py --check
+
 #opencode: feature scoreboard (completeness/correctness/hardness).
 #   Full run includes median timing plus the matrix + bloom audit + reflect
 #   suite (~30 min); use

@@ -114,7 +114,9 @@ replacement for QR, a general file-transfer protocol or a security boundary.
 
 ## Open questions
 
-- Palette size vs. cell density on an N64-era look (4/8/16 colors?).
+- Palette size vs. cell density on an N64-era look: the 4/8/16-colour study is
+  in [color_code_palette.md](color_code_palette.md); an opt-in 8-colour,
+  3-bit-cell mode remains to be implemented.
 - Single-frame practical payload budget at 1080p/4K and typical phone cameras.
 - Whether the format belongs in the GFX editor, a standalone tool, or a module.
 - Interaction with the screenshot/capture path and the copyright/provenance

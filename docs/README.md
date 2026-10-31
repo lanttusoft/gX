@@ -58,6 +58,8 @@ Start here:
 ## GUI, tools and editors
 
 - [Offline bug reports](bug_reporting.md)
+- [Color-code palette-density study](color_code_palette.md) — 4/8/16-colour
+  capacity and noise-margin comparison.
 - [Screen color-code format](color_code_format.md) — bounded 16-colour
   encoder/decoder prototype (two-row per-palette calibration, metadata, SECDED
   plus interleaved XOR-parity erasure recovery, CRC32, RLE, automatic
