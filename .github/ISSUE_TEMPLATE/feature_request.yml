@@ -55,7 +55,7 @@ body:
     id: version
     attributes:
       label: gX version / commit
-      placeholder: v0.26.3
+      placeholder: v0.27.0
   - type: checkboxes
     id: checks
     attributes:

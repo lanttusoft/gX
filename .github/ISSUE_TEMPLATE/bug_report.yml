@@ -20,7 +20,7 @@ body:
     attributes:
       label: gX version / commit
       description: Release tag or exact commit where the issue reproduces.
-      placeholder: v0.26.3 or 87a0817
+      placeholder: v0.27.0 or 4aa07b9
     validations:
       required: true
   - type: dropdown
