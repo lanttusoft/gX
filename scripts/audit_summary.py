@@ -44,6 +44,7 @@ GATES = [
     ("interlace", "interlace_check.py", [], "quick"),
     ("fog-light", "fog_light_check.py", [], "quick"),
     ("fog-volume", "fog_volume_check.py", [], "full"),
+    ("uniform-trace", "uniform_trace_check.py", [], "full"),
     ("horizon", "gfx_horizon_check.py", [], "quick"),
     ("matrix", "gfx_feature_matrix.py", [], "full"),
     ("gui-matrix", "gui_audit.py", [], "full"),

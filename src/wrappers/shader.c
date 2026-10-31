@@ -33,8 +33,10 @@
 //lanttu: original wrapper for raylib shader functions
 #include "wrappers_header.h"
 #include "shader.h"
+#include "../../rhi/rhi_gl.h"
 #include "../common/error.h"
 #include "text.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -753,10 +755,103 @@ gX_I32 gX_Shader_GetLocationAttrib(gX_Shader shader, const gX_I8 *attribName) {
     return loc;
 }
 
+
+//opencode: opt-in uniform-type attribution. A wrong-type upload otherwise
+//   surfaces only as GL_INVALID_OPERATION with no shader/uniform name.
+typedef struct gX_UniformTraceEntry {
+    gX_U32 shader;
+    gX_I32 location;
+    gX_I32 size;
+    gX_U32 type;
+    gX_I8  name[96];
+    gX_I1  valid;
+} gX_UniformTraceEntry;
+
+static gX_UniformTraceEntry s_uniformTrace[256];
+static gX_I32 s_uniformTraceUsed = 0;
+static gX_I32 s_uniformTraceEnabled = -1;
+
+static gX_U32 gX_UniformTrace_Expected(gX_I32 format)
+{
+    switch (format) {
+        case 0: return GL_FLOAT;
+        case 1: return GL_FLOAT_VEC2;
+        case 2: return GL_FLOAT_VEC3;
+        case 3: return GL_FLOAT_VEC4;
+        case 4: return GL_INT;
+        case 5: return GL_INT_VEC2;
+        case 6: return GL_INT_VEC3;
+        case 7: return GL_INT_VEC4;
+        case 8: return GL_SAMPLER_2D;
+        default: return 0;
+    }
+}
+
+static gX_I1 gX_UniformTrace_Compatible(gX_U32 shaderType, gX_I32 format)
+{
+    if (shaderType == gX_UniformTrace_Expected(format)) return 1;
+    if (format == 4
+        && (shaderType == GL_BOOL || shaderType == GL_SAMPLER_2D
+            || shaderType == GL_SAMPLER_CUBE || shaderType == GL_SAMPLER_2D_ARRAY))
+        return 1;
+    return 0;
+}
+
+static gX_UniformTraceEntry *gX_UniformTrace_Entry(gX_U32 shader, gX_I32 location)
+{
+    for (gX_I32 index = 0; index < s_uniformTraceUsed; index++) {
+        gX_UniformTraceEntry *entry = &s_uniformTrace[index];
+        if (entry->shader == shader && location >= entry->location
+            && location < entry->location + entry->size)
+            return entry;
+    }
+    gX_I32 active = 0;
+    glGetProgramiv(shader, GL_ACTIVE_UNIFORMS, &active);
+    for (gX_I32 index = 0; index < active; index++) {
+        gX_I8 name[96] = {0};
+        gX_I32 size = 0;
+        gX_U32 type = 0;
+        glGetActiveUniform(shader, (gX_U32)index, (gX_I32)sizeof(name),
+            NULL, &size, &type, name);
+        gX_I32 base = glGetUniformLocation(shader, name);
+        if (base < 0 || location < base || location >= base + size) continue;
+        if (s_uniformTraceUsed >= (gX_I32)(sizeof(s_uniformTrace)
+                / sizeof(s_uniformTrace[0])))
+            return NULL;
+        gX_UniformTraceEntry *entry = &s_uniformTrace[s_uniformTraceUsed++];
+        entry->shader = shader;
+        entry->location = base;
+        entry->size = size;
+        entry->type = type;
+        entry->valid = 1;
+        snprintf(entry->name, sizeof(entry->name), "%s", name);
+        return entry;
+    }
+    return NULL;
+}
+
+static gX_I0 gX_UniformTrace_Check(gX_Shader shader, gX_I32 location, gX_I32 format)
+{
+    if (s_uniformTraceEnabled < 0) {
+        s_uniformTraceEnabled = getenv("GX_UNIFORM_TRACE") != NULL;
+        if (s_uniformTraceEnabled)
+            gX_TraceLog(gX_LOG_NOTICE, "UNIFORM_TRACE: enabled");
+    }
+    if (!s_uniformTraceEnabled) return;
+    gX_UniformTraceEntry *entry = gX_UniformTrace_Entry(shader.id, location);
+    if (!entry) return;
+    if (!gX_UniformTrace_Compatible(entry->type, format))
+        gX_TraceLog(gX_LOG_ERROR,
+            "UNIFORM_MISMATCH shader=%u name=%s loc=%d expected=0x%x upload=0x%x",
+            (unsigned)shader.id, entry->name, (int)location,
+            (unsigned)entry->type, (unsigned)gX_UniformTrace_Expected(format));
+}
+
 gX_I0 gX_Shader_SetValue(gX_Shader shader, gX_I32 location, gX_I0 *ptr, gX_I32 format) {
     //opencode: deferred shader wrappers expose locations before their GPU
     //   program is ready; never upload uniforms through program 0.
     if (location < 0 || shader.id == 0) return;
+    gX_UniformTrace_Check(shader, location, format);
     if (gX_GL_IsRawProgram(shader.id)) {
         gX_RHI_Shader_Use(shader.id);
         switch (format) {
