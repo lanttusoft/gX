@@ -166,6 +166,32 @@ void main() {
                 failures.append('Overshoot negative fixture failed to expose screen-edge sampling')
         controls(program, 64)
         GL.glUniform2f(GL.glGetUniformLocation(program, 'sunScreenPos'), .7, .8)
+        #ai: depth gate — foreground geometry must suppress both source and
+        #   ray taps; the source must stay byte-equivalent when depth is sky.
+        depth = GL.glGenTextures(1)
+        GL.glActiveTexture(GL.GL_TEXTURE1)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, depth)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE)
+        GL.glUseProgram(program)
+        GL.glUniform1i(GL.glGetUniformLocation(program, 'sceneDepth'), 1)
+        GL.glUniform1i(GL.glGetUniformLocation(program, 'hasSceneDepth'), 1)
+        depth_sky_pixel = np.array([1.0], dtype=np.float32)
+        GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_R32F, 1, 1, 0,
+            GL.GL_RED, GL.GL_FLOAT, depth_sky_pixel)
+        depth_sky = draw('depth_sky')
+        if float(np.max(np.abs(depth_sky))) < 1e-5:
+            failures.append('Depth sky mask suppressed the god rays')
+        depth_fg_pixel = np.array([0.5], dtype=np.float32)
+        GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, 0, 0, 1, 1,
+            GL.GL_RED, GL.GL_FLOAT, depth_fg_pixel)
+        depth_fg = draw('depth_foreground')
+        if float(np.max(np.abs(depth_fg))) > 1e-6:
+            failures.append('Foreground depth leaked god rays')
+        GL.glUniform1i(GL.glGetUniformLocation(program, 'hasSceneDepth'), 0)
+        GL.glDeleteTextures([depth])
         if GL.glGetError() != GL.GL_NO_ERROR:
             failures.append('GL error')
         GL.glDeleteTextures([source, target])

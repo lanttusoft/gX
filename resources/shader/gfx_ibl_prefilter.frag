@@ -42,7 +42,7 @@ vec3 sampleGgxHalf(vec2 xi, vec3 normal, float roughness) {
 
 void main() {
     vec2 localFace = fragTexCoord * 2.0 - 1.0;
-    vec3 normal = normalize(mat3(captureView)
+    vec3 normal = normalize(transpose(mat3(captureView))
         * normalize(vec3(localFace, 1.0)));
 
     vec3 sum = vec3(0.0);

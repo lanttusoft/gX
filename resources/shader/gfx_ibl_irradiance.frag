@@ -14,7 +14,7 @@ out vec4 fragColor;
 
 void main() {
     vec2 localFace = fragTexCoord * 2.0 - 1.0;
-    vec3 normal = normalize(mat3(captureView)
+    vec3 normal = normalize(transpose(mat3(captureView))
         * normalize(vec3(localFace, 1.0)));
 
     vec3 basisUp = vec3(0.0, 1.0, 0.0);

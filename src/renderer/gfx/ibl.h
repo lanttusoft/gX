@@ -40,12 +40,20 @@ typedef struct gX_RendererGFX_IBL {
     gX_Texture  prefilterMap;
     gX_Texture  brdfLut;
     gX_Texture  dummyCubemap;
+    //opencode: sky-only capture of the procedural sky, used as the IBL source
+    //   instead of the static image skybox (which is often much darker than
+    //   the visible procedural sky and made PBR metals read as black).
+    gX_Texture  skyCube;
     gX_RendererGFX_Shader brdfShader;
     gX_RendererGFX_Shader irradianceShader;
     gX_RendererGFX_Shader prefilterShader;
     gX_I1       ready;
+    gX_I1       skyCubeReady;
     gX_I1       failed; //opencode: set on FBO failure — stops per-frame retry storm
 } gX_RendererGFX_IBL;
+
+struct gX_RendererGFX;
+gX_I0 gX_RendererGFX_IBL_PrepareSkyCube(struct gX_RendererGFX *gfx);
 
 #ifdef __cplusplus
 }

@@ -720,6 +720,9 @@ static gX_SchemaField gfx_state_fields[] = {
     //opencode: authored shader tuning values, separate from diagnostic hooks.
     GX_SCHEMA_F32("shadowBiasMax",             gX_RendererGFX_State, shadowBiasMax),
     GX_SCHEMA_F32("shadowBiasMin",             gX_RendererGFX_State, shadowBiasMin),
+    GX_SCHEMA_F32("shadowDiffuseBias",        gX_RendererGFX_State, shadowDiffuseBias),
+    GX_SCHEMA_F32("shadowSpecularBias",       gX_RendererGFX_State, shadowSpecularBias),
+    GX_SCHEMA_F32("pbrShadowAmbient",         gX_RendererGFX_State, pbrShadowAmbient),
     GX_SCHEMA_F32("parallaxMinLayers",          gX_RendererGFX_State, parallaxMinLayers),
     GX_SCHEMA_F32("parallaxMaxLayers",          gX_RendererGFX_State, parallaxMaxLayers),
     GX_SCHEMA_F32("parallaxOffset",             gX_RendererGFX_State, parallaxOffset),

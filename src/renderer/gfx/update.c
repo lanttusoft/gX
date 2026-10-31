@@ -178,6 +178,23 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         }
     }
 
+    //opencode: PBR requires the QUALITY >= 1 shader path (IBL/Fresnel/rim).
+    //   LOW silently compiled PBR direct-only (black metals, porcelain
+    //   dielectrics); raise instead of leaving a model in that state. The
+    //   quality-change detector below reloads the shaders.
+    if (gfx->state.shaderQuality < 1) {
+        gX_I1 pbrWanted = 0;
+        GX_HEAP_FOREACH(gfx->models, gX_RendererGFX_Model, pbrModel) {
+            if (pbrModel->params.usePBR) pbrWanted = 1;
+        }
+        if (pbrWanted) {
+            gfx->state.qualityPreset = 1;
+            gfx->state.shaderQuality = 1;
+            gX_TraceLog_GFX(gX_LOG_NOTICE,
+                "PBR model requires MEDIUM quality — raised qualityPreset/shaderQuality to 1");
+        }
+    }
+
     //opencode: detect shader quality change — cascade to runtime feature toggles,
     //   then trigger reload on all GFX shaders so the compile-time QUALITY gates
     //   (standard.frag #if QUALITY >= N) are regenerated with the new level.
@@ -1056,9 +1073,16 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
     //   maps is pure dead work. On software rasterizers (lavapipe) the
     //   irradiance convolution alone is ~97M cubemap samples ≈ 30-90s of
     //   single-thread rasterization before the first frame presents.
-    if (gfx->state.ENABLE_ENV_AMBIENT && !gfx->ibl.ready &&
-        gfx->ibl.brdfShader.loaded && gfx->ibl.irradianceShader.loaded &&
-        gfx->ibl.prefilterShader.loaded && gfx->reflection.cubeReady)
+    gX_I1 iblSkyCube = (gfx->state.ENABLE_PROCEDURAL_SKY
+        && gfx->ibl.skyCubeReady && gfx->ibl.skyCube.id > 0) ? 1 : 0;
+    //opencode: the sky-only capture happens in Draw_Reflections, after this
+    //   update. Wait one frame instead of locking the static image skybox in.
+    gX_I1 iblSourceReady = gfx->state.ENABLE_PROCEDURAL_SKY
+        ? iblSkyCube : gfx->reflection.cubeReady;
+    if (gfx->state.ENABLE_ENV_AMBIENT && !gfx->ibl.ready
+        && maindata.frameCount >= 4
+        && gfx->ibl.brdfShader.loaded && gfx->ibl.irradianceShader.loaded &&
+        gfx->ibl.prefilterShader.loaded && iblSourceReady)
     {
         //opencode: save viewport + active texture unit before IBL generation
         gX_I32 savedVp[4], savedTexUnit, savedProg;
@@ -1108,7 +1132,10 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         }
 
         // ---- 2. Irradiance cubemap (32x32 RGB16F) ----
-        gX_U32 skyboxId = gfx->sky.skybox.wrapper.texture.id;
+        //opencode: prefer the sky-only procedural capture; the image skybox is
+        //   a separate, usually darker art asset and must not light PBR.
+        gX_U32 skyboxId = iblSkyCube
+            ? gfx->ibl.skyCube.id : gfx->sky.skybox.wrapper.texture.id;
         gX_Shader irrS = gfx->ibl.irradianceShader.shader;
         if (skyboxId > 0 && gfx->ibl.irradianceMap.id == 0 && irrS.id > 0)
         {

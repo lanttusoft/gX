@@ -220,6 +220,11 @@ extern "C" {
 #define gX_GFX_BLEND_OPACITY_DEFAULT  0.5f
 #define gX_GFX_ROUGHNESS_DEFAULT      0.5f
 #define gX_GFX_AO_DEFAULT             1.0f
+//opencode: PBR shadow readability — direct-light bias plus the share of
+//   diffuse IBL that a cast sun shadow removes (ambient is still visible).
+#define gX_GFX_SHADOW_DIFFUSE_BIAS_DEFAULT  0.85f
+#define gX_GFX_SHADOW_SPECULAR_BIAS_DEFAULT 1.0f
+#define gX_GFX_PBR_SHADOW_AMBIENT_DEFAULT   0.35f
 #define gX_GFX_EMISSIVE_FACTOR_DEF    0.0f
 #define gX_GFX_REFRACTIVE_INDEX_DEF   1.0f
 #define gX_GFX_TEXT_FONT_SIZE_DEF    24.0f

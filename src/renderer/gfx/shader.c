@@ -235,6 +235,7 @@ static gX_I32 gX_RendererGFX_Shader_Load_Locations(gX_RendererGFX_Shader *shader
     GFX_SHADER_GETLOC(shadowMode)
     GFX_SHADER_GETLOC(shadowDiffuseBias)
     GFX_SHADER_GETLOC(shadowSpecularBias)
+    GFX_SHADER_GETLOC(pbrShadowAmbient)
     
     //opencode: point light shadows (looked up directly since they use sampler arrays)
     shader->locations.pointShadowMapsLoc = gX_Shader_GetLocation(shader->shader, "pointShadowMaps");
@@ -336,6 +337,11 @@ static gX_I32 gX_RendererGFX_Shader_Load_Locations(gX_RendererGFX_Shader *shader
     shader->locations.hasFogLutLoc = gX_Shader_GetLocation(shader->shader, "hasFogLut");
     //opencode: brdf LUT — shader name is "bdrfMap", store to brdfLutLoc
     shader->locations.brdfLutLoc = gX_Shader_GetLocation(shader->shader, "bdrfMap");
+    //opencode: IBL cubemaps were never cached — the struct default 0 routed
+    //   the cube binds to uniform 0 instead of the irradiance/prefilter
+    //   samplers, leaving PBR ambient black (or sampling the albedo unit).
+    shader->locations.irradianceMapLoc = gX_Shader_GetLocation(shader->shader, "irradianceMap");
+    shader->locations.prefilterMapLoc = gX_Shader_GetLocation(shader->shader, "prefilterMap");
 
     //opencode: reflection bias, gloss map, flat shading
     GFX_SHADER_GETLOC(reflectionBias)
@@ -813,6 +819,12 @@ static gX_I0 gX_RendererGFX_Shader_SetValues(gX_RendererGFX_Shader *shader, gX_R
             gX_Shader_SetValue_Float(shader->shader, l->shadowBiasMaxLoc, gfx->state.shadowBiasMax);
         if (l->shadowBiasMinLoc >= 0)
             gX_Shader_SetValue_Float(shader->shader, l->shadowBiasMinLoc, gfx->state.shadowBiasMin);
+        if (l->shadowDiffuseBiasLoc >= 0)
+            gX_Shader_SetValue_Float(shader->shader, l->shadowDiffuseBiasLoc, gfx->state.shadowDiffuseBias);
+        if (l->shadowSpecularBiasLoc >= 0)
+            gX_Shader_SetValue_Float(shader->shader, l->shadowSpecularBiasLoc, gfx->state.shadowSpecularBias);
+        if (l->pbrShadowAmbientLoc >= 0)
+            gX_Shader_SetValue_Float(shader->shader, l->pbrShadowAmbientLoc, gfx->state.pbrShadowAmbient);
         if (l->parallaxMinLayersLoc >= 0)
             gX_Shader_SetValue_Float(shader->shader, l->parallaxMinLayersLoc, gfx->state.parallaxMinLayers);
         if (l->parallaxMaxLayersLoc >= 0)

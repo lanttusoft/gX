@@ -123,6 +123,9 @@ typedef struct gX_RendererGFX_State {
     //opencode: configurable shader tuning constants (category 3)
     gX_F32  shadowBiasMax;
     gX_F32  shadowBiasMin;
+    gX_F32  shadowDiffuseBias;
+    gX_F32  shadowSpecularBias;
+    gX_F32  pbrShadowAmbient;
     gX_F32  parallaxMinLayers;
     gX_F32  parallaxMaxLayers;
     gX_F32  parallaxOffset;

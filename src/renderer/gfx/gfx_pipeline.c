@@ -1475,6 +1475,15 @@ static gX_I0 Pass_Run_RtView(gX_RendererGFX *gfx, gX_RenderTexture *outputRT)
         && gfx->reflection.cubeReady
         && gfx->reflection.dynamicCubemap.id != 0) {
         srcTex = gfx->reflection.dynamicCubemap; haveTex = 1;
+    } else if (!strcmp((const char *)name, "skyCube")
+        && gfx->ibl.skyCube.id != 0) {
+        srcTex = gfx->ibl.skyCube; haveTex = 1;
+    } else if (!strcmp((const char *)name, "iblIrr")
+        && gfx->ibl.irradianceMap.id != 0) {
+        srcTex = gfx->ibl.irradianceMap; haveTex = 1;
+    } else if (!strcmp((const char *)name, "iblPre")
+        && gfx->ibl.prefilterMap.id != 0) {
+        srcTex = gfx->ibl.prefilterMap; haveTex = 1;
     } else if (!strncmp((const char *)name, "probe", 5)) {
         //opencode: probe grid inspector — GX_RT_VIEW=probe0..probe3.
         unsigned long pi = strtoul((const char *)name + 5, NULL, 10);
@@ -1495,7 +1504,10 @@ static gX_I0 Pass_Run_RtView(gX_RendererGFX *gfx, gX_RenderTexture *outputRT)
         gX_Shader_SetValue_TextureSlot(vs, gfx->rtview.colorMapLoc,
             srcTex, gX_GFX_TEXUNIT_COLOR);
         gX_I1 isCube = (strncmp((const char *)name, "probe", 5) == 0
-            || !strcmp((const char *)name, "cube")) ? 1 : 0;
+            || !strcmp((const char *)name, "cube")
+            || !strcmp((const char *)name, "skyCube")
+            || !strcmp((const char *)name, "iblIrr")
+            || !strcmp((const char *)name, "iblPre")) ? 1 : 0;
         if (isCube) {
             //opencode: cubemap textures need the cube bind path (2D bind
             //   leaves the sampler incomplete -> black).

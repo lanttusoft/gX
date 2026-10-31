@@ -50,6 +50,7 @@ typedef struct gX_RendererGFX_Godray {
 
     gX_I32  genSceneColorLoc;
     gX_I32  genSceneDepthLoc;
+    gX_I32  genHasSceneDepthLoc;
     gX_I32  genSunScreenPosLoc;
     gX_I32  genDensityLoc;
     gX_I32  genDecayLoc;

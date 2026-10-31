@@ -184,6 +184,7 @@ typedef struct gX_RendererGFX_ShaderLocs {
     gX_I32  shadowModeLoc;
     gX_I32  shadowDiffuseBiasLoc;
     gX_I32  shadowSpecularBiasLoc;
+    gX_I32  pbrShadowAmbientLoc;
     
     //opencode: point light shadows
     gX_I32  pointShadowMapsLoc;

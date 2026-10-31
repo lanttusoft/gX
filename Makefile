@@ -914,6 +914,11 @@ gfx-skin-bones-check: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_skin_bones_check.py
 
 #opencode: scene-camera render-to-image pin (size, identity, section round trip).
+.PHONY: pbr-check
+pbr-check: all
+	@echo "== [gX CI] PBR quality, IBL, material and shadow gate =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/pbr_check.py
+
 gfx-camera-render-check: all
 	@echo "== [gX CI] camera render (PNG size, camera identity, preset section) =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_camera_render_check.py
