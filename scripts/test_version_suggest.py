@@ -42,6 +42,18 @@ class ChangelogTests(unittest.TestCase):
                 "  truth; `scripts/gates.py` adds list and plan.\n")
         self.assertEqual(self.classify(text), "patch")
 
+    def test_internal_cache_format_is_patch(self):
+        text = ("## [0.26.3] - 2026-10-31\n\n"
+                "### Changed\n"
+                "- **Audit cache format v4**: internal cache layout changed.\n")
+        self.assertEqual(self.classify(text), "patch")
+
+    def test_shared_cache_added_is_patch(self):
+        text = ("## [0.26.3] - 2026-10-31\n\n"
+                "### Added\n"
+                "- **Shared audit cache**: `AUDIT_CACHE_DIR` for worktrees.\n")
+        self.assertEqual(self.classify(text), "patch")
+
     def test_changed_capacity_is_minor(self):
         text = ("## [0.26.0] - 2026-10-31\n\n"
                 "### Changed\n"
