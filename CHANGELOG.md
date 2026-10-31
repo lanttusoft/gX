@@ -4,7 +4,7 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
-## [Unreleased]
+## [0.24.1] - 2026-10-31
 
 ### Added
 - **Empty scene preset**: `resources/tools/empty.json` and the editor preset
