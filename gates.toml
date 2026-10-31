@@ -1,0 +1,704 @@
+# gX gate manifest — source of truth for audit gates and --changed planning.
+# Generated from the v0.26.0 audit_summary gate list; edit deliberately.
+
+[defaults]
+cache = "content"
+timeout = 1200
+retries = 1
+build_inputs = [
+  "src/",
+  "resources/",
+  "scripts/",
+  "cmake/",
+  "CMakeLists.txt",
+  "Makefile",
+  "patches/",
+  "modules/",
+  "external/raylib/",
+]
+
+[shared]
+files = [
+  "scripts/audit_common.py",
+  "scripts/audit_cache.py",
+  "scripts/gate_manifest.py",
+  "scripts/gates.py",
+  "gates.toml",
+]
+
+[groups.render]
+inputs = [
+  "src/renderer/",
+  "resources/shader/",
+  "resources/tools/",
+  "src/common/",
+]
+
+[groups.water]
+inputs = [
+  "src/renderer/",
+  "resources/shader/",
+  "resources/tools/",
+  "src/common/",
+]
+
+[groups.gui]
+inputs = [
+  "src/gui/",
+  "src/tools/gfx/",
+  "resources/font/",
+  "resources/tools/",
+  "src/common/",
+]
+
+[groups.audio]
+inputs = [
+  "src/audio/",
+  "resources/audio/",
+  "src/common/",
+]
+
+[groups.physics]
+inputs = [
+  "src/physics/",
+  "src/common/",
+]
+
+[groups.scripting]
+inputs = [
+  "src/scripting/",
+  "modules/",
+  "src/common/",
+]
+
+[groups.tooling]
+inputs = [
+  "scripts/audit_",
+  "scripts/gates.py",
+  "gates.toml",
+]
+
+[gate.bloom]
+script = "bloom_audit.py"
+args = ["--quick"]
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "bloom audit gate."
+
+[gate.scene-smoke]
+script = "gfx_scene_smoke.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "scene-smoke audit gate."
+
+[gate.matrix-quick]
+script = "gfx_feature_matrix.py"
+args = ["--quick"]
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "matrix-quick audit gate."
+
+[gate.gui-quick]
+script = "gui_audit.py"
+args = ["--quick"]
+tier = ["quick"]
+group = "gui"
+cache = "content"
+description = "gui-quick audit gate."
+
+[gate.gui-layout-quick]
+script = "gui_layout_check.py"
+args = ["--quick"]
+tier = ["quick"]
+group = "gui"
+cache = "content"
+description = "gui-layout-quick audit gate."
+
+[gate.dither]
+script = "dither_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "dither audit gate."
+
+[gate.wireframe]
+script = "wireframe_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "wireframe audit gate."
+
+[gate.snow]
+script = "snow_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "snow audit gate."
+
+[gate.snowfall]
+script = "snowfall_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "snowfall audit gate."
+
+[gate.rain]
+script = "rain_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "rain audit gate."
+
+[gate.fogsprite]
+script = "fogsprite_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "fogsprite audit gate."
+
+[gate.palette]
+script = "palette_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "palette audit gate."
+
+[gate.interlace]
+script = "interlace_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "interlace audit gate."
+
+[gate.fog-light]
+script = "fog_light_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "fog-light audit gate."
+
+[gate.fog-volume]
+script = "fog_volume_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "fog-volume audit gate."
+
+[gate.uniform-trace]
+script = "uniform_trace_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "uniform-trace audit gate."
+
+[gate.horizon]
+script = "gfx_horizon_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "horizon audit gate."
+
+[gate.matrix]
+script = "gfx_feature_matrix.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "matrix audit gate."
+
+[gate.gui-matrix]
+script = "gui_audit.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "gui-matrix audit gate."
+
+[gate.title-flow]
+script = "title_flow_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "title-flow audit gate."
+
+[gate.gui-interaction]
+script = "gui_interaction_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "gui-interaction audit gate."
+
+[gate.gui-theme]
+script = "gui_theme_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "gui-theme audit gate."
+
+[gate.gui-layout]
+script = "gui_layout_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "gui-layout audit gate."
+
+[gate.gui-shadow]
+script = "gui_shadow_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "gui-shadow audit gate."
+
+[gate.gui-depth]
+script = "gui_depth_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "gui-depth audit gate."
+
+[gate.gui-glass]
+script = "gui_glass_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "gui-glass audit gate."
+
+[gate.gui-cursor-light]
+script = "gui_cursor_light_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "gui-cursor-light audit gate."
+
+[gate.gui-pause-blur]
+script = "gui_pause_blur_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "gui-pause-blur audit gate."
+
+[gate.gui-effect-contrast]
+script = "gui_effect_contrast_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "gui-effect-contrast audit gate."
+
+[gate.water]
+script = "gfx_water_check.py"
+args = []
+tier = ["full"]
+group = "water"
+cache = "content"
+description = "water audit gate."
+
+[gate.water-authoring]
+script = "gfx_water_authoring_check.py"
+args = []
+tier = ["full"]
+group = "water"
+cache = "content"
+description = "water-authoring audit gate."
+
+[gate.dof-resolution]
+script = "dof_resolution_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "dof-resolution audit gate."
+
+[gate.probe]
+script = "probe_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "probe audit gate."
+
+[gate.splat]
+script = "splat_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "splat audit gate."
+
+[gate.mirror]
+script = "mirror_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "mirror audit gate."
+
+[gate.light]
+script = "gfx_light_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "light audit gate."
+
+[gate.snapshot]
+script = "gfx_snapshot_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "snapshot audit gate."
+
+[gate.planar-material]
+script = "gfx_planar_material_check.py"
+args = []
+tier = ["full"]
+group = "water"
+cache = "content"
+description = "planar-material audit gate."
+
+[gate.mirror-alignment]
+script = "gfx_mirror_alignment_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "mirror-alignment audit gate."
+
+[gate.grid]
+script = "gfx_grid_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "grid audit gate."
+
+[gate.temporal]
+script = "gfx_temporal_check.py"
+args = ["--quick"]
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "temporal audit gate."
+
+[gate.material-maps]
+script = "material_maps_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "material-maps audit gate."
+
+[gate.particle-velocity]
+script = "particle_velocity_check.py"
+args = []
+tier = ["compute"]
+group = "render"
+cache = "content"
+description = "particle-velocity audit gate."
+
+[gate.animation]
+script = "gfx_animation_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "animation audit gate."
+
+[gate.label-font]
+script = "gfx_label_font_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "label-font audit gate."
+
+[gate.motion-path]
+script = "gfx_motion_path_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "motion-path audit gate."
+
+[gate.picker]
+script = "gfx_picker_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "picker audit gate."
+
+[gate.light-picker]
+script = "gfx_light_picker_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "light-picker audit gate."
+
+[gate.dock-layout]
+script = "gfx_dock_layout_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "dock-layout audit gate."
+
+[gate.preset-overwrite]
+script = "gfx_preset_overwrite_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "preset-overwrite audit gate."
+
+[gate.material-assets]
+script = "gfx_material_asset_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "material-assets audit gate."
+
+[gate.asset-roots]
+script = "gfx_asset_roots_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "asset-roots audit gate."
+
+[gate.wavetable-editor]
+script = "wavetable_editor_check.py"
+args = []
+tier = ["full"]
+group = "audio"
+cache = "content"
+description = "wavetable-editor audit gate."
+
+[gate.textwriter-editor]
+script = "textwriter_editor_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "textwriter-editor audit gate."
+
+[gate.background-editor]
+script = "background_editor_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "background-editor audit gate."
+
+[gate.sky-editor]
+script = "sky_editor_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "sky-editor audit gate."
+
+[gate.ui-audit]
+script = "ui_audit.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "ui-audit audit gate."
+
+[gate.physics-editor]
+script = "physics_editor_check.py"
+args = []
+tier = ["full"]
+group = "physics"
+cache = "content"
+description = "physics-editor audit gate."
+
+[gate.decal-bake]
+script = "gfx_decal_bake_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "decal-bake audit gate."
+
+[gate.cache]
+script = "audit_cache_check.py"
+args = []
+tier = ["full"]
+group = "tooling"
+cache = "never"
+description = "cache audit gate."
+
+[gate.debug]
+script = "debug_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "debug audit gate."
+
+[gate.profile]
+script = "profile_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "never"
+description = "profile audit gate."
+
+[gate.error]
+script = "error_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "error audit gate."
+
+[gate.raymarch-features]
+script = "gfx_raymarch_features.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "raymarch-features audit gate."
+
+[gate.raymarch]
+script = "gfx_raymarch_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "raymarch audit gate."
+
+[gate.postprocess]
+script = "gfx_pp_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "postprocess audit gate."
+
+[gate.background]
+script = "gfx_background_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "background audit gate."
+
+[gate.battle]
+script = "gfx_battle_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "battle audit gate."
+
+[gate.export]
+script = "gfx_export_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "export audit gate."
+
+[gate.texture]
+script = "gfx_texture_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "texture audit gate."
+
+[gate.primitive]
+script = "gfx_primitive_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "primitive audit gate."
+
+[gate.aero]
+script = "gfx_aero_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "aero audit gate."
+
+[gate.prefab]
+script = "gfx_prefab_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "prefab audit gate."
+
+[gate.gl-level-ui]
+script = "gfx_gl_level_ui_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "gl-level-ui audit gate."
+
+[gate.camera-render]
+script = "gfx_camera_render_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "camera-render audit gate."
+
+[gate.bijection]
+script = "gfx_bijection_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "bijection audit gate."
+
+[gate.skin-bones]
+script = "gfx_skin_bones_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "skin-bones audit gate."
+
+[gate.reflection-ui]
+script = "gfx_reflection_ui_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "reflection-ui audit gate."
+

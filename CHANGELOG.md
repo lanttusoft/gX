@@ -4,6 +4,25 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: patch
+
+### Added
+- **Gate manifest and changed-only planner**: `gates.toml` is the source of
+  truth for the audit gates; `scripts/gates.py` adds `list`, `plan`, `run`,
+  `explain` and `cache`, with `make gates-*` wrappers. `--changed`/`--files`
+  maps a diff through group inputs and shared harness files.
+- **Manifest validation**: `make gates-check` rejects missing gate scripts and
+  unknown groups; it caught and removed the stale `materials` and
+  `rig-inspector` entries.
+
+### Fixed
+- **Stale audit gates**: `materials` now points at the existing
+  `material_maps_check.py`; the deleted `rig-inspector` gate and Makefile
+  target were removed. `materials-check` remains as a compatibility alias for
+  `material-maps-check`.
+
 ## [0.26.0] - 2026-10-31
 
 Release-Class: minor

@@ -44,7 +44,7 @@ MATH_SOAK_PROBES ?= 1024
 #   presentation would skew measured wall cost.
 export GX_AUDIT_WINDOW ?= hidden
 
-.PHONY: all check check-fast check-kernel release clean lean reflect-check reflect-check-fast ssr-normal-check dither-check palette-check interlace-check dof-resolution-check snow-check snowfall-check rain-check fogsprite-check probe-check splat-check mirror-check materials-check gfx-check gfx-check-fast gfx-scene-smoke gui-check gui-check-fast gui-scoreboard gui-visual-review gui-interaction-check gui-theme-check gui-layout-check gui-shadow-check gui-depth-check gui-glass-check gui-cursor-light-check gui-pause-blur-check gui-effect-contrast-check gui-benchmark gui-benchmark-check gfx-benchmark gfx-benchmark-check gfx-benchmark-release gfx-benchmark-reference-check raymarch-benchmark raymarch-benchmark-check gfx-visual-review gfx-patchwork-check gfx-quick gfx-grid-check gfx-snapshot-check gfx-picker-check gfx-light-picker-check gfx-motion-path-check dock-layout-check gfx-label-font-check gfx-rig-inspector-check gfx-animation-check bloom-audit bloom-audit-quick audit-summary audit-summary-full gfx-preset-overwrite-check gfx-art-picker-check gfx-art-blending-check gfx-mirror-alignment-check gfx-reflection-ui-check gfx-material-asset-check gfx-asset-roots-check gfx-bijection-check gfx-skin-bones-check gfx-camera-render-check provenance-check gfx-gl-level-ui-check gfx-prefab-check gfx-aero-check gfx-primitive-check gfx-texture-check wavetable-editor-check textwriter-editor-check textwriter-render-check sky-render-check analog-reduced-check colour-independence-check physics-editor-check gfx-export-check gfx-battle-check gfx-background-check gfx-pp-check gfx-raymarch-check gfx-raymarch-features-check error-handling-check error-check gfx-profile-check debug-check cache-check gfx-decal-bake-check version-check version-gate gfx-planar-material-check gfx-light-check gfx-art-light-check gfx-art-reflection-check gfx-shadow-check gfx-light-shadow-check material-maps-check lightmap-check lightmap-visual-review temporal-check temporal-check-fast warmup-check water-check horizon-check scoreboard fog-light-check wireframe-check particle-velocity-check compute-feature-check gl-level-check glsl130-check gl-legacy-native-check oracle-path-check oracle-bounce-check oracle-hdr-check oracle-gpu-check oracle-gpu-multibounce-check oracle-gpu-reflection-check gl-audit math-check proofs proofs-full hw-report-check sense-check
+.PHONY: all check check-fast check-kernel release clean lean reflect-check reflect-check-fast ssr-normal-check dither-check palette-check interlace-check dof-resolution-check snow-check snowfall-check rain-check fogsprite-check probe-check splat-check mirror-check materials-check gfx-check gfx-check-fast gfx-scene-smoke gui-check gui-check-fast gui-scoreboard gui-visual-review gui-interaction-check gui-theme-check gui-layout-check gui-shadow-check gui-depth-check gui-glass-check gui-cursor-light-check gui-pause-blur-check gui-effect-contrast-check gui-benchmark gui-benchmark-check gfx-benchmark gfx-benchmark-check gfx-benchmark-release gfx-benchmark-reference-check raymarch-benchmark raymarch-benchmark-check gfx-visual-review gfx-patchwork-check gfx-quick gfx-grid-check gfx-snapshot-check gfx-picker-check gfx-light-picker-check gfx-motion-path-check dock-layout-check gfx-label-font-check gfx-animation-check bloom-audit bloom-audit-quick audit-summary audit-summary-full gfx-preset-overwrite-check gfx-art-picker-check gfx-art-blending-check gfx-mirror-alignment-check gfx-reflection-ui-check gfx-material-asset-check gfx-asset-roots-check gfx-bijection-check gfx-skin-bones-check gfx-camera-render-check provenance-check gfx-gl-level-ui-check gfx-prefab-check gfx-aero-check gfx-primitive-check gfx-texture-check wavetable-editor-check textwriter-editor-check textwriter-render-check sky-render-check analog-reduced-check colour-independence-check physics-editor-check gfx-export-check gfx-battle-check gfx-background-check gfx-pp-check gfx-raymarch-check gfx-raymarch-features-check error-handling-check error-check gfx-profile-check debug-check cache-check gfx-decal-bake-check version-check version-gate gfx-planar-material-check gfx-light-check gfx-art-light-check gfx-art-reflection-check gfx-shadow-check gfx-light-shadow-check material-maps-check lightmap-check lightmap-visual-review temporal-check temporal-check-fast warmup-check water-check horizon-check scoreboard fog-light-check wireframe-check particle-velocity-check compute-feature-check gl-level-check glsl130-check gl-legacy-native-check oracle-path-check oracle-bounce-check oracle-hdr-check oracle-gpu-check oracle-gpu-multibounce-check oracle-gpu-reflection-check gl-audit math-check proofs proofs-full hw-report-check sense-check
 
 all:
 	bash build.sh $(BUILD_TYPE)
@@ -53,6 +53,7 @@ check: all
 	python3 -m unittest discover -s scripts -p test_empty_scene.py
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	python3 -m unittest discover -s scripts -p test_version_suggest.py
+	python3 -m unittest discover -s scripts -p test_gate_manifest.py
 	@if [ ! -d ../proofs ]; then \
 	  echo "gX public source beta: full 'make check' needs the proof tree (../proofs)."; \
 	  echo "Use 'make check-fast' for the public source-beta CI."; \
@@ -191,6 +192,7 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_empty_scene.py
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	python3 -m unittest discover -s scripts -p test_version_suggest.py
+	python3 -m unittest discover -s scripts -p test_gate_manifest.py
 	@echo "== [gX fast] unit tests =="
 	./build/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/gX_build --test-only && exit 1)
 	@echo "== [gX fast] attribution =="
@@ -362,10 +364,8 @@ splat-check: all
 	@echo "== [gX review] deterministic splat cloud =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/splat_check.py
 
-#opencode: material override sidecar: response, sidecar-off A/B, repeat.
-materials-check: all
-	@echo "== [gX review] deterministic material overrides =="
-	DISPLAY=$${DISPLAY:-:1} python3 scripts/materials_check.py
+#opencode: legacy alias; the old sidecar script was removed.
+materials-check: material-maps-check
 
 #opencode: opt-in two-mirror feedback: settle, buildup, churn, repeat.
 mirror-check: all
@@ -861,6 +861,7 @@ version-check:
 	@echo "== [gX] version consistency =="
 	python3 scripts/version_check.py --consistency
 	python3 -m unittest discover -s scripts -p test_version_suggest.py
+	python3 -m unittest discover -s scripts -p test_gate_manifest.py
 
 #opencode: advisory class suggestion from the actual diff and CHANGELOG.
 version-suggest:
@@ -927,11 +928,6 @@ gfx-label-font-check: all
 	@echo "== [gX CI] GFX label fonts =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_label_font_check.py
 
-#opencode: read-only rig inspector — skeleton bones and parsed GLB clips.
-gfx-rig-inspector-check: all
-	@echo "== [gX CI] GFX rig inspector =="
-	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_rig_inspector_check.py
-
 #opencode: GLB clip playback — skinned pose bends, loop wraps, one-shot clamps.
 gfx-animation-check: all
 	@echo "== [gX CI] GFX animation playback =="
@@ -957,6 +953,21 @@ audit-summary: all
 audit-summary-full: all
 	@echo "== [gX CI] GPU audit summary (full) =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/audit_summary.py --full --jobs $(AUDIT_JOBS)
+
+#opencode: gate manifest contract and changed-only planner.
+.PHONY: gates-check gates-list gates-plan gates-run
+gates-check:
+	@echo "== [gX CI] gate manifest =="
+	python3 -m unittest discover -s scripts -p test_gate_manifest.py
+
+gates-list:
+	python3 scripts/gates.py list --tier "$${TIER:-all}"
+
+gates-plan:
+	python3 scripts/gates.py plan --tier "$${TIER:-quick}" --changed "$${CHANGED:-HEAD}"
+
+gates-run: all
+	python3 scripts/gates.py run --tier "$${TIER:-quick}" --changed "$${CHANGED:-HEAD}" --jobs "$${AUDIT_JOBS:-1}"
 
 #opencode: existing scene presets require an explicit Cancel/Overwrite choice.
 gfx-preset-overwrite-check: all
@@ -1133,6 +1144,7 @@ uniform-trace-check: all
 bug-replay-check:
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	python3 -m unittest discover -s scripts -p test_version_suggest.py
+	python3 -m unittest discover -s scripts -p test_gate_manifest.py
 
 #opencode: wireframe placement pin — difference gates pass garbage, only
 #   a bbox gate catches misplacement. Requires a live GPU display.

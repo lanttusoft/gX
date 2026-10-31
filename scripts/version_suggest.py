@@ -61,14 +61,27 @@ def parse_changelog(text):
             break
     categories = {}
     current = None
+    entry = None
     for line in lines[start + 1:end]:
         header = re.match(r"^###\s+(\w+)", line)
         if header:
+            if current and entry is not None:
+                categories[current].append(" ".join(entry))
             current = header.group(1).lower()
             categories.setdefault(current, [])
+            entry = None
             continue
-        if current and line.strip().startswith("-"):
-            categories[current].append(line.strip())
+        if not current:
+            continue
+        stripped = line.strip()
+        if stripped.startswith("-"):
+            if entry is not None:
+                categories[current].append(" ".join(entry))
+            entry = [stripped]
+        elif entry is not None and stripped:
+            entry.append(stripped)
+    if current and entry is not None:
+        categories[current].append(" ".join(entry))
     return categories
 
 

@@ -1,9 +1,8 @@
 # Gate memory and audit/test unification
 
-Status: research + first cache-correctness slice (2026-10-31). The existing
+Status: manifest + changed-only planner implemented (2026-10-31). The existing
 `audit_summary.py` result cache is retained; this document records what it
-already does, what it misses, and how to unify `make check`, `audit-summary`,
-`version-gate` and targeted gates around one gate manifest.
+already does, what it misses, and how the unified gate manifest works.
 
 ## Why this exists
 
@@ -27,6 +26,16 @@ reuse or a re-run inspectable.
 - `AUDIT_CACHE=0`, `audit_summary.py --no-cache`, `--cache-clear` and
   `make audit-cache-clear` are the escape hatches.
 - `--explain` and `make audit-cache-show` expose why a gate is fresh or stale.
+- `gates.toml` is now the source of truth for the audit gate list, tiers,
+  groups, cache policy and shared harness files. `scripts/audit_summary.py`
+  loads it and keeps the old hardcoded list only as a fallback.
+- `scripts/gates.py` adds `list`, `plan`, `run`, `explain` and `cache`;
+  `make gates-list`, `gates-plan`, `gates-run` and `gates-check` wrap it.
+- `--changed REF` (or `--files a,b`) maps a Git diff to affected gates through
+  declared group inputs and shared harness files. `docs/` changes select no
+  audit gates; an unmapped build input conservatively selects all gates.
+- Per-gate cache policy is honored: `cache = "never"` bypasses the cache for
+  `profile` and `cache`; the rest use content-addressed passes.
 
 ## Cache key contract
 
@@ -83,62 +92,72 @@ release certificate.
   `modules/`, most of `external/`, `license/`, and the `proofs/` tree. A
   change there can affect a build or a proof gate without invalidating the
   cache.
-- There is no per-gate dependency declaration, no `--changed` planner, and no
-  shared cache across worktrees or CI. The cache is local to `build/`.
-- There is no explicit cache policy per gate; the runner assumes every gate in
-  the list is safe to cache.
+- The planner uses group-level input globs, not per-file dependencies;
+  `src/common/` and `resources/tools/` still over-select.
+- `make check` still does not use the gate cache, and `version_check.TIERS`
+  remains separate from the manifest.
+- There is no shared cache across worktrees or CI; the cache is local to
+  `build/`.
 
-## Proposed unified gate manifest
+## Unified gate manifest
 
-One manifest is the source of truth for every gate:
+`gates.toml` is the source of truth for the audit gates:
 
 ```toml
 [gate.water]
-command = ["python3", "scripts/gfx_water_check.py"]
+script = "gfx_water_check.py"
+args = []
 tier = ["full"]
-inputs = ["src/renderer/water.c", "resources/shader/water.frag"]
-shared = ["scripts/audit_common.py", "scripts/audit_cache.py"]
-env = ["GX_AUDIT_FULLSIZE", "DISPLAY"]
+group = "water"
 cache = "content"        # content | never | ttl
 timeout = 1200
 retries = 1
 description = "Water surface, fog and planar reflection contracts."
 ```
 
-`cache = "content"` is the default for deterministic gates. `never` is for
-timing, network, mutating or nondeterministic gates. `ttl` is for
-environment-sensitive gates that should be refreshed periodically.
+Group inputs live once:
 
-A single runner exposes:
-
-```bash
-gates list
-gates plan --tier check --changed HEAD~1
-gates run --tier quick
-gates explain water
-gates cache --show
+```toml
+[groups.water]
+inputs = ["src/renderer/", "resources/shader/", "resources/tools/",
+          "src/common/"]
 ```
 
-`make check`, `make check-fast`, `make audit-summary`, `make audit-summary-full`
-and `version-gate` become thin wrappers over the same manifest and runner.
-`--changed` maps a Git diff to affected gates through declared input globs;
-shared harness files invalidate every dependent gate, not every gate in the
-repository.
+`cache = "content"` is the default for deterministic gates. `never` is for
+timing, network, mutating or nondeterministic gates. `ttl` is reserved for
+environment-sensitive gates that should be refreshed periodically.
+
+The runner exposes:
+
+```bash
+make gates-list
+make gates-plan TIER=full CHANGED=HEAD~1
+make gates-run TIER=quick CHANGED=HEAD~1
+python3 scripts/gates.py explain water
+python3 scripts/gates.py plan --tier full --files src/renderer/water.c
+python3 scripts/gates.py cache --show
+```
+
+`audit_summary.py` loads the same manifest. `--changed REF` (or `--files`) maps
+a Git diff to affected gates through group inputs and shared harness files.
+Shared files invalidate every gate; an unmapped build input conservatively
+selects all gates; `docs/` changes select none. The manifest test rejects a
+missing gate script or unknown group.
 
 ## Rollout
 
 1. **Cache correctness** (this slice): args, gate environment, stable hardware
    identity, `--explain`, public `cache-check` fixture.
-2. **Manifest for audit gates**: move `audit_summary.GATES` into the manifest;
-   add `list`, `plan`, `explain`; keep the existing gate commands unchanged.
-3. **Per-gate dependencies**: replace the all-scripts base hash with declared
-   shared helpers and input globs; add the missing `patches/`, `modules/`,
-   `external/` and proof inputs.
-4. **`make check` memory**: cache the deterministic, non-GPU steps first
-   (unit tests, math, static audits). Keep Lean/Lake's own build cache and
-   never cache release packaging or save/overwrite probes.
-5. **Changed-only and shared cache**: add `--changed` for local iteration and
-   an opt-in shared cache directory for worktrees/CI. Key the shared cache by
+2. **Manifest for audit gates** — done: `gates.toml`, `list`/`plan`/`run`/
+   `explain`, and `audit_summary.py` loads the manifest.
+3. **Per-gate dependencies** — group inputs and shared harness files are in;
+   per-file globs and the remaining `patches/`, `modules/`, `external/` and
+   proof inputs still need refinement.
+4. **`make check` memory** — pending: cache the deterministic, non-GPU steps
+   first (unit tests, math, static audits). Keep Lean/Lake's own build cache
+   and never cache release packaging or save/overwrite probes.
+5. **Changed-only and shared cache** — `--changed`/`--files` is in; an opt-in
+   shared cache directory for worktrees/CI remains. Key the shared cache by
    the same parts, not by machine path.
 
 ## Risks and mitigations

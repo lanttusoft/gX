@@ -112,4 +112,4 @@ Start here:
 - [Hardware requirements](hardware.md)
 - [gX — Minimum Hardware Study (measured floor on a reference class)](minimum_hardware.md)
 
-The gate matrix is defined in `scripts/audit_summary.py`; each gate documents its own contract in its script header. The cache-key contract and the proposed unified gate manifest are described in [gate_memory.md](gate_memory.md).
+The audit gate matrix is defined in `gates.toml`; each gate documents its own contract in its script header. The cache-key contract, manifest and `--changed` planner are described in [gate_memory.md](gate_memory.md).
