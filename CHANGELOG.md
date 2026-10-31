@@ -10,6 +10,9 @@ SemVer.
 - **Uniform-type attribution**: `GX_UNIFORM_TRACE=1` checks each upload
   against the shader's active GL type and names any mismatch;
   `make uniform-trace-check` runs it over the showcase scenes.
+- **Bug-report render camera**: diagnostics now capture the selected scene
+  camera separately from the editor/free camera (`render_camera`, index and
+  name); replay prefers it for exact views.
 - **Bug-report replay**: `scripts/bug_replay.py` merges a report's
   diagnostics into a temporary preset and renders the reported camera/state;
   the merge path is unit-tested and needs no private report or GPU.

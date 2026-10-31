@@ -108,11 +108,14 @@ is broken; this prototype has no separate proposal workflow.
 ## Screenshots and privacy
 
 **Attach diagnostic state** is also off by default. On submission it records
-the active camera (position/target/up/FOV/projection), dock viewport rectangle,
-selected-model index (`-1` means none), renderer flags, SSAO/GTAO/SSGI and SSR
-tuning, CSM/reflection, godray/fog/lensflare and bloom settings, plus compositor
-switches. It includes scene name/description and preset timestamp metadata;
-inspect these for private context before sharing.
+the active editor/free camera (position/target/up/FOV/projection), the selected
+scene camera separately when one exists (`render_camera`, index and name), dock
+viewport rectangle, selected-model index (`-1` means none), renderer flags,
+SSAO/GTAO/SSGI and SSR tuning, CSM/reflection, godray/fog/lensflare and bloom
+settings, plus compositor switches. The render camera is the one a Render
+action uses; replay prefers it over the free camera. It includes scene
+name/description and preset timestamp metadata; inspect these for private
+context before sharing.
 
 This is an in-memory snapshot of current values, not a scene/resource export.
 Models, lights, textures, resource paths/contents, arbitrary memory, logs,
@@ -148,7 +151,8 @@ python3 scripts/bug_replay.py bugs/report-<id>.json \
 ```
 
 The report's `preset` path is used by default; pass `--preset` when the
-private scene is unavailable. The merged preset stays under `/tmp/opencode`
+private scene is unavailable. Replay prefers `diagnostics.render_camera` (the
+selected scene camera) and falls back to the editor/free `camera`. The merged preset stays under `/tmp/opencode`
 and is deleted after the run unless `--preset-out` is given. The screenshot
 defaults to `/tmp/opencode/replay-<report>.png`. Reports, merged presets and
 captures can contain private scene content; never commit them. The tool does

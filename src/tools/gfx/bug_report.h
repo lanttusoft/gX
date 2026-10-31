@@ -29,6 +29,11 @@
 
 #include "gx_build_info.h"
 
+//ai: defined by the GFX editor; reports the selected scene camera separately
+//   from the free/editor camera that the live viewport uses.
+static gX_I1 gX_Tools_Gfx_BugReport_RenderCamera(gX_Camera3D *View,
+    gX_I32 *Index, const gX_I8 **Name);
+
 //ai: stable JSON lifecycle codes stay independent from report severity.
 enum
 {
@@ -146,6 +151,23 @@ static gX_I1 gX_Tools_Gfx_BugReport_Save(const gX_I8 *Directory)
         const gX_F64 Numbers[] = {View.x, View.y, View.width, View.height, (gX_F64)s_selModel};
         for (gX_U32 Index = 0; State && Index < 5; Index++)
             json_object_object_add(State, Names[Index], json_object_new_double(Numbers[Index]));
+        gX_Camera3D RenderView;
+        gX_I32 RenderIndex = -1;
+        const gX_I8 *RenderName = (const gX_I8 *)"";
+        if (State && gX_Tools_Gfx_BugReport_RenderCamera(&RenderView, &RenderIndex, &RenderName))
+        {
+            struct json_object *RenderCamera = gX_RendererGFX_Preset_CameraToObj(&RenderView);
+            if (RenderCamera
+                && json_object_object_add(State, "render_camera", RenderCamera) == 0)
+            {
+                json_object_object_add(State, "render_camera_index",
+                    json_object_new_int(RenderIndex));
+                json_object_object_add(State, "render_camera_name",
+                    json_object_new_string((const char *)RenderName));
+            }
+            else if (RenderCamera)
+                json_object_put(RenderCamera);
+        }
         Ok = State && json_object_object_add(Root, "diagnostics", State) == 0;
         if (!Ok) json_object_put(State);
     }

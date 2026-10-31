@@ -58,7 +58,9 @@ def merge_report(base, report):
             deep_merge(merged[section], value)
         else:
             merged[section] = copy.deepcopy(value)
-    camera = diagnostics.get("camera")
+    camera = diagnostics.get("render_camera")
+    if not isinstance(camera, dict) or not camera:
+        camera = diagnostics.get("camera")
     if isinstance(camera, dict) and camera:
         merged["camera"] = copy.deepcopy(camera)
         cameras = merged.get("cameras")
