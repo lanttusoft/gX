@@ -4,7 +4,7 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
-## [Unreleased]
+## [0.21.0] - 2026-10-31
 
 ### Added
 - **Per-model surface controls**: `doubleSided` disables backface culling for
@@ -42,6 +42,11 @@ SemVer.
   additive noise, gamma/exposure shifts, 2× resolution loss and occlusion.
   Small occlusions recover through the XOR parity blocks; large occlusions fail
   closed instead of returning corrupt data.
+
+### Changed
+- **Title and settings version label**: now reports v0.21.0 beta.
+- **Guest-asset wording**: help and comments use generic external-asset
+  examples instead of naming a specific foreign project or private path.
 
 ## [0.20.0] - 2026-10-30
 
