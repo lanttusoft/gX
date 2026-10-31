@@ -97,9 +97,10 @@ Start here:
 - [Asset provenance intake reports](asset_clearance.md)
 - [Attribution audit — code and systems](attribution_audit.md)
 - [gX debugging](debugging.md)
+- [Gate memory and audit/test unification](gate_memory.md)
 - [gX error handling](error_handling.md)
 - [gX error hints — every error carries its recipe](error_hints.md)
 - [Hardware requirements](hardware.md)
 - [gX — Minimum Hardware Study (measured floor on a reference class)](minimum_hardware.md)
 
-The gate matrix is defined in `scripts/audit_summary.py`; each gate documents its own contract in its script header.
+The gate matrix is defined in `scripts/audit_summary.py`; each gate documents its own contract in its script header. The cache-key contract and the proposed unified gate manifest are described in [gate_memory.md](gate_memory.md).

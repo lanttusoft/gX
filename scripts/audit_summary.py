@@ -141,6 +141,8 @@ def main():
                         help="ignore cached gate results")
     parser.add_argument("--cache-clear", action="store_true",
                         help="clear the gate cache before running")
+    parser.add_argument("--explain", action="store_true",
+                        help="print why each uncached gate will run")
     args = parser.parse_args()
 
     names = {gate[0] for gate in GATES}
@@ -180,14 +182,18 @@ def main():
         if not script_path.is_file():
             return {"gate": name, "ok": False, "seconds": 0.0,
                     "verdict": "script missing"}
-        key = audit_cache.gate_key(cache_base, script_path) if use_cache \
-            else None
+        parts = audit_cache.gate_parts(cache_base, script_path, script_args,
+                                       environment) if use_cache else None
+        key = audit_cache.key_from_parts(parts) if use_cache else None
         if use_cache:
             entry = audit_cache.lookup(cache, name, key)
             if entry:
                 return {"gate": name, "ok": True, "seconds": 0.0,
                         "verdict": f"{entry['verdict']} (cached)",
                         "cached": True}
+            if args.explain:
+                print(f"{name:20s} run ({audit_cache.explain(cache, name, parts)})",
+                      flush=True)
         start = time.perf_counter()
         try:
             result = subprocess.run(
@@ -203,7 +209,7 @@ def main():
             verdict = f"timeout after {args.timeout:.0f}s"
         seconds = round(time.perf_counter() - start, 2)
         if ok and use_cache:
-            audit_cache.store(cache, name, key, seconds, verdict, script)
+            audit_cache.store(cache, name, key, seconds, verdict, script, parts)
         return {"gate": name, "ok": ok, "seconds": seconds,
                 "verdict": verdict}
 

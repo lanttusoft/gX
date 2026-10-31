@@ -628,8 +628,13 @@ cache-check: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/audit_cache_check.py
 
 #opencode: drop the cached gate results (the next summary re-runs everything).
+.PHONY: audit-cache-clear audit-cache-show
 audit-cache-clear:
 	python3 scripts/audit_cache.py --clear
+
+#opencode: inspect cache freshness with the same display identity as the gates.
+audit-cache-show:
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/audit_cache.py --show
 
 #ai: declared-vs-defined public API baseline (AUD-03). Default fails only on
 #    new declarations; --strict asks for the full known list to be clean.

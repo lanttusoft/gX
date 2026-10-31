@@ -7,6 +7,11 @@ SemVer.
 ## [0.22.0] - 2026-10-31
 
 ### Added
+- **Audit cache identity**: gate keys now include gate arguments, gate-relevant
+  environment (`GX_*`/`AUDIT_*`/display/Mesa/NVIDIA knobs) and stable GPU/driver
+  identity; `audit_summary.py --explain` reports why an uncached gate will run,
+  and `make audit-cache-show` inspects freshness with the audit display. The
+  cache-check fixture now uses public gates instead of the private export preset.
 - **Bug-report build revision**: reports include `engine_revision`, a
   best-effort 12-hex Git prefix generated at build time (`-dirty` when tracked
   files are modified); source archives without their own Git root report

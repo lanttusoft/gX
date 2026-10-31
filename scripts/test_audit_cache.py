@@ -104,5 +104,58 @@ class CapturePoolFingerprintTests(unittest.TestCase):
         self.assertNotEqual(first, second)
 
 
+class GateKeyTests(unittest.TestCase):
+    def make_script(self, directory):
+        path = Path(directory) / "gate.py"
+        path.write_text("# gate v1\n")
+        return path
+
+    def test_gate_args_change_key(self):
+        with tempfile.TemporaryDirectory() as directory:
+            script = self.make_script(directory)
+            quick = audit_cache.gate_key("base", script, ["--quick"], {})
+            full = audit_cache.gate_key("base", script, ["--full"], {})
+            self.assertNotEqual(quick, full)
+
+    def test_gate_environment_changes_key(self):
+        with tempfile.TemporaryDirectory() as directory:
+            script = self.make_script(directory)
+            base = audit_cache.gate_key(
+                "base", script, (), {"GX_AUDIT_FULLSIZE": "0", "DISPLAY": ":1"})
+            size = audit_cache.gate_key(
+                "base", script, (), {"GX_AUDIT_FULLSIZE": "1", "DISPLAY": ":1"})
+            display = audit_cache.gate_key(
+                "base", script, (), {"GX_AUDIT_FULLSIZE": "0", "DISPLAY": ":2"})
+            self.assertNotEqual(base, size)
+            self.assertNotEqual(base, display)
+
+    def test_scheduler_and_unrelated_environment_do_not_change_key(self):
+        with tempfile.TemporaryDirectory() as directory:
+            script = self.make_script(directory)
+            first = audit_cache.gate_key(
+                "base", script, (), {"AUDIT_JOBS": "1", "HOME": "/a",
+                                     "AUDIT_CACHE": "1"})
+            second = audit_cache.gate_key(
+                "base", script, (), {"AUDIT_JOBS": "8", "HOME": "/b",
+                                     "AUDIT_CACHE": "0"})
+            self.assertEqual(first, second)
+
+    def test_explain_reports_changed_part(self):
+        with tempfile.TemporaryDirectory() as directory:
+            script = self.make_script(directory)
+            parts = audit_cache.gate_parts(
+                "base", script, ["--quick"], {"DISPLAY": ":1"})
+            cache = {"gates": {"gate": {
+                "key": audit_cache.key_from_parts(parts),
+                "ok": True, "parts": parts}}}
+            self.assertEqual(audit_cache.explain(cache, "gate", parts), "fresh")
+            changed = dict(parts)
+            changed["args"] = "different"
+            self.assertEqual(
+                audit_cache.explain(cache, "gate", changed), "args changed")
+            self.assertEqual(
+                audit_cache.explain({}, "gate", parts), "no cached pass")
+
+
 if __name__ == "__main__":
     unittest.main()

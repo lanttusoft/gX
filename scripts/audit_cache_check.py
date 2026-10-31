@@ -19,7 +19,7 @@ import audit_common as audit
 ROOT = audit.ROOT
 BIN = audit.BIN
 SUMMARY = ROOT / "scripts" / "audit_summary.py"
-ONLY = "texture,export"
+ONLY = "texture,dither"
 
 
 def run_summary(*extra):

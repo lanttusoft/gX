@@ -18,22 +18,38 @@ import hashlib
 import json
 import os
 import platform
+import subprocess
 import sys
 import time
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 CACHE_PATH = ROOT / "build" / ".audit_cache.json"
 
 #ai: process-local memo — audit runs hash hundreds of requests but the inputs
 #   do not change during one run. Tests pass use_cache=False.
 _INPUT_CACHE = {}
+_HARDWARE_DIGEST = None
 
 PROFILE_ENV_KEYS = (
     "CC", "CXX", "CFLAGS", "CXXFLAGS", "LDFLAGS", "CPPFLAGS",
     "CMAKE_BUILD_TYPE", "GX_BUILD_TYPE", "GX_USE_ANGELSCRIPT",
+)
+
+#ai: gate results may depend on these environment knobs; hash them into the
+#   key without hashing unrelated or secret-bearing process state. Scheduler
+#   controls (AUDIT_CACHE/AUDIT_JOBS) do not change a gate's verdict.
+GATE_ENV_KEYS = (
+    "DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "TZ", "LANG",
+    "LC_ALL", "LC_CTYPE", "PYTHONHASHSEED", "PYTHONPATH", "VIRTUAL_ENV",
+)
+GATE_ENV_PREFIXES = (
+    "GX_", "AUDIT_", "LIBGL_", "MESA_", "__GLX", "__EGL", "NVIDIA_", "AMD_",
+)
+GATE_ENV_IGNORE = (
+    "AUDIT_CACHE", "AUDIT_JOBS", "GX_SCREENSHOT_DIR", "GX_SHOT_FRAME",
 )
 
 
@@ -140,10 +156,108 @@ def base_digest():
     return build_input_digest()
 
 
-def gate_key(base, script_path):
-    digest = hashlib.sha256(base.encode())
-    _hash_file(digest, Path(script_path))
+def _file_digest(path):
+    digest = hashlib.sha256()
+    _hash_file(digest, Path(path))
     return digest.hexdigest()
+
+
+def _probe(command):
+    try:
+        result = subprocess.run(command, capture_output=True, text=True,
+                                timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return result.stdout.strip()
+
+
+def environment_digest(environment=None):
+    """Hash only gate-relevant environment state, never the whole process env."""
+    env = os.environ if environment is None else environment
+    digest = hashlib.sha256()
+    for key in sorted(env):
+        if key in GATE_ENV_IGNORE:
+            continue
+        if key in GATE_ENV_KEYS or key.startswith(GATE_ENV_PREFIXES):
+            digest.update(f"{key}={env[key]}\0".encode())
+    return digest.hexdigest()
+
+
+def _gpu_identity():
+    """Stable GPU/driver identity; live memory counters must not enter the key."""
+    probe = _probe(("nvidia-smi", "--query-gpu=name,driver_version",
+                    "--format=csv,noheader"))
+    if probe:
+        return probe
+    probe = _probe(("glxinfo", "-B"))
+    keep = []
+    for line in probe.splitlines():
+        if line.startswith(("OpenGL vendor string:", "OpenGL renderer string:",
+                            "OpenGL version string:",
+                            "OpenGL core profile version string:",
+                            "OpenGL core profile shading language version string:")):
+            keep.append(line.strip())
+    return "\n".join(keep)
+
+
+def hardware_digest():
+    """Best-effort GPU/driver/runtime identity for rendering gate results."""
+    global _HARDWARE_DIGEST
+    if _HARDWARE_DIGEST is not None:
+        return _HARDWARE_DIGEST
+    digest = hashlib.sha256()
+    digest.update(f"platform:{platform.system()}:{platform.release()}:"
+                  f"{platform.machine()}\0".encode())
+    digest.update(f"python:{sys.version}\0".encode())
+    try:
+        import numpy
+        digest.update(f"numpy:{numpy.__version__}\0".encode())
+    except Exception:
+        pass
+    probe = _gpu_identity()
+    if probe:
+        digest.update(b"gpu:\0" + probe.encode() + b"\0")
+    _HARDWARE_DIGEST = digest.hexdigest()
+    return _HARDWARE_DIGEST
+
+
+def gate_parts(base, script_path, args=(), environment=None):
+    """Return the independently comparable inputs behind one gate key."""
+    return {
+        "base": str(base),
+        "script": _file_digest(script_path),
+        "args": hashlib.sha256(
+            json.dumps(list(args), sort_keys=True).encode()).hexdigest(),
+        "env": environment_digest(environment),
+        "hardware": hardware_digest(),
+    }
+
+
+def key_from_parts(parts):
+    digest = hashlib.sha256()
+    for name in ("base", "script", "args", "env", "hardware"):
+        digest.update(f"{name}:{parts[name]}\0".encode())
+    return digest.hexdigest()
+
+
+def gate_key(base, script_path, args=(), environment=None):
+    return key_from_parts(gate_parts(base, script_path, args, environment))
+
+
+def explain(cache, name, parts):
+    """Return a short reason a gate will run or reuse its cached pass."""
+    entry = cache.get("gates", {}).get(name)
+    if not entry:
+        return "no cached pass"
+    if not entry.get("ok"):
+        return "cached entry is not a pass"
+    stored = entry.get("parts") or {}
+    for part in ("base", "script", "args", "env", "hardware"):
+        if stored.get(part) != parts.get(part):
+            return f"{part} changed"
+    if entry.get("key") != key_from_parts(parts):
+        return "key changed"
+    return "fresh"
 
 
 def load():
@@ -176,8 +290,8 @@ def lookup(cache, name, key):
     return entry
 
 
-def store(cache, name, key, seconds, verdict, script):
-    cache.setdefault("gates", {})[name] = {
+def store(cache, name, key, seconds, verdict, script, parts=None):
+    entry = {
         "key": key,
         "ok": True,
         "seconds": round(seconds, 2),
@@ -185,6 +299,9 @@ def store(cache, name, key, seconds, verdict, script):
         "script": script,
         "when": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
+    if parts is not None:
+        entry["parts"] = parts
+    cache.setdefault("gates", {})[name] = entry
 
 
 def main():
@@ -199,15 +316,29 @@ def main():
     if arguments.show:
         cache = load()
         base = base_digest()
+        env = environment_digest()
+        hardware = hardware_digest()
         gates = cache.get("gates", {})
         current = 0
         for name in sorted(gates):
             entry = gates[name]
             script = ROOT / "scripts" / entry.get("script", "")
-            fresh = (script.is_file()
-                     and entry.get("key") == gate_key(base, script))
+            parts = entry.get("parts") or {}
+            reason = ""
+            if not parts:
+                reason = "no parts"
+            elif parts.get("base") != base:
+                reason = "base changed"
+            elif not script.is_file() or parts.get("script") != _file_digest(script):
+                reason = "script changed"
+            elif parts.get("env") != env:
+                reason = "env changed"
+            elif parts.get("hardware") != hardware:
+                reason = "hardware changed"
+            fresh = not reason
             current += 1 if fresh else 0
-            print(f"  {name:20s} {'fresh' if fresh else 'stale':5s} "
+            status = "fresh" if fresh else f"stale ({reason})"
+            print(f"  {name:20s} {status:20s} "
                   f"{entry.get('seconds', 0):6.1f}s  {entry.get('when', '')}")
         print(f"audit cache: {current}/{len(gates)} fresh")
         return 0
