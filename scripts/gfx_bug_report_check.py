@@ -11,6 +11,12 @@ import numpy as np
 import audit_common as audit
 
 OUT=Path('/tmp/opencode/bug_report_check')
+README=audit.ROOT/'readme.txt'
+
+
+def readme_version():
+    match=re.search(r'v(\d+\.\d+\.\d+)',README.read_text().splitlines()[3])
+    return match.group(1) if match else None
 
 
 def require(condition,message):
@@ -61,7 +67,11 @@ def main():
                 require(d['screenshot_status']=='not_requested' and d['screenshot']=='','unexpected capture')
             expected_fields={'status_code','title','description','type','severity','when','affects','steps',
                 'utc','engine_version','preset','screenshot','screenshot_status'}
+            version=readme_version()
+            require(version,'readme version missing')
             for d in documents:
+                require(d['engine_version'].startswith(version),
+                    'engine_version does not match readme.txt')
                 require(type(d.get('status_code')) is int and d['status_code']==0,
                     'new reports must default to OPEN status code 0')
                 expected=set(expected_fields)|({'diagnostics'} if 'diagnostics' in d else set())

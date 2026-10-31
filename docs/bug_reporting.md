@@ -34,9 +34,10 @@ existing codes. Reports remain local and gitignored, including their status
 changes.
 
 Reports include UTC submission time, the runtime engine-version label, and
-the preset path. The current version label is `0.x alpha`, not an exact Git
-revision; record the revision separately when triaging. A preset path is
-context, not a dump of unsaved scene edits.
+the preset path. The label comes from `gX_Data_String_gX_version` and must
+match `readme.txt`; it is not an exact Git revision, so record the revision
+separately when triaging. A preset path is context, not a dump of unsaved scene
+edits.
 
 ## Choosing severity
 

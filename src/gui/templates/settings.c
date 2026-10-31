@@ -275,7 +275,7 @@ gX_I0 gX_GUI_Template_Settings(gX_I32 canvasindex) {
         gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
         b.currentElement->stateRendering.RECT_NO_DRAW = true;
         gX_GUI_Builder_Text_Begin(&b);
-            gX_GUI_Builder_Text_Set(&b, "v0.21.0 BETA");
+            gX_GUI_Builder_Text_Set(&b, "v0.21.1 BETA");
             if (b.curText) { b.curText->fontSize = 10; b.curText->color = gui.style.title2.versionText; }
         gX_GUI_Builder_Text_End(&b);
     gX_GUI_Builder_Element_End(&b);

@@ -19,7 +19,11 @@ from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parent.parent
 README = PROJECT / "readme.txt"
+README_MD = PROJECT / "README.md"
 CHANGELOG = PROJECT / "CHANGELOG.md"
+DATA = PROJECT / "src/common/data.c"
+TITLE = PROJECT / "src/gui/templates/titlegx.c"
+SETTINGS = PROJECT / "src/gui/templates/settings.c"
 VERSION_RE = re.compile(r"v?(\d+)\.(\d+)\.(\d+)(?:_([0-9A-Za-z]+))?")
 HEADER_RE = re.compile(r"^## \[(\d+\.\d+\.\d+(?:_[0-9A-Za-z]+)?)\]", re.M)
 
@@ -46,6 +50,24 @@ def readme_version():
 
 def changelog_version():
     match = HEADER_RE.search(CHANGELOG.read_text())
+    return parse(match.group(1)) if match else None
+
+
+def runtime_version():
+    match = re.search(r'gX_Data_String_gX_version\s*=\s*"([^"]+)"',
+                      DATA.read_text())
+    return parse(match.group(1)) if match else None
+
+
+def readme_md_version():
+    match = re.search(r"\(`?v(\d+\.\d+\.\d+(?:_[0-9A-Za-z]+)?)",
+                      README_MD.read_text())
+    return parse(match.group(1)) if match else None
+
+
+def ui_version(path):
+    match = re.search(r"v(\d+\.\d+\.\d+(?:_[0-9A-Za-z]+)?)\s+BETA",
+                      path.read_text(), re.I)
     return parse(match.group(1)) if match else None
 
 
@@ -112,6 +134,26 @@ def main():
         if readme and changelog and readme[:3] != changelog[:3]:
             issues.append(f"readme {format_version(readme)} != changelog "
                           f"{format_version(changelog)}")
+        runtime = runtime_version()
+        if not runtime:
+            issues.append("src/common/data.c: no gX_Data_String_gX_version")
+        elif readme and runtime[:3] != readme[:3]:
+            issues.append(f"readme {format_version(readme)} != runtime "
+                          f"{format_version(runtime)}")
+        readme_md = readme_md_version()
+        if not readme_md:
+            issues.append("README.md: no version link")
+        elif readme and readme_md[:3] != readme[:3]:
+            issues.append(f"readme {format_version(readme)} != README.md "
+                          f"{format_version(readme_md)}")
+        for path in (TITLE, SETTINGS):
+            version = ui_version(path)
+            relative = path.relative_to(PROJECT)
+            if not version:
+                issues.append(f"{relative}: no vX.Y.Z BETA label")
+            elif readme and version[:3] != readme[:3]:
+                issues.append(f"readme {format_version(readme)} != {relative} "
+                              f"{format_version(version)}")
         if readme and tags:
             latest = max(version for version, _ in tags)
             if readme[:3] != latest[:3]:

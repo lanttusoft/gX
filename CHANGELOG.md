@@ -4,6 +4,14 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.21.1] - 2026-10-31
+
+### Fixed
+- **Bug-report engine version metadata**: `gX_Data_String_gX_version` now
+  matches the release label, and version consistency checks cover the runtime
+  string and UI labels. New reports from v0.21.1 record `0.21.1 beta` instead
+  of the stale `0.19.1 beta`.
+
 ## [0.21.0] - 2026-10-31
 
 ### Added
