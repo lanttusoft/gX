@@ -1406,6 +1406,16 @@ gX_I0 gX_RendererGFX_Draw_Reflections(gX_RendererGFX *gfx)
                     if (rmodel->params.planarReflection
                         && !gX_RendererGFX_Mirror_IsCounterpart(gfx, rmodel->params.mirrorPair)) continue;
                     if (rmodel->params.reflectionSource) continue;
+                    //ai: planar fill honors the model's double-sided/flip controls.
+                    gX_I1 modelCullWas = gX_RHI_IsEnabled(gX_RHI_CULL_FACE);
+                    gX_I32 modelCullMode = 0;
+                    gX_RHI_GetIntegerv(gX_RHI_CULL_FACE_MODE, &modelCullMode);
+                    if (rmodel->params.doubleSided)
+                        gX_RHI_Disable(gX_RHI_CULL_FACE);
+                    if (gfx->shader.locations.flipNormalsLoc >= 0)
+                        gX_Shader_SetValue_Int(gfx->shader.shader,
+                            gfx->shader.locations.flipNormalsLoc,
+                            rmodel->params.flipNormals ? 1 : 0);
                     gX_Model md = rmodel->model;
                     gX_Material fillDefaultMat = {0};
                     static gX_MaterialMap fillDefaultMaps[12] = {0};
@@ -1702,6 +1712,14 @@ gX_I0 gX_RendererGFX_Draw_Reflections(gX_RendererGFX *gfx)
                             gfx->shader.locations.emissiveColorLoc, mi);
                         gfx_planar_capture_mesh_maps(gfx, rmodel, meshMat, mi);
                         gX_Raw_Mesh_Draw(md.meshes[mi]);
+                    }
+                    if (rmodel->params.doubleSided) {
+                        if (modelCullWas) {
+                            gX_RHI_Enable(gX_RHI_CULL_FACE);
+                            gX_RHI_Cull_Mode((gX_U32)modelCullMode);
+                        } else {
+                            gX_RHI_Disable(gX_RHI_CULL_FACE);
+                        }
                     }
                 }
                 if (clipEnableLoc >= 0)

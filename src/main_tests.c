@@ -80,6 +80,8 @@ extern gX_I0 gX_GUI_Test_Dock_RTs_WindowSize(gX_I0);
 extern gX_I32 gX_Tools_Editor_TestInputCapture(gX_I0);
 extern gX_I32 gX_Tools_Editor_TestSnapshotRoundTrip(gX_I0);
 
+//ai: bounded screen-color-code encoder/decoder and synthetic camera round trip.
+gX_I32 gX_Tests_ColorCode(gX_I0);
 //opencode: math tests
 gX_I32 gX_Tests_Math(gX_I0);
 //opencode: math-pass corpus dump (GX_MATH_DUMP=1) — verified by scripts/math_pass.py
@@ -3760,6 +3762,8 @@ gX_I32 gX_Tests(gX_I0) {
     errors += gX_Tests_ShaderCompiler();
     errors += gX_Tests_SkinUploadClamp();
     errors += gX_Tests_DevCubePhase();
+    //ai: screen-color-code round trip (no display, GPU or camera device).
+    errors += gX_Tests_ColorCode();
     //ai: physics wrapper integration (skips when ODE is unavailable)
     errors += gX_Tests_Physics();
     //ai: toolgun mode state (the shared editor crosshair/tool framework)

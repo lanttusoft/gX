@@ -113,6 +113,10 @@ set(GX_SOURCES
     src/common/pool.c
     src/common/polisher.c
     src/common/data.c
+    src/common/color_code.c
+    src/common/color_code_tv.c
+    src/common/color_code_detect.c
+    src/common/color_code_tests.c
     src/common/threading.c
     src/common/utils/billboard.c
     src/common/utils/shader.c
@@ -220,6 +224,8 @@ set(GX_SOURCES
     src/tools/gfx/water_panel.cpp
     src/tools/gfx/glass_panel.cpp
     src/tools/tools.c
+    #ai: standalone screen-code presentation mode.
+    src/tools/color_code_present.c
     #ai: shared crosshair/tool mode (GMod-style toolgun) for editors.
     src/tools/toolgun.c
     src/gui/style.c

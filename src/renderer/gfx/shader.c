@@ -342,6 +342,7 @@ static gX_I32 gX_RendererGFX_Shader_Load_Locations(gX_RendererGFX_Shader *shader
     GFX_SHADER_GETLOC(hasGlossMap)
     GFX_SHADER_GETLOC(glossMap)
     GFX_SHADER_GETLOC(enableFlat)
+    GFX_SHADER_GETLOC(flipNormals)
 
     //opencode: configurable shader tuning constants
     GFX_SHADER_GETLOC(shadowBiasMax)

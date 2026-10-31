@@ -4,7 +4,54 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
-## [Unreleased]
+## [0.21.0] - 2026-10-31
+
+### Added
+- **Per-model surface controls**: `doubleSided` disables backface culling for
+  color, depth/shadow, instanced and planar draws; `flipNormals` inverts the
+  shaded normal without changing winding. Both are editable per model,
+  default off, and persist in presets.
+- **Screen color-code core**: reusable 45×45 encoder/decoder with calibration
+  and control cells, metadata-at-edges, payload-in-middle, SECDED ECC, CRC32,
+  bounded RLE/raw compression and a synthetic camera round trip in
+  `--test-only`, plus eight-way rotation/mirror auto-detection from the corner
+  controls and caller-supplied affine/perspective rectification through four
+  projected grid corners. `--color-code <text>` presents the frozen code
+  fullscreen or 1:1 (`SPACE`, `F`, `ESC`) with a deterministic screenshot
+  hook. `gX_ColorCodeTv_Render` / `--color-code-tv <text>` add a deterministic
+  simulated CRT with a tilted screen, scanlines, phosphor mask, chroma shift,
+  grain and vignette; three fixed noise seeds decode through the projected
+  corners. Multi-frame payloads up to 4096 bytes carry a payload ID and
+  whole-payload CRC; reassembly accepts any frame order, rejects incomplete,
+  duplicate, mixed-ID and bad-CRC sets, and the presentation cycles frames
+  with pause/step controls. See `docs/color_code_format.md`.
+- **Screen color-code 16-colour palette**: four bits per cell encode black,
+  white, 25/50/75/100% red, green and blue, plus dark/light gray. Both
+  horizontal control borders cycle every palette entry so the decoder
+  calibrates each reference directly; per-channel tint/white-balance tests and
+  a two-row calibration-strip coverage test run in `--test-only`. Format
+  metadata is now v5; a single frame carries up to 304 bytes and uses SECDED
+  plus interleaved XOR parity to recover one erased byte per block, with
+  same-block double erasures failing closed.
+- **Screen color-code automatic detection**: `gX_ColorCode_Detect` segments a
+  dark-background frame by colour distance from the sampled border and returns
+  the full-grid quad. Combined with perspective and auto-orientation decoding,
+  it covers flat and simulated-CRT fixtures; arbitrary clutter, bright
+  backgrounds and camera-device capture remain backlog.
+- **Screen color-code camera perturbations**: `--test-only` now covers blur,
+  additive noise, gamma/exposure shifts, 2× resolution loss and occlusion.
+  Small occlusions recover through the XOR parity blocks; large occlusions fail
+  closed instead of returning corrupt data.
+
+### Changed
+- **Title and settings version label**: now reports v0.21.0 beta.
+- **Guest-asset wording**: help and comments use generic external-asset
+  examples instead of naming a specific foreign project or private path.
+- **Independence disclaimer**: README/readme state that gX is not affiliated
+  with, endorsed by, or sponsored by any third-party game, ARG, series,
+  company, or trademark; public references are descriptive and nominative.
+- **Active-ragdoll concept rename**: public docs now use the original
+  "Embodied NPC (ENPC)" term and contain no third-party ARG/project names.
 
 ## [0.20.0] - 2026-10-30
 

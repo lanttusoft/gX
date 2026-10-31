@@ -49,8 +49,9 @@ int main(void) {
         raise RuntimeError('Opaque/transparent routing no longer shares its tested predicate')
     if 'model->params.enableRefraction && gfx->debugVis.refractionReady' not in model:
         raise RuntimeError('Refraction sampling lost phase-local capture readiness')
-    if 'gfx->debugVis.refractionReady = false;' not in pipeline:
-        raise RuntimeError('Pipeline does not invalidate old capture readiness')
+    if ('gfx->debugVis.refractionReady = false;' not in pipeline
+            and 'gfx->debugVis.refractionReady = false;' not in draw):
+        raise RuntimeError('Pipeline/draw path does not invalidate old capture readiness')
     copy_block = draw[draw.index('if (needRefraction &&'):draw.index('// Collect transparent models')]
     if 'gX_RHI_Blit(' not in copy_block or 'gX_Texture_Draw(' in copy_block:
         raise RuntimeError('Refraction copy reverted to shader/alpha-blended texture drawing')

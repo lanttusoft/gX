@@ -1,9 +1,16 @@
 # Screen color-code transfer — backlog
 
-Status: **idea, not scoped or implemented.** This is a design note for a
-gameX-lineage N64-style color code: a QR-like grid rendered on screen and read
-back by a camera, with calibration, error correction, compression and a
-structured payload/metadata layout.
+Status: **core encoder/decoder prototype implemented** (2026-10-30). The
+bounded C module, format layout, synthetic camera round trip and eight-way
+rotation/mirror detection live in [color_code_format.md](color_code_format.md).
+The 16-colour / 4-bit palette (25/50/75/100% red, green and blue plus grays),
+two-row per-palette calibration strip, caller-supplied affine/perspective
+rectification, automatic dark-background corner detection, a deterministic
+simulated CRT/TV view, bounded multi-frame reassembly, interleaved XOR-parity
+erasure recovery and a synthetic blur/noise/gamma/resolution/occlusion matrix
+are implemented. Arbitrary-clutter detection, a fuller Reed–Solomon erasure
+code, a camera-device walk and any further palette-density experiment remain
+backlog.
 
 ## Goal
 

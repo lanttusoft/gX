@@ -431,6 +431,8 @@ static gX_SchemaField gfx_model_params_fields[] = {
     //opencode: lighting model — 0=Phong (default), 1=PBR. Per-model opt-in
     //   for the Cook-Torrance + IBL path. Existing presets load with Phong.
     GX_SCHEMA_BOOL("usePBR",  gX_RendererGFX_Model_Parameters, usePBR),
+    GX_SCHEMA_BOOL_DEF("doubleSided", gX_RendererGFX_Model_Parameters, doubleSided, 0),
+    GX_SCHEMA_BOOL_DEF("flipNormals", gX_RendererGFX_Model_Parameters, flipNormals, 0),
 
     GX_SCHEMA_F32("shininess", gX_RendererGFX_Model_Parameters, shininess),
 

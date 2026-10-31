@@ -81,6 +81,20 @@ this source beta.
   (gX_TraceLog_GFX/GUI/MAIN/RENDER...)
 - `gX_LogState.globalLevel` — log threshold
 - `gX_Text_Format/Replace/...` — string utils
+- `gX_ColorCode_*` — bounded 45×45 screen-transfer frame:
+  Encode/Decode/Render/Palette. A 16-colour, 4-bit palette covers black/white,
+  25/50/75/100% red, green and blue, plus dark/light gray; both horizontal
+  borders calibrate every palette entry. Metadata-at-edges,
+  payload-in-middle, SECDED plus interleaved XOR-parity erasure recovery,
+  CRC32 and raw/RLE compression; the decoder
+  auto-detects eight rotation/mirror orientations from corner controls and
+  accepts caller-supplied affine/perspective corners for rectification.
+  `Detect` segments a dark-background frame by border-colour distance and
+  returns the full-grid quad for perspective + auto-orientation decoding.
+  `EncodeMulti`/`Reassemble` add ordered 4096-byte payloads with payload IDs,
+  chunk CRCs and a whole-payload CRC. `gX_ColorCodeTv_*` — `Render` produces
+  the deterministic simulated-CRT view used by `--color-code-tv` and the TV
+  decode test. See `docs/color_code_format.md` and `--test-only`.
 - `gX_JSON_Schema*` / `gX_JSON_Load/Save` / `gX_JSON_*` / `gX_Marshal_*` —
   marshal (custom json_impl, drop-in json-c subset).
   <!-- //ai: file input limits do not constrain programmatically built objects. -->
@@ -241,6 +255,14 @@ environment-reflective model, it mixes the already-lit surface and cubemap
 using clamped `reflectionBias × Fresnel` instead of adding the environment
 term. HDR radiance is not clamped; planar reflection behavior is unchanged.
 This bounded mix is not a full energy-conserving BRDF.
+
+<!-- //ai: per-model surface controls for imported one-sided and flipped assets. -->
+Model parameters `doubleSided` and `flipNormals` default false; an old preset
+that omits them loads unchanged. `doubleSided` disables backface culling for
+that model's color, depth/shadow, instanced and planar-fill draws.
+`flipNormals` inverts the standard vertex-path shading normal without changing
+triangle winding or culling. Both values round-trip through the GFX preset
+schema.
 
 <!-- //ai: cubemap inspection reads actual face HDR without the replacement-color audit. -->
 `GX_CUBEMAP_HDR_PREFIX=/tmp/.../capture` enables diagnostic float RGBA

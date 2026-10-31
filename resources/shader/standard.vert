@@ -33,6 +33,8 @@ uniform mat4 boneMatrices[128];
 //   attributes default to (0,0,0,1), which would otherwise skin unskinned
 //   meshes by bone 0.
 uniform int gX_UseSkinning = 0;
+//ai: per-model normal inversion for inside-out or authored-flipped meshes.
+uniform int flipNormals = 0;
 
 uniform int enableGouraud = 0;
 uniform vec4 sunColor, sunDiffuseTint, sunSpecularTint;
@@ -108,6 +110,7 @@ void main() {
         localPosition = (skin * vec4(vertexPosition, 1.0)).xyz;
         localNormal = mat3(skin) * vertexNormal;
     }
+    if (flipNormals == 1) localNormal = -localNormal;
 
     vs_out.fragPosition    = vec3(modelMat * vec4(localPosition, 1.0));
     vs_out.fragTexCoord    = vertexTexCoord;

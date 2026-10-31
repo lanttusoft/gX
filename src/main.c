@@ -210,6 +210,16 @@ int main(int argc, char **argv) {
     errors = gX_Load();
     if (errors > 0) goto error;
 
+#if gX_ENABLE_RENDERER == 1
+    //ai: standalone screen-code presentation; owns its loop and returns to unload.
+    if (arguments.hasColorCode) {
+        extern gX_I32 gX_ColorCode_Present(const gX_I8 *payload, gX_I1 tv);
+        errors = gX_ColorCode_Present(arguments.colorCodePayload,
+            arguments.colorCodeTv);
+        goto error;
+    }
+#endif
+
     errors = gX_Loop();
 
     //opencode: module harness — a shell script's Quit() code (or any failed
