@@ -24,8 +24,7 @@ SemVer.
   corners. Multi-frame payloads up to 4096 bytes carry a payload ID and
   whole-payload CRC; reassembly accepts any frame order, rejects incomplete,
   duplicate, mixed-ID and bad-CRC sets, and the presentation cycles frames
-  with pause/step controls. Automatic corner detection remains backlog; see
-  `docs/color_code_format.md`.
+  with pause/step controls. See `docs/color_code_format.md`.
 - **Screen color-code 16-colour palette**: four bits per cell encode black,
   white, 25/50/75/100% red, green and blue, plus dark/light gray. Both
   horizontal control borders cycle every palette entry so the decoder
@@ -39,6 +38,10 @@ SemVer.
   the full-grid quad. Combined with perspective and auto-orientation decoding,
   it covers flat and simulated-CRT fixtures; arbitrary clutter, bright
   backgrounds and camera-device capture remain backlog.
+- **Screen color-code camera perturbations**: `--test-only` now covers blur,
+  additive noise, gamma/exposure shifts, 2× resolution loss and occlusion.
+  Small occlusions recover through the XOR parity blocks; large occlusions fail
+  closed instead of returning corrupt data.
 
 ## [0.20.0] - 2026-10-30
 

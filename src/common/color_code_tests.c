@@ -731,6 +731,214 @@ cleanup:
     return errors;
 }
 
+static gX_U8 *test_copy(const gX_U8 *source)
+{
+    gX_U8 *copy = (gX_U8 *)gX_Calloc(TEST_WIDTH * TEST_HEIGHT * 4);
+    if (copy) memcpy(copy, source, TEST_WIDTH * TEST_HEIGHT * 4);
+    return copy;
+}
+
+static gX_U8 *test_blur(const gX_U8 *source)
+{
+    gX_U8 *target = (gX_U8 *)gX_Calloc(TEST_WIDTH * TEST_HEIGHT * 4);
+    if (!target) return NULL;
+    for (gX_U32 y = 0; y < TEST_HEIGHT; y++)
+        for (gX_U32 x = 0; x < TEST_WIDTH; x++)
+        {
+            gX_U32 sum[3] = {0,0,0};
+            gX_U32 count = 0;
+            for (gX_I32 dy = -1; dy <= 1; dy++)
+                for (gX_I32 dx = -1; dx <= 1; dx++)
+                {
+                    gX_I32 sx = (gX_I32)x + dx;
+                    gX_I32 sy = (gX_I32)y + dy;
+                    if (sx < 0 || sx >= TEST_WIDTH || sy < 0 || sy >= TEST_HEIGHT)
+                        continue;
+                    gX_U32 offset = ((gX_U32)sy * TEST_WIDTH + (gX_U32)sx) * 4;
+                    sum[0] += source[offset + 0];
+                    sum[1] += source[offset + 1];
+                    sum[2] += source[offset + 2];
+                    count++;
+                }
+            gX_U32 offset = (y * TEST_WIDTH + x) * 4;
+            target[offset + 0] = (gX_U8)(sum[0] / count);
+            target[offset + 1] = (gX_U8)(sum[1] / count);
+            target[offset + 2] = (gX_U8)(sum[2] / count);
+            target[offset + 3] = 255;
+        }
+    return target;
+}
+
+static gX_U8 *test_noise(const gX_U8 *source, gX_U32 seed, gX_F32 amplitude)
+{
+    gX_U8 *target = test_copy(source);
+    if (!target) return NULL;
+    for (gX_U32 index = 0; index < TEST_WIDTH * TEST_HEIGHT; index++)
+    {
+        gX_U32 value = index * 2654435761u + seed * 2246822519u;
+        value = (value ^ (value >> 13)) * 1274126177u;
+        gX_F32 noise = ((gX_F32)(value & 255u) / 255.0f - 0.5f) * amplitude;
+        for (gX_U32 channel = 0; channel < 3; channel++)
+        {
+            gX_F32 pixel = (gX_F32)target[index * 4 + channel] + noise;
+            if (pixel < 0.0f) pixel = 0.0f;
+            if (pixel > 255.0f) pixel = 255.0f;
+            target[index * 4 + channel] = (gX_U8)(pixel + 0.5f);
+        }
+    }
+    return target;
+}
+
+static gX_U8 *test_gamma(const gX_U8 *source, gX_F32 gamma)
+{
+    gX_U8 *target = test_copy(source);
+    if (!target) return NULL;
+    for (gX_U32 index = 0; index < TEST_WIDTH * TEST_HEIGHT; index++)
+        for (gX_U32 channel = 0; channel < 3; channel++)
+        {
+            gX_F32 value = powf((gX_F32)target[index * 4 + channel] / 255.0f,
+                gamma) * 255.0f;
+            if (value < 0.0f) value = 0.0f;
+            if (value > 255.0f) value = 255.0f;
+            target[index * 4 + channel] = (gX_U8)(value + 0.5f);
+        }
+    return target;
+}
+
+static gX_U8 *test_downscale_upscale(const gX_U8 *source)
+{
+    const gX_U32 halfWidth = TEST_WIDTH / 2;
+    const gX_U32 halfHeight = TEST_HEIGHT / 2;
+    gX_U8 *half = (gX_U8 *)gX_Calloc(halfWidth * halfHeight * 4);
+    gX_U8 *target = (gX_U8 *)gX_Calloc(TEST_WIDTH * TEST_HEIGHT * 4);
+    if (!half || !target)
+    {
+        gX_Free(half);
+        gX_Free(target);
+        return NULL;
+    }
+    for (gX_U32 y = 0; y < halfHeight; y++)
+        for (gX_U32 x = 0; x < halfWidth; x++)
+        {
+            gX_U32 sum[3] = {0,0,0};
+            for (gX_U32 dy = 0; dy < 2; dy++)
+                for (gX_U32 dx = 0; dx < 2; dx++)
+                {
+                    gX_U32 offset = ((y * 2 + dy) * TEST_WIDTH
+                        + (x * 2 + dx)) * 4;
+                    sum[0] += source[offset + 0];
+                    sum[1] += source[offset + 1];
+                    sum[2] += source[offset + 2];
+                }
+            gX_U32 offset = (y * halfWidth + x) * 4;
+            half[offset + 0] = (gX_U8)(sum[0] / 4);
+            half[offset + 1] = (gX_U8)(sum[1] / 4);
+            half[offset + 2] = (gX_U8)(sum[2] / 4);
+            half[offset + 3] = 255;
+        }
+    for (gX_U32 y = 0; y < TEST_HEIGHT; y++)
+        for (gX_U32 x = 0; x < TEST_WIDTH; x++)
+        {
+            gX_U32 sourceOffset = ((y / 2) * halfWidth + (x / 2)) * 4;
+            gX_U32 offset = (y * TEST_WIDTH + x) * 4;
+            memcpy(target + offset, half + sourceOffset, 4);
+        }
+    gX_Free(half);
+    return target;
+}
+
+static gX_U8 *test_occlude(const gX_U8 *source, gX_U32 row, gX_U32 col,
+    gX_U32 rows, gX_U32 cols)
+{
+    gX_U8 *target = test_copy(source);
+    if (!target) return NULL;
+    for (gX_U32 y = 0; y < rows * TEST_CELL; y++)
+        for (gX_U32 x = 0; x < cols * TEST_CELL; x++)
+        {
+            gX_U32 px = TEST_ORIGIN + col * TEST_CELL + x;
+            gX_U32 py = TEST_ORIGIN + row * TEST_CELL + y;
+            if (px >= TEST_WIDTH || py >= TEST_HEIGHT) continue;
+            gX_U32 offset = (py * TEST_WIDTH + px) * 4;
+            target[offset + 0] = 128;
+            target[offset + 1] = 128;
+            target[offset + 2] = 128;
+            target[offset + 3] = 255;
+        }
+    return target;
+}
+
+static gX_I32 test_perturbation_matrix(const gX_U8 *payload, gX_U32 length)
+{
+    gX_I32 errors = 0;
+    gX_ColorCodeFrame frame;
+    gX_I32 status = gX_ColorCode_Encode(payload, length, 0, 1, &frame);
+    if (status != GX_COLOR_CODE_OK) return 1;
+    gX_U8 *base = test_image(&frame, 0.90f, 8.0f);
+    if (!base) return 1;
+    const gX_I8 *names[] = {"blur", "noise", "gamma-low", "gamma-high",
+        "downscale", "combined"};
+    for (gX_U32 kind = 0; kind < 6; kind++)
+    {
+        gX_U8 *pixels = NULL;
+        if (kind == 0) pixels = test_blur(base);
+        else if (kind == 1) pixels = test_noise(base, 1234u, 12.0f);
+        else if (kind == 2) pixels = test_gamma(base, 0.8f);
+        else if (kind == 3) pixels = test_gamma(base, 1.2f);
+        else if (kind == 4) pixels = test_downscale_upscale(base);
+        else
+        {
+            gX_U8 *blurred = test_blur(base);
+            gX_U8 *noisy = blurred ? test_noise(blurred, 77u, 8.0f) : NULL;
+            gX_Free(blurred);
+            pixels = noisy ? test_gamma(noisy, 1.1f) : NULL;
+            gX_Free(noisy);
+        }
+        if (!pixels)
+        {
+            errors++;
+            continue;
+        }
+        gX_ColorCodeResult result;
+        status = test_decode(pixels, &result);
+        gX_Free(pixels);
+        if (status != GX_COLOR_CODE_OK || result.payloadLength != length
+            || memcmp(result.payload, payload, length) != 0)
+        {
+            gX_TraceLog(gX_LOG_ERROR,
+                "COLOR CODE 27 FAIL: perturbation %s status=%d",
+                names[kind], status);
+            errors++;
+        }
+    }
+    gX_U8 *occluded = test_occlude(base, 9, 20, 1, 2);
+    if (!occluded)
+    {
+        gX_Free(base);
+        return errors + 1;
+    }
+    gX_ColorCodeResult result;
+    status = test_decode(occluded, &result);
+    gX_Free(occluded);
+    if (status != GX_COLOR_CODE_OK || result.correctedErasures == 0)
+    {
+        gX_TraceLog(gX_LOG_ERROR,
+            "COLOR CODE 28 FAIL: small occlusion not recovered status=%d",
+            status);
+        errors++;
+    }
+    gX_U8 *large = test_occlude(base, 9, 20, 12, 12);
+    gX_Free(base);
+    if (!large) return errors + 1;
+    status = test_decode(large, &result);
+    gX_Free(large);
+    if (status == GX_COLOR_CODE_OK)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 29 FAIL: large occlusion accepted");
+        errors++;
+    }
+    return errors;
+}
+
 static gX_I32 test_tint(const gX_U8 *payload, gX_U32 length,
     gX_F32 redGain, gX_F32 greenGain, gX_F32 blueGain,
     gX_F32 redBias, gX_F32 greenBias, gX_F32 blueBias)
@@ -919,6 +1127,7 @@ gX_I32 gX_Tests_ColorCode(gX_I0)
         0.85f, 0.95f, 1.10f, 10.0f, 5.0f, 20.0f);
     errors += test_tint(raw, (gX_U32)strlen((const char *)raw),
         1.10f, 0.90f, 0.80f, 0.0f, 0.0f, 0.0f);
+    errors += test_perturbation_matrix(raw, (gX_U32)strlen((const char *)raw));
     errors += test_palette_levels(raw, (gX_U32)strlen((const char *)raw));
     errors += test_metadata_corruption(raw, (gX_U32)strlen((const char *)raw));
     errors += test_erasure(raw, (gX_U32)strlen((const char *)raw));

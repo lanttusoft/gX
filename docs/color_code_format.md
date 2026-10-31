@@ -186,6 +186,8 @@ visual/robustness fixture, not a physical CRT or camera model.
 - 25/50/75/100% red, green and blue levels plus calibration-strip coverage;
 - one erased data byte per block, different-block recovery and same-block
   erasure rejection;
+- blur, additive noise, gamma/exposure and 2× resolution-loss perturbations;
+- small occlusions recovered by parity, large occlusions rejected;
 - simulated-CRT scanline/phosphor/noise/chroma/vignette decode across three seeds;
 - multi-frame complete/shuffled/incomplete/duplicate/mixed-ID/bad-CRC sets;
 - metadata CRC rejection;
