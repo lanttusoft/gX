@@ -92,10 +92,11 @@ def changelog_findings(categories):
             text = entry.lower()
             reason = f"CHANGELOG {category}: {text[:100]}"
             tokens = set(re.findall(r"[a-z0-9-]+", text))
+            tooling = bool(tokens & {
+                "policy", "tooling", "script", "scripts", "test",
+                "documentation", "docs", "cache", "internal", "ci", "build",
+                "worktree", "worktrees"})
             if category == "added":
-                tooling = bool(tokens & {
-                    "policy", "tooling", "script", "scripts", "test",
-                    "documentation", "docs"})
                 findings.append({
                     "level": "patch" if tooling else "minor",
                     "reason": reason,
@@ -103,7 +104,7 @@ def changelog_findings(categories):
             elif category == "changed":
                 feature = bool(tokens & {
                     "new", "opt-in", "cap", "capacity", "mode", "format",
-                    "api", "behavior", "palette", "payload"})
+                "api", "behavior", "palette", "payload"}) and not tooling
                 findings.append({
                     "level": "minor" if feature else "patch",
                     "reason": reason,

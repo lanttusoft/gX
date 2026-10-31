@@ -16,6 +16,10 @@ Release-Class: patch
 - **Thin-axis SSR gate**: `scripts/ssr_thin_check.py` reflects a 0.05×1.2×0.05
   emissive pole in a public SSR floor fixture and requires a measurable mirror
   change. `make ssr-thin-check` runs it.
+- **Shared audit cache**: `AUDIT_CACHE_DIR=/path` opts into a shared
+  content-addressed cache for worktrees/CI. Entries are stored per gate and
+  content key, merged under a file lock and written atomically; the cache path
+  is printed by `make audit-cache-show`.
 
 ### Changed
 - **Sky-glow triage**: the reported anti-solar glow is the expected Rayleigh
@@ -25,6 +29,9 @@ Release-Class: patch
 - **Planar/SSR triage**: the public thin-pole fixture reflects (3.1% mirror
   change, 5,039 green pixels); the private `randomshit.json` axis report still
   needs its exact model/camera content to reproduce.
+- Audit cache format v4 stores multiple keys per gate so a shared directory can
+  retain passes from different worktrees. Old format-v3 caches are ignored and
+  rebuilt.
 
 ## [0.26.2] - 2026-10-31
 
