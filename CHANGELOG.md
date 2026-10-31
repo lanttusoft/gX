@@ -4,7 +4,7 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
-## [0.27.0] - 2026-10-31
+## [0.27.0] - 2026-11-01
 
 Release-Class: minor
 
@@ -25,11 +25,32 @@ Release-Class: minor
   the undocked audit window no longer overlaps the clean render with side
   panels. The gate also pins marker visibility, all-camera picking and the
   position/target drag behavior.
+- **PBR material browser**: brushed steel, gold, copper, painted plastic and
+  concrete presets.
+- **Inspector**: a Shadows section exposes shadow diffuse/specular and PBR
+  ambient-shadow controls.
+- **PBR gate**: `make pbr-check` covers the LOW-to-MEDIUM raise,
+  procedural-sky IBL, material tint spread and cast-shadow response. The
+  god-ray gate adds a depth-mask check.
 
 ### Fixed
 - **Editor camera markers**: marker positions now use the real
   world-to-screen projection and viewport scale instead of passing world
   coordinates through the game-screen transform.
+- **PBR lighting**: split-sum IBL now uses a sky-only capture of the
+  procedural sky instead of the static image skybox. The missing
+  `irradianceMap`/`prefilterMap` sampler-location cache was restored. LOW
+  quality no longer leaves PBR on the direct-only path: presets with PBR
+  models raise to MEDIUM and force a shader reload.
+- **PBR shadows**: `shadowDiffuseBias`/`shadowSpecularBias` are uploaded, and
+  `pbrShadowAmbient` reduces the diffuse IBL term in cast shadows so shadows
+  remain readable under a bright sky.
+- **God rays**: the generation pass binds scene depth, masks foreground
+  pixels, and stops rays at geometry, so PBR specular highlights are no
+  longer replayed as light shafts.
+- **Planar terrain reflections**: the mirror pass no longer samples the
+  main-view SSAO map, removing the horizontally flipped AO seen inside
+  terrain reflections.
 
 ## [0.26.3] - 2026-10-31
 
