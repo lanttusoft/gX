@@ -4,7 +4,7 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
-## [Unreleased]
+## [0.25.0] - 2026-10-31
 
 ### Added
 - **Color-code 8-colour mode**: opt-in palette ID 3 uses a high-contrast
