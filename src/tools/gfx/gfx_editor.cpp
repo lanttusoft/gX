@@ -2493,11 +2493,12 @@ static gX_I0 gfx_preset_load(gX_RendererGFX *gfx) {
                 if (pbrModel && pbrModel->params.usePBR) pbrNeeded = 1;
             }
             if (pbrNeeded && gfx->state.shaderQuality < 1) {
+                //opencode: let the update quality guard raise and force the
+                //   reload; setting shaderQuality here would hide the change
+                //   from its prevQuality tracker.
                 gfx->state.qualityPreset = 1;
-                gfx->state.shaderQuality = 1;
-                gX_RendererGFX_ApplyQualityPreset(gfx);
                 gX_TraceLog(gX_LOG_NOTICE,
-                    "PBR preset raised qualityPreset/shaderQuality to MEDIUM");
+                    "PBR preset requests MEDIUM quality");
             }
         }
         gfx_preset_set_status("Preset loaded", 1);
@@ -6848,9 +6849,9 @@ static gX_I0 gfx_models_panel(gX_RendererGFX *gfx) {
             //opencode: PBR needs MEDIUM; LOW compiled direct-only PBR and
             //   read as black metal / white porcelain. Raise on first use.
             if (pbr && gfx->state.shaderQuality < 1) {
+                //opencode: the update guard raises and reloads; leave the
+                //   shaderQuality transition visible to it.
                 gfx->state.qualityPreset = 1;
-                gfx->state.shaderQuality = 1;
-                gX_RendererGFX_ApplyQualityPreset(gfx);
             }
         }
         ImGui::DragFloat("albedo", &model->params.albedo, 0.01f, 0.0f, 2.0f);

@@ -178,29 +178,30 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         }
     }
 
-    //opencode: PBR requires the QUALITY >= 1 shader path (IBL/Fresnel/rim).
-    //   LOW silently compiled PBR direct-only (black metals, porcelain
-    //   dielectrics); raise instead of leaving a model in that state. The
-    //   quality-change detector below reloads the shaders.
-    if (gfx->state.shaderQuality < 1) {
-        gX_I1 pbrWanted = 0;
-        GX_HEAP_FOREACH(gfx->models, gX_RendererGFX_Model, pbrModel) {
-            if (pbrModel->params.usePBR) pbrWanted = 1;
-        }
-        if (pbrWanted) {
-            gfx->state.qualityPreset = 1;
-            gfx->state.shaderQuality = 1;
-            gX_TraceLog_GFX(gX_LOG_NOTICE,
-                "PBR model requires MEDIUM quality — raised qualityPreset/shaderQuality to 1");
-        }
-    }
-
     //opencode: detect shader quality change — cascade to runtime feature toggles,
     //   then trigger reload on all GFX shaders so the compile-time QUALITY gates
     //   (standard.frag #if QUALITY >= N) are regenerated with the new level.
     {
         static gX_I32 prevQuality = 0;
-        if (gfx->state.shaderQuality != prevQuality) {
+        //opencode: PBR requires the QUALITY >= 1 shader path. Raise before
+        //   the change test so a preset that loads at LOW (or a runtime PBR
+        //   toggle) always forces the shader reload, even when prevQuality
+        //   already reads 1 from an earlier transition.
+        gX_I1 pbrForced = 0;
+        if (gfx->state.shaderQuality < 1) {
+            gX_I1 pbrWanted = 0;
+            GX_HEAP_FOREACH(gfx->models, gX_RendererGFX_Model, pbrModel) {
+                if (pbrModel->params.usePBR) pbrWanted = 1;
+            }
+            if (pbrWanted) {
+                gfx->state.qualityPreset = 1;
+                gfx->state.shaderQuality = 1;
+                pbrForced = 1;
+                gX_TraceLog_GFX(gX_LOG_NOTICE,
+                    "PBR model requires MEDIUM quality — raised qualityPreset/shaderQuality to 1");
+            }
+        }
+        if (gfx->state.shaderQuality != prevQuality || pbrForced) {
             gX_I32 q = gfx->state.shaderQuality;
             //opencode: cascade quality to CPU-side state so it matches shader QUALITY gates
             if (q <= 0) {
