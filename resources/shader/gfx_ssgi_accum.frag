@@ -57,7 +57,9 @@ void main() {
         float velLen = velocityValid ? length(velocityTap.rg) : 0.0;
         //opencode: v0.3.5-polish - smoothstep blend band replaces the binary
         //   0.15 jump that popped at silhouettes whenever velocity crossed it
-        float blend = mix(0.85, 0.30, smoothstep(0.05, 0.25, velLen));
+        //opencode: fast motion/disocclusion (including a camera cut) rejects
+        //   history instead of retaining a 30% ghost.
+        float blend = mix(0.85, 0.0, smoothstep(0.05, 0.25, velLen));
         acc = mix(cur, clipped, blend);
     }
 

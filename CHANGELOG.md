@@ -4,6 +4,16 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: patch
+
+### Fixed
+- **SSGI/GTAO temporal smearing**: high-motion/disocclusion frames now reject
+  temporal history instead of retaining a 30% ghost, so a camera cut settles
+  immediately. Added the `ssgi-temporal` audit gate and
+  `make ssgi-cut-check` (camera-cut lag metric).
+
 ## [0.26.1] - 2026-10-31
 
 Release-Class: patch

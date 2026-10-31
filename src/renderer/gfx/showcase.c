@@ -344,6 +344,8 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
     if (getenv("GX_T_BLOOMAE")) gfx->bloom.autoExposure = (gX_I1)atoi(getenv("GX_T_BLOOMAE"));
     //opencode: hunt - feature-matrix hooks (one-line forces for A/B verify)
     if (getenv("GX_T_SSAO")) gfx->state.ENABLE_SSAO = (gX_I1)atoi(getenv("GX_T_SSAO"));
+    if (getenv("GX_T_SSGI_BOUNCE"))
+        gfx->ssao.ssgiBounceGain = (gX_F32)atof(getenv("GX_T_SSGI_BOUNCE"));
     if (getenv("GX_T_SHADOWS")) gfx->state.ENABLE_SHADOWS = (gX_I1)atoi(getenv("GX_T_SHADOWS"));
     if (getenv("GX_T_POINT_SHADOWS")) gfx->state.ENABLE_POINT_SHADOWS = (gX_I1)atoi(getenv("GX_T_POINT_SHADOWS"));
     if (getenv("GX_T_INSTANCING")) gfx->state.ENABLE_INSTANCING = (gX_I1)atoi(getenv("GX_T_INSTANCING"));
@@ -381,6 +383,23 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
     {
         const gX_I8 *spin = getenv("GX_CAM_SPIN");
         if (spin) s_yaw += (gX_F32)atof(spin);
+    }
+
+    //opencode: deterministic camera cut for temporal-lag probes. Applies once
+    //   at the requested frame; the production camera path is unchanged.
+    {
+        const gX_I8 *cutFrame = getenv("GX_CAM_CUT_FRAME");
+        static gX_I1 s_cutApplied = 0;
+        if (cutFrame && cutFrame[0] && !s_cutApplied
+            && maindata.frameCount >= (gX_U64)atoi(cutFrame)) {
+            const gX_I8 *cutYaw = getenv("GX_CAM_CUT_YAW");
+            const gX_I8 *cutPitch = getenv("GX_CAM_CUT_PITCH");
+            const gX_I8 *cutDist = getenv("GX_CAM_CUT_DIST");
+            s_yaw += cutYaw ? (gX_F32)atof(cutYaw) : 180.0f;
+            if (cutPitch) s_pitch = (gX_F32)atof(cutPitch);
+            if (cutDist) s_dist = (gX_F32)atof(cutDist);
+            s_cutApplied = 1;
+        }
     }
 
     //opencode: v0.1.24 — deterministic orbit override for the reflection
