@@ -99,7 +99,7 @@ gX_I0 gX_RendererGFX_Godray_Draw(gX_RendererGFX *gfx)
             gfx->bloom.hdrScene.wrapper.rt.texture, gX_GFX_TEXUNIT_SCENE);
         //opencode: upload sun screen position via direct GL (bypasses rlgl SetValue
         //   which has been observed to produce black output for float/int uniforms
-        //   — see R-2 in docs/hard_bugs/). Direct glUniform is always correct.
+        //   — see the R-2 hard-bug note). Direct glUniform is always correct.
         if (gfx->godray.genSunScreenPosLoc >= 0) {
             gX_RHI_Shader_Use((gX_U32)genS.id);
             gX_RHI_Uniform_Vec2(gfx->godray.genSunScreenPosLoc, sunUV.x, sunUV.y);
