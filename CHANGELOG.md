@@ -10,6 +10,9 @@ SemVer.
 - **Uniform-type attribution**: `GX_UNIFORM_TRACE=1` checks each upload
   against the shader's active GL type and names any mismatch;
   `make uniform-trace-check` runs it over the showcase scenes.
+- **Bug-report replay**: `scripts/bug_replay.py` merges a report's
+  diagnostics into a temporary preset and renders the reported camera/state;
+  the merge path is unit-tested and needs no private report or GPU.
 - **Fog-volume color and scene-fog matching**: the GFX fog volume gains an
   in-scatter tint, a `matchSceneFog` toggle that follows the scene fog color,
   and a "visible defaults" editor action. `fog_volume_check.py` pins default
