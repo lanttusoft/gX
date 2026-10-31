@@ -1098,8 +1098,6 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
 
             gX_Shader brdfS = gfx->ibl.brdfShader.shader;
             gX_Drawing_BeginShader(brdfS);
-                gX_F32v2 brdfRes = {(gX_F32)lutSize, (gX_F32)lutSize};
-                gX_Shader_SetValue_V2(brdfS, gX_Shader_GetLocation(brdfS, "resolution"), brdfRes);
                 gX_Drawing_DrawScreenQuad(0, 0, (gX_F32)lutSize, (gX_F32)lutSize);
             gX_Drawing_EndShader();
 

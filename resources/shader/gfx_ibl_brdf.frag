@@ -5,8 +5,6 @@
 
 in vec2 fragTexCoord;
 
-uniform vec2 resolution;
-
 out vec4 fragColor;
 
 float reverseBits(uint value) {
