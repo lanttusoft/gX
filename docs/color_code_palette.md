@@ -1,8 +1,8 @@
 # Color-code palette density study
 
-Status: research (2026-10-31). This note compares 4-, 8- and 16-colour
-palettes for the 45×45 screen code. It does **not** change the shipped format;
-the default remains the 16-colour, 4-bit palette.
+Status: implemented (2026-10-31). This note compares 4-, 8- and 16-colour
+palettes for the 45×45 screen code. The 8-colour recommendation is now the
+opt-in palette ID 3; the default remains the 16-colour, 4-bit palette.
 
 ## Method
 
@@ -56,17 +56,30 @@ middle: a visible robustness gain for a quarter of the payload.
 ## Recommendation
 
 1. Keep the 16-colour, 4-bit format as the default; it is the capacity mode.
-2. If a high-contrast fallback is added, make it an **opt-in 8-colour,
-   3-bit-per-cell palette** (new palette/version ID), not a default change.
-   It should carry its own calibration/control layout and reuse the existing
-   SECDED/RS layers.
-3. Treat 4 colours as a poor-camera/accessibility mode, not a general default.
-4. Do not change the current format based on this table alone: the simulation
-   is pre-ECC and excludes blur/JPEG/occlusion. Validate the chosen mode with
-   the existing perturbation matrix and, eventually, a camera walk.
+2. The **opt-in 8-colour, 3-bit-per-cell palette** is implemented as palette
+   ID 3: it has its own 8-entry calibration strip, uses 3 bits per cell for
+   metadata and payload, and reuses the existing SECDED/RS layers.
+3. Treat 4 colours as a poor-camera/accessibility mode, not a general default;
+   it remains unimplemented.
+4. Do not change the default based on this table alone: the simulation is
+   pre-ECC and excludes blur/JPEG/occlusion. The 8-colour mode is covered by
+   the synthetic round-trip/erasure tests and the presentation check; a camera
+   walk is still backlog.
+
+## Implementation
+
+- Palette ID 3; subset indices `0, 1, 13, 5, 9, 11, 3, 15` (black, white,
+  blue-100, red-100, green-100, blue-50, red-50, light gray).
+- 3 bits per cell for both metadata and payload; the 26-byte header uses 70
+  cells instead of 52.
+- The calibration strips cycle the eight-entry subset, and the decoder tries
+  the 4-bit/16-colour header first, then the 3-bit/8-colour header.
+- Single-frame caps: 228 payload bytes with SECDED+XOR, 227 with RS(18,16).
+- API: `gX_ColorCode_SetPaletteMode` / `GetPaletteMode`; CLI:
+  `--color-code-palette 8` (default `16`).
 
 ## Backlog
 
-- Implement the 8-colour, 3-bit-cell mode (variable cell width, palette subset
-  mapping, metadata/version bump, render/decode/tests).
 - Re-run the experiment with blur/JPEG/occlusion and a real camera capture.
+- Consider the 4-colour/2-bit accessibility mode only if the camera walk shows
+  it is needed.

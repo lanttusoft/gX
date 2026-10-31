@@ -62,6 +62,7 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
         "                             F fullscreen, ESC close\n"
         "      --color-code-tv <text> Same, displayed through a simulated CRT/TV\n"
         "      --color-code-ecc <s>   ECC for --color-code: secded (default) or rs\n"
+        "      --color-code-palette <n> Palette for --color-code: 16 (default) or 8\n"
         "      --ai-screenshot-final  Headless capture: screenshot + exit after\n"
         "                             180 frames (vision verification/parity audits)\n"
         "      --ai-screenshot-after <n>  Same, capture at frame n\n"
@@ -187,6 +188,7 @@ gX_I32 gX_Parse(int argc, char **argv) {
         {"color-code",  required_argument,  NULL, 0},
         {"color-code-tv", required_argument, NULL, 0},
         {"color-code-ecc", required_argument, NULL, 0},
+        {"color-code-palette", required_argument, NULL, 0},
         {"ai-screenshot-final", no_argument, NULL, 0},
         {"ai-screenshot-after", required_argument, NULL, 0},
         {"layout-dump", required_argument, NULL, 0},
@@ -321,6 +323,16 @@ gX_I32 gX_Parse(int argc, char **argv) {
                         arguments.colorCodeEcc = GX_COLOR_CODE_ECC_SECDED_XOR;
                     else {
                         fprintf(stderr, "PARSE: --color-code-ecc expects secded or rs\n");
+                        return 0;
+                    }
+                }
+                if (!strcmp(long_options[option_index].name,"color-code-palette")) {
+                    if (optarg && !strcmp(optarg, "16"))
+                        arguments.colorCodePalette = GX_COLOR_CODE_PALETTE_16COLOR;
+                    else if (optarg && !strcmp(optarg, "8"))
+                        arguments.colorCodePalette = GX_COLOR_CODE_PALETTE_8COLOR;
+                    else {
+                        fprintf(stderr, "PARSE: --color-code-palette expects 16 or 8\n");
                         return 0;
                     }
                 }

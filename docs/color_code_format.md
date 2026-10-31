@@ -1,42 +1,61 @@
 # Screen color-code format
 
-<!-- //ai: bounded core prototype; camera rectification and multi-frame reassembly are not implemented yet. -->
+<!-- //ai: bounded core prototype; camera rectification and multi-frame reassembly are implemented, camera-device capture is not. -->
 
-Status: **core encoder/decoder prototype** (2026-10-30). The reusable C module
+Status: **core encoder/decoder prototype** (2026-10-31). The reusable C module
 is in `src/common/color_code.c` / `.h`; the synthetic camera round trip is part
 of `--test-only`. It is not a QR replacement, a camera-certified reader or a
 network/security protocol.
 
+The primary use case is a target that has a screen but no usable text channel:
+a real N64/PS1/PS2-class console, a devkit, a kiosk or an embedded board where
+the framebuffer is the only output. The screen becomes a low-bandwidth downlink
+and a phone camera reads a bounded diagnostic blob. On a desktop, logs, serial,
+a file or the clipboard are cheaper; the color code is for the case where none
+of those exist. The module is portable C and does not depend on raylib; gX's
+own demo and presentation tool are raylib-backed, while gameX's console
+backends are the reference for a hardware port.
+
 ## Frame
 
-A frame is a fixed 45×45 cell grid. Each cell is one of sixteen palette entries
-and carries four bits.
+A frame is a fixed 45×45 cell grid. Two palette modes share the same geometry:
+
+| Mode | Palette ID | Cells | Calibration strip | Payload per frame |
+| --- | ---: | --- | --- | ---: |
+| 16-colour | 2 | 4 bits (palette index) | 16-entry cycle | 304 B (303 B RS) |
+| 8-colour | 3 | 3 bits (subset symbol) | 8-entry cycle | 228 B (227 B RS) |
+
+The 16-colour palette is `0` black, `1` white, `2`–`5` red at 25/50/75/100%,
+`6`–`9` green at 25/50/75/100%, `10`–`13` blue at 25/50/75/100%, `14` dark
+gray, `15` light gray. The opt-in 8-colour subset is `0` black, `1` white,
+`13` blue-100, `5` red-100, `9` green-100, `11` blue-50, `3` red-50 and `15`
+light gray. It roughly doubles the minimum colour distance at the cost of 25%
+of the payload; see [color_code_palette.md](color_code_palette.md).
 
 | Region | Cells | Purpose |
 | --- | --- | --- |
 | Quiet zone | 2-cell border | Blank capture margin |
-| Control/calibration border | 3 cells | Per-palette calibration strip plus 3×3 corner markers |
+| Control/calibration border | 3 cells | Per-mode calibration strip plus 3×3 corner markers |
 | Metadata | 3 rows inside the border | 26-byte header and header CRC |
 | Payload | 32 rows × 35 columns inside the metadata | SECDED-protected compressed payload |
 
-Palette: `0` black, `1` white, `2`–`5` red at 25/50/75/100%, `6`–`9` green at
-25/50/75/100%, `10`–`13` blue at 25/50/75/100%, `14` dark gray, `15` light gray.
 Cell bits are written most-significant-bit first. The four 3×3 corner markers
 are distinct patterns; the decoder validates them before reading metadata. Both
-horizontal border rows cycle through all sixteen palette entries, so the decoder
-calibrates every reference directly instead of assuming a fixed black/white
-response.
+horizontal border rows cycle through the active palette (all sixteen entries in
+mode 2, the eight-entry subset in mode 3), so the decoder calibrates every used
+reference directly instead of assuming a fixed black/white response.
 
 ## Metadata
 
-The 26-byte header is written into the first 104 metadata cells:
+The 26-byte header is written into the first 52 metadata cells in mode 2 or the
+first 70 cells in mode 3 (the metadata region has 105 cells):
 
 | Offset | Size | Field |
 | --- | --- | --- |
 | 0 | 1 | Magic `0x43` |
 | 1 | 1 | Format version (`5` legacy, `6` Reed–Solomon) |
 | 2 | 1 | Flags (`bit0` = multi-frame) |
-| 3 | 1 | Palette ID (`2` = 16-colour, 4-bit) |
+| 3 | 1 | Palette ID (`2` = 16-colour/4-bit, `3` = 8-colour/3-bit) |
 | 4 | 1 | Compression ID (`0` raw, `1` RLE) |
 | 5 | 1 | ECC ID (`2` = SECDED + interleaved XOR parity; `3` = RS(18,16)) |
 | 6 | 2 | Chunk length (LE) |
@@ -48,22 +67,46 @@ The 26-byte header is written into the first 104 metadata cells:
 | 18 | 4 | Whole-payload CRC32 (LE) |
 | 22 | 4 | Header CRC32 over bytes 0–21 (LE) |
 
-Unknown versions, palette IDs, ECC IDs and compression IDs fail closed.
+Unknown versions, palette IDs, ECC IDs and compression IDs fail closed. The
+decoder does not need an out-of-band mode flag: it tries the 4-bit/16-colour
+header first, then the 3-bit/8-colour header, and accepts only a header whose
+palette ID and CRC agree.
 
 ## Multi-frame payloads
 
 `gX_ColorCode_EncodeMulti` splits a payload of up to **4096 bytes** into
-sequential 304-byte chunks and sets the same 16-bit payload ID and
-whole-payload CRC on every frame. `gX_ColorCode_Reassemble` accepts the decoded
-result set in any order, requires exactly `frameTotal` unique indices with one
-shared payload ID, concatenates in index order, enforces the output capacity
-and verifies the whole-payload CRC. A missing, duplicate or mixed-payload set
-fails closed.
+sequential chunks (304 bytes in mode 2, 228 in mode 3) and sets the same 16-bit
+payload ID and whole-payload CRC on every frame. `gX_ColorCode_Reassemble`
+accepts the decoded result set in any order, requires exactly `frameTotal`
+unique indices with one shared payload ID, concatenates in index order, enforces
+the output capacity and verifies the whole-payload CRC. A missing, duplicate or
+mixed-payload set fails closed. The worst case is 18 frames in 8-colour mode.
 
 `--color-code <text>` cycles multi-frame payloads once per second; `P` pauses,
 `LEFT`/`RIGHT` step frames and the window title reports the current index.
 `--color-code-ecc rs` selects the opt-in Reed–Solomon erasure mode; the
-default remains SECDED + XOR.
+default remains SECDED + XOR. `--color-code-palette 8` selects the opt-in
+8-colour/3-bit mode; the default is `16`.
+
+## Diagnostic payloads
+
+The payload is opaque bytes, so a no-text-channel target can define a small
+fixed diagnostic record. A 20-byte example fits in one frame:
+
+| Offset | Size | Field |
+| ---: | ---: | --- |
+| 0 | 4 | Magic `GXDG` |
+| 4 | 1 | Diagnostic schema version |
+| 5 | 1 | Flags |
+| 6 | 2 | Scene ID (LE) |
+| 8 | 4 | Build hash (LE) |
+| 12 | 4 | Error code (LE) |
+| 16 | 4 | Frame counter (LE) |
+
+The target fills the record and calls `gX_ColorCode_Encode`; the receiver
+decodes and parses it. Keep the schema versioned, keep secrets out of it, and
+remember that the payload is inert data — the decoder never executes it.
+Larger dumps can use `EncodeMulti`, up to 4096 bytes.
 
 ## Integrity and bounds
 
@@ -76,14 +119,16 @@ default remains SECDED + XOR.
   16 data bytes plus 2 Cauchy parity bytes per interleaved block. Any two
   erased bytes per block are recoverable, including data/parity combinations;
   three erasures fail closed. The 13-bit SECDED layer still corrects one bit
-  per encoded byte. RS mode caps a single frame at **303 payload bytes**.
+  per encoded byte. RS mode caps a single frame at **303 payload bytes**
+  (227 in 8-colour mode).
 - Low-confidence cells are classified as erasures; a cell marks every encoded
   byte whose bits it covers.
 - CRC32 covers the header, each chunk and the completed multi-frame payload
   separately.
-- A single frame is capped at **304 payload bytes** (303 in RS mode); a
-  multi-frame payload is capped at **4096 bytes**. Compressed length,
-  reassembly and decompression outputs are bounded.
+- A single frame is capped at **304 payload bytes** in mode 2 (303 in RS mode)
+  or **228 bytes** in mode 3 (227 in RS mode); a multi-frame payload is capped
+  at **4096 bytes**. Compressed length, reassembly and decompression outputs
+  are bounded.
 - Compression is a PackBits-style RLE. If RLE is not smaller, the encoder uses
   raw mode. Compression is not encryption.
 
@@ -105,12 +150,14 @@ gX_ColorCode_Decode(&image, &result);
 ```
 
 Cell centres are sampled with a small aperture and corrected against the
-calibration row. With `autoOrientation`, the decoder tries the eight
-dihedral orientations (identity, 90°/180°/270°, horizontal/vertical mirror,
-transpose and anti-transpose) and selects the one whose four corner control
-markers match. The result reports the chosen `orientation`. The caller must
-provide a frame that fills the declared 45×45 grid; arbitrary cropping is
-rejected.
+calibration row. The decoder calibrates both strip cycles and selects the
+palette mode from the validated metadata header. With `autoOrientation`, it
+tries the eight dihedral orientations (identity, 90°/180°/270°,
+horizontal/vertical mirror, transpose and anti-transpose) for the 16-colour
+mode first, then the 8-colour mode, and selects the first orientation whose
+four corner control markers match. The result reports the chosen `orientation`.
+The caller must provide a frame that fills the declared 45×45 grid; arbitrary
+cropping is rejected.
 
 For caller-supplied perspective, set `perspective = 1` and provide the four
 projected full-grid corners in image pixels, ordered TL, TR, BR, BL:
@@ -161,9 +208,9 @@ fixtures are covered in `--test-only`.
 `SPACE` toggles fit/1:1, `F` toggles the window fullscreen and `ESC` closes it.
 Single-frame codes are static/frozen; multi-frame payloads cycle once per
 second, with `P` to pause and `LEFT`/`RIGHT` to step. The title reports the
-current frame. `GX_COLOR_CODE_SHOT=/path.png` saves a deterministic capture
-(default frame 10; `GX_COLOR_CODE_SHOT_FRAME=N` selects another) for the
-presentation gate.
+current frame. `--color-code-palette 8` selects the high-contrast mode.
+`GX_COLOR_CODE_SHOT=/path.png` saves a deterministic capture (default frame 10;
+`GX_COLOR_CODE_SHOT_FRAME=N` selects another) for the presentation gate.
 
 Caller-supplied perspective rectification, automatic dark-background corner
 detection, a deterministic simulated CRT/TV view and multi-frame playback are
@@ -201,6 +248,10 @@ visual/robustness fixture, not a physical CRT or camera model.
   erasure rejection;
 - opt-in RS(18,16) round trip, one/two/three erasures in one block, parity-only
   and data+parity recovery, 303-byte capacity, and multi-frame reassembly;
+- opt-in 8-colour/3-bit round trip (raw, RLE and empty), palette-ID and
+  calibration-strip invariants, one-bit correction, double-bit rejection,
+  metadata corruption rejection, single erasure recovery, 228-byte capacity,
+  RS capacity/erasure recovery and three-frame reassembly;
 - blur, additive noise, gamma/exposure and 2× resolution-loss perturbations;
 - small occlusions recovered by parity, large occlusions rejected;
 - simulated-CRT scanline/phosphor/noise/chroma/vignette decode across three seeds;

@@ -50,7 +50,7 @@ def palette_counts(pixels):
 
 
 def run(mode, shot, temporary, payload="gX color code", frames=20,
-        shot_frame=None, tag=None, ecc=None):
+        shot_frame=None, tag=None, ecc=None, palette=None):
     environment = dict(os.environ)
     environment["GX_AUDIT_WINDOW"] = "hidden"
     environment.update({
@@ -63,6 +63,8 @@ def run(mode, shot, temporary, payload="gX color code", frames=20,
     command = [str(BIN), mode, payload]
     if ecc:
         command += ["--color-code-ecc", ecc]
+    if palette:
+        command += ["--color-code-palette", palette]
     command += ["--screenWidth", str(WIDTH), "--screenHeight", str(HEIGHT)]
     result = subprocess.run(command, cwd=ROOT, env=environment,
                             text=True, stdout=subprocess.PIPE,
@@ -146,6 +148,54 @@ def check_rs(out):
     check_flat(image)
 
 
+def code_cell_samples(image):
+    cell = 16.0
+    scale = min(WIDTH / (45.0 * cell), HEIGHT / (45.0 * cell))
+    draw = 45.0 * cell * scale
+    origin_x = (WIDTH - draw) * 0.5
+    origin_y = (HEIGHT - draw) * 0.5
+    pitch = draw / 45.0
+    samples = []
+    for row in range(45):
+        for col in range(45):
+            x = int(round(origin_x + (col + 0.5) * pitch))
+            y = int(round(origin_y + (row + 0.5) * pitch))
+            patch = image[max(0, y - 1):y + 2,
+                          max(0, x - 1):x + 2].astype(np.float64)
+            samples.append(patch.reshape(-1, 3).mean(axis=0))
+    return np.array(samples)
+
+
+def check_8color(out):
+    image, log = run("--color-code", out / "8color.png", out,
+                     palette="8", tag="8color")
+    if "COLOR_CODE: PALETTE 3" not in log:
+        raise RuntimeError("8-colour presentation did not select palette ID 3")
+    subset = {
+        "black": (0, 0, 0),
+        "white": (255, 255, 255),
+        "red_50": (110, 20, 20),
+        "red_100": (220, 40, 40),
+        "green_100": (40, 200, 80),
+        "blue_50": (20, 40, 110),
+        "blue_100": (40, 80, 220),
+        "gray_light": (192, 192, 192),
+    }
+    seen = {name: 0 for name in subset}
+    for sample in code_cell_samples(image):
+        distances = {name: float(np.abs(sample - np.asarray(color)).max())
+                     for name, color in subset.items()}
+        best = min(distances, key=distances.get)
+        if distances[best] > 6.0:
+            raise RuntimeError(
+                f"8-colour cell sample {sample.round(1)} is outside the subset")
+        seen[best] += 1
+    print("8-colour cell counts:", seen, flush=True)
+    for name, count in seen.items():
+        if count < 1:
+            raise RuntimeError(f"8-colour presentation missing {name}")
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="color_code_present_",
                                      dir="/tmp/opencode") as temporary:
@@ -153,10 +203,11 @@ def main():
         flat, _ = run("--color-code", out / "flat.png", out)
         check_flat(flat)
         check_rs(out)
+        check_8color(out)
         tv, _ = run("--color-code-tv", out / "tv.png", out)
         check_tv(tv)
         check_multiframe(out)
-    print("COLOR_CODE_PRESENT_CHECK: PASS (flat palette bands + simulated TV + multi-frame)")
+    print("COLOR_CODE_PRESENT_CHECK: PASS (16/8-colour bands + simulated TV + multi-frame)")
     return 0
 
 

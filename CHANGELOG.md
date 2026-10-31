@@ -4,6 +4,14 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+### Added
+- **Color-code 8-colour mode**: opt-in palette ID 3 uses a high-contrast
+  eight-colour subset with 3 bits per cell, 8-entry calibration strips and
+  228-byte payloads (227 with RS); the default 16-colour/4-bit format is
+  unchanged. `--color-code-palette 8` selects it.
+
 ## [0.24.1] - 2026-10-31
 
 ### Added
