@@ -26,7 +26,7 @@ SOURCE_PRESET = ROOT / "resources" / "tools" / "gfx_editor.json"
 
 
 #opencode: use the standard material map asset and a fixed horizontal mirror fixture.
-def make_fixture(path, exclude_source):
+def make_fixture(path, exclude_source, glass=False, sky=False):
     fixture = json.loads(SOURCE_PRESET.read_text())
     fixture["models"] = [copy.deepcopy(fixture["models"][1]),
                          copy.deepcopy(fixture["models"][1])]
@@ -70,6 +70,17 @@ def make_fixture(path, exclude_source):
             "emissiveMap": "misc/testcard.png",
         }],
     })
+    if glass:
+        source["params"].update({
+            "enableBlending": True,
+            "blendOpacity": 0.35,
+            "enableRefraction": True,
+            "refractiveIndex": 1.5,
+            "enableReflections": True,
+            "albedoTint": [255, 255, 255, 255],
+            "metalness": 0.1,
+            "roughness": 0.2,
+        })
     fixture["lights"] = []
     fixture["camera"] = {
         "position": [4.0, 4.0, 6.0],
@@ -88,7 +99,7 @@ def make_fixture(path, exclude_source):
         "ENABLE_FXAA": False,
         "ENABLE_TAA": False,
         "ENABLE_SKYBOX": False,
-        "ENABLE_PROCEDURAL_SKY": False,
+        "ENABLE_PROCEDURAL_SKY": sky,
         "ENABLE_SHADOWS": False,
         "ENABLE_POINT_SHADOWS": False,
         "ENABLE_COOKIES": False,
@@ -130,6 +141,22 @@ def capture(temp_root, name, preset):
     return np.asarray(Image.open(screenshot).convert("RGB"), dtype=np.int16)
 
 
+#opencode: fixed mirror window shared by the opaque, glass and sky probes.
+def mirror_region(image):
+    height, width = image.shape[:2]
+    return (slice(int(height * 0.495), int(height * 0.84)),
+            slice(int(width * 0.47), int(width * 0.73)))
+
+
+def green_pixels(image):
+    part = image[mirror_region(image)]
+    green = part[:, :, 1]
+    red = part[:, :, 0]
+    blue = part[:, :, 2]
+    return int(((green > 150) & (green > red * 1.35)
+                & (green > blue * 1.1)).sum())
+
+
 #opencode: confirm the capture contains visible per-material texture color that vanishes when excluded.
 def main():
     if not BIN.is_file():
@@ -142,29 +169,21 @@ def main():
             temp_root = Path(temporary)
             included_preset = temp_root / "included.json"
             excluded_preset = temp_root / "excluded.json"
+            glass_sky_preset = temp_root / "glass_sky.json"
             make_fixture(included_preset, False)
             make_fixture(excluded_preset, True)
+            make_fixture(glass_sky_preset, False, glass=True, sky=True)
             included = capture(temp_root, "included", included_preset)
             excluded = capture(temp_root, "excluded", excluded_preset)
             if (included.ndim != 3 or included.shape[2] != 3
                     or excluded.shape != included.shape):
                 raise RuntimeError(
                     f"unexpected screenshot sizes: {included.shape} vs {excluded.shape}")
-            height, width = included.shape[:2]
-            region = (slice(int(height * 0.495), int(height * 0.84)),
-                      slice(int(width * 0.47), int(width * 0.73)))
+            region = mirror_region(included)
             included_region = included[region]
             excluded_region = excluded[region]
-            green = included_region[:, :, 1]
-            red = included_region[:, :, 0]
-            blue = included_region[:, :, 2]
-            included_green = int(((green > 150) & (green > red * 1.35)
-                                  & (green > blue * 1.1)).sum())
-            excluded_green = int(((excluded_region[:, :, 1] > 150)
-                                  & (excluded_region[:, :, 1]
-                                     > excluded_region[:, :, 0] * 1.35)
-                                  & (excluded_region[:, :, 1]
-                                     > excluded_region[:, :, 2] * 1.1)).sum())
+            included_green = green_pixels(included)
+            excluded_green = green_pixels(excluded)
             delta = np.abs(included_region - excluded_region)
             changed = float((delta > 10).any(axis=2).mean())
             if included_green < 5000 or included_green < excluded_green * 8:
@@ -175,9 +194,16 @@ def main():
                 raise RuntimeError(
                     f"excluding the source did not remove its reflection: "
                     f"mean={delta.mean():.3f}, changed={changed:.2%}")
+            glass_sky = capture(temp_root, "glass_sky", glass_sky_preset)
+            glass_green = green_pixels(glass_sky)
+            if glass_green < 5000:
+                raise RuntimeError(
+                    "glass/sky source missing from planar capture: "
+                    f"green pixels={glass_green}")
             print("GFX_PLANAR_MATERIAL_CHECK: textured material preserved in planar capture")
             print(f"  green pixels: {included_green} included, {excluded_green} excluded")
             print(f"  capture difference: mean={delta.mean():.3f}, changed={changed:.2%}")
+            print(f"  glass + procedural sky: green pixels={glass_green}")
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"GFX_PLANAR_MATERIAL_CHECK: FAIL: {error}", file=sys.stderr)
         return 1

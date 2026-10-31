@@ -12,6 +12,10 @@ SemVer.
   identity; `audit_summary.py --explain` reports why an uncached gate will run,
   and `make audit-cache-show` inspects freshness with the audit display. The
   cache-check fixture now uses public gates instead of the private export preset.
+- **Planar capture regression coverage**: `gfx_planar_material_check.py` now
+  also captures a glass source with procedural sky enabled, keeping the
+  transparent-material and sky-on planar paths covered alongside the opaque
+  included/excluded pair.
 - **Bug-report build revision**: reports include `engine_revision`, a
   best-effort 12-hex Git prefix generated at build time (`-dirty` when tracked
   files are modified); source archives without their own Git root report
