@@ -335,6 +335,14 @@ Run `make fogsprite-check` and use the `fogsprite` benchmark/matrix rows.
   fixtures, silhouette readability, and dedicated benchmark rows for rain,
   snow, and fog.
 
+### SSR thin geometry — public regression
+
+`scripts/ssr_thin_check.py` reflects a 0.05×1.2×0.05 emissive pole in a public
+SSR floor fixture; the included/excluded pair must change the mirror region
+(3.1%, 5,039 green pixels). This is the public proxy for the private
+`randomshit.json` axis report; the private preset still needs its exact
+model/camera content to reproduce.
+
 ### P2 — Reflection map / Gaussian splat
 
 Investigate two bounded reflection representations separately:

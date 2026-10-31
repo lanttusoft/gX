@@ -1074,6 +1074,12 @@ sky-azimuth-check: all
 	@echo "== [gX CI] sky azimuth response =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/sky_azimuth_check.py
 
+#opencode: public thin-axis SSR reflection gate.
+.PHONY: ssr-thin-check
+ssr-thin-check: all
+	@echo "== [gX CI] thin-axis SSR reflection =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/ssr_thin_check.py
+
 #opencode: first-frame warmup pin (startup envelope: content by frame 7,
 #   one shape, settled by frame 12). Requires a live GPU display.
 warmup-check: all

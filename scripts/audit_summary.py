@@ -76,6 +76,7 @@ FALLBACK_GATES = [
     ("temporal", "gfx_temporal_check.py", ["--quick"], "full"),
     ("ssgi-temporal", "ssgi_cut_check.py", [], "full"),
     ("sky-azimuth", "sky_azimuth_check.py", [], "full"),
+    ("ssr-thin", "ssr_thin_check.py", [], "full"),
     ("material-maps", "material_maps_check.py", [], "full"),
     ("particle-velocity", "particle_velocity_check.py", [], "compute"),
     ("animation", "gfx_animation_check.py", [], "full"),
