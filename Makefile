@@ -52,6 +52,7 @@ all:
 check: all
 	python3 -m unittest discover -s scripts -p test_empty_scene.py
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
+	python3 -m unittest discover -s scripts -p test_version_suggest.py
 	@if [ ! -d ../proofs ]; then \
 	  echo "gX public source beta: full 'make check' needs the proof tree (../proofs)."; \
 	  echo "Use 'make check-fast' for the public source-beta CI."; \
@@ -189,6 +190,7 @@ hw-report-check:
 check-fast: all
 	python3 -m unittest discover -s scripts -p test_empty_scene.py
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
+	python3 -m unittest discover -s scripts -p test_version_suggest.py
 	@echo "== [gX fast] unit tests =="
 	./build/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/gX_build --test-only && exit 1)
 	@echo "== [gX fast] attribution =="
@@ -858,10 +860,21 @@ gfx-gl-level-ui-check: all
 version-check:
 	@echo "== [gX] version consistency =="
 	python3 scripts/version_check.py --consistency
+	python3 -m unittest discover -s scripts -p test_version_suggest.py
+
+#opencode: advisory class suggestion from the actual diff and CHANGELOG.
+version-suggest:
+	@echo "== [gX] version suggestion =="
+	python3 scripts/version_suggest.py --from "$${FROM:-$$(git describe --tags --abbrev=0 2>/dev/null)}" --to "$${TO:-HEAD}"
 
 version-gate:
-	@tier=$$(python3 scripts/version_check.py --gate-from "$${FROM:-$$(git describe --tags --abbrev=0 2>/dev/null)}" --gate-to "$${TO:-$$(python3 scripts/version_check.py --readme)}" --tier-only); \
-	echo "== [gX] version gate: $$tier =="; \
+	@from="$${FROM:-$$(git describe --tags --abbrev=0 2>/dev/null)}"; \
+	to="$${TO:-$$(python3 scripts/version_check.py --readme)}"; \
+	declared=$$(python3 scripts/version_check.py --class); \
+	echo "== [gX] version gate: $$from -> $$to ($$declared) =="; \
+	python3 scripts/version_suggest.py --from "$$from" --to HEAD --check "$$declared" || exit 1; \
+	tier=$$(python3 scripts/version_check.py --gate-from "$$from" --gate-to "$$to" --tier-only); \
+	echo "== [gX] tier: $$tier =="; \
 	case "$$tier" in \
 	  full) AUDIT_CACHE=0 $(MAKE) check && AUDIT_CACHE=0 $(MAKE) audit-summary-full ;; \
 	  fast) $(MAKE) check-fast ;; \
@@ -1119,6 +1132,7 @@ uniform-trace-check: all
 .PHONY: bug-replay-check
 bug-replay-check:
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
+	python3 -m unittest discover -s scripts -p test_version_suggest.py
 
 #opencode: wireframe placement pin — difference gates pass garbage, only
 #   a bbox gate catches misplacement. Requires a live GPU display.

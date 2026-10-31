@@ -4,7 +4,16 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
-## [Unreleased]
+## [0.26.0] - 2026-10-31
+
+Release-Class: minor
+
+### Added
+- **Version policy and change classifier**: `docs/versioning.md` defines the
+  official MAJOR/MINOR/PATCH rules; `scripts/version_suggest.py` inspects the
+  diff, commit subjects and CHANGELOG categories and recommends a bump;
+  `make version-suggest` runs it, and `make version-gate` rejects an
+  under-bumped release.
 
 ### Changed
 - **Color-code multi-frame payload cap**: raised from 4096 bytes to 57344
@@ -12,6 +21,8 @@ SemVer.
   advance faster in the presentation and honor `GX_COLOR_CODE_FRAME_TICKS`.
 
 ## [0.25.0] - 2026-10-31
+
+Release-Class: minor
 
 ### Added
 - **Color-code 8-colour mode**: opt-in palette ID 3 uses a high-contrast
@@ -21,12 +32,16 @@ SemVer.
 
 ## [0.24.1] - 2026-10-31
 
+Release-Class: patch
+
 ### Added
 - **Empty scene preset**: `resources/tools/empty.json` and the editor preset
   bar's **Empty** button load a no-content diagnostic scene (sky + camera, no
   models, lights, cameras or effects).
 
 ## [0.24.0] - 2026-10-31
+
+Release-Class: minor
 
 ### Added
 - **Color-code palette-density study**: `scripts/color_code_palette_experiment.py`

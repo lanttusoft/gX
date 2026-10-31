@@ -26,6 +26,9 @@ TITLE = PROJECT / "src/gui/templates/titlegx.c"
 SETTINGS = PROJECT / "src/gui/templates/settings.c"
 VERSION_RE = re.compile(r"v?(\d+)\.(\d+)\.(\d+)(?:_([0-9A-Za-z]+))?")
 HEADER_RE = re.compile(r"^## \[(\d+\.\d+\.\d+(?:_[0-9A-Za-z]+)?)\]", re.M)
+RELEASE_CLASS_RE = re.compile(
+    r"^Release-Class:\s*(major|minor|patch|variant)\s*$", re.M)
+POLICY_VERSION = (0, 26, 0)
 
 TIERS = {
     "full": ("make check", "make audit-summary-full"),
@@ -84,6 +87,50 @@ def format_version(version):
     return f"{text}_{variant}" if variant else text
 
 
+def changelog_sections(text):
+    matches = list(re.finditer(r"^## \[([^\]]+)\][^\n]*\n", text, re.M))
+    sections = {}
+    for index, match in enumerate(matches):
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) \
+            else len(text)
+        sections[match.group(1)] = text[start:end]
+    return sections
+
+
+def release_class(version=None, text=None):
+    text = text or CHANGELOG.read_text()
+    sections = changelog_sections(text)
+    if version is not None:
+        section = sections.get(format_version(version))
+    else:
+        section = next(iter(sections.values()), None)
+    if not section:
+        return None
+    match = RELEASE_CLASS_RE.search(section)
+    return match.group(1) if match else None
+
+
+def numeric_class(before, after):
+    if after[0] != before[0]:
+        return "major"
+    if after[1] != before[1]:
+        return "minor"
+    if after[2] != before[2]:
+        return "patch"
+    if after[3] != before[3]:
+        return "variant"
+    return "none"
+
+
+def class_matches(declared, actual, after):
+    if declared == actual:
+        return True
+    if after[0] == 0 and declared == "major" and actual == "minor":
+        return True
+    return False
+
+
 def tier_for(before, after):
     if before[:2] != after[:2]:
         return "full"
@@ -99,6 +146,7 @@ def main():
     parser.add_argument("--validate", metavar="VERSION")
     parser.add_argument("--consistency", action="store_true")
     parser.add_argument("--readme", action="store_true")
+    parser.add_argument("--class", dest="release_class", action="store_true")
     parser.add_argument("--gate-from", metavar="VERSION")
     parser.add_argument("--gate-to", metavar="VERSION")
     parser.add_argument("--tier-only", action="store_true")
@@ -118,6 +166,16 @@ def main():
             print("readme version missing", file=sys.stderr)
             return 1
         print(f"v{format_version(version)}")
+        return 0
+
+    if arguments.release_class:
+        version = readme_version()
+        declared = release_class(version)
+        if not declared:
+            print("CHANGELOG.md: no Release-Class for the readme version",
+                  file=sys.stderr)
+            return 1
+        print(declared)
         return 0
 
     if arguments.consistency:
@@ -159,6 +217,24 @@ def main():
             if readme[:3] != latest[:3]:
                 issues.append(f"readme {format_version(readme)} != latest tag "
                               f"{format_version(latest)}")
+            if readme >= POLICY_VERSION and readme >= latest:
+                previous = None
+                if readme > latest:
+                    previous = latest
+                else:
+                    older = sorted((version for version in tags
+                                    if version != latest), reverse=True)
+                    if older:
+                        previous = older[0]
+                if previous is not None:
+                    declared = release_class(readme)
+                    actual = numeric_class(previous, readme)
+                    if not declared:
+                        issues.append("CHANGELOG.md: latest section has no "
+                                      "Release-Class")
+                    elif not class_matches(declared, actual, readme):
+                        issues.append(f"Release-Class {declared} != numeric "
+                                      f"{actual}")
         for issue in issues:
             print(f"  [VERSION] {issue}")
         print("version-check: " + ("OK" if not issues else "ISSUES"))
