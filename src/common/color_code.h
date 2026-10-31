@@ -37,16 +37,20 @@ extern "C" {
 #define GX_COLOR_CODE_META_BYTES        26
 #define GX_COLOR_CODE_BITS_PER_CELL_16  4
 #define GX_COLOR_CODE_BITS_PER_CELL_8   3
+#define GX_COLOR_CODE_BITS_PER_CELL_4   2
 #define GX_COLOR_CODE_BITS_PER_CELL     GX_COLOR_CODE_BITS_PER_CELL_16
 #define GX_COLOR_CODE_PALETTE_SIZE      16
 #define GX_COLOR_CODE_PALETTE_16COLOR   2
 #define GX_COLOR_CODE_PALETTE_8COLOR    3
+#define GX_COLOR_CODE_PALETTE_4COLOR    4
 #define GX_COLOR_CODE_8COLOR_SIZE       8
+#define GX_COLOR_CODE_4COLOR_SIZE       4
 #define GX_COLOR_CODE_ACTIVE            (GX_COLOR_CODE_GRID - 2 * GX_COLOR_CODE_QUIET)
 #define GX_COLOR_CODE_INNER             (GX_COLOR_CODE_ACTIVE - 2 * GX_COLOR_CODE_BORDER)
 #define GX_COLOR_CODE_CELLS             (GX_COLOR_CODE_GRID * GX_COLOR_CODE_GRID)
 #define GX_COLOR_CODE_META_CELLS_16     ((GX_COLOR_CODE_META_BYTES * 8 + GX_COLOR_CODE_BITS_PER_CELL_16 - 1) / GX_COLOR_CODE_BITS_PER_CELL_16)
 #define GX_COLOR_CODE_META_CELLS_8      ((GX_COLOR_CODE_META_BYTES * 8 + GX_COLOR_CODE_BITS_PER_CELL_8 - 1) / GX_COLOR_CODE_BITS_PER_CELL_8)
+#define GX_COLOR_CODE_META_CELLS_4      ((GX_COLOR_CODE_META_BYTES * 8 + GX_COLOR_CODE_BITS_PER_CELL_4 - 1) / GX_COLOR_CODE_BITS_PER_CELL_4)
 #define GX_COLOR_CODE_META_CELLS        GX_COLOR_CODE_META_CELLS_16
 #define GX_COLOR_CODE_META_REGION_CELLS (GX_COLOR_CODE_META_ROWS * GX_COLOR_CODE_INNER)
 #define GX_COLOR_CODE_DATA_START_ROW    (GX_COLOR_CODE_QUIET + GX_COLOR_CODE_BORDER + GX_COLOR_CODE_META_ROWS)
@@ -54,6 +58,7 @@ extern "C" {
 #define GX_COLOR_CODE_DATA_CELLS        (GX_COLOR_CODE_DATA_ROWS * GX_COLOR_CODE_INNER)
 #define GX_COLOR_CODE_DATA_BITS_16      (GX_COLOR_CODE_DATA_CELLS * GX_COLOR_CODE_BITS_PER_CELL_16)
 #define GX_COLOR_CODE_DATA_BITS_8       (GX_COLOR_CODE_DATA_CELLS * GX_COLOR_CODE_BITS_PER_CELL_8)
+#define GX_COLOR_CODE_DATA_BITS_4       (GX_COLOR_CODE_DATA_CELLS * GX_COLOR_CODE_BITS_PER_CELL_4)
 #define GX_COLOR_CODE_DATA_BITS         GX_COLOR_CODE_DATA_BITS_16
 #define GX_COLOR_CODE_ECC_BITS          13
 #define GX_COLOR_CODE_MAX_COMPRESSED    (GX_COLOR_CODE_DATA_BITS / GX_COLOR_CODE_ECC_BITS)
@@ -67,14 +72,19 @@ extern "C" {
 #define GX_COLOR_CODE_RS_MAX_PAYLOAD    303
 #define GX_COLOR_CODE_8COLOR_MAX_PAYLOAD    228
 #define GX_COLOR_CODE_8COLOR_RS_MAX_PAYLOAD 227
-//opencode: 56 KiB multi-frame budget; frameTotal is one byte, so the
-//   8-colour worst case (252 frames) stays below 255.
+#define GX_COLOR_CODE_4COLOR_MAX_PAYLOAD    151
+#define GX_COLOR_CODE_4COLOR_RS_MAX_PAYLOAD 151
+//opencode: 56 KiB multi-frame budget; frameTotal is one byte. The 8-colour
+//   worst case is 252 frames; 4-colour mode tops out at 255 frames (38,505 B).
 #define GX_COLOR_CODE_MAX_MULTI_PAYLOAD 57344
-#define GX_COLOR_CODE_MAX_MULTI_FRAMES  ((GX_COLOR_CODE_MAX_MULTI_PAYLOAD + GX_COLOR_CODE_8COLOR_MAX_PAYLOAD - 1) / GX_COLOR_CODE_8COLOR_MAX_PAYLOAD)
+#define GX_COLOR_CODE_MAX_MULTI_FRAMES  255
 #if GX_COLOR_CODE_MAX_MULTI_FRAMES > 255
 #error "color-code multi-frame count exceeds the one-byte frameTotal"
 #endif
 #define GX_COLOR_CODE_MAX_IMAGE_BYTES   (64 * 1024 * 1024)
+#define GX_COLOR_CODE_DIAGNOSTIC_MAGIC  0x47445847u
+#define GX_COLOR_CODE_DIAGNOSTIC_SIZE   20
+#define GX_COLOR_CODE_DIAGNOSTIC_VERSION 1
 
 #define GX_COLOR_CODE_OK                 0
 #define GX_COLOR_CODE_ERR_ARGUMENT      -1
@@ -102,6 +112,16 @@ typedef struct gX_ColorCodeFrame {
     gX_U16  payloadID;
     gX_U32  fullPayloadCRC;
 } gX_ColorCodeFrame;
+
+//opencode: 20-byte diagnostic record for a target with no text channel.
+typedef struct gX_ColorCodeDiagnostic {
+    gX_U8  schemaVersion;
+    gX_U8  flags;
+    gX_U16 sceneID;
+    gX_U32 buildHash;
+    gX_U32 errorCode;
+    gX_U32 frameCounter;
+} gX_ColorCodeDiagnostic;
 
 //ai: orientation 0=identity, 1=90CW, 2=180, 3=270, 4=mirror H,
 //    5=mirror V, 6=transpose, 7=anti-transpose.
@@ -177,6 +197,13 @@ gX_I32 gX_ColorCode_Render(const gX_ColorCodeFrame *frame, gX_U8 *pixels,
 
 //ai: expose one palette entry for renderers and diagnostics.
 gX_I0 gX_ColorCode_Palette(gX_U8 index, gX_U8 *r, gX_U8 *g, gX_U8 *b);
+
+//opencode: pack/unpack the 20-byte diagnostic record used by screen-only
+//   targets; the payload remains inert bytes.
+gX_I32 gX_ColorCode_Diagnostic_Pack(const gX_ColorCodeDiagnostic *diagnostic,
+    gX_U8 *payload, gX_U32 capacity, gX_U32 *length);
+gX_I32 gX_ColorCode_Diagnostic_Unpack(const gX_U8 *payload, gX_U32 length,
+    gX_ColorCodeDiagnostic *diagnostic);
 
 #ifdef __cplusplus
 }

@@ -63,7 +63,8 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
         "                             F fullscreen, ESC close\n"
         "      --color-code-tv <text> Same, displayed through a simulated CRT/TV\n"
         "      --color-code-ecc <s>   ECC for --color-code: secded (default) or rs\n"
-        "      --color-code-palette <n> Palette for --color-code: 16 (default) or 8\n"
+        "      --color-code-palette <n> Palette for --color-code: 16 (default), 8 or 4\n"
+        "      --color-code-file <p>  Binary payload for --color-code (max 56 KiB)\n"
         "      --ai-screenshot-final  Headless capture: screenshot + exit after\n"
         "                             180 frames (vision verification/parity audits)\n"
         "      --ai-screenshot-after <n>  Same, capture at frame n\n"
@@ -214,6 +215,7 @@ gX_I32 gX_Parse(int argc, char **argv) {
         {"color-code-tv", required_argument, NULL, 0},
         {"color-code-ecc", required_argument, NULL, 0},
         {"color-code-palette", required_argument, NULL, 0},
+        {"color-code-file", required_argument, NULL, 0},
         {"ai-screenshot-final", no_argument, NULL, 0},
         {"ai-screenshot-after", required_argument, NULL, 0},
         {"layout-dump", required_argument, NULL, 0},
@@ -329,11 +331,13 @@ gX_I32 gX_Parse(int argc, char **argv) {
                 }
                 if (!strcmp(long_options[option_index].name,"color-code")) {
                     arguments.hasColorCode = true;
+                    arguments.hasColorCodeFile = false;
                     arguments.colorCodeTv = false;
                     if (!color_code_payload_set(optarg)) return 0;
                 }
                 if (!strcmp(long_options[option_index].name,"color-code-tv")) {
                     arguments.hasColorCode = true;
+                    arguments.hasColorCodeFile = false;
                     arguments.colorCodeTv = true;
                     if (!color_code_payload_set(optarg)) return 0;
                 }
@@ -352,10 +356,20 @@ gX_I32 gX_Parse(int argc, char **argv) {
                         arguments.colorCodePalette = GX_COLOR_CODE_PALETTE_16COLOR;
                     else if (optarg && !strcmp(optarg, "8"))
                         arguments.colorCodePalette = GX_COLOR_CODE_PALETTE_8COLOR;
+                    else if (optarg && !strcmp(optarg, "4"))
+                        arguments.colorCodePalette = GX_COLOR_CODE_PALETTE_4COLOR;
                     else {
-                        fprintf(stderr, "PARSE: --color-code-palette expects 16 or 8\n");
+                        fprintf(stderr, "PARSE: --color-code-palette expects 16, 8 or 4\n");
                         return 0;
                     }
+                }
+                if (!strcmp(long_options[option_index].name,"color-code-file")) {
+                    arguments.hasColorCode = true;
+                    arguments.hasColorCodeFile = true;
+                    arguments.colorCodeTv = false;
+                    snprintf(arguments.colorCodeFilePath,
+                        sizeof(arguments.colorCodeFilePath), "%s",
+                        optarg ? optarg : "");
                 }
                 //ai: dynamic module — --module <path.so>
                 if (!strcmp(long_options[option_index].name,"module")) {

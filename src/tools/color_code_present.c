@@ -63,10 +63,9 @@ static gX_I0 color_code_present_title(gX_U32 frame, gX_U32 count)
 }
 
 //ai: static 1:1/fit presentation loop; multi-frame payloads cycle once per second.
-gX_I32 gX_ColorCode_Present(const gX_I8 *payload, gX_I1 tv)
+gX_I32 gX_ColorCode_PresentData(const gX_U8 *payload, gX_U32 length, gX_I1 tv)
 {
     if (!payload) return 1;
-    gX_U32 length = (gX_U32)strlen((const char *)payload);
     if (length > GX_COLOR_CODE_MAX_MULTI_PAYLOAD)
     {
         gX_TraceLog(gX_LOG_ERROR,
@@ -74,6 +73,7 @@ gX_I32 gX_ColorCode_Present(const gX_I8 *payload, gX_I1 tv)
             length, GX_COLOR_CODE_MAX_MULTI_PAYLOAD);
         return 1;
     }
+    gX_TraceLog(gX_LOG_NOTICE, "COLOR_CODE: payload %u bytes", length);
     gX_ColorCodeFrame *frames = (gX_ColorCodeFrame *)gX_Calloc(
         sizeof(gX_ColorCodeFrame) * GX_COLOR_CODE_MAX_MULTI_FRAMES);
     if (!frames) return 1;
@@ -223,4 +223,54 @@ gX_I32 gX_ColorCode_Present(const gX_I8 *payload, gX_I1 tv)
     gX_Free(pixels);
     gX_Free(frames);
     return 0;
+}
+
+gX_I32 gX_ColorCode_Present(const gX_I8 *payload, gX_I1 tv)
+{
+    if (!payload) return 1;
+    return gX_ColorCode_PresentData((const gX_U8 *)payload,
+        (gX_U32)strlen((const char *)payload), tv);
+}
+
+gX_I32 gX_ColorCode_PresentFile(const gX_I8 *path, gX_I1 tv)
+{
+    if (!path || !path[0]) return 1;
+    FILE *file = fopen((const char *)path, "rb");
+    if (!file)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR_CODE: cannot open %s", path);
+        return 1;
+    }
+    if (fseek(file, 0, SEEK_END) != 0)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR_CODE: cannot seek %s", path);
+        fclose(file);
+        return 1;
+    }
+    long size = ftell(file);
+    if (size < 0 || (gX_U64)size > GX_COLOR_CODE_MAX_MULTI_PAYLOAD)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR_CODE: file %s exceeds %d bytes",
+            path, GX_COLOR_CODE_MAX_MULTI_PAYLOAD);
+        fclose(file);
+        return 1;
+    }
+    rewind(file);
+    gX_U8 *data = (gX_U8 *)gX_Malloc(size > 0 ? (gX_U32)size : 1);
+    if (!data)
+    {
+        fclose(file);
+        return 1;
+    }
+    if (size > 0 && fread(data, 1, (size_t)size, file) != (size_t)size)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR_CODE: cannot read %s", path);
+        gX_Free(data);
+        fclose(file);
+        return 1;
+    }
+    fclose(file);
+    gX_I32 status = gX_ColorCode_PresentData(data, (gX_U32)size, tv);
+    gX_Free(data);
+    return status;
 }

@@ -85,8 +85,8 @@ this source beta.
   hardware diagnostics:
   Encode/Decode/Render/Palette. The default 16-colour, 4-bit palette covers
   black/white, 25/50/75/100% red, green and blue, plus dark/light gray; the
-  opt-in 8-colour, 3-bit mode uses a high-contrast subset. Both horizontal
-  borders calibrate the active palette. Metadata-at-edges,
+  opt-in 8-colour/3-bit and 4-colour/2-bit modes use high-contrast subsets.
+  Both horizontal borders calibrate the active palette. Metadata-at-edges,
   payload-in-middle, SECDED plus interleaved XOR-parity erasure recovery or
   opt-in RS(18,16) Reed–Solomon erasure recovery, CRC32 and raw/RLE
   compression; the decoder
@@ -100,9 +100,11 @@ this source beta.
   IDs, chunk CRCs and a whole-payload CRC. `SetEccMode`/`GetEccMode` select the
   opt-in RS(18,16) erasure layer (ECC ID 3) or the default SECDED + XOR layer
   (ECC ID 2). `SetPaletteMode`/`GetPaletteMode` select the default
-  16-colour/4-bit palette (ID 2) or the opt-in 8-colour/3-bit high-contrast
-  palette (ID 3); the decoder auto-detects both from the metadata header.
-  `gX_ColorCodeTv_*` — `Render` produces
+  16-colour/4-bit palette (ID 2) or the opt-in 8-colour/3-bit (ID 3) and
+  4-colour/2-bit (ID 4) high-contrast palettes; the decoder auto-detects them
+  from the metadata header. `Diagnostic_Pack`/`Diagnostic_Unpack` handle the
+  shipped 20-byte diagnostic record; `--color-code-file <path>` reads binary
+  payloads up to 56 KiB. `gX_ColorCodeTv_*` — `Render` produces
   the deterministic simulated-CRT view used by `--color-code-tv` and the TV
   decode test. See `docs/color_code_format.md` and `--test-only`.
 - `gX_JSON_Schema*` / `gX_JSON_Load/Save` / `gX_JSON_*` / `gX_Marshal_*` —

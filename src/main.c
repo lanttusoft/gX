@@ -216,12 +216,17 @@ int main(int argc, char **argv) {
     //ai: standalone screen-code presentation; owns its loop and returns to unload.
     if (arguments.hasColorCode) {
         extern gX_I32 gX_ColorCode_Present(const gX_I8 *payload, gX_I1 tv);
+        extern gX_I32 gX_ColorCode_PresentFile(const gX_I8 *path, gX_I1 tv);
         if (arguments.colorCodeEcc)
             gX_ColorCode_SetEccMode(arguments.colorCodeEcc);
         if (arguments.colorCodePalette)
             gX_ColorCode_SetPaletteMode(arguments.colorCodePalette);
-        errors = gX_ColorCode_Present(arguments.colorCodePayload,
-            arguments.colorCodeTv);
+        if (arguments.hasColorCodeFile)
+            errors = gX_ColorCode_PresentFile(arguments.colorCodeFilePath,
+                arguments.colorCodeTv);
+        else
+            errors = gX_ColorCode_Present(arguments.colorCodePayload,
+                arguments.colorCodeTv);
         gX_Free(arguments.colorCodePayload);
         arguments.colorCodePayload = NULL;
         goto error;

@@ -4,15 +4,16 @@ Status: **core encoder/decoder prototype implemented** (2026-10-31). The
 bounded C module, format layout, synthetic camera round trip and eight-way
 rotation/mirror detection live in [color_code_format.md](color_code_format.md).
 The default 16-colour / 4-bit palette (25/50/75/100% red, green and blue plus
-grays), the opt-in 8-colour / 3-bit high-contrast palette, two-row per-palette
-calibration strips, caller-supplied affine/perspective rectification,
-automatic dark-background corner detection, a deterministic simulated CRT/TV
-view, bounded multi-frame reassembly, interleaved XOR-parity erasure recovery,
-an opt-in RS(18,16) Reed–Solomon erasure mode and a synthetic
-blur/noise/gamma/resolution/occlusion matrix are implemented. A bounded
-corner-pattern clutter/bright-background fallback is implemented; full
-arbitrary occlusion, a code touching the image border, a camera-device walk and
-the 4-colour/2-bit accessibility mode remain backlog.
+grays), the opt-in 8-colour / 3-bit and 4-colour / 2-bit high-contrast
+palettes, two-row per-palette calibration strips, caller-supplied
+affine/perspective rectification, automatic dark-background corner detection,
+a deterministic simulated CRT/TV view, bounded multi-frame reassembly,
+interleaved XOR-parity erasure recovery, an opt-in RS(18,16) Reed–Solomon
+erasure mode, a 20-byte diagnostic record, binary file payload input and a
+synthetic blur/noise/gamma/resolution/occlusion matrix are implemented. A
+bounded corner-pattern clutter/bright-background fallback is implemented; full
+arbitrary occlusion, a code touching the image border and a camera-device walk
+remain backlog.
 
 ## Goal
 
@@ -119,12 +120,12 @@ for QR, a general file-transfer protocol or a security boundary.
 ## Open questions
 
 - Palette size vs. cell density on an N64-era look: the 4/8/16-colour study is
-  in [color_code_palette.md](color_code_palette.md); the opt-in 8-colour,
-  3-bit-cell mode is implemented, and the 4-colour mode remains a question.
+  in [color_code_palette.md](color_code_palette.md); the opt-in 8-colour and
+  4-colour modes are implemented; a real camera walk is still needed.
 - Single-frame practical payload budget at 1080p/4K and typical phone cameras.
-- A shared diagnostic-record schema (magic, version, build hash, error code,
-  scene/frame counter) for no-text-channel hardware; the 20-byte example in
-  [color_code_format.md](color_code_format.md) is a starting point.
+- Validate the shipped 20-byte diagnostic record
+  (`gX_ColorCode_Diagnostic_Pack/Unpack`) on real hardware; the schema is in
+  [color_code_format.md](color_code_format.md).
 - Whether the format belongs in the GFX editor, a standalone tool, or a module.
 - Interaction with the screenshot/capture path and the copyright/provenance
   rules for generated codes.
