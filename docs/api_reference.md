@@ -91,7 +91,9 @@ this source beta.
   auto-detects eight rotation/mirror orientations from corner controls and
   accepts caller-supplied affine/perspective corners for rectification.
   `Detect` segments a dark-background frame by border-colour distance and
-  returns the full-grid quad for perspective + auto-orientation decoding.
+  returns the full-grid quad for perspective + auto-orientation decoding;
+  `DetectClutter` is a bounded bright/clutter fallback that scans the four
+  control patterns and accepts only a quad that decodes.
   `EncodeMulti`/`Reassemble` add ordered 4096-byte payloads with payload IDs,
   chunk CRCs and a whole-payload CRC. `SetEccMode`/`GetEccMode` select the
   opt-in RS(18,16) erasure layer (ECC ID 3) or the default SECDED + XOR layer

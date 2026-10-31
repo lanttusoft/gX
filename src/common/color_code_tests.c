@@ -1086,6 +1086,135 @@ static gX_I32 test_detection(const gX_U8 *payload, gX_U32 length,
     return errors;
 }
 
+static gX_U8 *test_clutter_image(const gX_ColorCodeFrame *frame,
+    gX_U32 *width, gX_U32 *height)
+{
+    const gX_U32 w = 800;
+    const gX_U32 h = 800;
+    gX_U8 *canvas = (gX_U8 *)gX_Calloc(w * h * 4);
+    if (!canvas) return NULL;
+    for (gX_U32 index = 0; index < w * h; index++)
+    {
+        canvas[index * 4 + 0] = 215;
+        canvas[index * 4 + 1] = 215;
+        canvas[index * 4 + 2] = 215;
+        canvas[index * 4 + 3] = 255;
+    }
+    for (gX_U32 y = 20; y < 90; y++)
+        for (gX_U32 x = 20; x < 260; x++)
+        {
+            gX_U32 offset = (y * w + x) * 4;
+            canvas[offset + 0] = 20;
+            canvas[offset + 1] = 70;
+            canvas[offset + 2] = 140;
+        }
+    for (gX_U32 y = 700; y < 780; y++)
+        for (gX_U32 x = 40; x < 300; x++)
+        {
+            gX_U32 offset = (y * w + x) * 4;
+            canvas[offset + 0] = 140;
+            canvas[offset + 1] = 40;
+            canvas[offset + 2] = 40;
+        }
+    for (gX_U32 y = 300; y < 500; y++)
+        for (gX_U32 x = 650; x < 780; x++)
+        {
+            gX_U32 offset = (y * w + x) * 4;
+            canvas[offset + 0] = 40;
+            canvas[offset + 1] = 130;
+            canvas[offset + 2] = 60;
+        }
+    {
+        const gX_U8 ring[9] = {1,1,1, 1,0,1, 1,1,1};
+        for (gX_U32 row = 0; row < 3; row++)
+            for (gX_U32 column = 0; column < 3; column++)
+                for (gX_U32 y = 0; y < 8; y++)
+                    for (gX_U32 x = 0; x < 8; x++)
+                    {
+                        gX_U32 px = 650 + column * 8 + x;
+                        gX_U32 py = 650 + row * 8 + y;
+                        gX_U32 offset = (py * w + px) * 4;
+                        gX_U8 value = ring[row * 3 + column] ? 255 : 0;
+                        canvas[offset + 0] = value;
+                        canvas[offset + 1] = value;
+                        canvas[offset + 2] = value;
+                    }
+    }
+    if (frame)
+    {
+        gX_U8 *code = test_image(frame, 0.95f, 5.0f);
+        if (!code)
+        {
+            gX_Free(canvas);
+            return NULL;
+        }
+        for (gX_U32 y = 0; y < TEST_HEIGHT; y++)
+            for (gX_U32 x = 0; x < TEST_WIDTH; x++)
+            {
+                gX_U32 source = (y * TEST_WIDTH + x) * 4;
+                gX_U32 target = ((120 + y) * w + 120 + x) * 4;
+                memcpy(canvas + target, code + source, 4);
+            }
+        gX_Free(code);
+    }
+    *width = w;
+    *height = h;
+    return canvas;
+}
+
+static gX_I32 test_clutter_detection(const gX_U8 *payload, gX_U32 length)
+{
+    gX_I32 errors = 0;
+    gX_ColorCodeFrame frame;
+    if (gX_ColorCode_Encode(payload, length, 0, 1, &frame)
+        != GX_COLOR_CODE_OK)
+        return 1;
+    gX_U32 width = 0;
+    gX_U32 height = 0;
+    gX_U8 *canvas = test_clutter_image(&frame, &width, &height);
+    if (!canvas) return 1;
+    gX_ColorCodeDetection detection;
+    gX_I32 status = gX_ColorCode_DetectClutter(canvas, width, height,
+        &detection);
+    if (status != GX_COLOR_CODE_OK)
+    {
+        gX_TraceLog(gX_LOG_ERROR, "COLOR CODE 18 FAIL: clutter detect %d",
+            status);
+        errors++;
+    }
+    else
+    {
+        gX_ColorCodeImage image = {0};
+        image.pixels = canvas;
+        image.width = width;
+        image.height = height;
+        image.perspective = 1;
+        image.autoOrientation = 1;
+        memcpy(image.corners, detection.corners, sizeof(image.corners));
+        gX_ColorCodeResult result;
+        status = gX_ColorCode_Decode(&image, &result);
+        if (status != GX_COLOR_CODE_OK || result.payloadLength != length
+            || memcmp(result.payload, payload, length) != 0)
+        {
+            gX_TraceLog(gX_LOG_ERROR,
+                "COLOR CODE 19 FAIL: clutter decode %d", status);
+            errors++;
+        }
+    }
+    gX_Free(canvas);
+    canvas = test_clutter_image(NULL, &width, &height);
+    if (canvas)
+    {
+        if (gX_ColorCode_DetectClutter(canvas, width, height, &detection)
+            == GX_COLOR_CODE_OK)
+            errors++;
+        gX_Free(canvas);
+    }
+    else
+        errors++;
+    return errors;
+}
+
 static gX_I32 test_detection_empty(void)
 {
     const gX_U32 width = 256;
@@ -1193,6 +1322,7 @@ gX_I32 gX_Tests_ColorCode(gX_I0)
     errors += test_detection(raw, (gX_U32)strlen((const char *)raw), 0);
     errors += test_detection(raw, (gX_U32)strlen((const char *)raw), 1);
     errors += test_detection_empty();
+    errors += test_clutter_detection(raw, (gX_U32)strlen((const char *)raw));
     errors += test_multiframe();
     errors += test_tint(raw, (gX_U32)strlen((const char *)raw),
         0.85f, 0.95f, 1.10f, 10.0f, 5.0f, 20.0f);

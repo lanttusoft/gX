@@ -144,10 +144,16 @@ memcpy(image.corners, detection.corners, sizeof(image.corners));
 gX_ColorCode_Decode(&image, &result);
 ```
 
-This is a bounded detector: it assumes the code is the dominant
-background-contrasting region and does not handle arbitrary clutter, partial
-occlusion, a code touching the image border, or a bright background. The
-flat and simulated-CRT owned fixtures are covered in `--test-only`.
+This is the cheap fast path: it assumes the code is the dominant
+background-contrasting region and does not handle arbitrary clutter or partial
+occlusion. `gX_ColorCode_DetectClutter` is a bounded fallback for bright
+backgrounds and clutter: it scans the four 3x3 control patterns across cell
+scales, extrapolates the full-grid quad from their centers, and accepts only a
+quad that the existing decoder validates. False control patterns are rejected
+by decode. It still does not promise arbitrary occlusion, a code touching the
+image border, or a full camera/contour model; the scan is bounded in scales,
+positions and decode attempts. The flat, simulated-CRT and synthetic clutter
+fixtures are covered in `--test-only`.
 
 ## Presentation
 
@@ -198,6 +204,8 @@ visual/robustness fixture, not a physical CRT or camera model.
 - blur, additive noise, gamma/exposure and 2× resolution-loss perturbations;
 - small occlusions recovered by parity, large occlusions rejected;
 - simulated-CRT scanline/phosphor/noise/chroma/vignette decode across three seeds;
+- bright-background/clutter detection with a false control pattern, plus a
+  no-code negative;
 - multi-frame complete/shuffled/incomplete/duplicate/mixed-ID/bad-CRC sets;
 - metadata CRC rejection;
 - low-confidence cell erasure rejection;
