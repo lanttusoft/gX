@@ -4,6 +4,13 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+### Added
+- **Empty scene preset**: `resources/tools/empty.json` and the editor preset
+  bar's **Empty** button load a no-content diagnostic scene (sky + camera, no
+  models, lights, cameras or effects).
+
 ## [0.24.0] - 2026-10-31
 
 ### Added

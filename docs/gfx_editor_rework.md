@@ -57,6 +57,9 @@ Phase 1 status (2026-10-28):
   lights, cameras and prefabs live in Create.
 - The inspector is selection-first, with presets/history under a separate
   Document group; renderer labs remain in scrollable tabs.
+- **Empty scene**: `resources/tools/empty.json` and the preset bar's **Empty**
+  button load a no-content diagnostic scene (sky + camera, no models, lights,
+  cameras or effects).
 - Captures at 1024x768, 1600x900 and 1920x1080 were reviewed from the
   rework branch.
 - Remaining Phase 1 debt: the 1024x768 left pane still scrolls for lower
