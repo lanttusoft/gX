@@ -33,6 +33,7 @@
 #include "main.h"
 #include "common/types.h"
 #include "common/debug.h"
+#include "common/color_code.h"
 
 #include "module/module.h"
 
@@ -214,6 +215,8 @@ int main(int argc, char **argv) {
     //ai: standalone screen-code presentation; owns its loop and returns to unload.
     if (arguments.hasColorCode) {
         extern gX_I32 gX_ColorCode_Present(const gX_I8 *payload, gX_I1 tv);
+        if (arguments.colorCodeEcc)
+            gX_ColorCode_SetEccMode(arguments.colorCodeEcc);
         errors = gX_ColorCode_Present(arguments.colorCodePayload,
             arguments.colorCodeTv);
         goto error;

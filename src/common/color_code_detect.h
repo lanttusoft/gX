@@ -44,6 +44,12 @@ typedef struct gX_ColorCodeDetection {
 gX_I32 gX_ColorCode_Detect(const gX_U8 *pixels, gX_U32 width, gX_U32 height,
     gX_ColorCodeDetection *detection);
 
+//ai: bounded clutter/bright-background fallback: locate the four 3x3 control
+//    patterns across scales, extrapolate the full-grid quad, and accept only a
+//    quad that decodes. The plain Detect path remains the cheap fast path.
+gX_I32 gX_ColorCode_DetectClutter(const gX_U8 *pixels, gX_U32 width,
+    gX_U32 height, gX_ColorCodeDetection *detection);
+
 #ifdef __cplusplus
 }
 #endif

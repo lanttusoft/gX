@@ -85,14 +85,19 @@ this source beta.
   Encode/Decode/Render/Palette. A 16-colour, 4-bit palette covers black/white,
   25/50/75/100% red, green and blue, plus dark/light gray; both horizontal
   borders calibrate every palette entry. Metadata-at-edges,
-  payload-in-middle, SECDED plus interleaved XOR-parity erasure recovery,
-  CRC32 and raw/RLE compression; the decoder
+  payload-in-middle, SECDED plus interleaved XOR-parity erasure recovery or
+  opt-in RS(18,16) Reed–Solomon erasure recovery, CRC32 and raw/RLE
+  compression; the decoder
   auto-detects eight rotation/mirror orientations from corner controls and
   accepts caller-supplied affine/perspective corners for rectification.
   `Detect` segments a dark-background frame by border-colour distance and
-  returns the full-grid quad for perspective + auto-orientation decoding.
+  returns the full-grid quad for perspective + auto-orientation decoding;
+  `DetectClutter` is a bounded bright/clutter fallback that scans the four
+  control patterns and accepts only a quad that decodes.
   `EncodeMulti`/`Reassemble` add ordered 4096-byte payloads with payload IDs,
-  chunk CRCs and a whole-payload CRC. `gX_ColorCodeTv_*` — `Render` produces
+  chunk CRCs and a whole-payload CRC. `SetEccMode`/`GetEccMode` select the
+  opt-in RS(18,16) erasure layer (ECC ID 3) or the default SECDED + XOR layer
+  (ECC ID 2). `gX_ColorCodeTv_*` — `Render` produces
   the deterministic simulated-CRT view used by `--color-code-tv` and the TV
   decode test. See `docs/color_code_format.md` and `--test-only`.
 - `gX_JSON_Schema*` / `gX_JSON_Load/Save` / `gX_JSON_*` / `gX_Marshal_*` —

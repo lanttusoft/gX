@@ -34,11 +34,11 @@ The 26-byte header is written into the first 104 metadata cells:
 | Offset | Size | Field |
 | --- | --- | --- |
 | 0 | 1 | Magic `0x43` |
-| 1 | 1 | Format version (`5`) |
+| 1 | 1 | Format version (`5` legacy, `6` Reed–Solomon) |
 | 2 | 1 | Flags (`bit0` = multi-frame) |
 | 3 | 1 | Palette ID (`2` = 16-colour, 4-bit) |
 | 4 | 1 | Compression ID (`0` raw, `1` RLE) |
-| 5 | 1 | ECC ID (`2` = SECDED + interleaved XOR parity) |
+| 5 | 1 | ECC ID (`2` = SECDED + interleaved XOR parity; `3` = RS(18,16)) |
 | 6 | 2 | Chunk length (LE) |
 | 8 | 2 | Compressed length including mode byte (LE) |
 | 10 | 1 | Frame index |
@@ -62,6 +62,8 @@ fails closed.
 
 `--color-code <text>` cycles multi-frame payloads once per second; `P` pauses,
 `LEFT`/`RIGHT` step frames and the window title reports the current index.
+`--color-code-ecc rs` selects the opt-in Reed–Solomon erasure mode; the
+default remains SECDED + XOR.
 
 ## Integrity and bounds
 
@@ -70,13 +72,18 @@ fails closed.
 - Compressed bytes are grouped into interleaved 8-byte blocks with one XOR
   parity byte per block. One erased data byte per block is recoverable; an
   erased parity byte or two erased data bytes in the same block fail closed.
+- ECC ID 3 replaces that parity layer with systematic RS(18,16) over GF(256):
+  16 data bytes plus 2 Cauchy parity bytes per interleaved block. Any two
+  erased bytes per block are recoverable, including data/parity combinations;
+  three erasures fail closed. The 13-bit SECDED layer still corrects one bit
+  per encoded byte. RS mode caps a single frame at **303 payload bytes**.
 - Low-confidence cells are classified as erasures; a cell marks every encoded
   byte whose bits it covers.
 - CRC32 covers the header, each chunk and the completed multi-frame payload
   separately.
-- A single frame is capped at **304 payload bytes**; a multi-frame payload is
-  capped at **4096 bytes**. Compressed length, reassembly and decompression
-  outputs are bounded.
+- A single frame is capped at **304 payload bytes** (303 in RS mode); a
+  multi-frame payload is capped at **4096 bytes**. Compressed length,
+  reassembly and decompression outputs are bounded.
 - Compression is a PackBits-style RLE. If RLE is not smaller, the encoder uses
   raw mode. Compression is not encryption.
 
@@ -137,10 +144,16 @@ memcpy(image.corners, detection.corners, sizeof(image.corners));
 gX_ColorCode_Decode(&image, &result);
 ```
 
-This is a bounded detector: it assumes the code is the dominant
-background-contrasting region and does not handle arbitrary clutter, partial
-occlusion, a code touching the image border, or a bright background. The
-flat and simulated-CRT owned fixtures are covered in `--test-only`.
+This is the cheap fast path: it assumes the code is the dominant
+background-contrasting region and does not handle arbitrary clutter or partial
+occlusion. `gX_ColorCode_DetectClutter` is a bounded fallback for bright
+backgrounds and clutter: it scans the four 3x3 control patterns across cell
+scales, extrapolates the full-grid quad from their centers, and accepts only a
+quad that the existing decoder validates. False control patterns are rejected
+by decode. It still does not promise arbitrary occlusion, a code touching the
+image border, or a full camera/contour model; the scan is bounded in scales,
+positions and decode attempts. The flat, simulated-CRT and synthetic clutter
+fixtures are covered in `--test-only`.
 
 ## Presentation
 
@@ -186,9 +199,13 @@ visual/robustness fixture, not a physical CRT or camera model.
 - 25/50/75/100% red, green and blue levels plus calibration-strip coverage;
 - one erased data byte per block, different-block recovery and same-block
   erasure rejection;
+- opt-in RS(18,16) round trip, one/two/three erasures in one block, parity-only
+  and data+parity recovery, 303-byte capacity, and multi-frame reassembly;
 - blur, additive noise, gamma/exposure and 2× resolution-loss perturbations;
 - small occlusions recovered by parity, large occlusions rejected;
 - simulated-CRT scanline/phosphor/noise/chroma/vignette decode across three seeds;
+- bright-background/clutter detection with a false control pattern, plus a
+  no-code negative;
 - multi-frame complete/shuffled/incomplete/duplicate/mixed-ID/bad-CRC sets;
 - metadata CRC rejection;
 - low-confidence cell erasure rejection;

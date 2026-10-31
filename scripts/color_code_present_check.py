@@ -50,7 +50,7 @@ def palette_counts(pixels):
 
 
 def run(mode, shot, temporary, payload="gX color code", frames=20,
-        shot_frame=None, tag=None):
+        shot_frame=None, tag=None, ecc=None):
     environment = dict(os.environ)
     environment["GX_AUDIT_WINDOW"] = "hidden"
     environment.update({
@@ -60,8 +60,10 @@ def run(mode, shot, temporary, payload="gX color code", frames=20,
     })
     if shot_frame is not None:
         environment["GX_COLOR_CODE_SHOT_FRAME"] = str(shot_frame)
-    command = [str(BIN), mode, payload,
-               "--screenWidth", str(WIDTH), "--screenHeight", str(HEIGHT)]
+    command = [str(BIN), mode, payload]
+    if ecc:
+        command += ["--color-code-ecc", ecc]
+    command += ["--screenWidth", str(WIDTH), "--screenHeight", str(HEIGHT)]
     result = subprocess.run(command, cwd=ROOT, env=environment,
                             text=True, stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT, timeout=90)
@@ -135,12 +137,22 @@ def check_multiframe(out):
         raise RuntimeError("multi-frame presentation frames did not change")
 
 
+def check_rs(out):
+    payload = "R" * 300
+    image, log = run("--color-code", out / "rs.png", out,
+                     payload=payload, ecc="rs", tag="rs")
+    if "COLOR_CODE: ECC 3" not in log:
+        raise RuntimeError("RS presentation did not select ECC ID 3")
+    check_flat(image)
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="color_code_present_",
                                      dir="/tmp/opencode") as temporary:
         out = Path(temporary)
         flat, _ = run("--color-code", out / "flat.png", out)
         check_flat(flat)
+        check_rs(out)
         tv, _ = run("--color-code-tv", out / "tv.png", out)
         check_tv(tv)
         check_multiframe(out)
