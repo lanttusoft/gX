@@ -6,6 +6,10 @@ SemVer.
 
 ## [Unreleased]
 
+### Changed
+- **Active-ragdoll concept rename**: public docs now use the original
+  "Embodied NPC (ENPC)" term and contain no third-party ARG/project names.
+
 ## [0.20.0] - 2026-10-30
 
 ### Added

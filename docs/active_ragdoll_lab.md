@@ -1,30 +1,26 @@
 # Active-ragdoll lab — body-first contract
 
-<!-- //ai: 2026-10-22 clean-room hybrid active-ragdoll contract; no Euphoria code. -->
+<!-- //ai: 2026-10-22 clean-room hybrid active-ragdoll contract. -->
 
 Status: contract + Phase 1 headless controller (2026-10-22). The visual lab,
-hybrid locomotion and "DMNPC" behavior are not implemented. The passive/default
-ragdoll path is unchanged.
+hybrid locomotion and Embodied NPC (ENPC) behavior are not implemented. The
+passive/default ragdoll path is unchanged.
 
 ## Purpose
 
-Define the smallest reusable physical body that can later support a
-"DMNPC"-like entity: an embodied character that explores a world and interacts
-with it.
+Define the smallest reusable physical body that can later support an
+**Embodied NPC (ENPC)**: an embodied character that explores a world and
+interacts with it.
 
 This is **clean-room** work. It does not reverse-engineer, decompile, extract
-or copy Euphoria, RAGE, gameX or any proprietary animation/physics middleware.
-No RAGE/Euphoria code, constants, data, animations or gameX assets may enter
-gX. Public high-level ideas (procedural animation, active ragdolls, balance,
-behavior trees) are fair references; the implementation and tuning stay
-original.
+or copy any proprietary animation/physics middleware. No third-party code,
+constants, data, animations or assets may enter gX. Public high-level ideas
+(procedural animation, active ragdolls, balance, behavior trees) are fair
+references; the implementation and tuning stay original.
 
-The quoted term "DMNPC" is a descriptive reference to the entity archetype
-associated with INTERLOPER ARG (Anomidae). The lab only aims for ragdolls that
-behave like those entities — an embodied character that walks, balances, falls
-and recovers — and uses no INTERLOPER/Anomidae code, assets, narrative or
-character material. This is a descriptive, nominative reference to a publicly
-available series; no affiliation or endorsement is implied.
+ENPC is an original gX term for the lab's embodied character archetype. It is
+not a reference to, or affiliated with, any third-party project, series,
+company, or character; no association or endorsement is implied.
 
 ## Decision
 
@@ -34,7 +30,7 @@ Build the body in two layers and keep them separate:
   deterministic controller (joint targets, balance, contact handling,
   get-up).
 - **Game-side entity behavior**: perception, navigation, affordances,
-  interaction, goals and "DMNPC" behavior. Not part of this lab.
+  interaction, goals and ENPC behavior. Not part of this lab.
 
 The first body is **hybrid**, not a pure ragdoll walker:
 
@@ -183,8 +179,8 @@ Do not lower a test bound to hide a fall, explosion or support failure.
 
 ## Non-goals
 
-- Reverse engineering Euphoria/RAGE or extracting proprietary middleware.
-- Reusing gameX animations, models, rigs or code.
+- Reverse engineering or extracting proprietary middleware.
+- Reusing third-party animations, models, rigs or code.
 - A general-purpose behavior tree/navmesh/affordance system in this lab.
-- "DMNPC" gameplay, combat, or narrative integration.
+- ENPC gameplay, combat, or narrative integration.
 - A default or shipped active-ragdoll scene.
