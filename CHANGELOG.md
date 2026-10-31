@@ -4,6 +4,14 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+### Changed
+- **SSR authoring defaults**: the default/editor step profile is now 64 steps
+  at 0.5 units (was 96 at 0.25), cutting the deterministic 1024x768 SSR row
+  from ~16.4 ms to ~12.4 ms. The showcase preset keeps the full 96/0.25
+  profile for reflection quality; the editor sliders still expose both.
+
 ## [0.22.0] - 2026-10-31
 
 ### Added

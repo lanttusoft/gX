@@ -135,9 +135,10 @@ extern "C" {
 #define gX_GFX_MAX_POINT_SHADOW_LIGHTS 64  //opencode: shadow-casting point lights (2D array = 6*N layers)
 #define gX_GFX_POINT_SHADOW_ARRAY_SIZE 512 //opencode: shared array slice size
 
-//opencode: SSR tuning defaults
-#define gX_GFX_SSR_MAX_STEPS          96
-#define gX_GFX_SSR_STEP_SIZE            0.25f  //opencode: closes coarse silhouette misses
+//opencode: SSR tuning defaults — authoring-speed profile; presets can raise
+//   steps/step size for showcase-quality reflections.
+#define gX_GFX_SSR_MAX_STEPS          64
+#define gX_GFX_SSR_STEP_SIZE            0.5f
 #define gX_GFX_SSR_MAX_DISTANCE        100.0f
 #define gX_GFX_SSR_DEPTH_BIAS           0.25f
 #define gX_GFX_SSR_OPACITY              0.8f
