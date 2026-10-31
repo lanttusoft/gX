@@ -27,6 +27,8 @@
 
 #if gX_ENABLE_RENDERER == 1
 
+#include "gx_build_info.h"
+
 //ai: stable JSON lifecycle codes stay independent from report severity.
 enum
 {
@@ -108,11 +110,11 @@ static gX_I1 gX_Tools_Gfx_BugReport_Save(const gX_I8 *Directory)
         if (Screen.data) ShotSaved = ExportImage(Screen, Shot);
         UnloadImage(Screen);
     }
-    const gX_I8 *Key = "title\0description\0type\0severity\0when\0affects\0steps\0utc\0engine_version\0preset\0screenshot\0screenshot_status";
+    const gX_I8 *Key = "title\0description\0type\0severity\0when\0affects\0steps\0utc\0engine_version\0engine_revision\0preset\0screenshot\0screenshot_status";
     const gX_I8 *Values[] = {gX_BugReport.name, gX_BugReport.description,
         gX_BugTypes[gX_BugReport.type], gX_BugSeverities[gX_BugReport.severity],
         gX_BugReport.when, gX_BugReport.affects, gX_BugReport.steps, Date,
-        gX_Data_String_gX_version, s_presetPath, ShotSaved ? Shot : "",
+        gX_Data_String_gX_version, GX_BUILD_REVISION, s_presetPath, ShotSaved ? Shot : "",
         !gX_BugReport.screenshot ? "not_requested" : ShotSaved ? "saved" : "failed"};
     struct json_object *Root = json_object_new_object();
     gX_I1 Ok = Root != NULL;

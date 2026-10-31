@@ -7,6 +7,10 @@ SemVer.
 ## [Unreleased]
 
 ### Added
+- **Bug-report build revision**: reports include `engine_revision`, a
+  best-effort 12-hex Git prefix generated at build time (`-dirty` when tracked
+  files are modified); source archives without their own Git root report
+  `unknown`. `gfx_bug_report_check.py` pins the field and its build-tree match.
 - **Bug-report triage filters and summary**: `scripts/bug_status.py list`
   accepts `--status`, `--severity`, `--type`, `--feature` and `--no-feature`;
   `summary [--json]` reports status, severity, type and feature-request counts

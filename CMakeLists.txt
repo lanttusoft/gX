@@ -533,6 +533,20 @@ endif()
 add_executable(${PROJECT_NAME} ${GX_APP_SOURCES})
 target_link_libraries(${PROJECT_NAME} gx_engine_core)
 
+#ai: embed a best-effort source revision for offline bug reports. The custom
+#   target runs every build but rewrites the header only when the revision or
+#   dirty state changes, so incremental builds stay cheap.
+set(GX_BUILD_INFO_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
+file(MAKE_DIRECTORY ${GX_BUILD_INFO_DIR})
+add_custom_target(gx_build_info ALL
+    COMMAND ${CMAKE_COMMAND}
+        -DGX_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+        -DGX_OUTPUT=${GX_BUILD_INFO_DIR}/gx_build_info.h
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateBuildInfo.cmake
+    COMMENT "Recording gX source revision"
+    VERBATIM)
+add_dependencies(${PROJECT_NAME} gx_build_info)
+
 #opencode: the exe exports the curated module-facing symbol set (Route A); the
 #   list is generated from the module undefined symbols (make module-exports)
 #   and is the ABI — append-only within GX_MODULE_ABI_VERSION. Applies to the
@@ -672,7 +686,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/s
 target_link_libraries(${PROJECT_NAME} m pthread X11 Xrandr Xinerama Xcursor Xi Xxf86vm GL dl)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${GX_BUILD_INFO_DIR})
 
 #ai: the archive compiles the same engine headers/definitions as the exe.
 target_include_directories(gx_engine_core PRIVATE

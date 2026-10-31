@@ -7,6 +7,7 @@
 import json
 from pathlib import Path
 import re
+import subprocess
 import numpy as np
 import audit_common as audit
 
@@ -17,6 +18,22 @@ README=audit.ROOT/'readme.txt'
 def readme_version():
     match=re.search(r'v(\d+\.\d+\.\d+)',README.read_text().splitlines()[3])
     return match.group(1) if match else None
+
+
+def git_revision():
+    """Return the build-tree revision, or None when the tree has no own Git root."""
+    try:
+        top=subprocess.run(('git','-C',str(audit.ROOT),'rev-parse','--show-toplevel'),
+            capture_output=True,text=True,check=True).stdout.strip()
+        if Path(top).resolve()!=audit.ROOT.resolve():
+            return None
+        revision=subprocess.run(('git','-C',str(audit.ROOT),'rev-parse','--short=12','HEAD'),
+            capture_output=True,text=True,check=True).stdout.strip()
+        dirty=subprocess.run(('git','-C',str(audit.ROOT),'status','--porcelain','--untracked-files=no'),
+            capture_output=True,text=True,check=True).stdout.strip()
+    except (OSError,subprocess.CalledProcessError):
+        return None
+    return revision+('-dirty' if dirty else '')
 
 
 def require(condition,message):
@@ -66,12 +83,21 @@ def main():
                 require(d['type']=='Rendering' and d['severity']=='High','option metadata changed')
                 require(d['screenshot_status']=='not_requested' and d['screenshot']=='','unexpected capture')
             expected_fields={'status_code','title','description','type','severity','when','affects','steps',
-                'utc','engine_version','preset','screenshot','screenshot_status'}
+                'utc','engine_version','engine_revision','preset','screenshot','screenshot_status'}
             version=readme_version()
+            expected_revision=git_revision()
             require(version,'readme version missing')
             for d in documents:
                 require(d['engine_version'].startswith(version),
                     'engine_version does not match readme.txt')
+                require(re.fullmatch(r'[0-9a-f]{12}(-dirty)?|unknown',d['engine_revision']) is not None,
+                    'engine_revision is not a short Git revision or unknown')
+                if expected_revision is None:
+                    require(d['engine_revision']=='unknown',
+                        'source trees without their own Git root must report unknown revision')
+                else:
+                    require(d['engine_revision']==expected_revision,
+                        'engine_revision does not match the build tree')
                 require(type(d.get('status_code')) is int and d['status_code']==0,
                     'new reports must default to OPEN status code 0')
                 expected=set(expected_fields)|({'diagnostics'} if 'diagnostics' in d else set())

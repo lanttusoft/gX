@@ -57,11 +57,13 @@ The form's type list has no proposal category, so they keep `type: Other`.
 Use `--feature` / `--no-feature` to separate them, and read
 `open_feature_requests` from `summary` when counting open defects.
 
-Reports include UTC submission time, the runtime engine-version label, and
-the preset path. The label comes from `gX_Data_String_gX_version` and must
-match `readme.txt`; it is not an exact Git revision, so record the revision
-separately when triaging. A preset path is context, not a dump of unsaved scene
-edits.
+Reports include UTC submission time, the runtime engine-version label, the
+build revision, and the preset path. The label comes from
+`gX_Data_String_gX_version` and must match `readme.txt`. The revision is a
+best-effort 12-hex Git prefix generated at build time, with `-dirty` when
+tracked files were modified; source archives without their own Git root report
+`unknown`. It is context, not a substitute for the release tag and archive
+SHA-256. A preset path is context, not a dump of unsaved scene edits.
 
 ## Choosing severity
 
@@ -135,9 +137,9 @@ gitignored to protect private reports.
 `make gfx-bug-report-check` exercises the real writer through an opt-in Debug
 fixture: escaped/Unicode text, repeated saves, screenshot attachment,
 blank/invalid-option rejection, blocked-directory failure and a no-write
-draft. It also checks diagnostic opt-in, live values and the exact top-level
-allowlist to catch accidental scene/asset export. It writes to
-`/tmp/opencode/bug_report_check/` and preserves settings
+draft. It also checks diagnostic opt-in, live values, the build revision and
+the exact top-level allowlist to catch accidental scene/asset export. It writes
+to `/tmp/opencode/bug_report_check/` and preserves settings
 and the legacy editor screenshot. The hook is compiled out of Release.
 This gate is included in `make check`.
 
