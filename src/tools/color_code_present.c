@@ -87,6 +87,7 @@ gX_I32 gX_ColorCode_Present(const gX_I8 *payload, gX_I1 tv)
         return 1;
     }
     gX_TraceLog(gX_LOG_NOTICE, "COLOR_CODE: %u frame(s)", frameCount);
+    gX_TraceLog(gX_LOG_NOTICE, "COLOR_CODE: ECC %d", gX_ColorCode_GetEccMode());
     gX_U32 width = tv ? 1024 : GX_COLOR_CODE_GRID * GX_COLOR_CODE_PRESENT_CELL;
     gX_U32 height = tv ? 768 : width;
     gX_U8 *pixels = (gX_U8 *)gX_Calloc(width * height * 4);

@@ -478,7 +478,8 @@ static gX_I32 test_metadata_corruption(const gX_U8 *payload, gX_U32 length)
 }
 
 static gX_I32 test_erased_cells(const gX_U8 *payload, gX_U32 length,
-    const gX_U32 *flatCells, gX_U32 cellCount, gX_I32 expectedStatus)
+    const gX_U32 *flatCells, gX_U32 cellCount, gX_I32 expectedStatus,
+    gX_I1 requireRecovery)
 {
     gX_I32 errors = 0;
     gX_ColorCodeFrame frame;
@@ -517,8 +518,13 @@ static gX_I32 test_erased_cells(const gX_U8 *payload, gX_U32 length,
     if (expectedStatus == GX_COLOR_CODE_OK
         && (result.payloadLength != length
             || memcmp(result.payload, payload, length) != 0
-            || result.correctedErasures == 0))
+            || (requireRecovery && result.correctedErasures == 0)))
+    {
+        gX_TraceLog(gX_LOG_ERROR,
+            "COLOR CODE 8b FAIL: erasure payload len=%u corrected=%u",
+            result.payloadLength, result.correctedErasures);
         errors++;
+    }
     return errors;
 }
 
@@ -526,13 +532,13 @@ static gX_I32 test_erasure(const gX_U8 *payload, gX_U32 length)
 {
     gX_I32 errors = 0;
     gX_U32 single[1] = {50};
-    errors += test_erased_cells(payload, length, single, 1, GX_COLOR_CODE_OK);
+    errors += test_erased_cells(payload, length, single, 1, GX_COLOR_CODE_OK, 1);
     gX_U32 differentBlocks[2] = {0, 52};
     errors += test_erased_cells(payload, length, differentBlocks, 2,
-        GX_COLOR_CODE_OK);
+        GX_COLOR_CODE_OK, 1);
     gX_U32 sameBlock[2] = {0, 39};
     errors += test_erased_cells(payload, length, sameBlock, 2,
-        GX_COLOR_CODE_ERR_ERASURE);
+        GX_COLOR_CODE_ERR_ERASURE, 0);
     return errors;
 }
 
@@ -1099,6 +1105,71 @@ static gX_I32 test_detection_empty(void)
     return status == GX_COLOR_CODE_ERR_GEOMETRY ? 0 : 1;
 }
 
+static gX_I32 test_rs_parity_erasure(const gX_U8 *payload, gX_U32 length)
+{
+    gX_I32 errors = 0;
+    if (gX_ColorCode_SetEccMode(GX_COLOR_CODE_ECC_RS) != GX_COLOR_CODE_OK)
+        return 1;
+    gX_ColorCodeFrame frame;
+    if (gX_ColorCode_Encode(payload, length, 0, 1, &frame)
+        != GX_COLOR_CODE_OK)
+        return 1;
+    gX_U32 blocks = (frame.compressedLength + GX_COLOR_CODE_RS_DATA - 1)
+        / GX_COLOR_CODE_RS_DATA;
+    gX_U32 parityIndex = frame.compressedLength;
+    gX_I1 found = 0;
+    for (gX_U32 block = 0; block < blocks && !found; block++)
+        for (gX_U32 parity = 0; parity < GX_COLOR_CODE_RS_PARITY; parity++)
+        {
+            gX_U32 candidate = frame.compressedLength
+                + block * GX_COLOR_CODE_RS_PARITY + parity;
+            if (candidate % GX_COLOR_CODE_BITS_PER_CELL == 0)
+            {
+                parityIndex = candidate;
+                found = 1;
+                break;
+            }
+        }
+    gX_U32 parityCell = (parityIndex * GX_COLOR_CODE_ECC_BITS)
+        / GX_COLOR_CODE_BITS_PER_CELL;
+    gX_U32 parityOnly[1] = {parityCell};
+    errors += test_erased_cells(payload, length, parityOnly, 1,
+        GX_COLOR_CODE_OK, 0);
+    gX_U32 dataAndParity[2] = {26, parityCell};
+    errors += test_erased_cells(payload, length, dataAndParity, 2,
+        GX_COLOR_CODE_OK, 1);
+    return errors;
+}
+
+static gX_I32 test_rs_mode(const gX_U8 *payload, gX_U32 length)
+{
+    gX_I32 errors = 0;
+    if (gX_ColorCode_SetEccMode(GX_COLOR_CODE_ECC_RS) != GX_COLOR_CODE_OK)
+        return 1;
+    if (gX_ColorCode_SetEccMode(99) != GX_COLOR_CODE_ERR_ARGUMENT)
+        errors++;
+    errors += test_roundtrip(payload, length, 0);
+    errors += test_bit_errors(payload, length, 1, GX_COLOR_CODE_OK);
+    errors += test_rs_parity_erasure(payload, length);
+    gX_U32 single[1] = {26};
+    errors += test_erased_cells(payload, length, single, 1, GX_COLOR_CODE_OK, 1);
+    gX_U32 sameBlock[2] = {26, 52};
+    errors += test_erased_cells(payload, length, sameBlock, 2, GX_COLOR_CODE_OK, 1);
+    gX_U32 overLimit[3] = {26, 52, 78};
+    errors += test_erased_cells(payload, length, overLimit, 3,
+        GX_COLOR_CODE_ERR_ERASURE, 0);
+    errors += test_multiframe();
+    gX_U8 tooLarge[GX_COLOR_CODE_MAX_PAYLOAD];
+    memset(tooLarge, 0x22, sizeof(tooLarge));
+    gX_ColorCodeFrame frame;
+    if (gX_ColorCode_Encode(tooLarge, GX_COLOR_CODE_MAX_PAYLOAD, 0, 1, &frame)
+        != GX_COLOR_CODE_ERR_CAPACITY)
+        errors++;
+    if (gX_ColorCode_GetEccMode() != GX_COLOR_CODE_ECC_RS) errors++;
+    gX_ColorCode_SetEccMode(GX_COLOR_CODE_ECC_SECDED_XOR);
+    return errors;
+}
+
 gX_I32 gX_Tests_ColorCode(gX_I0)
 {
     gX_I32 errors = 0;
@@ -1131,6 +1202,7 @@ gX_I32 gX_Tests_ColorCode(gX_I0)
     errors += test_palette_levels(raw, (gX_U32)strlen((const char *)raw));
     errors += test_metadata_corruption(raw, (gX_U32)strlen((const char *)raw));
     errors += test_erasure(raw, (gX_U32)strlen((const char *)raw));
+    errors += test_rs_mode(raw, (gX_U32)strlen((const char *)raw));
     gX_ColorCodeFrame frame;
     gX_U8 tooLarge[GX_COLOR_CODE_MAX_PAYLOAD + 1];
     memset(tooLarge, 0x11, sizeof(tooLarge));

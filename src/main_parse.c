@@ -31,6 +31,7 @@
 
 #include "main.h"
 #include "common/enum.h"
+#include "common/color_code.h"
 #include "gui/style.h"
 #include "common/log.h"
 
@@ -60,6 +61,7 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
         "      --color-code <text>    Show a screen color code; SPACE fit/1:1,\n"
         "                             F fullscreen, ESC close\n"
         "      --color-code-tv <text> Same, displayed through a simulated CRT/TV\n"
+        "      --color-code-ecc <s>   ECC for --color-code: secded (default) or rs\n"
         "      --ai-screenshot-final  Headless capture: screenshot + exit after\n"
         "                             180 frames (vision verification/parity audits)\n"
         "      --ai-screenshot-after <n>  Same, capture at frame n\n"
@@ -184,6 +186,7 @@ gX_I32 gX_Parse(int argc, char **argv) {
         {"test-only",   no_argument,        NULL, 0},
         {"color-code",  required_argument,  NULL, 0},
         {"color-code-tv", required_argument, NULL, 0},
+        {"color-code-ecc", required_argument, NULL, 0},
         {"ai-screenshot-final", no_argument, NULL, 0},
         {"ai-screenshot-after", required_argument, NULL, 0},
         {"layout-dump", required_argument, NULL, 0},
@@ -310,6 +313,16 @@ gX_I32 gX_Parse(int argc, char **argv) {
                     snprintf(arguments.colorCodePayload,
                         sizeof(arguments.colorCodePayload), "%s",
                         optarg ? optarg : "");
+                }
+                if (!strcmp(long_options[option_index].name,"color-code-ecc")) {
+                    if (optarg && !strcmp(optarg, "rs"))
+                        arguments.colorCodeEcc = GX_COLOR_CODE_ECC_RS;
+                    else if (optarg && !strcmp(optarg, "secded"))
+                        arguments.colorCodeEcc = GX_COLOR_CODE_ECC_SECDED_XOR;
+                    else {
+                        fprintf(stderr, "PARSE: --color-code-ecc expects secded or rs\n");
+                        return 0;
+                    }
                 }
                 //ai: dynamic module — --module <path.so>
                 if (!strcmp(long_options[option_index].name,"module")) {

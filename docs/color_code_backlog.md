@@ -7,10 +7,10 @@ The 16-colour / 4-bit palette (25/50/75/100% red, green and blue plus grays),
 two-row per-palette calibration strip, caller-supplied affine/perspective
 rectification, automatic dark-background corner detection, a deterministic
 simulated CRT/TV view, bounded multi-frame reassembly, interleaved XOR-parity
-erasure recovery and a synthetic blur/noise/gamma/resolution/occlusion matrix
-are implemented. Arbitrary-clutter detection, a fuller Reed–Solomon erasure
-code, a camera-device walk and any further palette-density experiment remain
-backlog.
+erasure recovery, an opt-in RS(18,16) Reed–Solomon erasure mode and a synthetic
+blur/noise/gamma/resolution/occlusion matrix are implemented. Arbitrary-clutter
+detection, a camera-device walk and any further palette-density experiment
+remain backlog.
 
 ## Goal
 

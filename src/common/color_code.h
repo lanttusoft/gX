@@ -50,6 +50,12 @@ extern "C" {
 #define GX_COLOR_CODE_MAX_COMPRESSED    (GX_COLOR_CODE_DATA_BITS / GX_COLOR_CODE_ECC_BITS)
 #define GX_COLOR_CODE_MAX_ENCODED       (GX_COLOR_CODE_MAX_COMPRESSED + (GX_COLOR_CODE_MAX_COMPRESSED + 7) / 8)
 #define GX_COLOR_CODE_MAX_PAYLOAD       304
+#define GX_COLOR_CODE_ECC_SECDED_XOR    2
+#define GX_COLOR_CODE_ECC_RS            3
+#define GX_COLOR_CODE_RS_DATA           16
+#define GX_COLOR_CODE_RS_PARITY         2
+#define GX_COLOR_CODE_RS_BLOCK          (GX_COLOR_CODE_RS_DATA + GX_COLOR_CODE_RS_PARITY)
+#define GX_COLOR_CODE_RS_MAX_PAYLOAD    303
 #define GX_COLOR_CODE_MAX_MULTI_PAYLOAD 4096
 #define GX_COLOR_CODE_MAX_MULTI_FRAMES  ((GX_COLOR_CODE_MAX_MULTI_PAYLOAD + GX_COLOR_CODE_MAX_PAYLOAD - 1) / GX_COLOR_CODE_MAX_PAYLOAD)
 #define GX_COLOR_CODE_MAX_IMAGE_BYTES   (64 * 1024 * 1024)
@@ -116,6 +122,10 @@ typedef struct gX_ColorCodeImage {
     gX_I1        perspective;
     gX_F32       corners[8];
 } gX_ColorCodeImage;
+
+//ai: select the ECC mode for subsequent encodes; the decoder auto-detects.
+gX_I32 gX_ColorCode_SetEccMode(gX_I32 mode);
+gX_I32 gX_ColorCode_GetEccMode(gX_I0);
 
 //ai: encode a bounded payload into a calibration/control/metadata/payload frame.
 gX_I32 gX_ColorCode_Encode(const gX_U8 *payload, gX_U32 length,

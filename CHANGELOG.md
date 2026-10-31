@@ -4,6 +4,15 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+### Added
+- **Color-code Reed–Solomon ECC**: opt-in ECC ID 3 uses systematic RS(18,16)
+  over GF(256), recovering any two erased bytes per interleaved block
+  (including data/parity combinations); ECC ID 2 remains the default and stays
+  decodable. `--color-code-ecc rs` selects it, and `--test-only` covers
+  round-trip, one/two/three-erasure, capacity and multi-frame cases.
+
 ## [0.23.0] - 2026-10-31
 
 ### Added
