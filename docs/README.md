@@ -60,11 +60,14 @@ Start here:
 - [Offline bug reports](bug_reporting.md)
 - [Color-code palette-density study](color_code_palette.md) — 4/8/16-colour
   capacity and noise-margin comparison.
-- [Screen color-code format](color_code_format.md) — bounded 16-colour
-  encoder/decoder prototype (two-row per-palette calibration, metadata, SECDED
-  plus interleaved XOR-parity erasure recovery, CRC32, RLE, automatic
-  dark-background detection; tint/white-balance and synthetic camera tests)
-  plus the standalone `--color-code` / simulated-CRT `--color-code-tv`
+- [Screen color-code backlog](color_code_backlog.md) — detection, capacity and
+  camera-walk items that remain open.
+- [Screen color-code format](color_code_format.md) — bounded 16-colour/4-bit
+  and opt-in 8-colour/3-bit encoder/decoder for screen-only hardware
+  diagnostics (per-palette calibration, metadata,
+  SECDED plus interleaved XOR-parity or RS(18,16) erasure recovery, CRC32, RLE,
+  automatic dark-background detection; tint/white-balance and synthetic camera
+  tests) plus the standalone `--color-code` / simulated-CRT `--color-code-tv`
   presentation modes and bounded multi-frame reassembly.
 - [gX debug colors — magic-color registry](debug_colors.md)
 - [gX — editors and tooling surfaces](editors.md)

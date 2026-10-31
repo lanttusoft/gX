@@ -1,24 +1,28 @@
 # Screen color-code transfer — backlog
 
-Status: **core encoder/decoder prototype implemented** (2026-10-30). The
+Status: **core encoder/decoder prototype implemented** (2026-10-31). The
 bounded C module, format layout, synthetic camera round trip and eight-way
 rotation/mirror detection live in [color_code_format.md](color_code_format.md).
-The 16-colour / 4-bit palette (25/50/75/100% red, green and blue plus grays),
-two-row per-palette calibration strip, caller-supplied affine/perspective
-rectification, automatic dark-background corner detection, a deterministic
-simulated CRT/TV view, bounded multi-frame reassembly, interleaved XOR-parity
-erasure recovery, an opt-in RS(18,16) Reed–Solomon erasure mode and a synthetic
+The default 16-colour / 4-bit palette (25/50/75/100% red, green and blue plus
+grays), the opt-in 8-colour / 3-bit high-contrast palette, two-row per-palette
+calibration strips, caller-supplied affine/perspective rectification,
+automatic dark-background corner detection, a deterministic simulated CRT/TV
+view, bounded multi-frame reassembly, interleaved XOR-parity erasure recovery,
+an opt-in RS(18,16) Reed–Solomon erasure mode and a synthetic
 blur/noise/gamma/resolution/occlusion matrix are implemented. A bounded
 corner-pattern clutter/bright-background fallback is implemented; full
 arbitrary occlusion, a code touching the image border, a camera-device walk and
-any further palette-density experiment remain backlog.
+the 4-colour/2-bit accessibility mode remain backlog.
 
 ## Goal
 
 Transfer a small bounded payload (for example a scene preset, a short text
 blob or a few KiB of configuration) from gX to a camera/phone without a
-network. The screen is the sender; the camera is the receiver. This is not a
-replacement for QR, a general file-transfer protocol or a security boundary.
+network. The screen is the sender; the camera is the receiver. The primary
+case is a target with a screen but no usable text channel — a real
+N64/PS1/PS2-class console, a devkit, a kiosk or an embedded board. On a desktop,
+logs, serial, a file or the clipboard are cheaper. This is not a replacement
+for QR, a general file-transfer protocol or a security boundary.
 
 ## Frame layout
 
@@ -115,9 +119,12 @@ replacement for QR, a general file-transfer protocol or a security boundary.
 ## Open questions
 
 - Palette size vs. cell density on an N64-era look: the 4/8/16-colour study is
-  in [color_code_palette.md](color_code_palette.md); an opt-in 8-colour,
-  3-bit-cell mode remains to be implemented.
+  in [color_code_palette.md](color_code_palette.md); the opt-in 8-colour,
+  3-bit-cell mode is implemented, and the 4-colour mode remains a question.
 - Single-frame practical payload budget at 1080p/4K and typical phone cameras.
+- A shared diagnostic-record schema (magic, version, build hash, error code,
+  scene/frame counter) for no-text-channel hardware; the 20-byte example in
+  [color_code_format.md](color_code_format.md) is a starting point.
 - Whether the format belongs in the GFX editor, a standalone tool, or a module.
 - Interaction with the screenshot/capture path and the copyright/provenance
   rules for generated codes.

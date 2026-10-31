@@ -81,10 +81,12 @@ this source beta.
   (gX_TraceLog_GFX/GUI/MAIN/RENDER...)
 - `gX_LogState.globalLevel` — log threshold
 - `gX_Text_Format/Replace/...` — string utils
-- `gX_ColorCode_*` — bounded 45×45 screen-transfer frame:
-  Encode/Decode/Render/Palette. A 16-colour, 4-bit palette covers black/white,
-  25/50/75/100% red, green and blue, plus dark/light gray; both horizontal
-  borders calibrate every palette entry. Metadata-at-edges,
+- `gX_ColorCode_*` — bounded 45×45 screen-transfer frame for screen-only
+  hardware diagnostics:
+  Encode/Decode/Render/Palette. The default 16-colour, 4-bit palette covers
+  black/white, 25/50/75/100% red, green and blue, plus dark/light gray; the
+  opt-in 8-colour, 3-bit mode uses a high-contrast subset. Both horizontal
+  borders calibrate the active palette. Metadata-at-edges,
   payload-in-middle, SECDED plus interleaved XOR-parity erasure recovery or
   opt-in RS(18,16) Reed–Solomon erasure recovery, CRC32 and raw/RLE
   compression; the decoder
@@ -97,7 +99,10 @@ this source beta.
   `EncodeMulti`/`Reassemble` add ordered 4096-byte payloads with payload IDs,
   chunk CRCs and a whole-payload CRC. `SetEccMode`/`GetEccMode` select the
   opt-in RS(18,16) erasure layer (ECC ID 3) or the default SECDED + XOR layer
-  (ECC ID 2). `gX_ColorCodeTv_*` — `Render` produces
+  (ECC ID 2). `SetPaletteMode`/`GetPaletteMode` select the default
+  16-colour/4-bit palette (ID 2) or the opt-in 8-colour/3-bit high-contrast
+  palette (ID 3); the decoder auto-detects both from the metadata header.
+  `gX_ColorCodeTv_*` — `Render` produces
   the deterministic simulated-CRT view used by `--color-code-tv` and the TV
   decode test. See `docs/color_code_format.md` and `--test-only`.
 - `gX_JSON_Schema*` / `gX_JSON_Load/Save` / `gX_JSON_*` / `gX_Marshal_*` —
