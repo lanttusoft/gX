@@ -8062,7 +8062,8 @@ static gX_I0 gfx_editor_camera_marker_draw_one(ImDrawList *draw,
     draw->AddCircle(localPosition, selected ? 9.0f : 7.0f, ringColor, 16,
         selected ? 2.0f : 1.0f);
     char label[160];
-    snprintf(label, sizeof(label), "%d  %s", index, entry->name);
+    snprintf(label, sizeof(label), "%d  %.*s", index,
+        (gX_I32)sizeof(entry->name), entry->name);
     ImVec2 textSize = ImGui::CalcTextSize(label);
     ImVec2 textPosition = ImVec2(localPosition.x + 12.0f,
         localPosition.y - textSize.y * 0.5f);
