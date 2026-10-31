@@ -139,6 +139,17 @@ def check_multiframe(out):
         raise RuntimeError("multi-frame presentation frames did not change")
 
 
+def check_multiframe_large(out):
+    payload = "".join(chr(65 + (index % 26)) for index in range(10000))
+    _, log = run("--color-code", out / "multi_large.png", out,
+                 payload=payload, frames=20, shot_frame=5,
+                 tag="multi_large")
+    if "COLOR_CODE: 33 frame(s)" not in log:
+        raise RuntimeError("large multi-frame presentation did not encode 33 frames")
+    if "COLOR_CODE: interval 15 ticks" not in log:
+        raise RuntimeError("large multi-frame presentation did not use the fast interval")
+
+
 def check_rs(out):
     payload = "R" * 300
     image, log = run("--color-code", out / "rs.png", out,
@@ -207,6 +218,7 @@ def main():
         tv, _ = run("--color-code-tv", out / "tv.png", out)
         check_tv(tv)
         check_multiframe(out)
+        check_multiframe_large(out)
     print("COLOR_CODE_PRESENT_CHECK: PASS (16/8-colour bands + simulated TV + multi-frame)")
     return 0
 

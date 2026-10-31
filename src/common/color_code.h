@@ -67,8 +67,13 @@ extern "C" {
 #define GX_COLOR_CODE_RS_MAX_PAYLOAD    303
 #define GX_COLOR_CODE_8COLOR_MAX_PAYLOAD    228
 #define GX_COLOR_CODE_8COLOR_RS_MAX_PAYLOAD 227
-#define GX_COLOR_CODE_MAX_MULTI_PAYLOAD 4096
+//opencode: 56 KiB multi-frame budget; frameTotal is one byte, so the
+//   8-colour worst case (252 frames) stays below 255.
+#define GX_COLOR_CODE_MAX_MULTI_PAYLOAD 57344
 #define GX_COLOR_CODE_MAX_MULTI_FRAMES  ((GX_COLOR_CODE_MAX_MULTI_PAYLOAD + GX_COLOR_CODE_8COLOR_MAX_PAYLOAD - 1) / GX_COLOR_CODE_8COLOR_MAX_PAYLOAD)
+#if GX_COLOR_CODE_MAX_MULTI_FRAMES > 255
+#error "color-code multi-frame count exceeds the one-byte frameTotal"
+#endif
 #define GX_COLOR_CODE_MAX_IMAGE_BYTES   (64 * 1024 * 1024)
 
 #define GX_COLOR_CODE_OK                 0

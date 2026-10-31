@@ -104,7 +104,7 @@ typedef struct gX_MainArguments {
     gX_I1   colorCodeTv;
     gX_I32  colorCodeEcc;      //opencode: 0=default, 2=SECDED+XOR, 3=RS
     gX_I32  colorCodePalette;  //opencode: 0=default, 2=16-colour, 3=8-colour
-    gX_I8   colorCodePayload[4097];
+    gX_I8  *colorCodePayload;  //opencode: heap buffer, MAX_MULTI_PAYLOAD + 1
     gX_I1   hasEsDumpShader;    //opencode: --es-dump-shader <in.frag> <out> —
                                 //   ES-rewrite frag dump for oracle Mode B
     gX_I8   esDumpPath[512];

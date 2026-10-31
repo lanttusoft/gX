@@ -32,6 +32,7 @@
 
 #include "main.h"
 #include "common/types.h"
+#include "common/alloc.h"
 #include "common/debug.h"
 #include "common/color_code.h"
 
@@ -221,6 +222,8 @@ int main(int argc, char **argv) {
             gX_ColorCode_SetPaletteMode(arguments.colorCodePalette);
         errors = gX_ColorCode_Present(arguments.colorCodePayload,
             arguments.colorCodeTv);
+        gX_Free(arguments.colorCodePayload);
+        arguments.colorCodePayload = NULL;
         goto error;
     }
 #endif

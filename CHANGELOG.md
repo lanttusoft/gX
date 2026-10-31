@@ -4,6 +4,13 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+### Changed
+- **Color-code multi-frame payload cap**: raised from 4096 bytes to 57344
+  bytes (56 KiB), with a worst case of 252 frames in 8-colour mode. Large sets
+  advance faster in the presentation and honor `GX_COLOR_CODE_FRAME_TICKS`.
+
 ## [0.25.0] - 2026-10-31
 
 ### Added
