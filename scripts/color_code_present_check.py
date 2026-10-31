@@ -18,8 +18,8 @@ import audit_common as audit
 
 ROOT = audit.ROOT
 BIN = audit.BIN
-WIDTH = 1024
-HEIGHT = 768
+WIDTH = 800
+HEIGHT = 600
 
 
 def palette_counts(pixels):
@@ -52,7 +52,7 @@ def palette_counts(pixels):
 def run(mode, shot, temporary, payload="gX color code", frames=20,
         shot_frame=None, tag=None):
     environment = dict(os.environ)
-    environment.pop("GX_AUDIT_WINDOW", None)
+    environment["GX_AUDIT_WINDOW"] = "hidden"
     environment.update({
         "GX_NO_SETTINGS_SAVE": "1",
         "GX_FRAMES": str(frames),

@@ -58,17 +58,16 @@ def make_fixture(path, startPlanarWithSSR=False):
 
 #opencode: capture a clean layout first so AI clicks scale with the active window.
 
-#opencode: this check's click offsets assume the fitted visible-window client
-#   height; hidden windows report the unfitted height (1016 vs 1010), so it
-#   requests the unfocused off-screen mode instead — still no pointer grab.
+#opencode: the click offsets are derived from the captured layout height, so
+#   the audit can use the unmapped hidden window; no foreground window or
+#   pointer grab is created.
 def audit_window_env(environment):
     if os.environ.get("GX_AUDIT_ONSCREEN") != "1":
-        environment["GX_AUDIT_WINDOW"] = "1"
+        environment["GX_AUDIT_WINDOW"] = "hidden"
     return environment
 
-#opencode: the visible audit window (mode 1, required for the calibrated click
-#   offsets) can stall on Xwayland when many windows are created back-to-back,
-#   so each attempt is bounded and retried; every attempt gets its own dir.
+#opencode: each capture attempt is bounded and retried; every attempt gets its
+#   own directory so a stalled Xwayland window cannot poison the next try.
 def capture_layout(temp_root, preset, attempts=3):
     last_error = None
     for attempt in range(attempts):
@@ -93,8 +92,8 @@ def capture_layout(temp_root, preset, attempts=3):
         audit_window_env(environment)
         try:
             result = subprocess.run(
-                [str(BIN), "--gfx", "--gfx-editor", "--screenWidth", "1536",
-                 "--screenHeight", "1016", "--ai-screenshot-after", "60"],
+                [str(BIN), "--gfx", "--gfx-editor", "--screenWidth", "1024",
+                 "--screenHeight", "768", "--ai-screenshot-after", "60"],
                 cwd=ROOT, env=environment, text=True,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60,
             )
@@ -170,8 +169,8 @@ def edit_with_ui(preset, temp_root, width, height, confirm=None,
     })
     audit_window_env(environment)
     result = subprocess.run(
-        [str(BIN), "--gfx", "--gfx-editor", "--screenWidth", "1536",
-         "--screenHeight", "1016", "--ai-screenshot-after", str(frame)],
+        [str(BIN), "--gfx", "--gfx-editor", "--screenWidth", "1024",
+         "--screenHeight", "768", "--ai-screenshot-after", str(frame)],
         cwd=ROOT, env=environment, text=True,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120,
     )
