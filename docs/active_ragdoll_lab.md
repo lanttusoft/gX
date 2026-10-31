@@ -23,7 +23,8 @@ The quoted term "DMNPC" is a descriptive reference to the entity archetype
 associated with INTERLOPER ARG (Anomidae). The lab only aims for ragdolls that
 behave like those entities — an embodied character that walks, balances, falls
 and recovers — and uses no INTERLOPER/Anomidae code, assets, narrative or
-character material.
+character material. This is a descriptive, nominative reference to a publicly
+available series; no affiliation or endorsement is implied.
 
 ## Decision
 
