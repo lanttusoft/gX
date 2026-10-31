@@ -10,8 +10,8 @@ privacy checks are included.
 | Topic | Where to go |
 | --- | --- |
 | Build/renderer/tooling help | [`docs/README.md`](docs/README.md) and the documentation contact link on the new-issue page |
-| Bug report | [Bug report template](.github/ISSUE_TEMPLATE/bug_report.yml) |
-| Feature proposal | [Feature request template](.github/ISSUE_TEMPLATE/feature_request.yml) |
+| Bug report | [Bug report form](../../issues/new?template=bug_report.yml) |
+| Feature proposal | [Feature request form](../../issues/new?template=feature_request.yml) |
 | Suspected vulnerability | Private advisory link in `SECURITY.md`; never a public issue |
 | Conduct concern | Private message to the repository owner through their GitHub profile |
 | Everything else | Open a documentation or support issue using the closest template |
