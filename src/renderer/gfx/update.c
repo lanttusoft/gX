@@ -112,6 +112,110 @@ static gX_I0 water_refraction_test_transition(gX_RendererGFX *Gfx)
     gX_TraceLog(gX_LOG_NOTICE, "WATER_REFRACTION_TEST_TRANSITION: frame=12 cameraX=0.75 size=800x600");
 }
 
+//ai: live IBL refresh limits — settle a slider before rebuilding, but keep a
+//   slow cadence while an animated sun or a drag keeps changing the source.
+#define gX_GFX_IBL_REFRESH_SETTLE_FRAMES 2
+#define gX_GFX_IBL_REFRESH_MIN_FRAMES   12
+#define gX_GFX_IBL_REFRESH_MAX_HOLD     30
+
+static gX_U64 gfx_ibl_hash_mix(gX_U64 hash, const gX_I0 *data, gX_U32 size)
+{
+    const gX_U8 *bytes = (const gX_U8 *)data;
+    for (gX_U32 i = 0; i < size; i++) {
+        hash ^= bytes[i];
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
+static gX_U64 gfx_ibl_source_hash(gX_RendererGFX *gfx)
+{
+    gX_U64 hash = 14695981039346656037ULL;
+    hash = gfx_ibl_hash_mix(hash, &gfx->state.ENABLE_PROCEDURAL_SKY,
+        sizeof(gfx->state.ENABLE_PROCEDURAL_SKY));
+    hash = gfx_ibl_hash_mix(hash, &gfx->sun.dir.x, sizeof(gX_F32));
+    hash = gfx_ibl_hash_mix(hash, &gfx->sun.dir.y, sizeof(gX_F32));
+    hash = gfx_ibl_hash_mix(hash, &gfx->sun.dir.z, sizeof(gX_F32));
+    hash = gfx_ibl_hash_mix(hash, &gfx->sky.altitude, sizeof(gX_F32));
+    hash = gfx_ibl_hash_mix(hash, &gfx->sky.turbidity, sizeof(gX_F32));
+    hash = gfx_ibl_hash_mix(hash, &gfx->sky.density, sizeof(gX_F32));
+    hash = gfx_ibl_hash_mix(hash, &gfx->sky.hue, sizeof(gX_F32));
+    hash = gfx_ibl_hash_mix(hash, &gfx->sky.horizon, sizeof(gX_F32));
+    hash = gfx_ibl_hash_mix(hash, &gfx->sky.sunIntensity, sizeof(gX_F32));
+    hash = gfx_ibl_hash_mix(hash, &gfx->sky.contrast, sizeof(gX_F32));
+    return hash;
+}
+
+static gX_I1 gfx_ibl_live_refresh_allowed(gX_I0)
+{
+    static gX_I32 software = -1;
+    if (software < 0) {
+        const gX_I8 *renderer = gX_RHI_GetString(gX_RHI_RENDERER);
+        software = (renderer && (strstr((const char *)renderer, "llvmpipe")
+            || strstr((const char *)renderer, "softpipe")
+            || strstr((const char *)renderer, "swrast"))) ? 1 : 0;
+    }
+    if (software) return 0;
+    const char *disable = getenv("GX_GFX_IBL_REFRESH_DISABLE");
+    if (disable && disable[0] && strcmp(disable, "0") != 0) return 0;
+    return 1;
+}
+
+static gX_I0 gfx_ibl_refresh_test(gX_RendererGFX *gfx)
+{
+    const gX_I8 *value = getenv("GX_GFX_IBL_REFRESH_TEST");
+    if (!value || !value[0] || maindata.frameCount != 25) return;
+    gfx->sky.density = (gX_F32)atof((const char *)value);
+    gX_TraceLog(gX_LOG_NOTICE, "IBL_REFRESH_TEST: density=%.3f",
+        gfx->sky.density);
+}
+
+static gX_I0 gfx_ibl_refresh_update(gX_RendererGFX *gfx)
+{
+    if (!gfx->state.ENABLE_ENV_AMBIENT
+        || !gfx->state.ENABLE_PROCEDURAL_SKY) return;
+    gX_U64 hash = gfx_ibl_source_hash(gfx);
+    gX_U64 frame = maindata.frameCount;
+    if (!gfx->ibl.ready || gfx->ibl.sourceHash == 0) {
+        gfx->ibl.sourceHash = hash;
+        return;
+    }
+    if (hash != gfx->ibl.sourceHash) {
+        gfx->ibl.sourceHash = hash;
+        gfx->ibl.refreshPending = 1;
+        gfx->ibl.refreshChangeFrame = frame;
+        gfx->ibl.refreshSettleFrames = 0;
+    } else if (gfx->ibl.refreshPending) {
+        gfx->ibl.refreshSettleFrames++;
+    }
+    if (!gfx->ibl.refreshPending) return;
+    if (!gfx_ibl_live_refresh_allowed()) {
+        gfx->ibl.refreshPending = 0;
+        return;
+    }
+    if (gfx->ibl.refreshFrame > 0
+        && frame - gfx->ibl.refreshFrame < gX_GFX_IBL_REFRESH_MIN_FRAMES)
+        return;
+    gX_I1 overdue = gfx->ibl.refreshFrame > 0
+        && frame - gfx->ibl.refreshFrame >= gX_GFX_IBL_REFRESH_MAX_HOLD;
+    if (gfx->ibl.refreshSettleFrames < gX_GFX_IBL_REFRESH_SETTLE_FRAMES
+        && !overdue) return;
+    gfx->ibl.ready = 0;
+    gfx->ibl.skyCubeReady = 0;
+    gfx->ibl.failed = 0;
+    if (gfx->ibl.irradianceMap.id > 0)
+        gX_RHI_Tex_Delete(gfx->ibl.irradianceMap.id);
+    if (gfx->ibl.prefilterMap.id > 0)
+        gX_RHI_Tex_Delete(gfx->ibl.prefilterMap.id);
+    gfx->ibl.irradianceMap = (gX_Texture){0};
+    gfx->ibl.prefilterMap = (gX_Texture){0};
+    gfx->ibl.refreshPending = 0;
+    gfx->ibl.refreshFrame = frame;
+    gfx->ibl.refreshCount++;
+    gX_TraceLog_GFX(gX_LOG_NOTICE, "IBL refresh invalidated (count=%d)",
+        gfx->ibl.refreshCount);
+}
+
 //opencode: keep an opted-in fog/void color link live across editor tabs.
 //ai: refresh the active TAA safety-uniform location together with the matrix locations on reload.
 //ai: cache GTAO/SSGI authored normal-separation bias uniforms alongside radius.
@@ -123,6 +227,7 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
     glass_test_move(gfx);
     water_refraction_test_toggle(gfx);
     water_refraction_test_transition(gfx);
+    gfx_ibl_refresh_test(gfx);
     if (gfx->fog.matchVoidColor) gfx->fog.color = gfx->sky.color;
     //opencode: interactive showcase controller (--showcase) — orbit camera,
     //   effect hotkeys, model focus. Runs before the frame's rendering.
@@ -1063,6 +1168,7 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
     gX_RendererGFX_Shader_Update(&gfx->ibl.brdfShader, gfx);
     gX_RendererGFX_Shader_Update(&gfx->ibl.irradianceShader, gfx);
     gX_RendererGFX_Shader_Update(&gfx->ibl.prefilterShader, gfx);
+    gfx_ibl_refresh_update(gfx);
     //opencode: IBL generation — BRDF LUT + irradiance + prefilter (one-time,
     //   deferred GL). Gated on ENABLE_ENV_AMBIENT: when it's off the shader
     //   receives envAmbientFactor=0 so IBL contributes exactly zero (and at
@@ -1077,6 +1183,7 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
     gX_I1 iblSourceReady = gfx->state.ENABLE_PROCEDURAL_SKY
         ? iblSkyCube : gfx->reflection.cubeReady;
     if (gfx->state.ENABLE_ENV_AMBIENT && !gfx->ibl.ready
+        && !gfx->ibl.failed
         && maindata.frameCount >= 4
         && gfx->ibl.brdfShader.loaded && gfx->ibl.irradianceShader.loaded &&
         gfx->ibl.prefilterShader.loaded && iblSourceReady)
@@ -1093,7 +1200,7 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         gX_RHI_FBO_Gen(1, &capFbo);
 
         // ---- 1. BRDF LUT (2D RG16F) ----
-        {
+        if (gfx->ibl.brdfLut.id == 0) {
             gX_U32 lutTex = 0;
             lutTex = gX_RHI_Tex_Create2D((gX_U32)lutSize, (gX_U32)lutSize, gX_RHI_RG16F, gX_RHI_RG, gX_RHI_FLOAT, NULL, "brdf_lut");
             gX_RHI_Tex_Param(lutTex, gX_RHI_TEXTURE_2D, gX_RHI_TEXTURE_MIN_FILTER, gX_RHI_LINEAR);
@@ -1151,6 +1258,9 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             gX_I32 sourceLoc = gX_RHI_GetUniformLocation(irrS.id, "sourceMap");
             gX_I32 cvLoc = gX_RHI_GetUniformLocation(irrS.id, "captureView");
             gX_RHI_BindFBO(capFbo);
+            gX_RHI_FBO_AttachCubeFace(irrTex, 0);
+            gX_RHI_DrawBuffer(gX_RHI_COLOR_ATTACHMENT0);
+            gX_RHI_ReadBuffer(gX_RHI_COLOR_ATTACHMENT0);
             if (!gX_RHI_FBO_IsComplete()) {
                 gX_TraceLog_GFX(gX_LOG_ERROR, "IBL irradiance FBO incomplete — IBL disabled");
                 gfx->ibl.failed = true;
@@ -1214,6 +1324,12 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             gX_I32 preCVLoc  = gX_RHI_GetUniformLocation(preS.id, "captureView");
 
             gX_RHI_BindFBO(capFbo);
+            gX_RHI_FBO_AttachCubeFaceLevel(preTex, 0, 0);
+            //opencode: explicit draw/read buffers — stale per-name FBO state
+            //   (e.g. GL_NONE from a recycled colorless FBO) made glClear raise
+            //   GL_INVALID_FRAMEBUFFER_OPERATION despite a complete framebuffer.
+            gX_RHI_DrawBuffer(gX_RHI_COLOR_ATTACHMENT0);
+            gX_RHI_ReadBuffer(gX_RHI_COLOR_ATTACHMENT0);
             if (!gX_RHI_FBO_IsComplete()) {
                 gX_TraceLog_GFX(gX_LOG_ERROR, "IBL prefilter FBO incomplete — IBL disabled");
                 gfx->ibl.failed = true;
@@ -1224,11 +1340,6 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
                 gX_RHI_BindFBO((gX_RHI_FBO)savedFbo);
                 return;
             }
-            //opencode: explicit draw/read buffers — stale per-name FBO state
-            //   (e.g. GL_NONE from a recycled colorless FBO) made glClear raise
-            //   GL_INVALID_FRAMEBUFFER_OPERATION despite a complete framebuffer.
-            gX_RHI_DrawBuffer(gX_RHI_COLOR_ATTACHMENT0);
-            gX_RHI_ReadBuffer(gX_RHI_COLOR_ATTACHMENT0);
             for (gX_I32 mip = 0; mip < preMips; mip++)
             {
                 gX_I32 mipSize = preSize >> mip;

@@ -25,7 +25,7 @@ SHOT_FRAME = 70
 FRAMES = 80
 
 
-def make_fixture(path, shadows):
+def make_fixture(path, shadows, density=2.2):
     base = json.loads(PRESET.read_text())
     floor = json.loads(json.dumps(base["models"][0]))
     floor["path"] = "resources/model/primitive/cube.glb"
@@ -81,6 +81,7 @@ def make_fixture(path, shadows):
                       "up": [0, 1, 0], "fovy": 45.0, "projection": 0}
     base["cameras"] = [{"name": "Camera 1", "description": "",
                         "view": base["camera"]}]
+    base["sky"]["density"] = density
     base["sun"] = {
         "dir": [0.35, -0.85, 0.40], "color": [255, 255, 255, 255],
         "brightness": 1.0, "castShadows": bool(shadows),
@@ -103,12 +104,14 @@ def make_fixture(path, shadows):
     path.write_text(json.dumps(base, indent=1) + "\n")
 
 
-def run_editor(fixture, shot_dir):
-    environment = audit.scene_env({
+def run_editor(fixture, shot_dir, extra=None):
+    overrides = {
         "GX_FIXED_DT": "0.0166666667", "GX_FRAMES": str(FRAMES),
         "GX_GFX_PRESET_LOAD": str(fixture),
         "GX_EDITOR_FOCUS_VIEWPORT": "1",
-    }, clean=True)
+    }
+    overrides.update(extra or {})
+    environment = audit.scene_env(overrides, clean=True)
     result = audit.run_scene("--gfx", environment, width=None, height=None,
         fps=None, shot_frame=SHOT_FRAME, screenshot_dir=shot_dir,
         timeout=120, check=False, extra_args=("--gfx-editor",))
@@ -165,8 +168,61 @@ def main():
             if changed_fraction < 0.005:
                 raise RuntimeError(f"PBR cast shadows did not register "
                                    f"({changed_fraction:.4f} changed fraction)")
+            live_fixture = root / "pbr_live.json"
+            reference_fixture = root / "pbr_reference.json"
+            make_fixture(live_fixture, True, density=0.2)
+            make_fixture(reference_fixture, True, density=5.0)
+            live_dir = root / "live"
+            reference_dir = root / "reference"
+            live_dir.mkdir()
+            reference_dir.mkdir()
+            with audit.settings_preserved():
+                live_log, live_code = run_editor(
+                    live_fixture, live_dir,
+                    {"GX_GFX_IBL_REFRESH_TEST": "5.0"})
+                reference_log, reference_code = run_editor(
+                    reference_fixture, reference_dir)
+            if live_code != 0 or reference_code != 0:
+                raise RuntimeError(
+                    f"IBL refresh runs failed ({live_code}/{reference_code})")
+            if "IBL_REFRESH_TEST" not in live_log:
+                raise RuntimeError("IBL refresh hook did not fire")
+            if "IBL refresh invalidated" not in live_log:
+                raise RuntimeError("IBL refresh was not requested")
+            if live_log.count("IBL sky cube captured") < 2:
+                raise RuntimeError("IBL sky cube was not recaptured")
+            if "IBL refresh invalidated" in reference_log:
+                raise RuntimeError("reference run unexpectedly refreshed IBL")
+            live_shots = sorted(live_dir.glob("gXss_*.png"))
+            reference_shots = sorted(reference_dir.glob("gXss_*.png"))
+            if not live_shots or not reference_shots:
+                raise RuntimeError("IBL refresh screenshots missing")
+            live = np.asarray(Image.open(live_shots[-1]).convert("RGB"),
+                              dtype=np.float32)
+            reference = np.asarray(
+                Image.open(reference_shots[-1]).convert("RGB"),
+                dtype=np.float32)
+            live_region = live[int(height * 0.34):int(height * 0.60),
+                               int(width * 0.26):int(width * 0.84)]
+            reference_region = reference[
+                int(height * 0.34):int(height * 0.60),
+                int(width * 0.26):int(width * 0.84)]
+            on_region = on[int(height * 0.34):int(height * 0.60),
+                           int(width * 0.26):int(width * 0.84)]
+            refresh_delta = float(np.abs(live_region - reference_region).mean())
+            refresh_change = float(np.abs(live_region - on_region).mean())
+            if refresh_delta > 2.5:
+                raise RuntimeError(
+                    f"live IBL does not match a fresh capture "
+                    f"(delta {refresh_delta:.2f})")
+            if refresh_change < 1.0:
+                raise RuntimeError(
+                    f"turbidity change did not affect the IBL "
+                    f"(delta {refresh_change:.2f})")
             print(f"PBR_CHECK: PASS mean={on.mean():.1f} "
-                  f"tint-spread={tint_spread:.2f} shadow-fraction={changed_fraction:.4f}")
+                  f"tint-spread={tint_spread:.2f} shadow-fraction={changed_fraction:.4f} "
+                  f"refresh-delta={refresh_delta:.2f} "
+                  f"refresh-change={refresh_change:.2f}")
     except (OSError, RuntimeError, ValueError) as error:
         print(f"PBR_CHECK: FAIL — {error}", file=sys.stderr)
         return 1

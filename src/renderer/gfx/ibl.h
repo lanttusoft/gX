@@ -50,6 +50,14 @@ typedef struct gX_RendererGFX_IBL {
     gX_I1       ready;
     gX_I1       skyCubeReady;
     gX_I1       failed; //opencode: set on FBO failure — stops per-frame retry storm
+    //ai: live procedural-sky refresh — a settled hash change invalidates the
+    //   sky cube + convolution maps without rebuilding the BRDF LUT.
+    gX_U64      sourceHash;
+    gX_U64      refreshFrame;
+    gX_U64      refreshChangeFrame;
+    gX_I32      refreshSettleFrames;
+    gX_I32      refreshCount;
+    gX_I1       refreshPending;
 } gX_RendererGFX_IBL;
 
 struct gX_RendererGFX;
