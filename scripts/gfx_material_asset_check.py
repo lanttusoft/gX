@@ -19,6 +19,9 @@ ROOT = audit.ROOT
 OUT = "/tmp/opencode/gfx_material_asset_check"
 ASSET = os.path.join(OUT, "roundtrip.material.json")
 MATERIALS = ROOT / "resources/tools/gfx_materials.json"
+#opencode: the material-map rows sit below the 768px audit window; keep the
+#   engine window so the traced Browse rect is reachable.
+audit.keep_engine_size()
 #opencode: per-material map Browse rects on the overrides panel.
 MAP_RE = re.compile(
     r"GFX_MATMAP: override=(\d+) albedo=\(([^)]+)\) emissive=\(([^)]+)\)"

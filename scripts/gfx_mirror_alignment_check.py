@@ -31,6 +31,9 @@ ALIGN_RE = re.compile(
 PLANE_RE = re.compile(
     r"ORACLEDUMP .* plane=([-\d.]+) n=\(([-\d.]+),([-\d.]+),([-\d.]+)\)"
 )
+ALIGN_TRACE_RE = re.compile(
+    r"GFX_MIRROR_ALIGN: warn=\(([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\) "
+    r"button=\(([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\)")
 
 
 #opencode: create an intentionally stale mirror plane in a temporary preset.
@@ -105,6 +108,7 @@ def run_capture(preset, shot_dir, frame, input_script):
         "GX_AI_INPUT": input_script,
         "GX_FIXED_DT": "0.0166666667",
         "GX_GFX_PRESET_LOAD": str(preset),
+        "GX_MIRROR_ALIGN_TRACE": "1",
     }, clean=True)
     try:
         result = audit.run_scene(
@@ -125,11 +129,18 @@ def run_capture(preset, shot_dir, frame, input_script):
     return result.stdout, screenshot
 
 
-def warning_pixel_count(image_path):
+def warning_pixel_count(image_path, rect=None):
     image = np.asarray(Image.open(image_path).convert("RGB"), dtype=np.uint8)
     height, width = image.shape[:2]
-    region = image[int(height * 0.27):int(height * 0.41),
-                   int(width * 0.77):int(width * 0.995)]
+    if rect is None:
+        y0, y1, x0, x1 = int(height * 0.10), int(height * 0.90), int(width * 0.70), width
+    else:
+        pad = 8
+        x0 = max(0, int(rect[0]) - pad)
+        y0 = max(0, int(rect[1]) - pad)
+        x1 = min(width, int(rect[2]) + pad)
+        y1 = min(height, int(rect[3]) + pad)
+    region = image[y0:y1, x0:x1]
     red, green, blue = region.astype(np.int16).transpose(2, 0, 1)
     warning = ((red > 170) & (green > 65) & (green < 220)
                & (blue < 145) & (red > green * 1.15))
@@ -147,19 +158,20 @@ def main():
             root = Path(temporary)
             preset = root / "fixture.json"
             make_fixture(preset)
-            _, before_image = run_capture(
+            before_log, before_image = run_capture(
                 preset, root / "before", 180, "1.5 click 100 212")
-            warning_pixels = warning_pixel_count(before_image)
+            align_rows = ALIGN_TRACE_RE.findall(before_log)
+            if not align_rows:
+                raise RuntimeError("mirror-align trace missing")
+            warn_values = [float(value) for value in align_rows[-1][:4]]
+            button_values = [float(value) for value in align_rows[-1][4:]]
+            warning_pixels = warning_pixel_count(before_image, warn_values)
             if warning_pixels < 50:
                 raise RuntimeError(
                     f"stale-plane warning not visible ({warning_pixels} orange pixels)")
-
-            width = Image.open(before_image).width
-            align_x = width - 300
-            #opencode: the align button sits under the stale-plane warning; its
-            #   row was re-measured 2026-09-26 (379 hit the top edge, 386 center).
-            align_y = 386
-            input_script = f"1.5 click 100 212;2.5 click {align_x} {align_y}"
+            align_x = 0.5 * (button_values[0] + button_values[2])
+            align_y = 0.5 * (button_values[1] + button_values[3])
+            input_script = f"1.5 click 100 212;2.5 click {align_x:.1f} {align_y:.1f}"
             action_log, after_image = run_capture(
                 preset, root / "after", 240, input_script)
             matches = ALIGN_RE.findall(action_log)
@@ -173,7 +185,7 @@ def main():
                 raise RuntimeError(
                     f"alignment mismatch model={model_index} "
                     f"offset={before_offset:.3f}->{after_offset:.3f}")
-            after_warning_pixels = warning_pixel_count(after_image)
+            after_warning_pixels = warning_pixel_count(after_image, warn_values)
             if after_warning_pixels >= 50:
                 raise RuntimeError(
                     f"stale-plane warning remained visible after alignment "

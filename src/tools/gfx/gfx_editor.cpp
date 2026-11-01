@@ -6107,6 +6107,8 @@ static gX_I0 gfx_model_surface_panel(gX_RendererGFX *gfx) {
         model->params.excludeFromPlanarCapture = excludeFromPlanarCapture;
     gfx_text_disabled_wrapped(
         "Use on backing geometry that occludes the mirror view.");
+    const gX_I8 *reflectTrace = getenv("GX_GFX_REFLECT_TRACE");
+    const gX_I8 *reflectFocus = getenv("GX_GFX_REFLECT_FOCUS");
     static const gX_I8 *reflectionModes[] = {
         "Off (plain object)", "Environment", "Planar + SSR", "Planar only",
         "Curved + SSR", "Curved only"};
@@ -6115,10 +6117,34 @@ static gX_I0 gfx_model_surface_panel(gX_RendererGFX *gfx) {
             ? (model->params.receiveSSR ? 4 : 5)
             : (model->params.receiveSSR ? 2 : 3))
         : (model->params.enableReflections ? 1 : 0);
+    if (reflectFocus && reflectFocus[0] && reflectFocus[0] != '0'
+        && maindata.frameCount <= 30)
+        ImGui::SetScrollHereY(0.0f);
     ImGui::BeginDisabled(!model->loaded);
-    if (ImGui::Combo("reflection mode", &reflectionMode, reflectionModes, 6))
-        gfx_model_reflection_mode_set(gfx, model, reflectionMode);
+    if (ImGui::BeginCombo("reflection mode", reflectionModes[reflectionMode])) {
+        for (gX_I32 mi = 0; mi < 6; mi++) {
+            if (ImGui::Selectable(reflectionModes[mi], mi == reflectionMode))
+                gfx_model_reflection_mode_set(gfx, model, mi);
+            if (reflectTrace && reflectTrace[0] && reflectTrace[0] != '0'
+                && (ImGui::GetFrameCount() % 30u) == 0u) {
+                ImVec2 tmin = ImGui::GetItemRectMin();
+                ImVec2 tmax = ImGui::GetItemRectMax();
+                gX_TraceLog(gX_LOG_INFO,
+                    "GFX_REFLECT_OPT: name=%s rect=(%.0f,%.0f,%.0f,%.0f)",
+                    reflectionModes[mi], tmin.x, tmin.y, tmax.x, tmax.y);
+            }
+        }
+        ImGui::EndCombo();
+    }
     ImGui::EndDisabled();
+    if (reflectTrace && reflectTrace[0] && reflectTrace[0] != '0'
+        && (ImGui::GetFrameCount() % 30u) == 0u) {
+        ImVec2 tmin = ImGui::GetItemRectMin();
+        ImVec2 tmax = ImGui::GetItemRectMax();
+        gX_TraceLog(gX_LOG_INFO,
+            "GFX_REFLECT_MODE: rect=(%.0f,%.0f,%.0f,%.0f)",
+            tmin.x, tmin.y, tmax.x, tmax.y);
+    }
     if (!model->loaded) ImGui::TextDisabled("Reflection modes require a loaded model mesh.");
     gfx_text_disabled_wrapped(
         "Off (plain object) disables this model's mirror/SSR reflections; its material settings and other mirrors stay active.");
@@ -6174,9 +6200,21 @@ static gX_I0 gfx_model_surface_panel(gX_RendererGFX *gfx) {
         gfx_text_disabled_wrapped(
             "Generate a plane to check whether this mesh is flat enough.");
     }
+    const gX_I8 *followFocus = getenv("GX_GFX_REFLECT_FOLLOW_FOCUS");
+    if (followFocus && followFocus[0] && followFocus[0] != '0'
+        && maindata.frameCount >= 150)
+        ImGui::SetScrollHereY(0.0f);
     gX_I1 followsModel = model->params.reflectionPlaneFollowsModel ? 1 : 0;
     if (ImGui::Checkbox("plane follows model rotation", (bool *)&followsModel))
         gfx_model_reflection_plane_follow_set(model, followsModel);
+    if (reflectTrace && reflectTrace[0] && reflectTrace[0] != '0'
+        && (ImGui::GetFrameCount() % 30u) == 0u) {
+        ImVec2 tmin = ImGui::GetItemRectMin();
+        ImVec2 tmax = ImGui::GetItemRectMax();
+        gX_TraceLog(gX_LOG_INFO,
+            "GFX_REFLECT_FOLLOW: rect=(%.0f,%.0f,%.0f,%.0f)",
+            tmin.x, tmin.y, tmax.x, tmax.y);
+    }
     gfx_text_disabled_wrapped(
         "When enabled, the plane normal is model-local and its origin follows the model position.");
     ImGui::DragFloat(model->params.reflectionPlaneFollowsModel
@@ -6844,11 +6882,13 @@ static gX_I0 gfx_models_panel(gX_RendererGFX *gfx) {
     if (model->params.planarReflection && model->loaded) {
         gX_F32 planeOffset = gfx_model_reflection_plane_offset(model);
         if (planeOffset > 0.25f) {
+            gX_F32 warnRect[4] = {0.0f, 0.0f, 0.0f, 0.0f};
             ImGui::PushTextWrapPos(0.0f);
             ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.25f, 1.0f),
                 "Planar reflection plane misses the model center by %.2f units.",
                 planeOffset);
             ImGui::PopTextWrapPos();
+            gfx_item_rect4(warnRect);
             ImGui::TextDisabled("Custom offsets are allowed; align if unintended.");
             if (ImGui::Button("Align plane to model")) {
                 gX_F32 previousOffset = planeOffset;
@@ -6857,6 +6897,16 @@ static gX_I0 gfx_models_panel(gX_RendererGFX *gfx) {
                     "GfxEd: planar plane aligned model=%d offset=%.3f->%.3f",
                     s_selModel, previousOffset,
                     gfx_model_reflection_plane_offset(model));
+            }
+            gX_F32 alignRect[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+            gfx_item_rect4(alignRect);
+            const gX_I8 *alignTrace = getenv("GX_MIRROR_ALIGN_TRACE");
+            if (alignTrace && alignTrace[0] && alignTrace[0] != '0') {
+                gX_TraceLog(gX_LOG_NOTICE,
+                    "GFX_MIRROR_ALIGN: warn=(%.0f,%.0f,%.0f,%.0f) "
+                    "button=(%.0f,%.0f,%.0f,%.0f)",
+                    warnRect[0], warnRect[1], warnRect[2], warnRect[3],
+                    alignRect[0], alignRect[1], alignRect[2], alignRect[3]);
             }
         }
     }
@@ -11266,14 +11316,19 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
                 //opencode: task-oriented lab tabs keep the full renderer surface
                 //   available without forcing a narrow dock to show every section.
                 gX_I1 inspectRaymarch = getenv("GX_RAYMARCH_EDITOR_INSPECT") != NULL;
+                const gX_I8 *reflectTabFocus = getenv("GX_GFX_REFLECT_FOCUS");
+                gX_I1 reflectSelected = (reflectTabFocus && reflectTabFocus[0]
+                    && reflectTabFocus[0] != '0') ? 1 : 0;
                 if (ImGui::BeginTabBar("GfxLabs", ImGuiTabBarFlags_FittingPolicyScroll)) {
-                    if (ImGui::BeginTabItem("Models")) {
+                    if (ImGui::BeginTabItem("Models", NULL,
+                            reflectSelected ? ImGuiTabItemFlags_SetSelected : 0)) {
                         if (ImGui::BeginTabBar("GfxModelSections", ImGuiTabBarFlags_FittingPolicyScroll)) {
                             if (ImGui::BeginTabItem("Model")) {
                                 gfx_models_panel(gfx);
                                 ImGui::EndTabItem();
                             }
-                            if (ImGui::BeginTabItem("Surface")) {
+                            if (ImGui::BeginTabItem("Surface", NULL,
+                                    reflectSelected ? ImGuiTabItemFlags_SetSelected : 0)) {
                                 gfx_model_surface_panel(gfx);
                                 ImGui::EndTabItem();
                             }

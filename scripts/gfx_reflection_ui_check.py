@@ -9,6 +9,7 @@
 import copy
 import json
 import os
+import re
 from pathlib import Path
 
 import audit_common as audit
@@ -114,6 +115,75 @@ def capture_layout(temp_root, preset, attempts=3):
     raise last_error if last_error else RuntimeError("layout capture failed")
 
 
+#opencode: trace the focused Surface controls; the 1.25 inspector layout is
+#   wider than the fixed offsets used by the original UI driver.
+MODE_RE = re.compile(
+    r"GFX_REFLECT_MODE: rect=\(([-0-9.]+),([-0-9.]+),([-0-9.]+),([-0-9.]+)\)")
+FOLLOW_RE = re.compile(
+    r"GFX_REFLECT_FOLLOW: rect=\(([-0-9.]+),([-0-9.]+),([-0-9.]+),([-0-9.]+)\)")
+OPTION_RE = re.compile(
+    r"GFX_REFLECT_OPT: name=(.*?) rect=\(([-0-9.]+),([-0-9.]+),([-0-9.]+),([-0-9.]+)\)")
+
+
+def trace_reflection(preset, temp_root, option_name):
+    def run(actions=None, frames=60, follow_focus=False):
+        environment = dict(os.environ)
+        environment["GX_NO_SETTINGS_SAVE"] = "1"
+        for key in ("GX_AI_INPUT", "GX_GFX_PRESET_SAVE", "GX_GFX_PRESET_BATCH"):
+            environment.pop(key, None)
+        environment.update({
+            "DISPLAY": os.environ.get("DISPLAY", ":1"),
+            "GX_FIXED_DT": "0.0166666667",
+            "GX_FRAMES": str(frames),
+            "GX_GFX_PRESET_LOAD": str(preset),
+            "GX_GFX_REFLECT_TRACE": "1",
+            "GX_GFX_REFLECT_FOCUS": "1",
+        })
+        if follow_focus:
+            environment["GX_GFX_REFLECT_FOLLOW_FOCUS"] = "1"
+        if actions:
+            environment["GX_AI_INPUT"] = actions
+        audit_window_env(environment)
+        result = subprocess.run(
+            [str(BIN), "--gfx", "--gfx-editor", "--screenWidth", "1024",
+             "--screenHeight", "768"],
+            cwd=ROOT, env=environment, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
+        if result.returncode != 0:
+            raise RuntimeError(f"reflection trace run failed ({result.returncode})")
+        return audit.strip_ansi(result.stdout)
+
+    log = run()
+    modes = MODE_RE.findall(log)
+    if not modes:
+        raise RuntimeError("reflection mode trace missing")
+    mode = [float(value) for value in modes[-1]]
+    mode_click = (round((mode[0] + mode[2]) * 0.5),
+                  round((mode[1] + mode[3]) * 0.5))
+    open_log = run((f"0.8 move {mode_click[0]} {mode_click[1]} 100;"
+                    f"1.0 click {mode_click[0]} {mode_click[1]}"), frames=90)
+    options = OPTION_RE.findall(open_log)
+    picked = next((row for row in options if row[0] == option_name), None)
+    if picked is None:
+        raise RuntimeError(f"reflection option not found: {option_name}")
+    rect = [float(value) for value in picked[1:]]
+    option_click = (round((rect[0] + rect[2]) * 0.5),
+                    round((rect[1] + rect[3]) * 0.5))
+    follow_log = run(
+        (f"0.8 move {mode_click[0]} {mode_click[1]} 100;"
+         f"1.0 click {mode_click[0]} {mode_click[1]};"
+         f"2.0 move {option_click[0]} {option_click[1]} 100;"
+         f"2.2 click {option_click[0]} {option_click[1]}"),
+        frames=180, follow_focus=True)
+    follows = FOLLOW_RE.findall(follow_log)
+    if not follows:
+        raise RuntimeError("reflection follow trace missing")
+    follow = [float(value) for value in follows[-1]]
+    follow_click = (round((follow[0] + follow[2]) * 0.5),
+                    round((follow[1] + follow[3]) * 0.5))
+    return mode_click, option_click, follow_click
+
+
 #opencode: open the Surface subtab, choose a reflection mode, and optionally save it.
 def edit_with_ui(preset, temp_root, width, height, confirm=None,
                  frame=600, expectSave=True, outputName="ui_edit",
@@ -125,30 +195,18 @@ def edit_with_ui(preset, temp_root, width, height, confirm=None,
     screenshot_dir.mkdir(exist_ok=True)
     for stale in screenshot_dir.glob("gXss_*.png"):
         stale.unlink()
-    surfaceX = width - 301
-    surfaceY = height - 550
-    modeX = width - 296
-    modeY = height - 458
-    #opencode: combo rows sit on ~18px pitch; aim at measured row centers
-    #   (Off 335-351 -> height-667, Planar only 388-405 -> height-614). The
-    #   previous -660/-608 sat 1-3px from row boundaries, so a window-height
-    #   rounding flip or a shifted popup selected the neighbouring mode.
-    modeOptionY = height - (433 if targetMode == "Off" else 376)
+    option_name = "Off (plain object)" if targetMode == "Off" else targetMode
+    mode_click, option_click, follow_click = trace_reflection(
+        preset, temp_root, option_name)
     actions = [
-        f"0.8 move {surfaceX} {surfaceY} 250",
-        f"1.2 click {surfaceX} {surfaceY}",
-        f"2.0 move {modeX} {modeY} 250",
-        f"2.4 click {modeX} {modeY}",
-        f"3.0 move {modeX} {modeOptionY} 250",
-        f"3.4 click {modeX} {modeOptionY}",
+        f"0.8 move {mode_click[0]} {mode_click[1]} 250",
+        f"1.0 click {mode_click[0]} {mode_click[1]}",
+        f"2.0 move {option_click[0]} {option_click[1]} 250",
+        f"2.2 click {option_click[0]} {option_click[1]}",
     ]
     if toggleFollow:
-        followX = width - 362
-        #opencode: selection-first inspector moves the surface controls below
-        #   the document block; height-186 is the follow checkbox center.
-        followY = height - 186
-        actions.extend((f"4.0 move {followX} {followY} 250",
-                        f"4.4 click {followX} {followY}"))
+        actions.extend((f"3.0 move {follow_click[0]} {follow_click[1]} 250",
+                        f"3.2 click {follow_click[0]} {follow_click[1]}"))
     if confirm:
         actions.append(f"7.8 click {confirm[0]} {confirm[1]}")
     environment = dict(os.environ)
@@ -163,6 +221,8 @@ def edit_with_ui(preset, temp_root, width, height, confirm=None,
         "GX_GFX_PRESET_LOAD": str(preset),
         "GX_GFX_PRESET_SAVE_UI": str(preset),
         "GX_GFX_PRESET_SAVE_UI_FRAME": "330",
+        "GX_GFX_REFLECT_FOCUS": "1",
+        "GX_GFX_REFLECT_FOLLOW_FOCUS": "1",
         "GX_AI_INPUT": ";".join(actions),
         "GX_SCREENSHOT_DIR": str(screenshot_dir),
         "GX_SHOT_FRAME": str(frame),
