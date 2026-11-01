@@ -4,6 +4,22 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.29.1] - 2026-11-01
+
+Release-Class: patch
+
+### Fixed
+- **Proof gate pin**: `make proofs` now requires the published
+  `gx-proofs` `v0.18.0-proofs` tree (`1760307`) through `proofs.lock.json`
+  and `scripts/proof_pin_check.py`. The archived private staging (`ef8569d`)
+  is rejected before the build. The gate now audits 52 core modules and 1,145
+  theorem declarations instead of the older 49/986 subset.
+### Changed
+- **Proof inventory**: regenerated from the published tree: 117 modules
+  (52 core, 47 Mathlib-GFX, 18 GxMath), 1,422 authored theorems + 2 lemmas,
+  and the full kernel audit remains 117 modules / 2,869 declarations with
+  standard axioms only.
+
 ## [0.29.0] - 2026-11-01
 
 Release-Class: minor
