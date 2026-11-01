@@ -6844,11 +6844,13 @@ static gX_I0 gfx_models_panel(gX_RendererGFX *gfx) {
     if (model->params.planarReflection && model->loaded) {
         gX_F32 planeOffset = gfx_model_reflection_plane_offset(model);
         if (planeOffset > 0.25f) {
+            gX_F32 warnRect[4] = {0.0f, 0.0f, 0.0f, 0.0f};
             ImGui::PushTextWrapPos(0.0f);
             ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.25f, 1.0f),
                 "Planar reflection plane misses the model center by %.2f units.",
                 planeOffset);
             ImGui::PopTextWrapPos();
+            gfx_item_rect4(warnRect);
             ImGui::TextDisabled("Custom offsets are allowed; align if unintended.");
             if (ImGui::Button("Align plane to model")) {
                 gX_F32 previousOffset = planeOffset;
@@ -6857,6 +6859,16 @@ static gX_I0 gfx_models_panel(gX_RendererGFX *gfx) {
                     "GfxEd: planar plane aligned model=%d offset=%.3f->%.3f",
                     s_selModel, previousOffset,
                     gfx_model_reflection_plane_offset(model));
+            }
+            gX_F32 alignRect[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+            gfx_item_rect4(alignRect);
+            const gX_I8 *alignTrace = getenv("GX_MIRROR_ALIGN_TRACE");
+            if (alignTrace && alignTrace[0] && alignTrace[0] != '0') {
+                gX_TraceLog(gX_LOG_NOTICE,
+                    "GFX_MIRROR_ALIGN: warn=(%.0f,%.0f,%.0f,%.0f) "
+                    "button=(%.0f,%.0f,%.0f,%.0f)",
+                    warnRect[0], warnRect[1], warnRect[2], warnRect[3],
+                    alignRect[0], alignRect[1], alignRect[2], alignRect[3]);
             }
         }
     }
