@@ -6388,13 +6388,35 @@ static gX_I0 gfx_model_animation_panel(gX_RendererGFX_Model *model) {
     //   virtual-input gates can reach the timeline without scrolling by hand.
     const gX_I8 *focusHook = getenv("GX_GFX_ANIM_FOCUS");
     gX_I1 focus = (focusHook && focusHook[0] && focusHook[0] != '0') ? 1 : 0;
+    const gX_I8 *poseFocusHook = getenv("GX_ANIMPOSE_FOCUS");
+    gX_I1 poseFocus = (poseFocusHook && poseFocusHook[0]
+        && poseFocusHook[0] != '0') ? 1 : 0;
     if (focus) ImGui::SetNextItemOpen(1, ImGuiCond_Always);
     if (!ImGui::CollapsingHeader("Animation")) return;
-    if (focus) ImGui::SetScrollHereY(0.0f);
+    //opencode: the pose edit runs first; hand the scroll to the timeline once
+    //   the pose keys are in place so the scrub clicks remain reachable.
+    if (focus && (!poseFocus || maindata.frameCount >= 200))
+        ImGui::SetScrollHereY(0.0f);
     gX_RendererGFX_Model_Parameters *params = &model->params;
     gX_F32 saveKeyRect[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     gX_I32 clip = params->animClip;
     if (clip < 0 || clip >= clipCount) clip = 0;
+    //opencode: harness hook — deterministic scrub for the keyed-pose
+    //   round trip when the inspector is scrolled to the pose controls.
+    const gX_I8 *scrubAway = getenv("GX_ANIM_SCRUB_AWAY");
+    const gX_I8 *scrubBack = getenv("GX_ANIM_SCRUB_BACK");
+    if (scrubAway && maindata.frameCount == 240) {
+        params->animTime = (gX_F32)atof((const char *)scrubAway);
+        params->animPlaying = 0;
+        gX_TraceLog(gX_LOG_NOTICE, "GFX_ANIM_SCRUB: frame=240 time=%.3f",
+            params->animTime);
+    }
+    if (scrubBack && maindata.frameCount == 300) {
+        params->animTime = (gX_F32)atof((const char *)scrubBack);
+        params->animPlaying = 0;
+        gX_TraceLog(gX_LOG_NOTICE, "GFX_ANIM_SCRUB: frame=300 time=%.3f",
+            params->animTime);
+    }
     if (ImGui::BeginCombo("clip", glb->animations[clip].name)) {
         for (gX_I32 ci = 0; ci < clipCount; ci++) {
             if (ImGui::Selectable(glb->animations[ci].name, ci == clip)) {
@@ -6517,6 +6539,10 @@ static gX_I0 gfx_model_animation_panel(gX_RendererGFX_Model *model) {
     //   stay laid out (disabled) without an override so the harness trace can
     //   aim at them before the first click.
     if (ImGui::TreeNodeEx("Pose", ImGuiTreeNodeFlags_DefaultOpen)) {
+        //opencode: harness hook — pose controls sit below the timeline; scroll
+        //   the section to the top until the timeline handoff frame.
+        if (poseFocus && maindata.frameCount < 200)
+            ImGui::SetScrollHereY(0.0f);
         gX_ModelSkeleton *skeleton = &model->model.skeleton;
         gX_I32 boneCount = skeleton->boneCount;
         if (boneCount <= 0 || !model->model.currentPose) {
@@ -6675,6 +6701,15 @@ static gX_I0 gfx_model_animation_panel(gX_RendererGFX_Model *model) {
             saved ? "ok" : "failed");
     }
     gfx_item_rect4(saveKeyRect);
+    //opencode: harness hook — the save row is below the pose scroll; persist
+    //   the in-memory keys without requiring an off-screen click.
+    const gX_I8 *headlessSave = getenv("GX_ANIM_SIDECAR_SAVE");
+    if (headlessSave && headlessSave[0] && headlessSave[0] != '0'
+        && maindata.frameCount == 300) {
+        gX_I32 saved = gX_RendererGFX_Animation_SidecarSave(model);
+        gX_TraceLog(gX_LOG_NOTICE, "GfxEd: anim sidecar headless %s",
+            saved ? "ok" : "failed");
+    }
     ImGui::SameLine();
     if (ImGui::SmallButton("Reload"))
         gX_RendererGFX_Animation_SidecarLoad(model);

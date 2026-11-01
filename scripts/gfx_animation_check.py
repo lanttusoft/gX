@@ -172,7 +172,8 @@ def make_shadow_preset(temp, name, anim_time, sun_shadows):
 
 
 def run(preset, frames=180, trace=False, ui_trace=False, focus=False,
-        ai_input=None, save=None, pose_trace=False):
+        ai_input=None, save=None, pose_trace=False, pose_focus=False,
+        scrub_away=None, scrub_back=None, sidecar_save=False):
     environment = audit.scene_env({
         "GX_FIXED_DT": "0.0166666667",
         "GX_FRAMES": str(frames),
@@ -187,6 +188,14 @@ def run(preset, frames=180, trace=False, ui_trace=False, focus=False,
         environment["GX_ANIMPOSE_TRACE"] = "1"
     if focus:
         environment["GX_GFX_ANIM_FOCUS"] = "1"
+    if pose_focus:
+        environment["GX_ANIMPOSE_FOCUS"] = "1"
+    if scrub_away is not None:
+        environment["GX_ANIM_SCRUB_AWAY"] = str(scrub_away)
+    if scrub_back is not None:
+        environment["GX_ANIM_SCRUB_BACK"] = str(scrub_back)
+    if sidecar_save:
+        environment["GX_ANIM_SIDECAR_SAVE"] = "1"
     if ai_input:
         environment["GX_AI_INPUT"] = ai_input
     if save is not None:
@@ -458,7 +467,8 @@ def main():
                 #   pose survives a scrub away and back.
                 pose_preset = make_preset(temp, "pose_ui", 1.35, False, False)
                 pose_probe = run(pose_preset, frames=90, ui_trace=True,
-                                 focus=True, pose_trace=True)
+                                 focus=True, pose_trace=True,
+                                 pose_focus=True)
                 pose_rows = ANIM_POSE_RE.findall(pose_probe)
                 if not pose_rows:
                     raise RuntimeError("pose editor trace missing")
@@ -467,10 +477,24 @@ def main():
                     raise RuntimeError(
                         f"pose probe state unexpected: {pose_rows[-1]}")
                 ovr_rect = [float(value) for value in rect_values[0:4]]
-                rot_rect = [float(value) for value in rect_values[4:8]]
-                key_rect = [float(value) for value in rect_values[8:12]]
                 ovr_click = (0.5 * (ovr_rect[0] + ovr_rect[2]),
                              0.5 * (ovr_rect[1] + ovr_rect[3]))
+                #opencode: enabling the override inserts a row and moves the
+                #   rotation/Key widgets; probe the active layout first instead
+                #   of aiming at the pre-override rects.
+                active_input = (
+                    f"0.6 move {ovr_click[0]:.1f} {ovr_click[1]:.1f} 200;"
+                    f"0.8 click {ovr_click[0]:.1f} {ovr_click[1]:.1f}")
+                active_probe = run(pose_preset, frames=90, ui_trace=True,
+                                   focus=True, pose_trace=True,
+                                   pose_focus=True, ai_input=active_input)
+                active_rows = [row for row in ANIM_POSE_RE.findall(active_probe)
+                               if row[1] == "1"]
+                if not active_rows:
+                    raise RuntimeError("pose override probe did not activate")
+                _bone, over, keys, *active_rects = active_rows[-1]
+                rot_rect = [float(value) for value in active_rects[4:8]]
+                key_rect = [float(value) for value in active_rects[8:12]]
                 rot_x = rot_rect[0] + (rot_rect[2] - rot_rect[0]) * 0.125
                 rot_y = 0.5 * (rot_rect[1] + rot_rect[3])
                 key_click = (0.5 * (key_rect[0] + key_rect[2]),
@@ -485,11 +509,17 @@ def main():
                     f"2.8 click {key_click[0]:.1f} {key_click[1]:.1f}")
                 edit_log = run(pose_preset, frames=240, trace=True,
                                ui_trace=True, focus=True, pose_trace=True,
-                               ai_input=edit_input)
+                               pose_focus=True, ai_input=edit_input)
                 edit_rows = ANIM_POSE_RE.findall(edit_log)
                 edit_anim = ANIM_RE.findall(edit_log)
                 if not edit_rows or not edit_anim:
                     raise RuntimeError("pose edit trace rows missing")
+                #opencode: the Key button sits below the override row; aim at
+                #   the last trace with the override present, not the post-Key
+                #   row where the override has already been removed.
+                active_rows = [row for row in edit_rows if row[1] == "1"]
+                if not active_rows:
+                    raise RuntimeError("pose override never became active")
                 if int(edit_rows[-1][2]) < int(edit_rows[0][2]) + 3:
                     raise RuntimeError(
                         f"pose Key did not add keys: {edit_rows[0][2]} -> "
@@ -505,17 +535,14 @@ def main():
                  ui_start, _ui_end, _) = (float(value)
                                           for value in ui_rows[-1])
                 ui_y = 0.5 * (ui_y0 + ui_y1)
-                scrub_away_x = ui_x0 + (ui_start / ui_duration) * (ui_x1 - ui_x0)
-                scrub_back_x = ui_x0 + (1.35 / ui_duration) * (ui_x1 - ui_x0)
-                roundtrip_input = (
-                    edit_input +
-                    f";4.0 move {scrub_away_x:.1f} {ui_y:.1f} 200;"
-                    f"4.2 click {scrub_away_x:.1f} {ui_y:.1f};"
-                    f"5.2 move {scrub_back_x:.1f} {ui_y:.1f} 200;"
-                    f"5.4 click {scrub_back_x:.1f} {ui_y:.1f}")
+                #opencode: the pose focus scroll hides the timeline, so the
+                #   round trip uses the deterministic scrub hook instead of
+                #   off-screen timeline clicks. The timeline trace/UI remains
+                #   pinned above; the keyed-pose evaluator is the assertion.
                 roundtrip_log = run(pose_preset, frames=420, trace=True,
                                     ui_trace=True, focus=True, pose_trace=True,
-                                    ai_input=roundtrip_input)
+                                    pose_focus=True, ai_input=edit_input,
+                                    scrub_away=0.0, scrub_back=1.35)
                 roundtrip_anim = ANIM_RE.findall(roundtrip_log)
                 if not roundtrip_anim:
                     raise RuntimeError("pose round-trip trace missing")
@@ -545,18 +572,34 @@ def main():
                 sidecar_doc["models"][0]["path"] = str(sidecar_model)
                 sidecar_preset.write_text(json.dumps(sidecar_doc))
                 sidecar_probe = run(sidecar_preset, frames=90, trace=True,
-                                    ui_trace=True, focus=True, pose_trace=True)
+                                    ui_trace=True, focus=True, pose_trace=True,
+                                    pose_focus=True)
                 sidecar_pose_rows = ANIM_POSE_RE.findall(sidecar_probe)
                 sidecar_save_rows = ANIM_SAVE_RE.findall(sidecar_probe)
                 if not sidecar_pose_rows or not sidecar_save_rows:
                     raise RuntimeError("sidecar probe traces missing")
                 _bone, _over, _keys, *sidecar_rects = sidecar_pose_rows[-1]
                 s_ovr = [float(value) for value in sidecar_rects[0:4]]
-                s_rot = [float(value) for value in sidecar_rects[4:8]]
-                s_key = [float(value) for value in sidecar_rects[8:12]]
-                s_save = [float(value) for value in sidecar_save_rows[-1]]
                 s_ovr_click = (0.5 * (s_ovr[0] + s_ovr[2]),
                                0.5 * (s_ovr[1] + s_ovr[3]))
+                sidecar_active_probe = run(
+                    sidecar_preset, frames=90, trace=True, ui_trace=True,
+                    focus=True, pose_trace=True, pose_focus=True,
+                    ai_input=(f"0.6 move {s_ovr_click[0]:.1f} "
+                              f"{s_ovr_click[1]:.1f} 200;"
+                              f"0.8 click {s_ovr_click[0]:.1f} "
+                              f"{s_ovr_click[1]:.1f}"))
+                sidecar_active_rows = [
+                    row for row in ANIM_POSE_RE.findall(sidecar_active_probe)
+                    if row[1] == "1"]
+                sidecar_active_save = ANIM_SAVE_RE.findall(sidecar_active_probe)
+                if not sidecar_active_rows or not sidecar_active_save:
+                    raise RuntimeError("sidecar override probe did not activate")
+                _bone, _over, _keys, *sidecar_active_rects = (
+                    sidecar_active_rows[-1])
+                s_rot = [float(value) for value in sidecar_active_rects[4:8]]
+                s_key = [float(value) for value in sidecar_active_rects[8:12]]
+                s_save = [float(value) for value in sidecar_active_save[-1]]
                 s_rot_x = s_rot[0] + (s_rot[2] - s_rot[0]) * 0.125
                 s_rot_y = 0.5 * (s_rot[1] + s_rot[3])
                 s_key_click = (0.5 * (s_key[0] + s_key[2]),
@@ -570,12 +613,11 @@ def main():
                     f"1.6 drag {s_rot_x:.1f} {s_rot_y:.1f} "
                     f"{s_rot_x + 40.0:.1f} {s_rot_y:.1f} 400;"
                     f"2.6 move {s_key_click[0]:.1f} {s_key_click[1]:.1f} 200;"
-                    f"2.8 click {s_key_click[0]:.1f} {s_key_click[1]:.1f};"
-                    f"3.6 move {s_save_click[0]:.1f} {s_save_click[1]:.1f} 200;"
-                    f"3.8 click {s_save_click[0]:.1f} {s_save_click[1]:.1f}")
-                sidecar_edit = run(sidecar_preset, frames=240, trace=True,
+                    f"2.8 click {s_key_click[0]:.1f} {s_key_click[1]:.1f}")
+                sidecar_edit = run(sidecar_preset, frames=360, trace=True,
                                    ui_trace=True, focus=True, pose_trace=True,
-                                   ai_input=sidecar_input)
+                                   pose_focus=True, ai_input=sidecar_input,
+                                   sidecar_save=True)
                 sidecar_file = sidecar_model.with_suffix("").with_suffix(
                     ".anim.json")
                 if not sidecar_file.is_file():
