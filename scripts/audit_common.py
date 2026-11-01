@@ -136,6 +136,12 @@ def scene_env(env=None, clean=False, **extra):
     if clean:
         strip_hooks(result)
     result["GX_NO_SETTINGS_SAVE"] = "1"
+    #opencode: scene probes exercise the scene, not the unit suite; the suite
+    #   runs explicitly in --test-only (make check and the contract gates) and
+    #   `--test-only` still forces it. Keeping it out of every capture avoids
+    #   paying the suite per spawn and keeps a rare test-only fault from
+    #   flaking unrelated gates. A probe can opt back in with GX_SKIP_TESTS=0.
+    result.setdefault("GX_SKIP_TESTS", "1")
     #ai: audits keep the deterministic demo scene; the composed editor
     #    showcase is a manual/authoring default, not a gate fixture.
     result.setdefault("GX_EDITOR_DEFAULT_SCENE", "0")

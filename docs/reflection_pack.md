@@ -19,14 +19,18 @@ in the gX GFX forward renderer. Status: **Beta** (SSR receiver-routing closure,
 
 The IBL source is the sky-only procedural cubemap. When the authored sky
 atmosphere or sun direction changes, the renderer invalidates the sky cube and
-rebuilds the irradiance/prefilter maps; the BRDF LUT is reused. Each
+rebuilds the irradiance/prefilter maps; the BRDF LUT is reused. The previous
+map pair stays bound while the replacement is generated and is released only
+after the swap, so a live edit never falls back to the dummy or dynamic
+cubemap for a frame (double-buffered refresh). Each
 convolution pass sets its own 2D ortho projection instead of inheriting the
 previous 3D camera matrix. A two-frame
 settle plus a 12-frame minimum interval keeps slider drags from convolving on
 every frame, and a slow cadence still refreshes an animated sun. Software
 rasterizers keep the one-time startup capture because the convolution is too
 expensive there. `make pbr-check` verifies that a live density change matches
-a fresh capture and that disabling the refresh leaves stale IBL.
+a fresh capture, that the old pair holds across the swap (12-frame burst), and
+that disabling the refresh leaves stale IBL.
 
 ### Optional SSR shading-normal buffer
 

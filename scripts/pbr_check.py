@@ -104,7 +104,7 @@ def make_fixture(path, shadows, density=2.2):
     path.write_text(json.dumps(base, indent=1) + "\n")
 
 
-def run_editor(fixture, shot_dir, extra=None):
+def run_editor(fixture, shot_dir, extra=None, burst=False):
     overrides = {
         "GX_FIXED_DT": "0.0166666667", "GX_FRAMES": str(FRAMES),
         "GX_GFX_PRESET_LOAD": str(fixture),
@@ -112,9 +112,12 @@ def run_editor(fixture, shot_dir, extra=None):
     }
     overrides.update(extra or {})
     environment = audit.scene_env(overrides, clean=True)
+    #opencode: the burst path captures 12 consecutive frames from the target;
+    #   it is the only way to see the frames around the IBL swap in one run.
     result = audit.run_scene("--gfx", environment, width=None, height=None,
-        fps=None, shot_frame=SHOT_FRAME, screenshot_dir=shot_dir,
-        timeout=120, check=False, extra_args=("--gfx-editor",))
+        fps=None, shot_frame=20 if burst else SHOT_FRAME,
+        screenshot_dir=shot_dir, timeout=120, check=False,
+        extra_args=("--gfx-editor",), screenshot_after=burst)
     return audit.strip_ansi(result.stdout or ""), result.returncode
 
 
@@ -231,10 +234,57 @@ def main():
                 raise RuntimeError(
                     f"disabled refresh was not detectable "
                     f"(delta {stale_delta:.2f})")
+            #opencode: double-buffer leg — between the visible sky change and
+            #   the IBL swap the previous irradiance/prefilter pair must stay
+            #   bound; a frame with different sphere lighting in that window
+            #   is the old dummy/dynamic-cubemap fallback flash. The burst
+            #   starts at frame 20 and the refresh hook fires at frame 25.
+            burst_dir = root / "burst"
+            burst_dir.mkdir()
+            burst_log, burst_code = run_editor(
+                live_fixture, burst_dir,
+                {"GX_GFX_IBL_REFRESH_TEST": "5.0", "GX_BURST": "1"},
+                burst=True)
+            if burst_code != 0:
+                raise RuntimeError(f"IBL burst run failed ({burst_code})")
+            burst_shots = sorted(burst_dir.glob("burst_*.png"))
+            if len(burst_shots) != 12:
+                raise RuntimeError(
+                    f"IBL burst frames missing ({len(burst_shots)})")
+            burst = [np.asarray(Image.open(shot).convert("RGB"),
+                                dtype=np.float32)
+                     for shot in burst_shots]
+            sky_band = (slice(80, 180),
+                        slice(int(width * 0.15), int(width * 0.85)))
+            sphere_band = (slice(int(height * 0.34), int(height * 0.60)),
+                           slice(int(width * 0.26), int(width * 0.84)))
+            sky_means = [float(frame[sky_band].mean()) for frame in burst]
+            sphere_means = [float(frame[sphere_band].mean())
+                            for frame in burst]
+            sky_change = next((index for index in range(1, len(burst))
+                               if abs(sky_means[index] - sky_means[0]) > 20.0),
+                              None)
+            if sky_change is None:
+                raise RuntimeError("IBL burst saw no sky change")
+            last_old = next((index for index in range(len(burst) - 1, -1, -1)
+                             if abs(sphere_means[index]
+                                    - sphere_means[-1]) > 5.0), None)
+            if last_old is None:
+                raise RuntimeError("IBL burst saw no lighting swap")
+            if last_old >= sky_change:
+                for index in range(sky_change, last_old + 1):
+                    if abs(sphere_means[index]
+                           - sphere_means[sky_change]) > 1.0:
+                        raise RuntimeError(
+                            f"IBL refresh flashed a fallback map at burst "
+                            f"frame {index} "
+                            f"({sphere_means[index]:.1f} vs "
+                            f"{sphere_means[sky_change]:.1f})")
             print(f"PBR_CHECK: PASS mean={on.mean():.1f} "
                   f"tint-spread={tint_spread:.2f} shadow-fraction={changed_fraction:.4f} "
                   f"refresh-delta={refresh_delta:.2f} "
-                  f"stale-delta={stale_delta:.2f}")
+                  f"stale-delta={stale_delta:.2f} "
+                  f"refresh-hold={last_old - sky_change + 1}")
     except (OSError, RuntimeError, ValueError) as error:
         print(f"PBR_CHECK: FAIL — {error}", file=sys.stderr)
         return 1

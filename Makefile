@@ -100,10 +100,12 @@ check: all
 	#ai: standalone screen-code presentation smoke — exact size + palette bands.
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/color_code_present_check.py
 	@echo "== [gX CI] scene smoke (title + gfx + y2k, 60 frames each) =="
-	DISPLAY=$${DISPLAY:-:1} GX_FRAMES=60 GX_NO_SETTINGS_SAVE=1 timeout 60 ./build/gX_build --screenWidth 1024 --screenHeight 768 --title >/dev/null 2>&1
-	DISPLAY=$${DISPLAY:-:1} GX_FRAMES=60 GX_NO_SETTINGS_SAVE=1 timeout 60 ./build/gX_build --screenWidth 1024 --screenHeight 768 --gfx >/dev/null 2>&1
+	#opencode: the unit suite already ran above; scene smokes skip it (a test
+	#   fault must not read as a scene regression, and each spawn saves ~2 s).
+	DISPLAY=$${DISPLAY:-:1} GX_SKIP_TESTS=1 GX_FRAMES=60 GX_NO_SETTINGS_SAVE=1 timeout 60 ./build/gX_build --screenWidth 1024 --screenHeight 768 --title >/dev/null 2>&1
+	DISPLAY=$${DISPLAY:-:1} GX_SKIP_TESTS=1 GX_FRAMES=60 GX_NO_SETTINGS_SAVE=1 timeout 60 ./build/gX_build --screenWidth 1024 --screenHeight 768 --gfx >/dev/null 2>&1
 	#opencode: opt-in Y2K showcase smoke — crash-free only, defaults unchanged.
-	DISPLAY=$${DISPLAY:-:1} GX_FRAMES=60 GX_NO_SETTINGS_SAVE=1 timeout 60 ./build/gX_build --screenWidth 1024 --screenHeight 768 --showcase-y2k >/dev/null 2>&1
+	DISPLAY=$${DISPLAY:-:1} GX_SKIP_TESTS=1 GX_FRAMES=60 GX_NO_SETTINGS_SAVE=1 timeout 60 ./build/gX_build --screenWidth 1024 --screenHeight 768 --showcase-y2k >/dev/null 2>&1
 	@echo "== [gX CI] resource + copyright audit =="
 	bash scripts/audit_resources.sh
 	python3 scripts/script_license_audit.py --strict
@@ -205,9 +207,9 @@ check-fast: all
 	@echo "== [gX fast] static-lightmap contract =="
 	python3 scripts/lightmap_check.py
 	@echo "== [gX fast] short scene smoke (title + gfx + y2k, 24 frames each) =="
-	DISPLAY=$${DISPLAY:-:1} GX_FRAMES=24 GX_NO_SETTINGS_SAVE=1 timeout 45 ./build/gX_build --screenWidth 1024 --screenHeight 768 --title >/dev/null 2>&1
-	DISPLAY=$${DISPLAY:-:1} GX_FRAMES=24 GX_NO_SETTINGS_SAVE=1 timeout 45 ./build/gX_build --screenWidth 1024 --screenHeight 768 --gfx >/dev/null 2>&1
-	DISPLAY=$${DISPLAY:-:1} GX_FRAMES=24 GX_NO_SETTINGS_SAVE=1 timeout 45 ./build/gX_build --screenWidth 1024 --screenHeight 768 --showcase-y2k >/dev/null 2>&1
+	DISPLAY=$${DISPLAY:-:1} GX_SKIP_TESTS=1 GX_FRAMES=24 GX_NO_SETTINGS_SAVE=1 timeout 45 ./build/gX_build --screenWidth 1024 --screenHeight 768 --title >/dev/null 2>&1
+	DISPLAY=$${DISPLAY:-:1} GX_SKIP_TESTS=1 GX_FRAMES=24 GX_NO_SETTINGS_SAVE=1 timeout 45 ./build/gX_build --screenWidth 1024 --screenHeight 768 --gfx >/dev/null 2>&1
+	DISPLAY=$${DISPLAY:-:1} GX_SKIP_TESTS=1 GX_FRAMES=24 GX_NO_SETTINGS_SAVE=1 timeout 45 ./build/gX_build --screenWidth 1024 --screenHeight 768 --showcase-y2k >/dev/null 2>&1
 	@echo "== [gX fast] math pass (gxmath corpus vs SymPy oracle) =="
 	python3 -m unittest discover -s scripts -p test_math_pass.py
 	python3 scripts/math_pass.py

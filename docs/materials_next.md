@@ -43,6 +43,10 @@
 - **IBL uniform locations are cached.** `irradianceMap`/`prefilterMap` were
   missing from `gX_RendererGFX_Shader_Load_Locations`; the struct default `0`
   bound the cubemaps to uniform 0 instead of the actual samplers.
+- **Live IBL refresh is double-buffered.** A sky/sun edit builds the new
+  irradiance/prefilter pair before releasing the old one, so the fallback
+  dummy/dynamic cubemap is no longer visible for a frame. `make pbr-check`
+  pins the hold window from a 12-frame burst around the swap.
 - **Shadow controls:** `shadowDiffuseBias` (0.85), `shadowSpecularBias`
   (1.0) and `pbrShadowAmbient` (0.35) are schema fields with inspector
   sliders. The PBR path applies the sun shadow to direct light and to the
