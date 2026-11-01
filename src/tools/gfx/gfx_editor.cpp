@@ -11255,6 +11255,30 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
         (gui.viewportDocked && s_inspectorPanelOpen) ? inspectorW : 0.0f);
     s_footerSceneW = sceneW;
     s_footerInspectorW = inspectorW;
+    //opencode: harness hook — the picker gate reads model centers so it does
+    //   not depend on the demo scene's model indices.
+    const gX_I8 *pickerTrace = getenv("GX_PICKER_TRACE");
+    if (pickerTrace && pickerTrace[0] && pickerTrace[0] != '0'
+        && (ImGui::GetFrameCount() % 30u) == 0u) {
+        for (gX_U32 mi = 0; mi < gfx->models.amount; mi++) {
+            gX_RendererGFX_Model *m = gfx_model_at(gfx, (gX_I32)mi);
+            if (!m || !m->loaded) continue;
+            gX_F32v3 center = m->params.pos;
+            if (m->aabbValid) {
+                center.x += (m->aabbMin[0] + m->aabbMax[0]) * 0.5f
+                    * m->params.scale.x;
+                center.y += (m->aabbMin[1] + m->aabbMax[1]) * 0.5f
+                    * m->params.scale.y;
+                center.z += (m->aabbMin[2] + m->aabbMax[2]) * 0.5f
+                    * m->params.scale.z;
+            }
+            ImVec2 screen;
+            if (!gfx_editor_world_to_window(center, &screen)) continue;
+            gX_TraceLog(gX_LOG_INFO,
+                "GFX_PICKER_MODEL: index=%u x=%.0f y=%.0f",
+                mi, screen.x, screen.y);
+        }
+    }
     //opencode: harness hook — the dock-layout gate reads the resolved geometry.
     const gX_I8 *dockTrace = getenv("GX_DOCK_TRACE");
     if (dockTrace && dockTrace[0] && dockTrace[0] != '0'
