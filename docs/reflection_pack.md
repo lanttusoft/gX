@@ -13,7 +13,20 @@ in the gX GFX forward renderer. Status: **Beta** (SSR receiver-routing closure,
 | **SSR** | Hi-Z ray march (`ssr.*`) → composite | Model receivers (`params.receiveSSR`, default on); dedicated water receiver | 44.86–57.25% across the current three-angle gate |
 | **Probe grid** | 4×128² baked probes, nearest + second-nearest distance crossfade on shared cubemap slots, box projection unmodified | Direct env, planar fallback, SSR env (`GX_PROBE_GRID=1`, opt-in; `GX_PROBE_BLEND=0` disables crossfade) | bisector fixture live; full-scene fidelity unchanged |
 | **Dynamic cubemap** | `gX_Cubemap_RenderEx`, 6 faces/frame | IBL fallback + SSR env fallback + direct samplers | direct A/B + face audit (A) |
-| **IBL** | BRDF LUT + irradiance + prefilter | All PBR when `ENABLE_ENV_AMBIENT` and maps generated | n/a (ambient) |
+| **IBL** | BRDF LUT + irradiance + prefilter | All PBR when `ENABLE_ENV_AMBIENT` and maps generated | live procedural-sky refresh |
+
+### Live procedural-sky IBL
+
+The IBL source is the sky-only procedural cubemap. When the authored sky
+atmosphere or sun direction changes, the renderer invalidates the sky cube and
+rebuilds the irradiance/prefilter maps; the BRDF LUT is reused. Each
+convolution pass sets its own 2D ortho projection instead of inheriting the
+previous 3D camera matrix. A two-frame
+settle plus a 12-frame minimum interval keeps slider drags from convolving on
+every frame, and a slow cadence still refreshes an animated sun. Software
+rasterizers keep the one-time startup capture because the convolution is too
+expensive there. `make pbr-check` verifies that a live density change matches
+a fresh capture and that disabling the refresh leaves stale IBL.
 
 ### Optional SSR shading-normal buffer
 
