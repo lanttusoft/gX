@@ -4,6 +4,23 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.29.6] - 2026-11-01
+
+Release-Class: patch
+
+### Fixed
+- **Picker audit**: the gate now runs on an owned three-model fixture
+  (`resources/tools/picker.json`) with a fixed camera. A `GX_PICKER_TRACE`
+  hook publishes each model's projected center, so picks and gestures are
+  asserted against traced coordinates instead of the shifting demo scene.
+  Picks, plane/rotate/snap/axis gestures, per-axis translations and scales
+  all pass.
+- **Raymarch composite audit**: the true-alpha leg compares composited
+  geometry against the plain gfx frame with a quantization-aware bound
+  (mean 0.25, max 8/255). The compositor adds one 16F layer round-trip, so
+  smooth gradients land 1-2 LSB off at rounding contours (measured mean
+  0.103, max 5); the max bound still catches structural mask/blend errors.
+
 ## [0.29.5] - 2026-11-01
 
 Release-Class: patch
