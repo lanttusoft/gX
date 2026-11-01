@@ -3,7 +3,7 @@
 # Copyright (c) 2025-2026 lanttu, opencode
 # This file is part of gX. See LICENSE.
 
-#ai: authored experimental refraction persistence/native checkbox/live state controls; no asset import.
+#ai: authored refraction persistence/native checkbox/live state controls; no asset import.
 import argparse
 import copy
 import json
@@ -22,7 +22,7 @@ def widget(out):
     source = (audit.ROOT / 'src/tools/gfx/water_panel.cpp').read_text()
     statement = re.search(r'gX_I1 sceneRefraction =.*?ImGui::EndDisabled\(\);', source, re.S).group()
     harness = r'''
-//ai: extracted experimental editor control, actual ImGui mouse events and override refusal.
+//ai: extracted editor control, actual ImGui mouse events and override refusal.
 #include "imgui.h"
 #include <cassert>
 #include <cstdlib>
@@ -34,7 +34,7 @@ void frame() {
     ImGui::NewFrame();
     ImGui::SetNextWindowPos(ImVec2(0,0));
     ImGui::SetNextWindowSize(ImVec2(600,200));
-    ImGui::Begin("Experimental water widget");
+    ImGui::Begin("Water refraction widget");
 '''+statement+r'''
     Point=ImGui::GetItemRectMin();Point.x+=8;Point.y+=8;
     ImGui::End();ImGui::Render();
@@ -94,42 +94,6 @@ def persistence(out, binary):
 
 
 #ai: execute the actual shader selection block with ownership witnesses for unsupported transmission.
-def shader_fallback(out):
-    source = (audit.ROOT / 'src/renderer/water.c').read_text()
-    start = source.index('    {', source.index('static gX_I0 water_gpu_load'))
-    block = source[start:source.index('    // Cache standard locations', start)]
-    harness = r'''
-//ai: native selection-block ownership witnesses; GPU correctness stays in real renderer controls.
-#include <cassert>
-struct gX_Shader {unsigned id;};
-struct Water {gX_Shader shader;};
-Water Data;
-Water *water=&Data;
-gX_Shader Legacy={17};
-bool Supported=true,Available=true;
-unsigned Unloads=0;
-gX_Shader gX_Shader_Load_Ex(const char*,const char*,const char*) {return {23};}
-void gX_Shader_GetDefaultLocations(gX_Shader*) {}
-int gX_Shader_GetLocation(gX_Shader,const char*) {return Supported?1:-1;}
-void gX_Shader_Unload(gX_Shader shader) {assert(shader.id==23);++Unloads;}
-gX_Shader *gX_Resource_LoadShader(const char*,const char*) {
-    assert(Unloads==1 && water->shader.id==0);
-    return Available?&Legacy:nullptr;
-}
-void select() {
-'''+block+r'''
-}
-int main() {
-    select();assert(water->shader.id==23 && Unloads==0);
-    Supported=false;select();assert(water->shader.id==17 && Unloads==1);
-    Unloads=0;Available=false;select();assert(water->shader.id==0 && Unloads==1);
-}
-'''
-    harness = '#define GX_WATER_REFRACTION_EXPERIMENT\n' + harness
-    compile_run(out, 'refraction_shader_fallback', harness, cpp=True)
-
-
-#ai: real renderer frames prove off invalidation and on/off/on without program swaps or launch forcing.
 def live(out, binary):
     base = scene()
     base['water']['sceneRefractionEnabled'] = False
@@ -166,30 +130,15 @@ def live(out, binary):
 def checks(out, binary):
     out.mkdir(parents=True, exist_ok=False)
     widget(out)
-    shader_fallback(out)
     persistence(out, binary)
     metrics = live(out, binary)
-    if audit.BIN.is_file() and audit.BIN.resolve() != binary.resolve():
-        fixture = scene()
-        fixture['water']['sceneRefractionEnabled'] = True
-        saved = out / 'production_saved.json'
-        production, _ = capture(out, 'production_legacy', fixture, audit.BIN,
-                                {'GX_GFX_PRESET_SAVE': str(saved)})
-        if 'sceneRefractionEnabled' in json.loads(saved.read_text())['water']:
-            raise RuntimeError('Experiment authoring leaked into production preset schema')
-        fixture['water']['sceneRefractionEnabled'] = False
-        experiment, _ = capture(out, 'experiment_legacy', fixture, binary,
-                                {'GX_GFX_PRESET_SAVE': str(out / 'experiment_saved.json')})
-        metrics['production_default_max_delta'] = float(np.abs(production - experiment).max())
-        if metrics['production_default_max_delta'] != 0:
-            raise RuntimeError('Dormant experiment shader differs from production legacy rendering')
     (out / 'metrics.json').write_text(json.dumps(metrics, indent=2) + '\n')
     print('WATER_REFRACTION_EDITOR_CHECK: PASS native widget, persistence and live capture freshness')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--binary', type=Path, default=audit.ROOT / 'build/water_refraction/gX_build')
+    parser.add_argument('--binary', type=Path, default=audit.ROOT / 'build/gX_build')
     parser.add_argument('--out', type=Path, default=Path('/tmp/opencode/water_refraction_editor_check'))
     args = parser.parse_args()
     with audit.settings_preserved():

@@ -197,14 +197,12 @@ typedef struct gX_RendererWater {
     //   wave amps scaled at scene setup (uploads read struct per frame).
     gX_I1     calmWater;
 
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
-    //ai: authored experiment enable only; production builds omit this field and its controls.
+    //ai: authored runtime refraction enable; default off preserves legacy water.
     gX_I1 sceneRefractionEnabled;
-    //ai: pass-local, opt-in immutable pre-water inputs; never part of the preset schema.
+    //ai: pass-local immutable pre-water inputs; never part of the preset schema.
     gX_RenderTexture refractionCapture;
     gX_I1 refractionValid;
     gX_I1 refractionTraced;
-#endif
 
 } gX_RendererWater;
 

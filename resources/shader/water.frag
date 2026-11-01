@@ -57,15 +57,14 @@ uniform float ripplePhase[16];
 
 out vec4 finalColor;
 
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
-//ai: compile-isolated screen-space transmission; coordinates match the raw pre-water blit.
+//ai: screen-space transmission; coordinates match the raw pre-water blit.
 uniform sampler2D waterSceneColor;
 uniform sampler2D waterSceneDepth;
 uniform mat4 waterInverseVP;
 uniform mat4 matView;
 uniform int waterSceneValid;
 uniform int waterSceneDiagnostic;
-//ai: independent transient gate for the experiment's shallow contact foam.
+//ai: independent transient gate for the shallow contact foam.
 uniform int waterDepthFoamEnabled;
 uniform float waterPlaneHeight;
 uniform float waterOffsetPixels;
@@ -158,7 +157,6 @@ float waterDepthContactFoam()
     float shallowContact = 1.0 - smoothstep(0.01, 1.25, shallowDepth);
     return 0.6 * viewContact * shallowContact * depthEdge;
 }
-#endif
 
 //ai: periodic value-noise derivatives add micro-ripple slopes without texture assets.
 float waterNoiseHash(vec2 cell)
@@ -307,9 +305,7 @@ void main()
         shoreFoam *= smoothstep(0.05, 0.25, abs(fragWaveHeight));
     }
     float foam = max(crestFoam, shoreFoam);
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
     foam = max(foam, waterDepthContactFoam());
-#endif
     vec2 foamPosition = fragPosition.xz * 0.72 + time * vec2(-0.008, 0.011);
     vec3 foamNoise = waterValueNoiseDerivative(foamPosition);
     float foamDetailFade = waterNoiseScreenFade(foamPosition);
@@ -398,10 +394,8 @@ void main()
         //   teal out to gray-white. The standalone scene looked right only
         //   because its background is black.
         float alpha = mix(0.88, 0.96, fresnel) * edgeFade;
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
         color = waterSceneTransmission(color, alpha, N);
         if (waterSceneDiagnostic == 1) alpha = 1.0;
-#endif
         finalColor = vec4(color, alpha);
     }
 }

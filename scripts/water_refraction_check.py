@@ -3,7 +3,7 @@
 # Copyright (c) 2025-2026 lanttu, opencode
 # This file is part of gX. See LICENSE.
 
-#ai: staged opt-in spike controls; diagnostic pixels are not a general surface/refraction certificate.
+#ai: runtime water-refraction controls; diagnostic pixels are not a general surface/refraction certificate.
 import argparse
 import copy
 import json
@@ -284,7 +284,7 @@ def main(binary, out):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--binary', type=Path, default=audit.ROOT / 'build/water_refraction/gX_build')
+    parser.add_argument('--binary', type=Path, default=audit.ROOT / 'build/gX_build')
     parser.add_argument('--out', type=Path, default=Path('/tmp/opencode/water_refraction_check'))
     args = parser.parse_args()
     main(args.binary.resolve(), args.out.resolve())
