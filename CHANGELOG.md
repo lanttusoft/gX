@@ -12,6 +12,9 @@ Release-Class: patch
 - **Material-map audit**: the gate runs on the visible audit display and retries
   the Browse probe. Hidden or parked windows could not reach the asset-browser
   popup, leaving `gfx-material-asset-check` flaky in clean clones.
+- **Proof-pin test signing**: the temporary git fixture disables commit
+  signing, so `make proofs` no longer fails when the host enables signed
+  commits globally.
 
 ## [0.29.3] - 2026-11-01
 
