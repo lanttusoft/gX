@@ -5937,6 +5937,13 @@ static gX_I0 gfx_model_overrides_panel(gX_RendererGFX *gfx,
     if (focus) ImGui::SetNextItemOpen(1, ImGuiCond_Always);
     if (!ImGui::CollapsingHeader("Per-material overrides")) return;
     if (focus) ImGui::SetScrollHereY(0.0f);
+    //opencode: harness hook — open the same material-map browser path without
+    //   a mouse click; headless audit windows cannot route the popup click.
+    const gX_I8 *openHook = getenv("GX_GFX_MATMAP_OPEN");
+    if (openHook && openHook[0] && openHook[0] != '0'
+        && maindata.frameCount == 120
+        && model->params.materialOverrideCount > 0)
+        gfx_asset_browser_open_material_map(gfx, s_selModel, 0, 1);
     if (model->params.materialOverrideCount < 0) model->params.materialOverrideCount = 0;
     if (model->params.materialOverrideCount > gX_GFX_MATERIAL_OVERRIDES)
         model->params.materialOverrideCount = gX_GFX_MATERIAL_OVERRIDES;
