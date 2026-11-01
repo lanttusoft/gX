@@ -4,6 +4,28 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.30.0] - 2026-11-01
+
+Release-Class: minor
+
+### Fixed
+- **Live IBL refresh**: a sky/sun edit now builds the new irradiance/prefilter
+  pair before releasing the old one (double-buffered swap), instead of
+  dropping to the dummy/dynamic cubemap for a frame. `make pbr-check` pins the
+  hold window with a 12-frame burst around the swap.
+- **Audit gate stability**: scene probes skip the unit suite
+  (`GX_SKIP_TESTS=1`, still forced by `--test-only`); checks run it once and
+  the scene smokes skip it. A rare test-only fault can no longer flake
+  unrelated gates, and each spawn saves ~2.2 s.
+
+### Added
+- **Module/tool maturity metadata**: renderer module descriptions and the
+  internal `gX_Tools_Status` table in `src/tools/tools.c` carry alpha/beta
+  tiers. EXTRAS cards expose them as element descriptions (hover/focus),
+  title-flow requires a tier on every card, and `docs/editors.md` +
+  `docs/architecture.md` mirror the classification. Alpha = usable preview
+  without a shipped gate; beta = gate-covered and documented.
+
 ## [0.29.6] - 2026-11-01
 
 Release-Class: patch
