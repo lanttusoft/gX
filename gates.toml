@@ -662,6 +662,14 @@ group = "render"
 cache = "content"
 description = "export audit gate."
 
+[gate.model-import]
+script = "gfx_model_import_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "model-import audit gate."
+
 [gate.texture]
 script = "gfx_texture_check.py"
 args = []

@@ -3321,7 +3321,7 @@ static gX_I1 gfx_asset_extension_is(const gX_I8 *path, const gX_I8 *extension) {
 
 static gX_I1 gfx_asset_path_supported(const gX_I8 *path, gX_I32 kind) {
     static const gX_I8 *modelExtensions[] = {
-        ".glb", ".gltf", ".obj", ".iqm", ".vox", ".m3d"
+        ".glb", ".gltf", ".obj", ".iqm", ".vox", ".m3d", ".dae"
     };
     static const gX_I8 *textureExtensions[] = {
         ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".gif", ".hdr",
@@ -3335,6 +3335,18 @@ static gX_I1 gfx_asset_path_supported(const gX_I8 *path, gX_I32 kind) {
     for (gX_U32 ei = 0; ei < count; ei++)
         if (gfx_asset_extension_is(path, extensions[ei])) return 1;
     return 0;
+}
+
+//ai: COLLADA sources are visible in the browser but require offline GLB conversion.
+static gX_I1 gfx_asset_is_dae(const gX_I8 *path) {
+    return gfx_asset_extension_is(path, ".dae");
+}
+
+//ai: one canonical command string for the browser and the typed-path panel.
+static gX_I0 gfx_model_import_command(const gX_I8 *path, gX_I8 *command,
+    gX_U32 capacity) {
+    snprintf((char *)command, capacity,
+        "python3 scripts/model_import.py \"%s\"", path);
 }
 
 //opencode: case-insensitive substring filtering spans filenames and folders.
@@ -3516,6 +3528,12 @@ static gX_I0 gfx_asset_browser_open_material_map(gX_RendererGFX *gfx,
 //opencode: apply a selected browser asset to the captured scene destination.
 static gX_I1 gfx_asset_browser_apply(gX_RendererGFX *gfx) {
     if (!s_assetSelectedPath[0]) return 0;
+    if (s_assetBrowserKind == gX_GFX_ASSET_MODELS
+        && gfx_asset_is_dae(s_assetSelectedPath)) {
+        snprintf(s_assetBrowserStatus, sizeof(s_assetBrowserStatus),
+            "COLLADA sources need offline conversion; copy the command below.");
+        return 0;
+    }
     if (!gfx_asset_path_supported(s_assetSelectedPath, s_assetBrowserKind)) {
         snprintf(s_assetBrowserStatus, sizeof(s_assetBrowserStatus),
             "Select a supported asset for the active browser tab.");
@@ -3825,11 +3843,30 @@ static gX_I0 gfx_asset_browser_window(gX_RendererGFX *gfx) {
                 }
             }
             if (s_assetBrowserKind == gX_GFX_ASSET_MODELS) {
-                ImGui::TextDisabled("Model asset");
-                ImGui::BeginDisabled(!pathFits);
-                if (ImGui::Button("Add model to scene", ImVec2(-FLT_MIN, 0.0f)))
-                    if (gfx_asset_browser_apply(gfx)) open = false;
-                ImGui::EndDisabled();
+                if (gfx_asset_is_dae(s_assetSelectedPath)) {
+                    ImGui::TextColored(ImVec4(1.0f, 0.72f, 0.35f, 1.0f),
+                        "COLLADA source; gX loads GLB at runtime.");
+                    ImGui::TextWrapped("Convert it offline with the model "
+                        "importer. The converted GLB and copied textures "
+                        "appear here after Refresh.");
+                    gX_I8 command[320];
+                    gfx_model_import_command(s_assetSelectedPath, command,
+                        sizeof(command));
+                    if (ImGui::Button("Copy convert command",
+                            ImVec2(-FLT_MIN, 0.0f))) {
+                        ImGui::SetClipboardText((const char *)command);
+                        snprintf(s_assetBrowserStatus,
+                            sizeof(s_assetBrowserStatus),
+                            "Command copied; run it in the repository root.");
+                    }
+                } else {
+                    ImGui::TextDisabled("Model asset");
+                    ImGui::BeginDisabled(!pathFits);
+                    if (ImGui::Button("Add model to scene",
+                            ImVec2(-FLT_MIN, 0.0f)))
+                        if (gfx_asset_browser_apply(gfx)) open = false;
+                    ImGui::EndDisabled();
+                }
             } else {
                 const gX_I8 *action = "Add texture to scene";
                 if (s_assetTextureTarget == gX_GFX_ASSET_TARGET_MODEL_SLOT)
@@ -9165,7 +9202,18 @@ static gX_I0 gfx_scene_create_panel(gX_RendererGFX *gfx) {
     if (ImGui::CollapsingHeader("Add model by path")) {
         ImGui::InputTextWithHint("model path", "type a model file path",
             s_modelPath, sizeof(s_modelPath));
-        if (ImGui::Button("Add typed model path")) {
+        if (gfx_asset_is_dae(s_modelPath)) {
+            ImGui::TextColored(ImVec4(1.0f, 0.72f, 0.35f, 1.0f),
+                "COLLADA source: convert to GLB first.");
+            gX_I8 command[320];
+            gfx_model_import_command(s_modelPath, command, sizeof(command));
+            if (ImGui::Button("Copy convert command##typed")) {
+                ImGui::SetClipboardText((const char *)command);
+                gX_TraceLog(gX_LOG_INFO,
+                    "GfxEd: copied DAE convert command for %s", s_modelPath);
+            }
+            ImGui::TextDisabled("Run it in the repository, then add the .glb.");
+        } else if (ImGui::Button("Add typed model path")) {
             if (strlen(s_modelPath) >= sizeof(gX_TextLine)) {
                 gX_TraceLog(gX_LOG_WARNING, "GfxEd: model path exceeds 127 characters");
             } else if (gfx_preset_file_exists(s_modelPath)) {

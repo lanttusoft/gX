@@ -101,13 +101,28 @@ GX_ASSETS=/path/gameA/resources:/path/gameB/resources
 
 ## DAE sources → GLB
 
-COLLADA (`.dae`) is not loaded natively, so convert it before pointing a
-guest root at the result. Assimp 6.0 is the reliable path for rigged
-characters:
+COLLADA (`.dae`) is not loaded natively; gX stays raylib-only and never links
+an asset importer. Convert the source offline with the repository importer,
+which wraps assimp, copies external textures beside the GLB, and validates the
+result:
 
 ```bash
-assimp export "Character.dae" Character.glb -fglb2
+python3 scripts/model_import.py "Character.dae"
+python3 scripts/model_import.py "Character.dae" --out-dir resources/model
+python3 scripts/model_import.py a.dae b.dae --out-dir converted --json
 ```
+
+The default output is `<name>.glb` beside the source. `--force` overwrites,
+`--strict` rejects warnings, and `--no-textures` skips the copy when maps are
+already in place. The summary prints mesh, material, skin and joint counts; a
+rig above `gX_SKIN_MAX_BONES` (128) warns because gX uploads at most 128
+matrices per draw.
+
+The editor's asset browser lists `.dae` files without loading them. Select one
+and use **Copy convert command**, run it in the repository, then **Refresh**;
+the `.glb` and copied textures appear as a normal model. `make model-import`
+is the same converter from the shell, and `make model-import-check` covers the
+owned fixture (it skips with a message when `assimp` is not installed).
 
 - `glb2` keeps the mesh split, base-colour textures and skin weights.
   Textures are written as **relative URIs** (original PNG names or a
@@ -128,6 +143,8 @@ assimp export "Character.dae" Character.glb -fglb2
   The per-model **flip normals** toggle inverts the shaded normal without
   changing triangle winding, so culling stays predictable while lighting
   follows the visible side.
+- The importer uses assimp 6.0; install `assimp-utils` (or set `ASSIMP`) when
+  the tool is not on `PATH`.
 - Assimp applies the COLLADA `<up_axis>` through a root rotation. Assets
   authored in a different axis (for example a world map whose geometry lies
   in X/Y) still need a scene-level rotation after import.

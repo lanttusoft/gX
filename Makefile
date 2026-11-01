@@ -54,6 +54,7 @@ check: all
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	python3 -m unittest discover -s scripts -p test_version_suggest.py
 	python3 -m unittest discover -s scripts -p test_gate_manifest.py
+	python3 -m unittest discover -s scripts -p test_model_import.py
 	@if [ ! -d ../proofs ]; then \
 	  echo "gX public source beta: full 'make check' needs the proof tree (../proofs)."; \
 	  echo "Use 'make check-fast' for the public source-beta CI."; \
@@ -145,6 +146,8 @@ check: all
 	#ai: SSGI normalized fallback and tangent predicate correspondence.
 	$(MAKE) -s ssgi-contract-check
 	$(MAKE) -s postprocess-contract-check
+	#ai: offline COLLADA import uses the owned fixture and assimp when available.
+	$(MAKE) -s model-import-check
 	#ai: offline editor reports write only on explicit submit; preserve user files.
 	$(MAKE) -s gfx-bug-report-check
 	@echo "== [gX CI] proofs (Lean specs, ../proofs) =="
@@ -193,6 +196,7 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	python3 -m unittest discover -s scripts -p test_version_suggest.py
 	python3 -m unittest discover -s scripts -p test_gate_manifest.py
+	python3 -m unittest discover -s scripts -p test_model_import.py
 	@echo "== [gX fast] unit tests =="
 	./build/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/gX_build --test-only && exit 1)
 	@echo "== [gX fast] attribution =="
@@ -622,6 +626,19 @@ dock-layout-check: all
 gfx-export-check: all
 	@echo "== [gX CI] scene export =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_export_check.py
+
+#ai: offline COLLADA -> GLB conversion (assimp); the engine stays raylib-only.
+.PHONY: model-import
+model-import:
+	@test -n "$(SRC)" || (echo "usage: make model-import SRC=path/to/model.dae [OUT=...]"; exit 2)
+	python3 scripts/model_import.py "$(SRC)" $(if $(OUT),--output "$(OUT)",)
+
+#ai: model-import gate — owned COLLADA fixture, texture copy and editor render.
+.PHONY: model-import-check
+model-import-check: all
+	@echo "== [gX CI] model import =="
+	python3 -m unittest discover -s scripts -p test_model_import.py
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_model_import_check.py
 
 #opencode: decal-bake pin (top-down albedo + ORM, channels exact).
 gfx-decal-bake-check: all
