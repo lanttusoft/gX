@@ -7,6 +7,12 @@ Start here:
 - [Changelog](../CHANGELOG.md) — released versions and current changes.
 - [Versioning policy](versioning.md) — official MAJOR/MINOR/PATCH rules,
   `Release-Class` metadata and the change classifier.
+- [Release candidate ledger](release_candidate.md) — the three gates (author
+  dogfooding, RC completeness, demand signals) and the completeness rows that
+  gate an RC claim.
+- [Publish readiness](publish_readiness.md) — the release operations contract:
+  admission evidence, packaging, signing, publish, post-publish verification
+  and rollback.
 - [gX proofs](https://github.com/lanttusoft/gx-proofs) — Lean 4 proof sources,
   audit contract and provenance.
 - [AI policy](ai_policy.md) — contribution marking, asset provenance and the
