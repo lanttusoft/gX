@@ -4,6 +4,23 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.29.2] - 2026-11-01
+
+Release-Class: patch
+
+### Fixed
+- **Public audit fixtures**: restored authored `resources/tools/gfx_materials.json`
+  and `art2.json` fixtures; `gfx-export-check` and `gfx-preset-overwrite-check`
+  pass again. The shared overwrite-dialog probe now scans the 1.25-scale layout
+  and the plum button fill.
+- **1.25-scale editor audits**: the dock scale floor is 0.62 so the shipped
+  1.25 panel layout stays docked at 1806x1016; the dock gate targets the 400px
+  scene panel, and the light-picker marker formula uses the 400/450 insets.
+- **Animation audit**: the Key click now targets the override-active row, the
+  inspector hands focus from the pose controls to the timeline at frame 200,
+  and the keyed-pose round-trip uses deterministic scrub and headless sidecar
+  save hooks instead of off-screen clicks.
+
 ## [0.29.1] - 2026-11-01
 
 Release-Class: patch
