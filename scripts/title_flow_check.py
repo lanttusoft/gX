@@ -38,18 +38,22 @@ TRACE_RE = re.compile(
 #opencode: menu order is RESUME, RUN DEMO, LOAD SAVE, SETTINGS, DEMOS,
 #   EXTRAS, QUIT; key codes are gX_KEY_* (DOWN 264, ENTER 257, ESCAPE 256).
 #   ESC is the shared back route on the title and on every sub-view.
-LOAD_GAME = "1.0 key 264;1.4 key 264;1.8 key 257"
-DEMOS = "1.0 key 264;1.4 key 264;1.8 key 264;2.2 key 264;2.6 key 257"
-EXTRAS = "1.0 key 264;1.4 key 264;1.8 key 264;2.2 key 264;2.6 key 264;3.0 key 257"
+#opencode: the title entrance cascade delays menu focus past 1s; start the
+#   navigation after it settles so the first Down is not lost.
+#opencode: the first Down focuses RESUME (it does not move); include it as a
+#   warm-up, then the visible menu navigation.
+LOAD_GAME = "2.0 key 264;2.4 key 264;2.8 key 264;3.2 key 257"
+DEMOS = "2.0 key 264;2.4 key 264;2.8 key 264;3.2 key 264;3.6 key 264;4.0 key 257"
+EXTRAS = "2.0 key 264;2.4 key 264;2.8 key 264;3.2 key 264;3.6 key 264;4.0 key 264;4.4 key 257"
 VIEWS = (
     ("load_game", LOAD_GAME, "view"),
     ("demos", DEMOS, "view"),
     ("extras", EXTRAS, "view"),
-    ("credits", "1.5 move 855 723 200;2.0 click 855 723", "view"),
-    ("escape", "1.0 key 256", "view"),
-    ("escape_back", "1.0 key 256;2.2 key 256", "return"),
-    ("load_game_back", LOAD_GAME + ";3.0 key 256", "return"),
-    ("extras_back", EXTRAS + ";4.0 key 256", "return"),
+    ("credits", "2.0 move 855 723 200;2.5 click 855 723", "view"),
+    ("escape", "2.0 key 256", "view"),
+    ("escape_back", "2.0 key 256;4.0 key 256", "return"),
+    ("load_game_back", LOAD_GAME + ";4.2 key 256", "return"),
+    ("extras_back", EXTRAS + ";4.8 key 256", "return"),
 )
 
 
