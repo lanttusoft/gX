@@ -504,7 +504,7 @@ static gX_I32 gX_GUI_Load_CanvasHeap(gX_I0) {
 //   editor controls (token rows truncate below ~300px) if achievable at
 //   >=0.70 scale, else overlay fallback (no widen). All in window pixels.
 #define GX_DOCK_MARGIN_MIN 320.0f
-#define GX_DOCK_SCALE_MIN 0.70f
+#define GX_DOCK_SCALE_MIN 0.62f
 //ai: cramp fallback uses the same scale floor; edge-only re-engagement avoids
 //   a separate numeric hysteresis band and prevents resize-driven dock flapping.
 

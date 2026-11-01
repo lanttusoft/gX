@@ -71,12 +71,12 @@ def main():
                 #   from the layout probe on the pre-inset dock); map them
                 #   through the dock math including the inspector inset so a
                 #   click lands on the marker at any window size.
-                scale = min((width - 320.0 - 380.0) / 1536.0,
+                scale = min((width - 400.0 - 450.0) / 1536.0,
                             height / 1016.0, 1.0)
                 viewport_y = (height - 1016.0 * scale) * 0.5
-                redX = round(320.0 + 815.6 * scale)
+                redX = round(400.0 + 815.6 * scale)
                 redY = round(viewport_y + 357.9 * scale)
-                greenX = round(320.0 + 922.0 * scale)
+                greenX = round(400.0 + 922.0 * scale)
                 greenY = round(viewport_y + 690.9 * scale)
                 dragX = redX + max(16, round(32.0 * scale))
                 actions = ";".join((
