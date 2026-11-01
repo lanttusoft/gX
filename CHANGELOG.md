@@ -4,6 +4,19 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.28.0] - 2026-11-01
+
+Release-Class: minor
+
+### Added
+- **Offline COLLADA import**: `scripts/model_import.py` converts `.dae` sources
+  to GLB with assimp, copies external textures beside the output, validates
+  mesh/material/skin data, and warns above the 128-joint per-draw cap. The GFX
+  asset browser lists `.dae` sources, refuses runtime adds, and copies the
+  conversion command; the typed-path panel does the same. `make model-import`
+  wraps the converter and `make model-import-check` covers the owned quad
+  fixture. `.dae` is never loaded at runtime; gX stays raylib-only.
+
 ## [0.27.1] - 2026-11-01
 
 Release-Class: patch
