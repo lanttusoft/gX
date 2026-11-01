@@ -806,6 +806,7 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     gfx->ibl.refreshSettleFrames = 0;
     gfx->ibl.refreshCount = 0;
     gfx->ibl.refreshPending = false;
+    gfx->ibl.refreshRequested = false;
 
     //opencode: bloom shaders and render textures
     gX_RendererGFX_Shader_Init(&gfx->bloom.extractShader, 0, GX_PATH("shader", "gfx_bloom_extract.frag"));
@@ -1022,6 +1023,7 @@ gX_I0 gX_RendererGFX_Unload_FreeRTs(gX_RendererGFX *gfx)
     gfx->ibl.refreshSettleFrames = 0;
     gfx->ibl.refreshCount = 0;
     gfx->ibl.refreshPending = false;
+    gfx->ibl.refreshRequested = false;
 
     if (gfx->decalQuad.meshCount > 0) gX_Model_Unload(gfx->decalQuad);
     if (gfx->common.cookieFallback.id > 0) gX_RHI_Tex_Delete(gfx->common.cookieFallback.id);

@@ -210,19 +210,18 @@ static gX_I0 gfx_ibl_refresh_update(gX_RendererGFX *gfx)
         && frame - gfx->ibl.refreshFrame >= gX_GFX_IBL_REFRESH_MAX_HOLD;
     if (gfx->ibl.refreshSettleFrames < gX_GFX_IBL_REFRESH_SETTLE_FRAMES
         && !overdue) return;
-    gfx->ibl.ready = 0;
+    //ai: double-buffered refresh — keep the previous irradiance/prefilter
+    //   pair bound while the replacement is generated. The sky cube is
+    //   recaptured first; the generation block below swaps the maps only
+    //   after the new pair is complete, so a live sky/sun edit never falls
+    //   back to the dummy cubemap for a frame.
     gfx->ibl.skyCubeReady = 0;
-    gfx->ibl.failed = 0;
-    if (gfx->ibl.irradianceMap.id > 0)
-        gX_RHI_Tex_Delete(gfx->ibl.irradianceMap.id);
-    if (gfx->ibl.prefilterMap.id > 0)
-        gX_RHI_Tex_Delete(gfx->ibl.prefilterMap.id);
-    gfx->ibl.irradianceMap = (gX_Texture){0};
-    gfx->ibl.prefilterMap = (gX_Texture){0};
+    gfx->ibl.refreshRequested = 1;
     gfx->ibl.refreshPending = 0;
     gfx->ibl.refreshFrame = frame;
     gfx->ibl.refreshCount++;
-    gX_TraceLog_GFX(gX_LOG_NOTICE, "IBL refresh invalidated (count=%d)",
+    gX_TraceLog_GFX(gX_LOG_NOTICE,
+        "IBL refresh invalidated (count=%d; previous maps retained)",
         gfx->ibl.refreshCount);
 }
 
@@ -1192,7 +1191,14 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
     //   update. Wait one frame instead of locking the static image skybox in.
     gX_I1 iblSourceReady = gfx->state.ENABLE_PROCEDURAL_SKY
         ? iblSkyCube : gfx->reflection.cubeReady;
-    if (gfx->state.ENABLE_ENV_AMBIENT && !gfx->ibl.ready
+    //ai: on a live refresh the old pair stays bound while the new pair is
+    //   built; both are committed together below.
+    gX_I1 iblRefresh = gfx->ibl.refreshRequested && gfx->ibl.ready;
+    gX_Texture oldIrr = gfx->ibl.irradianceMap;
+    gX_Texture oldPre = gfx->ibl.prefilterMap;
+    gX_Texture newIrr = (gX_Texture){0};
+    gX_Texture newPre = (gX_Texture){0};
+    if (gfx->state.ENABLE_ENV_AMBIENT && (!gfx->ibl.ready || iblRefresh)
         && !gfx->ibl.failed
         && maindata.frameCount >= 4
         && gfx->ibl.brdfShader.loaded && gfx->ibl.irradianceShader.loaded &&
@@ -1224,7 +1230,8 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             gX_RHI_FBO_AttachTexture(lutTex, gX_RHI_COLOR_ATTACHMENT0, gX_RHI_TEXTURE_2D);
             if (!gX_RHI_FBO_IsComplete()) {
                 gX_TraceLog_GFX(gX_LOG_ERROR, "IBL BRDF LUT FBO incomplete — IBL disabled");
-                gfx->ibl.failed = true;
+                if (iblRefresh) gfx->ibl.refreshRequested = 0;
+                else gfx->ibl.failed = true;
                 if (lutTex) gX_RHI_Tex_Delete(lutTex);
                 gX_RHI_FBO_Delete(capFbo);
                 gX_RHI_Matrix_SetProjection(savedProjection);
@@ -1256,7 +1263,8 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         gX_U32 skyboxId = iblSkyCube
             ? gfx->ibl.skyCube.id : gfx->sky.skybox.wrapper.texture.id;
         gX_Shader irrS = gfx->ibl.irradianceShader.shader;
-        if (skyboxId > 0 && gfx->ibl.irradianceMap.id == 0 && irrS.id > 0)
+        if (skyboxId > 0 && (gfx->ibl.irradianceMap.id == 0 || iblRefresh)
+            && irrS.id > 0)
         {
             const gX_I32 irrSize = 32;
             const gX_F32v3 targets[6] = {{ 1,0,0},{-1,0,0},{ 0, 1, 0},{ 0,-1, 0},{ 0,0, 1},{ 0,0,-1}};
@@ -1278,8 +1286,12 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             gX_RHI_ReadBuffer(gX_RHI_COLOR_ATTACHMENT0);
             gfx_ibl_ortho((gX_F32)irrSize, (gX_F32)irrSize);
             if (!gX_RHI_FBO_IsComplete()) {
-                gX_TraceLog_GFX(gX_LOG_ERROR, "IBL irradiance FBO incomplete — IBL disabled");
-                gfx->ibl.failed = true;
+                gX_TraceLog_GFX(gX_LOG_ERROR, iblRefresh
+                    ? "IBL irradiance FBO incomplete — keeping previous maps"
+                    : "IBL irradiance FBO incomplete — IBL disabled");
+                if (irrTex) gX_RHI_Tex_Delete(irrTex);
+                if (iblRefresh) gfx->ibl.refreshRequested = 0;
+                else gfx->ibl.failed = true;
                 gX_RHI_FBO_Delete(capFbo);
                 gX_RHI_Matrix_SetProjection(savedProjection);
                 gX_RHI_Matrix_SetModelview(savedModelview);
@@ -1305,15 +1317,16 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
                 gX_Drawing_EndShader();
             }
 
-            gfx->ibl.irradianceMap.id = irrTex;
-            gfx->ibl.irradianceMap.width = irrSize;
-            gfx->ibl.irradianceMap.height = irrSize;
+            newIrr.id = irrTex;
+            newIrr.width = irrSize;
+            newIrr.height = irrSize;
             gX_TraceLog_GFX(gX_LOG_NOTICE, "IBL irradiance cubemap generated (%dx%d density=%.3f)", irrSize, irrSize, gfx->sky.density);
         }
 
         // ---- 3. Prefilter cubemap (128x128 RGB16F, 5 mip levels) ----
         gX_Shader preS = gfx->ibl.prefilterShader.shader;
-        if (skyboxId > 0 && gfx->ibl.prefilterMap.id == 0 && preS.id > 0)
+        if (skyboxId > 0 && (gfx->ibl.prefilterMap.id == 0 || iblRefresh)
+            && preS.id > 0)
         {
             const gX_I32 preSize = 128;
             const gX_I32 preMips = 5; // 128→64→32→16→8
@@ -1349,8 +1362,13 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             gX_RHI_DrawBuffer(gX_RHI_COLOR_ATTACHMENT0);
             gX_RHI_ReadBuffer(gX_RHI_COLOR_ATTACHMENT0);
             if (!gX_RHI_FBO_IsComplete()) {
-                gX_TraceLog_GFX(gX_LOG_ERROR, "IBL prefilter FBO incomplete — IBL disabled");
-                gfx->ibl.failed = true;
+                gX_TraceLog_GFX(gX_LOG_ERROR, iblRefresh
+                    ? "IBL prefilter FBO incomplete — keeping previous maps"
+                    : "IBL prefilter FBO incomplete — IBL disabled");
+                if (preTex) gX_RHI_Tex_Delete(preTex);
+                if (newIrr.id > 0) gX_RHI_Tex_Delete(newIrr.id);
+                if (iblRefresh) gfx->ibl.refreshRequested = 0;
+                else gfx->ibl.failed = true;
                 gX_RHI_FBO_Delete(capFbo);
                 gX_RHI_Matrix_SetProjection(savedProjection);
                 gX_RHI_Matrix_SetModelview(savedModelview);
@@ -1384,11 +1402,27 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
                 }
             }
 
-            gfx->ibl.prefilterMap.id = preTex;
-            gfx->ibl.prefilterMap.width = preSize;
-            gfx->ibl.prefilterMap.height = preSize;
+            newPre.id = preTex;
+            newPre.width = preSize;
+            newPre.height = preSize;
             gX_TraceLog_GFX(gX_LOG_NOTICE, "IBL prefilter cubemap generated (%dx%d, %d mips)", preSize, preSize, preMips);
         }
+
+        //ai: commit the double-buffered pair — only now that both cubemaps
+        //   are complete is the previously bound pair released, so no frame
+        //   ever samples a missing IBL map.
+        if (newIrr.id > 0) {
+            if (oldIrr.id > 0 && oldIrr.id != newIrr.id)
+                gX_RHI_Tex_Delete(oldIrr.id);
+            gfx->ibl.irradianceMap = newIrr;
+        }
+        if (newPre.id > 0) {
+            if (oldPre.id > 0 && oldPre.id != newPre.id)
+                gX_RHI_Tex_Delete(oldPre.id);
+            gfx->ibl.prefilterMap = newPre;
+        }
+        if (!iblRefresh || (newIrr.id > 0 && newPre.id > 0))
+            gfx->ibl.refreshRequested = 0;
 
         gX_RHI_FBO_Delete(capFbo);
         //opencode: restore viewport, matrices, active texture, program, and FBO after IBL generation

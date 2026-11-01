@@ -58,6 +58,10 @@ typedef struct gX_RendererGFX_IBL {
     gX_I32      refreshSettleFrames;
     gX_I32      refreshCount;
     gX_I1       refreshPending;
+    //ai: double-buffered refresh — the previous irradiance/prefilter pair
+    //   stays bound while the replacement is generated, so a live sky/sun
+    //   edit never falls back to the dummy cubemap for a frame.
+    gX_I1       refreshRequested;
 } gX_RendererGFX_IBL;
 
 struct gX_RendererGFX;
