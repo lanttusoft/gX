@@ -326,6 +326,14 @@ group = "water"
 cache = "content"
 description = "water-authoring audit gate."
 
+[gate.water-refraction]
+script = "water_refraction_check.py"
+args = []
+tier = ["full"]
+group = "water"
+cache = "content"
+description = "water-refraction audit gate."
+
 [gate.dof-resolution]
 script = "dof_resolution_check.py"
 args = []

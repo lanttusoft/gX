@@ -44,19 +44,15 @@ void gfx_editor_water_panel(gX_RendererGFX *gfx, gX_I32 *SelectedWave,
     ImGui::SeparatorText("Surface");
     ImGui::DragFloat("plane height", &gfx->water.planeHeight, 0.05f, -10.0f, 10.0f);
     ColorEdit("water tint", &gfx->water.tint);
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
     gX_I1 sceneRefraction = gfx->water.sceneRefractionEnabled ? 1 : 0;
     const char *refractionOverride = getenv("GX_WATER_REFRACTION");
     ImGui::BeginDisabled(refractionOverride != NULL);
-    if (ImGui::Checkbox("scene refraction (experimental)", (bool *)&sceneRefraction))
+    if (ImGui::Checkbox("scene refraction", (bool *)&sceneRefraction))
         gfx->water.sceneRefractionEnabled = sceneRefraction;
     ImGui::EndDisabled();
     TextWrapped("Above-water scene transmission; default off. Capture and diagnostic state are not saved.");
     if (refractionOverride)
         ImGui::TextDisabled("Launch override active: GX_WATER_REFRACTION=%s", refractionOverride);
-#else
-    TextWrapped("Scene refraction is available only in the experimental build.");
-#endif
     ImGui::SeparatorText("Normal-map detail");
     ImGui::DragFloat("normal strength", &gfx->water.normalMapStrength, 0.02f, 0.0f, 2.0f);
     ImGui::DragFloat2("normal UV scale", (float *)&gfx->water.normalMapScale,

@@ -1113,6 +1113,11 @@ water-check: all
 	@echo "== [gX CI] water object-reflection pin =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_water_check.py
 
+.PHONY: water-refraction-check
+water-refraction-check: all
+	@echo "== [gX CI] water refraction runtime controls =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/water_refraction_check.py
+
 #ai: standalone screen-code presentation smoke (normally part of make check).
 .PHONY: color-code-check
 color-code-check: all

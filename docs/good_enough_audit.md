@@ -207,15 +207,19 @@ Prioritize regression coverage over general visual tuning:
 - finite, non-black above-/below-water output in controlled owned fixtures;
 - retain the existing object-reflection gate and its unchanged thresholds.
 
-Water refraction needs a separate contract. The current water fragment shader
-refracts sky directions underwater; it does not sample submerged scene geometry.
-The renderer's transparent-model refraction path is not automatically a water
-refraction implementation. A future scene-refraction feature would need to
-define capture ordering, water exclusion, depth/foreground rejection, UV
-orientation, unavailable-sample fallback and performance cost. Start with an
-owned submerged-object fixture and explicit on/off controls, not a broad
-reflection rewrite. This proposal is not evidence that those tests or that
-feature exist, nor a new release requirement.
+### Water refraction promoted as runtime opt-in (2026-11-01)
+
+The validated screen-space transmission path is now compiled into the normal
+build. `water.sceneRefractionEnabled` is a schema field, exposed as **scene
+refraction** in the water panel and default **off**; old presets without the
+field stay legacy. The off path is pixel-identical to the previous production
+water shader (verified against the v0.27.0 binary). The experiment defines
+capture ordering before the water write, excludes water from its own source,
+rejects foreground/dry geometry by reconstructed depth, handles unavailable
+samples and resizes by falling back to legacy, and restores the sampled texture
+units. `make water-refraction-check` runs the on/off, diagnostic ownership,
+persistence, editor-widget, live-capture and depth-foam controls on the normal
+`build/gX_build`.
 
 ### Focused water CI gate under review
 

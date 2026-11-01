@@ -65,7 +65,6 @@
 #include "scene.h"
 //opencode: hunt - implicit-decl sweep
 
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
 //ai: isolated glass diagnostics move the actual camera or first refractive model once, without resizing.
 static gX_I0 glass_test_move(gX_RendererGFX *Gfx)
 {
@@ -112,7 +111,6 @@ static gX_I0 water_refraction_test_transition(gX_RendererGFX *Gfx)
     Gfx->state.RELOAD = true;
     gX_TraceLog(gX_LOG_NOTICE, "WATER_REFRACTION_TEST_TRANSITION: frame=12 cameraX=0.75 size=800x600");
 }
-#endif
 
 //opencode: keep an opted-in fog/void color link live across editor tabs.
 //ai: refresh the active TAA safety-uniform location together with the matrix locations on reload.
@@ -122,11 +120,9 @@ static gX_I0 water_refraction_test_transition(gX_RendererGFX *Gfx)
 //ai: load the shared velocity pass whenever temporal GTAO is active.
 gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
 {
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
     glass_test_move(gfx);
     water_refraction_test_toggle(gfx);
     water_refraction_test_transition(gfx);
-#endif
     if (gfx->fog.matchVoidColor) gfx->fog.color = gfx->sky.color;
     //opencode: interactive showcase controller (--showcase) — orbit camera,
     //   effect hotkeys, model focus. Runs before the frame's rendering.

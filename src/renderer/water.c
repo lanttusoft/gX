@@ -50,14 +50,12 @@
 #include "../rhi/rhi_buf.h"
 #include "../rhi/rhi_state.h"
 
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
 //ai: isolated capture uses RHI-only copies/binds and the authoritative pass-local sampler map.
 #include "../common/alloc.h"
 #include "../rhi/rhi_fbo.h"
 #include "../rhi/rhi_tex.h"
 #include "../rhi/rhi_enums.h"
 #include "../rhi/batch.h"
-#endif
 
 // Default wave parameters — 6 Gerstner wave trains
 static const gX_F32 s_defaultWaveDirs[GX_WATER_MAX_WAVES][2] = {
@@ -137,12 +135,10 @@ gX_I32 gX_RendererWater_Load(gX_RendererWater *water)
 
     water->gfxRef = NULL;
     water->skyCubemapLoaded = false;
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
     water->sceneRefractionEnabled = false;
     water->refractionCapture = (gX_RenderTexture){0};
     water->refractionValid = false;
     water->refractionTraced = false;
-#endif
 
     //opencode: init buoyancy demo object
     water->buoyPos = (gX_F32v3){3.0f, 0.0f, 2.0f};
@@ -154,14 +150,12 @@ gX_I32 gX_RendererWater_Load(gX_RendererWater *water)
     return 0;
 }
 
-//ai: experimental input lifetime follows the owning water renderer on both unload paths.
+//ai: refraction input lifetime follows the owning water renderer on both unload paths.
 gX_I32 gX_RendererWater_Unload(gX_RendererWater *water)
 {
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
     if (water->refractionCapture.id) gX_RenderTexture_Unload(water->refractionCapture);
     water->refractionCapture = (gX_RenderTexture){0};
     water->refractionValid = false;
-#endif
     if (!water->loadingstate.loaded) return 0;
     gX_Shader_Unload(water->shader);
     gX_Model_Unload(water->model);
@@ -175,29 +169,17 @@ gX_I32 gX_RendererWater_Unload(gX_RendererWater *water)
 }
 
 //opencode: load the authored normal-map path along with the water resources.
-//ai: experiment builds retain one dormant transmission shader so editor toggles never swap live programs.
+//ai: keep one transmission shader so editor toggles never swap live programs.
 static gX_I0 water_gpu_load(gX_I0 *arg)
 {
     gX_RendererWater *water = (gX_RendererWater*)arg;
 
     // Load shader with custom vertex shader
     {
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
-        water->shader = gX_Shader_Load_Ex("resources/shader/water.vert",
-            "resources/shader/water.frag", "#define GX_WATER_REFRACTION_EXPERIMENT 1\n");
-        gX_Shader_GetDefaultLocations(&water->shader);
-        if (gX_Shader_GetLocation(water->shader, "waterSceneValid") < 0)
-#endif
-        {
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
-        gX_Shader_Unload(water->shader);
-        water->shader = (gX_Shader){0};
-#endif
         gX_Shader *_rsc = gX_Resource_LoadShader("water.vert", "water.frag");
         if (_rsc) {
             water->shader = *_rsc;
             gX_Shader_GetDefaultLocations(&water->shader);
-        }
         }
     }
 
@@ -398,15 +380,13 @@ static gX_I0 water_gpu_load(gX_I0 *arg)
     water->loadingstate.loaded = true;
 }
 
-//ai: invalidate and release experimental captures before their water resources disappear.
+//ai: invalidate and release refraction captures before their water resources disappear.
 static gX_I0 water_gpu_unload(gX_I0 *arg)
 {
     gX_RendererWater *water = (gX_RendererWater*)arg;
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
     if (water->refractionCapture.id) gX_RenderTexture_Unload(water->refractionCapture);
     water->refractionCapture = (gX_RenderTexture){0};
     water->refractionValid = false;
-#endif
     gX_Shader_Unload(water->shader);
     gX_Model_Unload(water->model);
     if (water->buoyModel.meshCount > 0) gX_Model_Unload(water->buoyModel);
@@ -802,7 +782,6 @@ gX_I0 gX_RendererWater_Draw(gX_RendererWater *water)
     gX_Drawing_EndTexture();
 }
 
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
 //ai: launch overrides remain diagnostic; authored state drives normal editor sessions without an override.
 static gX_I1 water_refraction_enabled(gX_RendererWater *Water)
 {
@@ -906,10 +885,8 @@ static gX_I0 water_refraction_uniforms(gX_RendererWater *Water, gX_Matrix *View,
         Water->refractionTraced = true;
     }
 }
-#endif
 
-//ai: experimental capture precedes BeginTexture/draw; additional sampler state is restored afterwards.
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
+//ai: refraction capture precedes BeginTexture/draw; additional sampler state is restored afterwards.
 //ai: opt-in float evidence retains the exact capture, matrices and pre-tonemap diagnostics for an independent oracle.
 static gX_I0 water_refraction_dump(gX_RendererWater *Water, gX_RenderTexture *Target,
     gX_Matrix *View, gX_Matrix *Projection)
@@ -945,9 +922,8 @@ static gX_I0 water_refraction_dump(gX_RendererWater *Water, gX_RenderTexture *Ta
     }
     gX_Free(Data);
 }
-#endif
 
-//ai: experimental capture precedes BeginTexture/draw; additional sampler state is restored afterwards.
+//ai: refraction capture precedes BeginTexture/draw; additional sampler state is restored afterwards.
 gX_I0 gX_RendererWater_DrawTo(gX_RendererWater *water, gX_RenderTexture *target,
                                gX_Camera3D *cam, gX_Matrix *viewMat, gX_Matrix *projMat)
 {
@@ -955,7 +931,6 @@ gX_I0 gX_RendererWater_DrawTo(gX_RendererWater *water, gX_RenderTexture *target,
     if (!target || target->id <= 0) return;
     if (!cam) cam = &camera.camera3D;
 
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
     gX_I32 Active = 0, Scene = 0, Depth = 0, Zero = 0;
     gX_RHI_GetIntegerv(gX_RHI_ACTIVE_TEXTURE, &Active);
     gX_RHI_ActiveTexture(0);
@@ -966,24 +941,18 @@ gX_I0 gX_RendererWater_DrawTo(gX_RendererWater *water, gX_RenderTexture *target,
     gX_RHI_GetIntegerv(gX_RHI_TEXTURE_BINDING_2D, &Depth);
     gX_RHI_ActiveTexture((gX_U32)Active - gX_RHI_TEXTURE0);
     water_refraction_capture(water, target, cam);
-#endif
 
     //opencode: DrawTo doesn't use Begin3D, so upload view/proj/matModel
     //   explicitly, then draw via RHI mesh draw (bypasses raylib_Mesh_Draw).
     gX_Drawing_BeginTexture(*target);
         water_upload_uniforms(water, cam);
 
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
         water_refraction_uniforms(water, viewMat, projMat);
-#endif
 
         water_mesh_draw(water, viewMat, projMat);
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
         water_refraction_dump(water, target, viewMat, projMat);
-#endif
 
     gX_Drawing_EndTexture();
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
     if (getenv("GX_WATER_REFRACTION_TEST_TOGGLE"))
         gX_TraceLog(gX_LOG_NOTICE,
             "WATER_REFRACTION_TOGGLE: frame=%llu authored=%d valid=%d shader=%u",
@@ -993,7 +962,6 @@ gX_I0 gX_RendererWater_DrawTo(gX_RendererWater *water, gX_RenderTexture *target,
     gX_RHI_Tex_BindOnUnit((gX_U32)Scene, gX_GFX_TEXUNIT_SCENE);
     gX_RHI_Tex_BindOnUnit((gX_U32)Depth, gX_GFX_TEXUNIT_DEPTH);
     gX_RHI_ActiveTexture((gX_U32)Active - gX_RHI_TEXTURE0);
-#endif
 }
 
 gX_I0 gX_RendererWater_SpawnRipple(gX_RendererWater *water, gX_F32 x, gX_F32 z,

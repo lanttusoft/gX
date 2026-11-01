@@ -973,9 +973,7 @@ static gX_SchemaField gfx_water_fields[] = {
     GX_SCHEMA_STRING("normalMapPath", gX_RendererWater, normalMapPath),
     GX_SCHEMA_I32("waveCount", gX_RendererWater, waveCount),
     GX_SCHEMA_BOOL("automaticRipples", gX_RendererWater, automaticRipples),
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
     GX_SCHEMA_BOOL("sceneRefractionEnabled", gX_RendererWater, sceneRefractionEnabled),
-#endif
     GX_SCHEMA_ARRAY("waveDirections", gX_RendererWater, waveDirections, F32, GX_WATER_MAX_WAVES),
     GX_SCHEMA_ARRAY("waveAmplitudes", gX_RendererWater, waveAmplitudes, F32, GX_WATER_MAX_WAVES),
     GX_SCHEMA_ARRAY("waveFrequencies", gX_RendererWater, waveFrequencies, F32, GX_WATER_MAX_WAVES),
@@ -1243,11 +1241,9 @@ gX_I32 gX_RendererGFX_Preset_Load_New(gX_RendererGFX *gfx, const gX_I8 *path)
         if (!waterObj || !json_object_object_get_ex(waterObj,
                 "proceduralNormalScale", &proceduralScaleObj))
             gfx->water.proceduralNormalScale = 1.0f;
-#ifdef GX_WATER_REFRACTION_EXPERIMENT
         struct json_object *refractionObj = NULL;
         if (!waterObj || !json_object_object_get_ex(waterObj, "sceneRefractionEnabled", &refractionObj))
             gfx->water.sceneRefractionEnabled = false;
-#endif
         struct json_object *cameraObj = NULL;
         struct json_object *editorObj = NULL;
         gX_U32 cameraFieldCount = (gX_U32)(sizeof(gfx_camera_fields) / sizeof(gfx_camera_fields[0]));
