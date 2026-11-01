@@ -46,7 +46,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
 | Admission | full audit matrix green (`make audit-summary-full`) | partial | 83/83 expected; a fresh full-matrix run is required for the RC claim |
 | Tests | unit suite + contract gates green | holds | `--test-only`, gate manifest |
-| Stability | 3 consecutive full admission runs without a flake | open | one rare test-only SIGSEGV is a known watch item (not reproduced under ASan/Valgrind) |
+| Stability | 3 consecutive full admission runs without a flake | holds | 3 x `make check` on 2026-11-01 (v0.30.0 + readiness docs), logs archived privately; the rare test-only SIGSEGV remains a watch item |
 | Docs | documentation index covers public surfaces; API/enum coverage gates | holds | `docs/README.md`, `api_coverage.py`, `enum_coverage.py` |
 | Docs | release notes + changelog for every release | holds | `CHANGELOG.md`, release notes |
 | License | GPL-3.0-or-later; provenance/attribution/copyright audits clean | holds | `provenance_audit.py --strict`, `copyright_audit.py` |
@@ -78,6 +78,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Date | Decision | By |
 | --- | --- | --- |
 | 2026-11-01 | Ledger opened; RC not claimed. Open: full matrix, stability soak, hardware walk, dogfooding, demand signals, secret scan, operations contract. | owner/agent |
+| 2026-11-01 | Stability soak: 3 consecutive full `make check` runs green; row moves to holds. | owner/agent |
 
 ## Change rule
 
