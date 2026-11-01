@@ -4,6 +4,19 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.29.5] - 2026-11-01
+
+Release-Class: patch
+
+### Fixed
+- **Title-flow audit**: account for the first Down only focusing RESUME, start
+  key navigation after the entrance cascade, and rebaseline the EXTRAS grid
+  and back routes. The title flow now reaches 12 distinct tool cards and every
+  Back route returns to the menu.
+- **Bijection audit**: map the undo drag to the 1.25 dock viewport and lower
+  the move-visibility floor from the old 1.0 calibration; all effect toggles,
+  undo/redo and the snapshot round-trip pass.
+
 ## [0.29.4] - 2026-11-01
 
 Release-Class: patch
