@@ -9,9 +9,9 @@ SemVer.
 Release-Class: patch
 
 ### Fixed
-- **Material-map audit**: the gate runs on the visible audit display and retries
-  the Browse probe. Hidden or parked windows could not reach the asset-browser
-  popup, leaving `gfx-material-asset-check` flaky in clean clones.
+- **Material-map audit**: the gate traces the Browse control and opens the same
+  browser path through an audit hook. Hidden or parked windows cannot route the
+  popup click reliably, so the previous click path was flaky in clean clones.
 - **Proof-pin test signing**: the temporary git fixture disables commit
   signing, so `make proofs` no longer fails when the host enables signed
   commits globally.
