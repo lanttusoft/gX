@@ -4,6 +4,17 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.27.1] - 2026-11-01
+
+Release-Class: patch
+
+### Fixed
+- **Version check**: `scripts/version_check.py` treated `(version, tag)` tuples
+  as the previous release when the current version was already tagged, so
+  `make version-check` failed with `Release-Class minor != numeric major` on
+  the v0.27.0 tree. The stacked-baseline lookup now compares parsed versions;
+  a regression test pins the tagged-release case.
+
 ## [0.27.0] - 2026-11-01
 
 Release-Class: minor
