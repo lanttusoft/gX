@@ -16,7 +16,8 @@ camera rail, background and sky/physics follow).
    can take over: scene/mesh export (OBJ through raylib's `ExportMesh` with
    model transforms baked, plus MTL material sidecars and copied override
    maps, and native GLB export with embedded override maps), while keeping
-   GLB import first-class.
+   GLB import first-class. COLLADA `.dae` sources are converted offline with
+   `scripts/model_import.py` (assimp); the engine never links an importer.
    The intended loop is *blockout in gX -> detail in Blender/Krita -> import
    back*.
 2. **Blockout primitives** *(implemented, `make gfx-primitive-check`)*. An
