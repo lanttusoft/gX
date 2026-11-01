@@ -19,7 +19,9 @@ in the gX GFX forward renderer. Status: **Beta** (SSR receiver-routing closure,
 
 The IBL source is the sky-only procedural cubemap. When the authored sky
 atmosphere or sun direction changes, the renderer invalidates the sky cube and
-rebuilds the irradiance/prefilter maps; the BRDF LUT is reused. A two-frame
+rebuilds the irradiance/prefilter maps; the BRDF LUT is reused. Each
+convolution pass sets its own 2D ortho projection instead of inheriting the
+previous 3D camera matrix. A two-frame
 settle plus a 12-frame minimum interval keeps slider drags from convolving on
 every frame, and a slow cadence still refreshes an animated sun. Software
 rasterizers keep the one-time startup capture because the convolution is too
