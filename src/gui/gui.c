@@ -1210,6 +1210,10 @@ static gX_I0 gX_GUI_Dock_Update(gX_I0) {
         }
     }
     gX_I1 want = gX_Tools_RuntimeActive();
+    //opencode: harness hook — some calibrated audits compare an undocked
+    //   live view to the clean camera render and must keep the overlay layout.
+    const gX_I8 *dockDisable = getenv("GX_DOCK_DISABLE");
+    if (dockDisable && dockDisable[0] && dockDisable[0] != '0') want = 0;
 
     //opencode: dock hardening — follow user/WM resizes. maindata is the
     //   single source downstream reads, so sync it from the OS window,
