@@ -4,6 +4,21 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.29.3] - 2026-11-01
+
+Release-Class: patch
+
+### Fixed
+- **Mirror-alignment audit**: the editor traces the stale-plane warning and
+  align button; the gate uses the actual warning rect and button center instead
+  of fixed window offsets.
+- **Material-map audit**: the gate keeps the engine window height so the
+  traced Browse rect stays reachable below the 768px audit window.
+- **Reflection UI audit**: the editor traces the Surface reflection mode and
+  follow controls, selects the Surface tab on request, and scrolls the follow
+  checkbox into view; the gate drives the traced rects instead of the old
+  1.0-scale offsets.
+
 ## [0.29.2] - 2026-11-01
 
 Release-Class: patch
