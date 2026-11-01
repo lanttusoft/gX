@@ -4,6 +4,27 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.29.0] - 2026-11-01
+
+Release-Class: minor
+
+### Added
+- **Live procedural-sky IBL**: changing the authored sky atmosphere or sun
+  direction now rebuilds the sky cubemap, irradiance and prefilter maps without
+  a preset reload. The BRDF LUT is reused; a 2-frame settle, 12-frame minimum
+  and 30-frame maximum hold keep slider drags from convolving every frame.
+  Software rasterizers keep the one-time startup capture.
+### Fixed
+- **Black IBL maps**: the BRDF LUT, irradiance and prefilter passes drew their
+  screen quad with the previous 3D camera projection, producing black maps.
+  Each pass now sets a per-pass 2D ortho and restores the saved projection and
+  modelview, including on FBO failure. PBR surfaces now receive the intended
+  procedural-sky ambient and reflection light.
+### Changed
+- **PBR gate**: `make pbr-check` now verifies a live sky change matches a fresh
+  capture (`refresh-delta=0.00`) and that disabling refresh produces stale IBL
+  (`stale-delta=43.56`).
+
 ## [0.28.0] - 2026-11-01
 
 Release-Class: minor
