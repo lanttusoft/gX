@@ -140,6 +140,14 @@ def release_baseline(readme, latest, versions):
             return candidate
     return latest
 
+def previous_version(readme, tags, versions):
+    latest = max(version for version, _ in tags)
+    if readme > latest:
+        return release_baseline(readme, latest, versions)
+    older = sorted((version for version, _ in tags if version != latest),
+                   reverse=True)
+    return older[0] if older else None
+
 
 def class_matches(declared, actual, after):
     if declared == actual:
@@ -236,13 +244,8 @@ def main():
                 issues.append(f"readme {format_version(readme)} != latest tag "
                               f"{format_version(latest)}")
             if readme >= POLICY_VERSION and readme >= latest:
-                if readme > latest:
-                    previous = release_baseline(readme, latest,
-                                                changelog_versions())
-                else:
-                    older = sorted((version for version in tags
-                                    if version != latest), reverse=True)
-                    previous = older[0] if older else None
+                previous = previous_version(readme, tags,
+                                            changelog_versions())
                 if previous is not None:
                     declared = release_class(readme)
                     actual = numeric_class(previous, readme)

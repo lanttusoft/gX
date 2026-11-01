@@ -103,6 +103,14 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(
             check.numeric_class((0, 26, 0, ""), (0, 26, 0, "rc1")), "variant")
 
+    def test_tagged_baseline_uses_version_not_tag_name(self):
+        tags = [((0, 27, 0, ""), "v0.27.0"),
+                ((0, 26, 3, ""), "v0.26.3")]
+        self.assertEqual(
+            check.previous_version((0, 27, 0, ""), tags,
+                                   [(0, 27, 0, ""), (0, 26, 3, "")]),
+            (0, 26, 3, ""))
+
     def test_stacked_release_baseline(self):
         versions = [(0, 27, 0, ""), (0, 26, 0, ""), (0, 25, 0, "")]
         self.assertEqual(
