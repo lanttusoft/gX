@@ -1444,6 +1444,8 @@ proofs:
 	  exit 1; \
 	fi
 	command -v lake >/dev/null || (echo "proofs: 'lake' not found (install elan + Lean 4.27.0)" >&2 && exit 1)
+	python3 -m unittest discover -s scripts -p test_proof_pin_check.py
+	python3 scripts/proof_pin_check.py
 	cd ../proofs && timeout 600 lake build GxProofs
 	#ai: keep the generated proof catalog in sync with the source modules.
 	python3 -m unittest discover -s scripts -p test_proof_inventory.py
@@ -1483,6 +1485,8 @@ proofs-full:
 	  exit 1; \
 	fi
 	command -v lake >/dev/null || (echo "proofs-full: 'lake' not found (install elan + Lean 4.27.0)" >&2 && exit 1)
+	python3 -m unittest discover -s scripts -p test_proof_pin_check.py
+	python3 scripts/proof_pin_check.py
 	if [ ! -d ../proofs/.lake/packages/mathlib ]; then \
 	  echo "proofs-full: failed (no Mathlib cache; run 'lake update' in proofs/)" >&2; exit 1; \
 	else \

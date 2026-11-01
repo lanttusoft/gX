@@ -6,6 +6,11 @@
 > source tarball or linked into the engine executable. `make proofs` and
 > `make proofs-full` expect a sibling `../proofs` checkout.
 
+The gate pins the published tree at `v0.18.0-proofs`
+(`1760307f18ed8824afbafafa3e916afbd257f0f9`). `proofs.lock.json` records 52
+core and 117 total modules; `scripts/proof_pin_check.py` rejects the archived
+private staging (`ef8569d`) or any other checkout before the build.
+
 ## What the gates establish
 
 `make proofs` builds the core tier. `make proofs-full` builds the Mathlib gfx
@@ -35,12 +40,13 @@ every module to its namespace and counts authored axioms, definitions,
 structures, inductives, instances, lemmas and theorems. Lean has no
 `corollary` keyword; corollaries are `theorem` or `lemma` declarations.
 
-At this inventory the corpus has 110 modules: 49 core, 43 Mathlib-GFX and 18
-GxMath. The static source count is 1,320 `theorem` declarations plus 2
-`lemma` declarations, 702 `def`, 59 `structure`, 17 `inductive`, 11
-`instance`, 5 `abbrev`, and zero project `axiom`/`opaque` declarations. The
-kernel audit reports 110 reachable modules and 2,572 theorem declarations
-including generated helpers, with standard axioms only. The small-matrix
+At this inventory the pinned corpus has 117 modules: 52 core, 47 Mathlib-GFX
+and 18 GxMath. The static source count is 1,422 `theorem` declarations plus 2
+`lemma` declarations, 765 `def`, 68 `structure`, 22 `inductive`, 11
+`instance`, 6 `abbrev`, and zero project `axiom`/`opaque` declarations. The
+core kernel audit reports 52 reachable modules and 1,145 theorem declarations;
+the full audit reports 117 modules and 2,869 declarations, including generated
+helpers, with standard axioms only. The small-matrix
 module adds 12 contracts for the 2×2/3×3 determinant/trace helpers; the F64v4
 module adds 4 lerp contracts; `GxMath.Quaternion` covers algebra/norm/inverse,
 rotation and branch-aware Lerp/Nlerp/Slerp contracts. Native vector action is

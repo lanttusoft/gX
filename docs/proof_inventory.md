@@ -12,15 +12,15 @@ or `lemma` declarations.
 
 | Tier | Modules | Theorems | Lemmas | Defs | Structures | Inductives | Instances | Abbrevs | Axioms | Opaque |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `GxProofs` | 49 | 473 | 0 | 298 | 38 | 16 | 1 | 4 | 0 | 0 |
-| `GxProofsGfx` | 43 | 503 | 1 | 246 | 12 | 1 | 0 | 1 | 0 | 0 |
-| `GxMath` | 18 | 344 | 1 | 158 | 9 | 0 | 10 | 0 | 0 | 0 |
-| **All** | **110** | **1320** | **2** | **702** | **59** | **17** | **11** | **5** | **0** | **0** |
+| `GxProofs` | 52 | 527 | 0 | 335 | 42 | 20 | 1 | 4 | 0 | 0 |
+| `GxProofsGfx` | 47 | 548 | 1 | 271 | 17 | 2 | 0 | 2 | 0 | 0 |
+| `GxMath` | 18 | 347 | 1 | 159 | 9 | 0 | 10 | 0 | 0 | 0 |
+| **All** | **117** | **1422** | **2** | **765** | **68** | **22** | **11** | **6** | **0** | **0** |
 
 ## Root coverage
 
-- `GxProofs`: complete (49 modules)
-- `GxProofsGfx`: complete (43 modules)
+- `GxProofs`: complete (52 modules)
+- `GxProofsGfx`: complete (47 modules)
 - `GxMath`: complete (18 modules)
 
 ## Domain map
@@ -30,12 +30,12 @@ Tier is the dependency set; domain is the subject area.
 | Domain | Modules |
 |---|---:|
 | `audio` | 3 |
-| `core` | 47 |
-| `kernel` | 4 |
+| `core` | 50 |
+| `kernel` | 5 |
 | `math` | 18 |
 | `matrix` | 3 |
 | `postprocess` | 4 |
-| `renderer` | 18 |
+| `renderer` | 21 |
 | `ssr` | 5 |
 | `temporal` | 6 |
 | `weather` | 2 |
@@ -80,8 +80,8 @@ in this reviewed table.
 | `GxProofs.MainDataSwitch` | K | 90 | guarded | guarded | The scene-switch handshake can leave the kernel in an inconsistent state. |
 | `GxProofs.ModuleInfoConsistency` | K | 90 | guarded | guarded | The moduleInfo mirror must agree with the compiled kernel/full-stack flags. |
 | `GxProofs.RhiFbo` | K | 90 | guarded | guarded | FBO binding/cache errors can corrupt every subsequent pass. |
-| `GxProofsGfx.Kernel.MainDataRefresh` | K | 90 | guarded | guarded | Resolution-ladder errors change render targets and input coordinates. |
-| `GxProofsGfx.Kernel.MainDataReset` | K | 90 | guarded | guarded | Reset defaults define the startup window/render contract. |
+| `GxProofsGfx.Kernel.MainDataRefresh` | K | 90 | guarded | checked | Resolution-ladder errors change render targets and input coordinates. |
+| `GxProofsGfx.Kernel.MainDataReset` | K | 90 | guarded | checked | Reset defaults define the startup window/render contract. |
 | `GxMath.CofactorInverse` | A | 85 | grounded | guarded | The exact inverse contract is the ground truth for camera reconstruction. |
 | `GxMath.Matrix` | A | 85 | grounded | guarded | Logical 4x4 algebra is the reference for all matrix contracts. |
 | `GxProofs.PoolAlloc` | K | 85 | guarded | guarded | Allocator metadata errors cause corruption rather than visual defects. |
@@ -102,8 +102,11 @@ in this reviewed table.
 | `GxProofsGfx.Matrix.MatrixBridge` | A | 70 | grounded | guarded | Bridge conversions keep flat, clip and logical matrix models coherent. |
 | `GxProofsGfx.Renderer.CubemapGeometry` | A | 70 | grounded | guarded | Cubemap face mapping errors affect shadows, IBL and sky sampling. |
 | `GxProofsGfx.Ssr.ReflectionHandedness` | A | 70 | grounded | guarded | Reflected orientation errors invert visible geometry. |
-| `GxMath.Sdf` | A | 65 | grounded | guarded | Signed-distance primitives are renderer-facing geometry contracts; exact-real sphere/unit-normal plane Lipschitz and clearance proofs are complemented by formula and native sampled-bound checks. |
+| `GxMath.Sdf` | A | 65 | grounded | guarded | Signed-distance primitives are renderer-facing geometry contracts; exact-real sphere/unit-normal plane Lipschitz and clearance proofs plus generic 1-Lipschitz step sign preservation are complemented by formula, native sampled-bound and analytic transformed-object depth checks. |
 | `GxMath.Sky` | A | 65 | grounded | guarded | Cartesian sky-frame conversions couple observer angles, axis signs and handedness; inverse/norm/orientation proofs and source witnesses protect convention-sensitive sky placement. |
+| `GxProofs.GfxCameraRender` | B | 65 | checked | checked | The editor camera render flow temporarily changes the authoring camera and marker visibility across frames. |
+| `GxProofs.GfxLightShadowSlots` | B | 65 | checked | checked | Light-slot reuse and shared point-shadow ownership affect renderer state and shadow validity. |
+| `GxProofs.GfxPresetOverwrite` | B | 65 | checked | checked | Explicit confirmation protects authored presets from accidental replacement. |
 | `GxProofs.ReflectFlags` | A | 65 | grounded | guarded | Reflection routing flags control planar/SSR resource selection. |
 | `GxProofs.SsrCoverage` | A | 65 | grounded | guarded | SSR coverage gates determine whether reflection evidence is visible. |
 | `GxProofsGfx.Renderer.CsmContracts` | B | 65 | checked | guarded | Cascade selection/fade errors cause visible shadow discontinuities. |
@@ -115,7 +118,7 @@ in this reviewed table.
 | `GxMath.Coordinates` | A | 60 | grounded | guarded | Coordinate conversions feed geometric tooling and sky placement; branch-aware inverse/radius contracts protect axis order and inclination semantics without claiming IEEE or singular-origin behavior. |
 | `GxMath.Fourier` | A | 60 | grounded | guarded | The DFT convention underpins audio/visual spectral paths; explicit character bridges, inverse round trips and Parseval fix the exact transform, while native sampled energy/DC/inverse checks guard execution evidence. |
 | `GxMath.MatrixSmall` | A | 60 | grounded | guarded | Small-matrix determinant/trace helpers are directly used by the engine. |
-| `GxMath.Scalar` | A | 60 | grounded | guarded | Clamp, lerp, normalize and remap are ubiquitous scalar helpers; the math oracle and endpoint/round-trip contracts pin their real-valued semantics. |
+| `GxMath.Scalar` | A | 60 | grounded | guarded | Clamp, lerp, normalize, remap and floor-wrap are ubiquitous scalar helpers; the math oracle, endpoint/round-trip contracts and bounded native wrap fixtures pin their semantics without claiming IEEE edge behavior. |
 | `GxMath.Vector` | A | 60 | grounded | guarded | F32v3 algebra is a foundational engine dependency. |
 | `GxProofs.GLState` | B | 60 | checked | checked | Cached GL state must stay coherent with issued calls. |
 | `GxProofs.PipelineOrder` | B | 60 | checked | checked | Pipeline order affects effects but not persistent engine data. |
@@ -129,6 +132,7 @@ in this reviewed table.
 | `GxProofs.RenderTextureLifecycle` | B | 55 | checked | checked | Render-target lifecycle leaks affect GPU resources and later frames. |
 | `GxProofs.RhiTex` | B | 55 | checked | checked | Texture binding and cache identity affect sampling. |
 | `GxProofs.ShadowVP` | B | 55 | checked | checked | Shadow view/projection constants affect cascade coverage. |
+| `GxProofsGfx.Kernel.WindowResize` | B | 55 | checked | checked | Resize synchronization controls the viewport and window-sized GUI targets. |
 | `GxProofsGfx.Postprocess.GtaoContracts` | B | 55 | checked | guarded | GTAO reconstruction/horizon errors produce visible AO stripes. |
 | `GxMath.Calculus` | B | 50 | checked | guarded | Finite differences and quadrature support numeric utilities; polynomial and positive-even-step Simpson integral identities pin formulas while preserving convergence, tolerance and IEEE limits. |
 | `GxMath.Vector64` | B | 50 | checked | checked | F64v4 lerp is a narrow numeric helper. |
@@ -151,11 +155,13 @@ in this reviewed table.
 | `GxProofsGfx.Renderer.BehindCamera` | B | 45 | checked | checked | Behind-camera classification affects clipping behavior. |
 | `GxProofsGfx.Renderer.CameraLimits` | B | 45 | checked | checked | Camera limit consistency affects authoring bounds. |
 | `GxProofsGfx.Renderer.LightAccumulation` | B | 45 | checked | checked | Per-light accumulation affects shading quality. |
+| `GxProofsGfx.Renderer.LightAttenuation` | B | 45 | checked | checked | Exact-real attenuation cutoff model covers quadratic, linear-only, zero-rate and conservative unbounded policies. |
 | `GxProofsGfx.Renderer.ShadowContain` | B | 45 | checked | checked | Shadow containment affects cascade coverage. |
+| `GxProofsGfx.Renderer.WaterHeight` | B | 45 | checked | checked | Water height inversion influences buoyancy under explicit convergence assumptions. |
 | `GxProofsGfx.Ssr.GlassCapture` | B | 45 | checked | checked | Glass capture routing affects refraction appearance. |
 | `GxProofsGfx.Weather.WeatherContracts` | B | 45 | checked | guarded | Weather wrap/spawn bounds prevent visible discontinuities and invalid bands. |
 | `GxProofs.PressRoute` | B | 40 | checked | checked | Press routing affects input handling within the GUI. |
-| `GxProofs.ViewportMath` | B | 40 | checked | checked | Viewport fitting affects presentation geometry. |
+| `GxProofs.ViewportMath` | B | 40 | checked | checked | Integer viewport division bounds support presentation geometry. |
 | `GxProofs.VisibleImageSky` | B | 40 | checked | checked | Sky image selection is a bounded routing policy. |
 | `GxProofsGfx.Audio.Attenuation` | B | 40 | checked | checked | Audio attenuation and pan bounds affect the audible mix. |
 | `GxProofsGfx.Audio.SynthFilter` | B | 40 | checked | checked | Filter/LFO bounds keep synthesized output stable. |
@@ -163,15 +169,15 @@ in this reviewed table.
 | `GxProofs.QualityPreset` | B | 35 | checked | checked | Quality presets select bounded renderer settings. |
 | `GxProofsGfx.Audio.Envelope` | B | 35 | checked | checked | Envelope step bounds prevent clicks and out-of-range gain. |
 | `GxProofsGfx.Renderer.Engage` | B | 35 | checked | checked | Engage dock geometry is presentation layout. |
-| `GxProofsGfx.Renderer.Pillarbox` | B | 35 | checked | checked | Pillarbox/letterbox geometry is presentation-only. |
+| `GxProofsGfx.Renderer.Pillarbox` | B | 35 | checked | checked | Aspect-fit selection and geometry affect presentation output. |
 | `GxProofsGfx.Renderer.TextwriterLayout` | B | 35 | checked | checked | Text layout affects debug/UI readability. |
-| `GxProofsGfx.Renderer.Viewport` | B | 35 | checked | checked | Viewport fitting is presentation geometry. |
+| `GxProofsGfx.Renderer.Viewport` | B | 35 | checked | checked | Docked viewport fitting controls scene visibility around editor panels. |
 | `GxProofsGfx.Renderer.LabelContracts` | B | 32 | checked | checked | Label fit/anchor errors are visible UI defects with bounded impact. |
 | `GxMath.Easing` | B | 30 | checked | checked | Easing bounds affect animation/UI, not engine state. |
 | `GxProofs.EmissiveFill` | B | 30 | checked | checked | Emissive fallback affects material appearance. |
 | `GxProofs.ViewportRoundtrip` | C | 25 | registered | checked | Viewport round-trip is a bounded UI mapping. |
 | `GxProofsGfx.Postprocess.LensflareGhost` | C | 25 | registered | checked | Lensflare ghost geometry is an optional visual effect. |
-| `GxProofs.DockMargins` | C | 20 | registered | checked | Dock margins are layout guidance. |
+| `GxProofs.DockMargins` | C | 20 | registered | checked | Dock feasibility is presentation layout policy. |
 | `GxProofs.DockRestore` | C | 20 | registered | checked | Dock restore state is reversible UI state. |
 | `GxProofs.EditLock` | C | 20 | registered | checked | Editor edit locking is a tooling concern. |
 | `GxProofs.ElementState` | C | 20 | registered | checked | GUI element state is reversible presentation state. |
@@ -190,7 +196,8 @@ in this reviewed table.
 
 | Module | Class | Sig | Achieved → Target | Missing evidence / limit |
 |---|---|---:|---|---|
-| — | — | — | — | none |
+| `GxProofsGfx.Kernel.MainDataRefresh` | K | 90 | checked → guarded | No IEEE F32 or U16 overflow/rounding proof; Render scale range is a caller premise |
+| `GxProofsGfx.Kernel.MainDataReset` | K | 90 | checked → guarded | Monitor-fit path is not modeled by Reset; CLI override parsing and U16 field semantics are external |
 
 ## Modules
 
@@ -199,7 +206,7 @@ in this reviewed table.
 | `GxProofs.AiInput` | `core` | B | 50 | checked | `GxProofs.AiInput` | 6 | 0 | 4 | 0 | 1 | 0 | 0 | 0 |
 | `GxProofs.BufferPool` | `core` | B | 55 | checked | `GxProofs.BufferPool` | 8 | 0 | 7 | 1 | 0 | 0 | 0 | 0 |
 | `GxProofs.CascadeSplits` | `core` | B | 55 | checked | `GxProofs.CascadeSplits` | 4 | 0 | 12 | 0 | 0 | 0 | 0 | 0 |
-| `GxProofs.DockMargins` | `core` | C | 20 | checked | `GxProofs.DockMargins` | 8 | 0 | 7 | 0 | 0 | 0 | 0 | 0 |
+| `GxProofs.DockMargins` | `core` | C | 20 | checked | `GxProofs.DockMargins` | 9 | 0 | 8 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.DockRestore` | `core` | C | 20 | checked | `GxProofs.DockRestore` | 4 | 0 | 1 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.DrawState` | `core` | B | 50 | checked | `GxProofs.DrawState` | 15 | 0 | 13 | 0 | 1 | 0 | 0 | 0 |
 | `GxProofs.EditLock` | `core` | C | 20 | checked | `GxProofs.EditLock` | 6 | 0 | 4 | 0 | 0 | 0 | 0 | 0 |
@@ -209,7 +216,10 @@ in this reviewed table.
 | `GxProofs.EventLog` | `core` | C | 20 | checked | `GxProofs.EventLog` | 6 | 0 | 1 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.FocusRing` | `core` | C | 15 | checked | `GxProofs.FocusRing` | 6 | 0 | 1 | 1 | 0 | 0 | 0 | 0 |
 | `GxProofs.GLState` | `core` | B | 60 | checked | `GxProofs.GLState` | 14 | 0 | 7 | 1 | 0 | 0 | 0 | 0 |
+| `GxProofs.GfxCameraRender` | `core` | B | 65 | checked | `GxProofs.GfxCameraRender` | 8 | 0 | 2 | 1 | 1 | 0 | 0 | 0 |
 | `GxProofs.GfxConstants` | `core` | B | 35 | checked | `GxProofs.GfxConstants` | 9 | 0 | 9 | 0 | 0 | 0 | 0 | 0 |
+| `GxProofs.GfxLightShadowSlots` | `core` | B | 65 | checked | `GxProofs.GfxLightShadowSlots` | 36 | 0 | 29 | 2 | 2 | 0 | 0 | 0 |
+| `GxProofs.GfxPresetOverwrite` | `core` | B | 65 | checked | `GxProofs.GfxPresetOverwrite` | 9 | 0 | 5 | 1 | 1 | 0 | 0 | 0 |
 | `GxProofs.GridLayout` | `core` | C | 20 | checked | `GxProofs.GridLayout` | 7 | 0 | 2 | 1 | 0 | 0 | 0 | 0 |
 | `GxProofs.GridRectTransform` | `core` | C | 20 | checked | `GxProofs.GridRectTransform` | 10 | 0 | 6 | 5 | 0 | 0 | 0 | 0 |
 | `GxProofs.HaloInset` | `core` | C | 15 | checked | `GxProofs.HaloInset` | 5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -248,8 +258,10 @@ in this reviewed table.
 | `GxProofsGfx.Audio.Attenuation` | `audio` | B | 40 | checked | `GxProofsGfx.Audio.Attenuation` | 9 | 0 | 3 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Audio.Envelope` | `audio` | B | 35 | checked | `GxProofsGfx.Audio.Envelope` | 15 | 1 | 6 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Audio.SynthFilter` | `audio` | B | 40 | checked | `GxProofsGfx.Audio.SynthFilter` | 13 | 0 | 3 | 0 | 0 | 0 | 0 | 0 |
-| `GxProofsGfx.Kernel.MainDataRefresh` | `kernel` | K | 90 | guarded | `GxProofsGfx.MainDataRefresh` | 11 | 0 | 2 | 0 | 0 | 0 | 0 | 0 |
-| `GxProofsGfx.Kernel.MainDataReset` | `kernel` | K | 90 | guarded | `GxProofsGfx.MainDataReset` | 9 | 0 | 5 | 0 | 0 | 0 | 0 | 0 |
+| `GxProofsGfx.Editor.DragHistory` | `renderer` | B | 40 | checked | `GxProofsGfx.Editor.DragHistory` | 6 | 0 | 3 | 1 | 0 | 0 | 0 | 0 |
+| `GxProofsGfx.Kernel.MainDataRefresh` | `kernel` | K | 90 | checked | `GxProofsGfx.MainDataRefresh` | 11 | 0 | 2 | 0 | 0 | 0 | 0 | 0 |
+| `GxProofsGfx.Kernel.MainDataReset` | `kernel` | K | 90 | checked | `GxProofsGfx.MainDataReset` | 10 | 0 | 5 | 0 | 0 | 0 | 0 | 0 |
+| `GxProofsGfx.Kernel.WindowResize` | `kernel` | B | 55 | checked | `GxProofsGfx.Kernel.WindowResize` | 5 | 0 | 3 | 4 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Matrix.MatrixBridge` | `matrix` | A | 70 | guarded | `GxProofsGfx.Matrix.MatrixBridge` | 5 | 0 | 2 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Matrix.MatrixField` | `matrix` | A | 75 | guarded | `GxProofsGfx.MatrixField` | 6 | 0 | 4 | 1 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Matrix.MatrixTuple` | `matrix` | A | 75 | guarded | `GxProofsGfx.MatrixTuple` | 3 | 0 | 3 | 0 | 0 | 0 | 0 | 0 |
@@ -266,15 +278,17 @@ in this reviewed table.
 | `GxProofsGfx.Renderer.FrustumCull` | `renderer` | B | 50 | checked | `GxProofsGfx.FrustumCull` | 7 | 0 | 4 | 2 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Renderer.LabelContracts` | `renderer` | B | 32 | checked | `GxProofsGfx.LabelContracts` | 18 | 0 | 5 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Renderer.LightAccumulation` | `renderer` | B | 45 | checked | `GxProofsGfx.LightAccumulation` | 3 | 0 | 2 | 0 | 0 | 0 | 0 | 0 |
+| `GxProofsGfx.Renderer.LightAttenuation` | `renderer` | B | 45 | checked | `GxProofsGfx.Renderer.LightAttenuation` | 22 | 0 | 8 | 0 | 1 | 0 | 0 | 0 |
 | `GxProofsGfx.Renderer.ModelPicking` | `renderer` | B | 50 | checked | `GxProofsGfx.ModelPicking` | 10 | 0 | 6 | 1 | 0 | 0 | 0 | 0 |
-| `GxProofsGfx.Renderer.Pillarbox` | `renderer` | B | 35 | checked | `GxProofsGfx.Pillarbox` | 5 | 0 | 2 | 0 | 0 | 0 | 0 | 0 |
+| `GxProofsGfx.Renderer.Pillarbox` | `renderer` | B | 35 | checked | `GxProofsGfx.Pillarbox` | 11 | 0 | 6 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Renderer.PointShadowDepth` | `renderer` | B | 65 | guarded | `GxProofsGfx.PointShadowDepth` | 13 | 0 | 4 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Renderer.ProjectionClipping` | `renderer` | A | 65 | guarded | `GxProofsGfx.ProjectionClipping` | 15 | 0 | 6 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Renderer.ShadowContain` | `renderer` | B | 45 | checked | `GxProofsGfx.ShadowContain` | 6 | 0 | 4 | 2 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Renderer.Snap` | `renderer` | C | 20 | checked | `GxProofsGfx.GridSnap` | 3 | 0 | 2 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Renderer.SunUV` | `renderer` | B | 50 | checked | `GxProofsGfx.SunUV` | 10 | 0 | 5 | 3 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Renderer.TextwriterLayout` | `renderer` | B | 35 | checked | `GxProofsGfx.TextwriterLayout` | 14 | 0 | 10 | 0 | 0 | 0 | 0 | 0 |
-| `GxProofsGfx.Renderer.Viewport` | `renderer` | B | 35 | checked | `GxProofsGfx.ViewportFit` | 8 | 0 | 3 | 0 | 0 | 0 | 0 | 0 |
+| `GxProofsGfx.Renderer.Viewport` | `renderer` | B | 35 | checked | `GxProofsGfx.ViewportFit` | 10 | 0 | 9 | 0 | 0 | 0 | 0 | 0 |
+| `GxProofsGfx.Renderer.WaterHeight` | `renderer` | B | 45 | checked | `GxProofsGfx.WaterHeight` | 3 | 0 | 1 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Ssr.GlassCapture` | `ssr` | B | 45 | checked | `GxProofsGfx.GlassCapture` | 16 | 0 | 6 | 1 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Ssr.PlanarReflection` | `ssr` | A | 75 | guarded | `GxProofsGfx.PlanarReflection` | 12 | 0 | 7 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Ssr.ProbeBoxExit` | `ssr` | C | 20 | guarded | `GxProofsGfx.ProbeBoxExit` | 9 | 0 | 17 | 1 | 0 | 0 | 0 | 0 |
@@ -300,8 +314,8 @@ in this reviewed table.
 | `GxMath.NormalMatrix` | `math` | B | 55 | checked | `GxMath.NormalMatrix` | 3 | 1 | 2 | 0 | 0 | 0 | 0 | 0 |
 | `GxMath.Physics` | `math` | A | 75 | guarded | `GxMath` | 43 | 0 | 22 | 0 | 0 | 0 | 0 | 0 |
 | `GxMath.Quaternion` | `math` | A | 75 | guarded | `GxMath` | 57 | 0 | 19 | 1 | 0 | 0 | 0 | 0 |
-| `GxMath.Scalar` | `math` | A | 60 | guarded | `GxMath` | 14 | 0 | 4 | 0 | 0 | 0 | 0 | 0 |
-| `GxMath.Sdf` | `math` | A | 65 | guarded | `GxMath` | 15 | 0 | 5 | 0 | 0 | 0 | 0 | 0 |
+| `GxMath.Scalar` | `math` | A | 60 | guarded | `GxMath` | 16 | 0 | 5 | 0 | 0 | 0 | 0 | 0 |
+| `GxMath.Sdf` | `math` | A | 65 | guarded | `GxMath` | 16 | 0 | 5 | 0 | 0 | 0 | 0 | 0 |
 | `GxMath.Sky` | `math` | A | 65 | guarded | `GxMath.Sky` | 14 | 0 | 4 | 0 | 0 | 0 | 0 | 0 |
 | `GxMath.Units` | `math` | B | 45 | guarded | `GxMath.Units` | 12 | 0 | 8 | 0 | 0 | 0 | 0 | 0 |
 | `GxMath.Vector` | `math` | A | 60 | guarded | `GxMath` | 30 | 0 | 16 | 1 | 0 | 6 | 0 | 0 |

@@ -1,0 +1,11 @@
+{
+ "schema": 1,
+ "repo": "https://github.com/lanttusoft/gx-proofs",
+ "tag": "v0.18.0-proofs",
+ "commit": "1760307f18ed8824afbafafa3e916afbd257f0f9",
+ "coreModules": 52,
+ "fullModules": 117,
+ "coreDeclarations": 1145,
+ "fullDeclarations": 2869,
+ "note": "Engine proof gate pin. The sibling ../proofs checkout must be this published tree; the archived private staging ef8569d is rejected by scripts/proof_pin_check.py."
+}
