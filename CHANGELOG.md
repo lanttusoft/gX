@@ -4,6 +4,15 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.29.4] - 2026-11-01
+
+Release-Class: patch
+
+### Fixed
+- **Material-map audit**: the gate runs on the visible audit display and retries
+  the Browse probe. Hidden or parked windows could not reach the asset-browser
+  popup, leaving `gfx-material-asset-check` flaky in clean clones.
+
 ## [0.29.3] - 2026-11-01
 
 Release-Class: patch
