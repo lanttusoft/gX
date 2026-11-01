@@ -327,7 +327,7 @@ gX_I32 gX_Renderer_Load(gX_I0) {
     gX_TRACELOG_PROLOGUE("Renderer_Load","RENDERER: Loading renderer")
     
     strcpy(renderer.name,"Renderer");
-    strcpy(renderer.description,"renderer");
+    strcpy(renderer.description,"renderer (beta)");
     gX_TraceLog_RENDERER(gX_LOG_GREEN,"name: %s",renderer.name);
     gX_TraceLog_RENDERER(gX_LOG_GREEN,"desc: %s",renderer.description);
     

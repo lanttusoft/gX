@@ -39,7 +39,7 @@
 gX_I32 gX_RendererOscillo_Load(gX_RendererOscillo *osc) {
     gX_TRACELOG_PROLOGUE("RendererOscillo_Load", "OSCILLO: Loading")
     strcpy(osc->name, "Oscilloscope");
-    strcpy(osc->description, "waveform display");
+    strcpy(osc->description, "waveform display (alpha)");
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "name: %s", osc->name);
 
     osc->rt = gX_RenderTexture_Load(512, 256);

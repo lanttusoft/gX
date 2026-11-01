@@ -177,7 +177,7 @@ gX_I32 gX_RendererGFX_Load(gX_RendererGFX *gfx) {
     gfx->profileAttempted = 0;
     
     strcpy(gfx->name,"gfx");
-    strcpy(gfx->description,"graphics rendering");
+    strcpy(gfx->description,"graphics rendering (beta)");
 
     //opencode: detect backend GL capabilities before deferred GPU paths query
     //   gX_GL.hasCompute/hasSSBO and geometry-shader availability.

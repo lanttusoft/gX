@@ -30,6 +30,7 @@
 #include "template_header.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "../builder.h"
 #include "../gui.h"
@@ -38,6 +39,7 @@
 #include "settings.h"
 
 #include "../../common/log.h"
+#include "../../tools/tools.h"
 #include "../../resource/resource.h"
 #include "../../rhi/rhi.h"
 
@@ -480,8 +482,21 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
                     else if (tools[ti].which == 9) gX_GUI_OnClick(b.currentElement, gX_Widget_OnClick_OpenRail, 0);
                     else if (tools[ti].which == 10) gX_GUI_OnClick(b.currentElement, gX_Widget_OnClick_OpenBackground, 0);
                     else gX_GUI_OnClick(b.currentElement, gX_Widget_OnClick_OpenSky, 0);
-                    //opencode: tool cards are self-describing; inline tooltips
-                    //   collided with the next card in the tight stacks.
+                    //opencode: tool maturity ships in the element description
+                    //   (hover/focus tooltip) from the internal tool-status
+                    //   table; the card label stays compact.
+                    if (tools[ti].which >= 0
+                        && tools[ti].which < gX_Tools_Status_Count()) {
+                        const gX_ToolStatus *status =
+                            gX_Tools_Status_At(tools[ti].which);
+                        if (status) {
+                            strncpy(b.currentElement->description,
+                                status->description,
+                                sizeof(b.currentElement->description) - 1);
+                            b.currentElement->description[
+                                sizeof(b.currentElement->description) - 1] = '\0';
+                        }
+                    }
                 gX_GUI_Builder_Element_End(&b);
             }
 

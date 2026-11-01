@@ -89,7 +89,7 @@ gX_I32 gX_RendererWater_Load(gX_RendererWater *water)
 {
     gX_TRACELOG_PROLOGUE("RendererWater_Load","RENDERER_WATER: Loading")
     strcpy(water->name, "[gX] Water");
-    strcpy(water->description, "water shader renderer with waves and ripples");
+    strcpy(water->description, "water shader renderer with waves and ripples (beta)");
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "name: %s", water->name);
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "desc: %s", water->description);
     water->loadingstate = (gX_LoadingState){0};

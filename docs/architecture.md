@@ -189,11 +189,23 @@ production-integration blockers.
 - GUI: `scripts/gui_audit.py` template classification; all registered
   builders render (see `docs/gui_audit.md`)
 
-## Subsystem status (v0.1.42)
+## Subsystem and module status (2026-11-01)
 
 gX remains **Alpha** as a product. The supported GL33 GFX renderer is assessed
-as **Beta**; opt-in or incomplete feature paths retain their individual
-experimental status.
+as **Beta**; opt-in or incomplete paths keep their individual status. The tier
+ships in the source metadata: each renderer module's `description` ends with
+`(alpha)`/`(beta)`, and the EXTRAS cards take their description from
+`gX_Tools_Status` in `src/tools/tools.c`. Alpha = usable preview without a
+shipped gate; beta = gate-covered and documented.
+
+Renderer modules — **beta**: gfx, sky, water, background, postprocess,
+textwriter. **Alpha**: analog, clock, fractal, teletext, wireframe, generate,
+raymarch, oscillo, lissajous, spectrum, ws2d.
+
+Editor surfaces — **beta**: GUI editor, theme editor, GFX editor, wavetable
+editor, textwriter editor, physics editor, background editor, sky editor.
+**Alpha**: ThemeLab, MaterialsLab, ShaderLab, camera rail editor, script
+debugger. The long-form inventory is `docs/editors.md`.
 
 | Subsystem | State |
 |---|---|

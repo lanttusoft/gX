@@ -70,7 +70,7 @@ gX_I32 gX_RendererFractal_Load(gX_RendererFractal *frac) {
     gX_TRACELOG_PROLOGUE("RendererFractal_Load","RENDERER_FRACTAL: Loading fractal renderer")
     
     strcpy(frac->name,"Fractal");
-    strcpy(frac->description,"julia set");
+    strcpy(frac->description,"julia set (alpha)");
     gX_TraceLog_RENDERER(gX_LOG_GREEN,"name: %s",frac->name);
     gX_TraceLog_RENDERER(gX_LOG_GREEN,"desc: %s",frac->description);
     

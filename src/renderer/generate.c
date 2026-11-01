@@ -58,7 +58,7 @@ static gX_I0 generate_gpu_load(gX_I0 *arg) {
 gX_I32 gX_RendererGenerate_Load(gX_RendererGenerate *gene) {
     gX_TRACELOG_PROLOGUE("RendererGenerate_Load","RENDERER_GENERATE: Loading")
     strcpy(gene->name, "[gX] Generate");
-    strcpy(gene->description, "procedural pattern generator");
+    strcpy(gene->description, "procedural pattern generator (alpha)");
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "name: %s", gene->name);
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "desc: %s", gene->description);
 

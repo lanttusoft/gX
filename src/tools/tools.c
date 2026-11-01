@@ -33,6 +33,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "tools.h"
 #include "../main.h"
 #include "../input.h"
 #include "../module/module.h"
@@ -45,6 +46,69 @@
 
 extern gX_I0 gX_GUI_Load_ImGui(gX_I0);
 extern gX_I0 gX_Tools_Editor_Open(gX_I32 canvasIndex, const gX_I8 *markupPath);
+
+//opencode: tool maturity table — index order is the EXTRAS card order
+//   (titlegx.c `tools[]` which 0..11), then the CLI-only script debugger.
+//   Keep the ids aligned with GX_TOOLS_OPEN. Alpha = usable preview without a
+//   shipped gate; beta = open path + data path covered by a gate and docs.
+static const gX_ToolStatus gX_ToolStatusTable[] = {
+    { "GUI Editor",
+      "Markup template editor on the GUIPLAYGROUND canvas (beta)",
+      "editor", GX_TOOL_TIER_BETA },
+    { "Theme Editor",
+      "Live GUI theme token editor (beta)",
+      "theme", GX_TOOL_TIER_BETA },
+    { "Theme Lab",
+      "Theme design preview gallery, no data path (alpha)",
+      "themlab", GX_TOOL_TIER_ALPHA },
+    { "GFX Editor",
+      "Renderer scene, material, light and blockout editor (beta)",
+      "gfx", GX_TOOL_TIER_BETA },
+    { "Material Lab",
+      "Material response gallery preview, no data path (alpha)",
+      "materials", GX_TOOL_TIER_ALPHA },
+    { "Shader Lab",
+      "Shader experiment gallery preview, no data path (alpha)",
+      "shaderlab", GX_TOOL_TIER_ALPHA },
+    { "Wavetable Editor",
+      "Synth wavetable authoring with .f32 fixtures (beta)",
+      "wavetable", GX_TOOL_TIER_BETA },
+    { "Textwriter Editor",
+      "Textwriter line/tag/choice authoring with live preview (beta)",
+      "textwriter", GX_TOOL_TIER_BETA },
+    { "Physics Editor",
+      "Physics sandbox and applier tuning with JSON presets (beta)",
+      "physics", GX_TOOL_TIER_BETA },
+    { "Rail Editor",
+      "Tour camera keyframe editor, module-drawn (alpha)",
+      "rail", GX_TOOL_TIER_ALPHA },
+    { "Background Editor",
+      "Background palette/decomposer authoring with presets (beta)",
+      "background", GX_TOOL_TIER_BETA },
+    { "Sky Editor",
+      "Sky look parameters and ephemeris clock with presets (beta)",
+      "sky", GX_TOOL_TIER_BETA },
+    { "Script Debugger",
+      "Scripting debugger and console, opt-in module builds (alpha)",
+      "script", GX_TOOL_TIER_ALPHA },
+};
+
+gX_I32 gX_Tools_Status_Count(gX_I0)
+{
+    return (gX_I32)(sizeof(gX_ToolStatusTable) / sizeof(gX_ToolStatusTable[0]));
+}
+
+const gX_ToolStatus *gX_Tools_Status_At(gX_I32 index)
+{
+    if (index < 0 || index >= gX_Tools_Status_Count()) return NULL;
+    return &gX_ToolStatusTable[index];
+}
+
+const gX_I8 *gX_Tools_Status_TierLabel(gX_ToolTier tier)
+{
+    return tier == GX_TOOL_TIER_BETA ? "beta" : "alpha";
+}
+
 
 //opencode: v0.6.5 — runtime open flags (CLI inits + EXTRAS buttons set these;
 //   ImGui window-X writes back; draw gate reads).

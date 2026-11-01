@@ -143,7 +143,7 @@ static gX_I0 sky_gpu_unload(gX_I0 *arg) {
 gX_I32 gX_RendererSky_Load(gX_RendererSky *sky) {
     gX_TRACELOG_PROLOGUE("RendererSky_Load","RENDERER_SKY: Loading")
     strcpy(sky->name, "[gX] Sky");
-    strcpy(sky->description, "shader-based sky");
+    strcpy(sky->description, "shader-based sky (beta)");
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "name: %s", sky->name);
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "desc: %s", sky->description);
     sky->loadingstate = (gX_LoadingState){0};

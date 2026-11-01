@@ -47,7 +47,7 @@
 gX_I32 gX_RendererAnalog_Load(gX_RendererAnalog *analog) {
     gX_TRACELOG_PROLOGUE("RendererAnalog_Load","RENDERER_ANALOG: Loading")
     strcpy(analog->name, "[gX] Analog");
-    strcpy(analog->description, "analog CRT simulation — 3 modes: NTSC/PAL, analog.frag, VHS");
+    strcpy(analog->description, "analog CRT simulation — 3 modes: NTSC/PAL, analog.frag, VHS (alpha)");
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "name: %s", analog->name);
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "desc: %s", analog->description);
 

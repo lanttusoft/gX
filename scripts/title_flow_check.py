@@ -34,6 +34,7 @@ RETURN_MAX = 1.5  # a return matches the menu frame; title polish leaves a
 TOOL_LABEL = re.compile(r"( EDITOR| LAB)$")
 TRACE_RE = re.compile(
     r'element=(\d+) name="([^"]*)" text="([^"]*)" rect=(\d+),(\d+),(\d+),(\d+)')
+DESC_RE = re.compile(r'desc="([^"]*)"')
 
 #opencode: menu order is RESUME, RUN DEMO, LOAD SAVE, SETTINGS, DEMOS,
 #   EXTRAS, QUIT; key codes are gX_KEY_* (DOWN 264, ENTER 257, ESCAPE 256).
@@ -109,6 +110,13 @@ def extras_layout(binary):
         text = match.group(3)
         if not TOOL_LABEL.search(text):
             continue
+        #opencode: the tool tier ships in the element description; every card
+        #   must carry it so the internal classification cannot rot silently.
+        description = DESC_RE.search(line)
+        tier = description.group(1).lower() if description else ""
+        if "alpha" not in tier and "beta" not in tier:
+            raise RuntimeError(
+                f"EXTRAS card '{text}' has no alpha/beta tier description")
         cells.setdefault((match.group(4), match.group(5)), []).append(text)
     duplicates = {cell: names for cell, names in cells.items() if len(names) > 1}
     if duplicates:

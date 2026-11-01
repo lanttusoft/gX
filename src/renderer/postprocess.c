@@ -199,7 +199,7 @@ gX_I32 gX_RendererPostProcess_Load(gX_RendererPostProcess *pp) {
     gX_TRACELOG_PROLOGUE("RendererPostProcess_Load","RENDERER_PP: Loading pp renderer")
     
     strcpy(pp->name,"[gX] RendererPostProcess");
-    strcpy(pp->description,"postprocessing");
+    strcpy(pp->description,"postprocessing (beta)");
     gX_TraceLog_POSTPROCESS(gX_LOG_GREEN,"name: %s",pp->name);
     gX_TraceLog_POSTPROCESS(gX_LOG_GREEN,"desc: %s",pp->description);
     

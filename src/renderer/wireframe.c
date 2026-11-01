@@ -151,7 +151,7 @@ static gX_I0 wireframe_gpu_unload(gX_I0 *arg) {
 gX_I32 gX_RendererWireframe_Load(gX_RendererWireframe *wf) {
     gX_TRACELOG_PROLOGUE("RendererWireframe_Load","RENDERER_WIREFRAME: Loading")
     strcpy(wf->name, "[gX] Wireframe");
-    strcpy(wf->description, "wireframe model viewer with auto-rotation and color cycling");
+    strcpy(wf->description, "wireframe model viewer with auto-rotation and color cycling (alpha)");
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "name: %s", wf->name);
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "desc: %s", wf->description);
     wf->loadingstate = (gX_LoadingState){0};
