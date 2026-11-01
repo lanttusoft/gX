@@ -471,12 +471,13 @@ gX_I0 gX_GUI_Trace_Canvas(gX_I32 canvasIndex) {
         gX_TraceLog(gX_LOG_INFO,
             "GUITRACE: element canvas=%d element=%d name=\"%.63s\" text=\"%s\" "
             "rect=%.0f,%.0f,%.0f,%.0f visible=%d disabled=%d clickable=%d focusable=%d "
-            "textfit=%.0f,%.0f wraps=%d truncated=%d overflow=%d shrink=%.2f",
+            "textfit=%.0f,%.0f wraps=%d truncated=%d overflow=%d shrink=%.2f "
+            "desc=\"%.63s\"",
             canvasIndex, (gX_I32)i, e->name, text,
             e->rect.x, e->rect.y, e->rect.width, e->rect.height,
             (gX_I32)e->visible, (gX_I32)e->state.DISABLED,
             (gX_I32)e->state.CLICKABLE_LEFT, (gX_I32)e->state.FOCUSABLE,
-            fitW, fitH, wraps, truncated, overflow, shrink);
+            fitW, fitH, wraps, truncated, overflow, shrink, e->description);
     }
 }
 

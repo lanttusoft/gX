@@ -16,19 +16,25 @@ An editor is a small ImGui surface over engine state with a persisted data
 path — the GFX editor is the reference: it edits the live renderer scene and
 round-trips presets under `resources/tools/`.
 
-| Surface | Source | Edits |
-|---|---|---|
-| GFX editor | `src/tools/gfx/gfx_editor.cpp` | renderer scene (models/materials/lights/camera/sky/weather/decals/water/particles/SSAO/SSR/quality) + blockout/texture/export/bake panels |
-| GUI editor | `src/tools/editor/editor.cpp` | markup templates on the GUIPLAYGROUND canvas |
-| Theme editor | `src/tools/theme/theme_editor.cpp` | GUI theme tokens (live) |
-| ThemLab / MaterialsLab / ShaderLab | GUI templates | design previews (no data path) |
-| Script debugger + console | `gx_shell` module panels | scripting shell (CLI/`GX_TOOLS_OPEN` only — module-gated, so no EXTRAS card) |
-| Wavetable editor | `src/tools/synth/wavetable_editor.cpp` | synth wavetable slots + `.f32` fixtures |
-| Textwriter editor | `src/tools/textwriter/textwriter_editor.cpp` | textwriter lines/tags/choices with live scene preview |
-| Physics editor | `src/tools/physics/physics_editor.cpp` | sandbox/applier tuning (world/content/EM/thermal/fluid) + JSON presets under `resources/tools/physics`; modal free camera (WASD + mouse look, Esc returns — the GFX editor's pattern; `GX_PHYSICS_FREECAM=1` capture hook) |
-| Camera rail editor | `src/tools/tour/rail_editor.cpp` (**gx_shell module**) | tour camera keyframes: grabs, t/pos/target/fov/bezier, play, JSON presets |
-| Background editor | `src/tools/background/background_editor.cpp` (+ shared `bg_panel.cpp`) | background palette/decomposer (shared body), preset files under `resources/tools/background`, the Background polisher entries, reaction pulses |
-| Sky editor | `src/tools/sky/sky_editor.cpp` | sky look parameters + the **ephemeris clock** (scrub/play), preset files, helpers overlay |
+| Surface | Source | Edits | Tier |
+|---|---|---|---|
+| GFX editor | `src/tools/gfx/gfx_editor.cpp` | renderer scene (models/materials/lights/camera/sky/weather/decals/water/particles/SSAO/SSR/quality) + blockout/texture/export/bake panels | Beta (UI rework still open) |
+| GUI editor | `src/tools/editor/editor.cpp` | markup templates on the GUIPLAYGROUND canvas | Beta |
+| Theme editor | `src/tools/theme/theme_editor.cpp` | GUI theme tokens (live) | Beta |
+| ThemLab / MaterialsLab / ShaderLab | GUI templates | design previews (no data path) | Alpha |
+| Script debugger + console | `gx_shell` module panels | scripting shell (CLI/`GX_TOOLS_OPEN` only — module-gated, so no EXTRAS card) | Alpha |
+| Wavetable editor | `src/tools/synth/wavetable_editor.cpp` | synth wavetable slots + `.f32` fixtures | Beta |
+| Textwriter editor | `src/tools/textwriter/textwriter_editor.cpp` | textwriter lines/tags/choices with live scene preview | Beta |
+| Physics editor | `src/tools/physics/physics_editor.cpp` | sandbox/applier tuning (world/content/EM/thermal/fluid) + JSON presets under `resources/tools/physics`; modal free camera (WASD + mouse look, Esc returns — the GFX editor's pattern; `GX_PHYSICS_FREECAM=1` capture hook) | Beta |
+| Camera rail editor | `src/tools/tour/rail_editor.cpp` (**gx_shell module**) | tour camera keyframes: grabs, t/pos/target/fov/bezier, play, JSON presets | Alpha (no shipped gate) |
+| Background editor | `src/tools/background/background_editor.cpp` (+ shared `bg_panel.cpp`) | background palette/decomposer (shared body), preset files under `resources/tools/background`, the Background polisher entries, reaction pulses | Beta |
+| Sky editor | `src/tools/sky/sky_editor.cpp` | sky look parameters + the **ephemeris clock** (scrub/play), preset files, helpers overlay | Beta |
+
+The tier ships with the tool: the EXTRAS cards carry the
+`gX_Tools_Status` description (hover/focus tooltip) from
+`src/tools/tools.c`, with `GX_TOOL_TIER_ALPHA/BETA`. Alpha means a usable
+preview without a shipped gate; beta means the open path and data path are
+covered by a gate and documented.
 
 ## Conventions (follow these for every new editor)
 

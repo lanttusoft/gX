@@ -41,7 +41,7 @@
 gX_I32 gX_RendererWS2D_Load(gX_RendererWS2D *ws2d) {
     gX_TRACELOG_PROLOGUE("RendererWS2D_Load","RENDERER_WS2D: Loading")
     strcpy(ws2d->name, "[gX] WS2D");
-    strcpy(ws2d->description, "World-space 2D render texture manager");
+    strcpy(ws2d->description, "World-space 2D render texture manager (alpha)");
     ws2d->loadingstate = (gX_LoadingState){0};
     ws2d->loadingstate.loadAsap = true;
     ws2d->entryCount = 0;

@@ -375,7 +375,7 @@ static gX_I0 gX_teletext_update_header(gX_RendererTeletext *ttx) {
 gX_I32 gX_RendererTeletext_Load(gX_RendererTeletext *ttx) {
     gX_TRACELOG_PROLOGUE("RendererTeletext_Load","RENDERER_TELETEXT: Loading")
     strcpy(ttx->name, "[gX] Teletext");
-    strcpy(ttx->description, "teletext display with page system");
+    strcpy(ttx->description, "teletext display with page system (alpha)");
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "name: %s", ttx->name);
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "desc: %s", ttx->description);
     // Load EuropeanTeletext font for glyph rendering

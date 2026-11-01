@@ -123,7 +123,7 @@ static gX_I0 clock_gpu_unload(gX_I0 *arg) {
 gX_I32 gX_RendererClock_Load(gX_RendererClock *clock) {
     gX_TRACELOG_PROLOGUE("RendererClock_Load","RENDERER_CLOCK: Loading")
     strcpy(clock->name, "[gX] Clock");
-    strcpy(clock->description, "Console-boot-style clock");
+    strcpy(clock->description, "Console-boot-style clock (alpha)");
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "name: %s", clock->name);
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "desc: %s", clock->description);
 

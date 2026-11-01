@@ -253,7 +253,7 @@ gX_I0 gX_RendererBackground_Load(gX_RendererBackground *bg) {
     gX_TRACELOG_PROLOGUE("RendererBackground_Load","RENDERER_BACKGROUND: Loading background renderer")
     
     strcpy(bg->name,"Background");
-    strcpy(bg->description,"battle background");
+    strcpy(bg->description,"battle background (beta)");
     //ai: register the Background polisher entries (idempotent).
     gX_Background_RegisterPolisher();
     gX_TraceLog_BACKGROUND(gX_LOG_GREEN,"name: %s",bg->name);

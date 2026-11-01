@@ -35,6 +35,24 @@ extern "C" {
 
 //opencode: v0.6.5 — runtime tool open/close (EXTRAS menu). CLI flags init at
 //   load; these work from in-app buttons at any time.
+//opencode: tool maturity metadata — the tier ships with the tool, not in a
+//   separate maturity document: alpha = usable preview, beta = gate-covered
+//   and documented. The EXTRAS cards carry the description as their tooltip.
+typedef enum {
+    GX_TOOL_TIER_ALPHA = 0,
+    GX_TOOL_TIER_BETA  = 1
+} gX_ToolTier;
+
+typedef struct gX_ToolStatus {
+    gX_I8  name[128];
+    gX_I8  description[256];
+    const gX_I8 *id;
+    gX_ToolTier  tier;
+} gX_ToolStatus;
+
+gX_I32 gX_Tools_Status_Count(gX_I0);
+const gX_ToolStatus *gX_Tools_Status_At(gX_I32 index);
+const gX_I8 *gX_Tools_Status_TierLabel(gX_ToolTier tier);
 gX_I1 gX_Tools_RuntimeActive(gX_I0);
 gX_I0 gX_Tools_OpenEditor_Runtime(gX_I0);
 gX_I0 gX_Tools_OpenTheme_Runtime(gX_I0);

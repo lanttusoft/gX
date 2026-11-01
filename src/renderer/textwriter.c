@@ -848,7 +848,7 @@ gX_I0 gX_RendererTextWriter_Load(gX_RendererTextWriter *writer) {
     s_textWriterHookLineApplied = 0;
 
     strcpy(writer->name,"Renderer_TextWriter");
-    strcpy(writer->description,"writes text with inline XML-like scripts");
+    strcpy(writer->description,"writes text with inline XML-like scripts (beta)");
 
     writer->parseState.color    = (gX_Color){255,255,255,255};
     writer->parseState.offset   = (gX_F32v2){0,0};

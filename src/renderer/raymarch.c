@@ -552,7 +552,7 @@ gX_I0 gX_RendererRaymarch_Load(gX_RendererRaymarch *rm) {
     rm->graph = (gX_Raymarch_Graph){.root=-1};
     
     strcpy(rm->name,"raymarch");
-    strcpy(rm->description,"raymarching");
+    strcpy(rm->description,"raymarching (alpha)");
     
     //set if color has 3 components
     rm->state.colorIsRGB = false;

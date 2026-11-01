@@ -39,7 +39,7 @@
 gX_I32 gX_RendererLissajous_Load(gX_RendererLissajous *lis) {
     gX_TRACELOG_PROLOGUE("RendererLissajous_Load", "LISSAJOUS: Loading")
     strcpy(lis->name, "Lissajous");
-    strcpy(lis->description, "stereo XY phase plot");
+    strcpy(lis->description, "stereo XY phase plot (alpha)");
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "name: %s", lis->name);
 
     lis->rt = gX_RenderTexture_Load(512, 512);

@@ -39,7 +39,7 @@
 gX_I32 gX_RendererSpectrum_Load(gX_RendererSpectrum *spec) {
     gX_TRACELOG_PROLOGUE("RendererSpectrum_Load", "SPECTRUM: Loading")
     strcpy(spec->name, "Spectrum");
-    strcpy(spec->description, "frequency spectrum");
+    strcpy(spec->description, "frequency spectrum (alpha)");
     gX_TraceLog_RENDERER(gX_LOG_GREEN, "name: %s", spec->name);
 
     spec->rt = gX_RenderTexture_Load(512, 256);
