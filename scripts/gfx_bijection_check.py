@@ -68,8 +68,9 @@ VISIBLE_MEAN = {
     "MODEL0_PLANAR_REFLECTION": 0.2,
 }
 #opencode: the undo round trip is only meaningful if the drag visibly moved
-#   the model; the calibration measured 14.6, so 1.0 is a wide floor.
-VISIBLE_MEAN_DRAG = 1.0
+#   the model. At the 1.25 dock scale the measured move is ~1.4 (the old 1.0
+#   layout measured 14.6); 0.5 still rejects a no-op drag.
+VISIBLE_MEAN_DRAG = 0.5
 
 
 #opencode: toggle rows — flag name plus the fixture preparation that makes
@@ -87,7 +88,9 @@ EFFECT_ROWS = (
 
 #opencode: the viewport drag and Ctrl+Z/Ctrl+Y keys match gfx-picker-check, so
 #   the same calibrated gesture drives this pixel round trip.
-UNDO_ACTIONS = "1.5 move 751 381 200;1.75 drag 751 381 900 357 500"
+#opencode: mapped from the 1.0 reference viewport (320,16.5,1486,983) to the
+#   1.25 dock (400,192,956,632).
+UNDO_ACTIONS = "1.5 move 677 426 200;1.75 drag 677 426 850 400 500"
 UNDO_FRAME = 260
 UNDO_FRAMES = 300
 
@@ -297,7 +300,7 @@ def run_effect(temp_root, flag, prep):
 def check_undo_bijection(temp_root):
     baseline = capture(temp_root, "undo_baseline", frame=UNDO_FRAME,
                        frames=UNDO_FRAMES,
-                       actions="1.5 move 751 381 200;1.75 move 900 357 500")
+                       actions="1.5 move 677 426 200;1.75 move 850 400 500")
     dragged = capture(temp_root, "undo_dragged", frame=UNDO_FRAME,
                       frames=UNDO_FRAMES, actions=UNDO_ACTIONS)
     undone = capture(temp_root, "undo_undone", frame=UNDO_FRAME,
