@@ -30,9 +30,6 @@ MAP_RE = re.compile(
 
 def editor_log(environment, frames):
     environment = dict(environment)
-    #opencode: the asset browser popup is not reachable in a hidden or parked
-    #   audit window; this UI gate runs on the visible audit display.
-    os.environ["GX_AUDIT_ONSCREEN"] = "1"
     environment.setdefault("GX_FRAMES", str(frames))
     env = audit.scene_env(environment, clean=True)
     result = audit.run_scene("--gfx", env, width=None, height=None, fps=None,
@@ -147,8 +144,7 @@ def main():
                     "GX_GFX_PRESET_LOAD": str(fixture),
                     "GX_MATMAP_UI_TRACE": "1",
                     "GX_GFX_MATMAP_FOCUS": "1",
-                    "GX_AI_INPUT": (f"3.0 move {click_x} {click_y} 200;"
-                                    f"3.3 click {click_x} {click_y}"),
+                    "GX_GFX_MATMAP_OPEN": "1",
                 }, frames=240)
                 if "asset browser open kind=1 target=6 index=0 slot=1" not in click_log:
                     raise RuntimeError(
