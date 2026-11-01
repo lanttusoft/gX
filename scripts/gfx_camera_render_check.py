@@ -58,7 +58,8 @@ def make_fixture(path, cameras, view, state=None):
 
 def run_editor(fixture, extra, shot_dir=None, shot_frame=None):
     overrides = {"GX_FIXED_DT": "0.0166666667", "GX_FRAMES": "40",
-                 "GX_GFX_PRESET_LOAD": str(fixture), "GX_DOCK_TRACE": "1"}
+                 "GX_GFX_PRESET_LOAD": str(fixture), "GX_DOCK_TRACE": "1",
+                 "GX_DOCK_DISABLE": "1"}
     overrides.update(extra)
     environment = audit.scene_env(overrides, clean=True)
     result = audit.run_scene("--gfx", environment, width=None, height=None,
