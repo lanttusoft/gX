@@ -9,6 +9,13 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **Water refraction runtime opt-in**: `water.sceneRefractionEnabled` is now a
+  schema field with a **scene refraction** checkbox in the water panel,
+  default off. Above-water screen-space transmission captures the pre-water
+  color/depth pair, rejects foreground and dry geometry, falls back to legacy
+  on unavailable samples/resizes, and restores the sampled units. Legacy
+  presets without the field stay off; the off path is pixel-identical to the
+  v0.27.0 water shader.
 - **Editor camera markers**: `SHOW_CAMERA_MARKERS` (**View → Camera markers**,
   **Renderer → Debug → Viewport**, and the scene Cameras panel) draws every
   authored scene camera as a labelled world-space frustum. Clicking a marker
@@ -32,6 +39,9 @@ Release-Class: minor
 - **PBR gate**: `make pbr-check` covers the LOW-to-MEDIUM raise,
   procedural-sky IBL, material tint spread and cast-shadow response. The
   god-ray gate adds a depth-mask check.
+- **Water-refraction gate**: `make water-refraction-check` runs the normal
+  `build/gX_build` through on/off, diagnostic ownership, persistence, editor,
+  live capture, resize and depth-foam controls.
 
 ### Fixed
 - **Editor camera markers**: marker positions now use the real
