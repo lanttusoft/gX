@@ -59,6 +59,7 @@
 
 //opencode: needed for IBL/cubemap init
 #include "../../rhi/rhi_fbo.h"
+#include "../../rhi/rhi_matrix.h"
 #include "../../rhi/rhi.h"
 #include "../../rhi/rhi_tex.h"
 #include "../../rhi/rhi_state.h"
@@ -159,6 +160,15 @@ static gX_I1 gfx_ibl_live_refresh_allowed(gX_I0)
     const char *disable = getenv("GX_GFX_IBL_REFRESH_DISABLE");
     if (disable && disable[0] && strcmp(disable, "0") != 0) return 0;
     return 1;
+}
+
+static gX_I0 gfx_ibl_ortho(gX_F32 width, gX_F32 height)
+{
+    gX_RHI_Matrix_Mode(GX_RHI_MATRIX_PROJECTION);
+    gX_RHI_Matrix_LoadIdentity();
+    gX_RHI_Matrix_Ortho(0, width, height, 0, 0.0, 1.0);
+    gX_RHI_Matrix_Mode(GX_RHI_MATRIX_MODELVIEW);
+    gX_RHI_Matrix_LoadIdentity();
 }
 
 static gX_I0 gfx_ibl_refresh_test(gX_RendererGFX *gfx)
@@ -1194,6 +1204,8 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         gX_RHI_GetIntegerv(gX_RHI_ACTIVE_TEXTURE, &savedTexUnit);
         gX_RHI_GetIntegerv(gX_RHI_CURRENT_PROGRAM, &savedProg);
         gX_RHI_FBO savedFbo = gX_RHI_GetDrawFBO();
+        gX_Matrix savedProjection = gX_RHI_Matrix_GetProjection();
+        gX_Matrix savedModelview = gX_RHI_Matrix_GetModelview();
 
         const gX_I32 lutSize = gX_GFX_IBL_LUT_SIZE;
         gX_U32 capFbo = 0;
@@ -1215,6 +1227,8 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
                 gfx->ibl.failed = true;
                 if (lutTex) gX_RHI_Tex_Delete(lutTex);
                 gX_RHI_FBO_Delete(capFbo);
+                gX_RHI_Matrix_SetProjection(savedProjection);
+                gX_RHI_Matrix_SetModelview(savedModelview);
                 gX_RHI_Viewport(savedVp[0], savedVp[1], savedVp[2], savedVp[3]);
                 gX_RHI_ActiveTexture((gX_U32)savedTexUnit);
                 gX_RHI_Shader_Use((gX_U32)savedProg);
@@ -1225,6 +1239,7 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             gX_RHI_Clear(gX_RHI_COLOR_BUFFER_BIT);
 
             gX_Shader brdfS = gfx->ibl.brdfShader.shader;
+            gfx_ibl_ortho((gX_F32)lutSize, (gX_F32)lutSize);
             gX_Drawing_BeginShader(brdfS);
                 gX_Drawing_DrawScreenQuad(0, 0, (gX_F32)lutSize, (gX_F32)lutSize);
             gX_Drawing_EndShader();
@@ -1261,10 +1276,13 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             gX_RHI_FBO_AttachCubeFace(irrTex, 0);
             gX_RHI_DrawBuffer(gX_RHI_COLOR_ATTACHMENT0);
             gX_RHI_ReadBuffer(gX_RHI_COLOR_ATTACHMENT0);
+            gfx_ibl_ortho((gX_F32)irrSize, (gX_F32)irrSize);
             if (!gX_RHI_FBO_IsComplete()) {
                 gX_TraceLog_GFX(gX_LOG_ERROR, "IBL irradiance FBO incomplete — IBL disabled");
                 gfx->ibl.failed = true;
                 gX_RHI_FBO_Delete(capFbo);
+                gX_RHI_Matrix_SetProjection(savedProjection);
+                gX_RHI_Matrix_SetModelview(savedModelview);
                 gX_RHI_Viewport(savedVp[0], savedVp[1], savedVp[2], savedVp[3]);
                 gX_RHI_ActiveTexture((gX_U32)savedTexUnit);
                 gX_RHI_Shader_Use((gX_U32)savedProg);
@@ -1290,7 +1308,7 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             gfx->ibl.irradianceMap.id = irrTex;
             gfx->ibl.irradianceMap.width = irrSize;
             gfx->ibl.irradianceMap.height = irrSize;
-            gX_TraceLog_GFX(gX_LOG_NOTICE, "IBL irradiance cubemap generated (%dx%d)", irrSize, irrSize);
+            gX_TraceLog_GFX(gX_LOG_NOTICE, "IBL irradiance cubemap generated (%dx%d density=%.3f)", irrSize, irrSize, gfx->sky.density);
         }
 
         // ---- 3. Prefilter cubemap (128x128 RGB16F, 5 mip levels) ----
@@ -1334,6 +1352,8 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
                 gX_TraceLog_GFX(gX_LOG_ERROR, "IBL prefilter FBO incomplete — IBL disabled");
                 gfx->ibl.failed = true;
                 gX_RHI_FBO_Delete(capFbo);
+                gX_RHI_Matrix_SetProjection(savedProjection);
+                gX_RHI_Matrix_SetModelview(savedModelview);
                 gX_RHI_Viewport(savedVp[0], savedVp[1], savedVp[2], savedVp[3]);
                 gX_RHI_ActiveTexture((gX_U32)savedTexUnit);
                 gX_RHI_Shader_Use((gX_U32)savedProg);
@@ -1343,6 +1363,7 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             for (gX_I32 mip = 0; mip < preMips; mip++)
             {
                 gX_I32 mipSize = preSize >> mip;
+                gfx_ibl_ortho((gX_F32)mipSize, (gX_F32)mipSize);
                 gX_F32 roughness = (gX_F32)mip / (gX_F32)(preMips - 1);
                 for (gX_I32 face = 0; face < 6; face++)
                 {
@@ -1370,7 +1391,9 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         }
 
         gX_RHI_FBO_Delete(capFbo);
-        //opencode: restore viewport, active texture, program, and FBO after IBL generation
+        //opencode: restore viewport, matrices, active texture, program, and FBO after IBL generation
+        gX_RHI_Matrix_SetProjection(savedProjection);
+        gX_RHI_Matrix_SetModelview(savedModelview);
         gX_RHI_Viewport(savedVp[0], savedVp[1], savedVp[2], savedVp[3]);
         gX_RHI_ActiveTexture((gX_U32)savedTexUnit);
         gX_RHI_Shader_Use((gX_U32)savedProg);
