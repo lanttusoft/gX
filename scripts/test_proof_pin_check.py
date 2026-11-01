@@ -107,7 +107,8 @@ class TreeTests(unittest.TestCase):
             subprocess.run(["git", "-C", str(root), "add", "."], check=True)
             subprocess.run(
                 ["git", "-C", str(root), "-c", "user.email=gx@example.invalid",
-                 "-c", "user.name=gX", "commit", "-m", "fixture"],
+                 "-c", "user.name=gX", "-c", "commit.gpgsign=false",
+                 "commit", "-m", "fixture"],
                 check=True, stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL)
             manifest = Path(directory) / "pin.json"
