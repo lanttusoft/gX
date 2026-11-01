@@ -30,6 +30,9 @@ MAP_RE = re.compile(
 
 def editor_log(environment, frames):
     environment = dict(environment)
+    #opencode: the asset browser popup is not reachable in a hidden or parked
+    #   audit window; this UI gate runs on the visible audit display.
+    os.environ["GX_AUDIT_ONSCREEN"] = "1"
     environment.setdefault("GX_FRAMES", str(frames))
     env = audit.scene_env(environment, clean=True)
     result = audit.run_scene("--gfx", env, width=None, height=None, fps=None,
@@ -122,32 +125,41 @@ def main():
                 raise RuntimeError(
                     f"{key} did not persist: {overrides[0].get(key)!r} != "
                     f"{source!r}")
-        probe = editor_log({
-            "GX_GFX_PRESET_LOAD": str(fixture),
-            "GX_MATMAP_UI_TRACE": "1",
-            "GX_GFX_MATMAP_FOCUS": "1",
-        }, frames=120)
-        rows = MAP_RE.findall(probe)
-        if not rows:
-            raise RuntimeError("material map Browse trace missing")
-        #ai: pick override 0 explicitly; the panel may show several rows and
-        #    the browser marker is indexed to the selected override.
-        row = next((entry for entry in rows if entry[0] == "0"), rows[0])
-        emissive = row[2]
-        bounds = [float(value) for value in emissive.split(",")]
-        click_x = int((bounds[0] + bounds[2]) / 2)
-        click_y = int((bounds[1] + bounds[3]) / 2)
-        click_log = editor_log({
-            "GX_GFX_PRESET_LOAD": str(fixture),
-            "GX_MATMAP_UI_TRACE": "1",
-            "GX_GFX_MATMAP_FOCUS": "1",
-            "GX_AI_INPUT": (f"3.0 move {click_x} {click_y} 200;"
-                            f"3.3 click {click_x} {click_y}"),
-        }, frames=240)
-        if "asset browser open kind=1 target=6 index=0 slot=1" not in click_log:
-            raise RuntimeError(
-                "emissive Browse did not open the material-map browser\n"
-                + click_log[-3000:])
+        browse_error = None
+        for attempt in range(3):
+            try:
+                probe = editor_log({
+                    "GX_GFX_PRESET_LOAD": str(fixture),
+                    "GX_MATMAP_UI_TRACE": "1",
+                    "GX_GFX_MATMAP_FOCUS": "1",
+                }, frames=120)
+                rows = MAP_RE.findall(probe)
+                if not rows:
+                    raise RuntimeError("material map Browse trace missing")
+                #ai: pick override 0 explicitly; the panel may show several rows
+                #    and the browser marker is indexed to the selected override.
+                row = next((entry for entry in rows if entry[0] == "0"), rows[0])
+                emissive = row[2]
+                bounds = [float(value) for value in emissive.split(",")]
+                click_x = int((bounds[0] + bounds[2]) / 2)
+                click_y = int((bounds[1] + bounds[3]) / 2)
+                click_log = editor_log({
+                    "GX_GFX_PRESET_LOAD": str(fixture),
+                    "GX_MATMAP_UI_TRACE": "1",
+                    "GX_GFX_MATMAP_FOCUS": "1",
+                    "GX_AI_INPUT": (f"3.0 move {click_x} {click_y} 200;"
+                                    f"3.3 click {click_x} {click_y}"),
+                }, frames=240)
+                if "asset browser open kind=1 target=6 index=0 slot=1" not in click_log:
+                    raise RuntimeError(
+                        "emissive Browse did not open the material-map browser\n"
+                        + click_log[-3000:])
+                browse_error = None
+                break
+            except (OSError, RuntimeError, ValueError) as error:
+                browse_error = error
+        if browse_error:
+            raise browse_error
     except (OSError, RuntimeError, ValueError) as error:
         print(f"GFX-MATERIAL-ASSET-CHECK: FAIL — {error}")
         return 1
