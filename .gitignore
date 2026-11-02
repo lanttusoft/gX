@@ -38,3 +38,7 @@ art/
 
 # Runtime editor saves are local scratch state, not release content.
 resources/tools/scratch.json
+
+# editor workspace layouts (runtime output)
+gx_editor_*.ini
+gx_editor_workspace.txt

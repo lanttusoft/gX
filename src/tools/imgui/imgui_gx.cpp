@@ -66,6 +66,7 @@ extern "C" gX_I1 *gX_Tools_RuntimeSkyFlag(gX_I0);
 //opencode: the script-panel open flag stays kernel-side; the panel itself
 //   draws from the gx_shell module via gX_Module_ToolsDraw().
 extern "C" gX_I1 *gX_Tools_RuntimeScriptFlag(gX_I0);
+extern "C" gX_I0 gX_EditorHost_Draw(gX_I0);
 
 #include "../../module/module.h"
 
@@ -417,6 +418,7 @@ static gX_I0 gX_GUI_ImGui_Draw2D(gX_I0) {
     gX_RHI_Blend_Mode(gX_RHI_BLEND_ALPHA);
     gX_Tools_ImGui_Accessibility_Apply();
     rlImGuiBegin();
+    gX_EditorHost_Draw();
     //opencode: GX_AI_INPUT bridge — while scripted, the backend poll is
     //   suppressed and this posts synth pos, mouse edges, and drag modifiers.
     {

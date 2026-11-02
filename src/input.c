@@ -239,6 +239,125 @@ gX_I32 gX_Input_Unload(gX_I0) {
 }
 
 //opencode: automated captures and virtual-input probes must not lock the user's cursor.
+#define GX_CURSOR_STACK_MAX 8
+#define GX_CURSOR_OWNER_MAX 32
+
+typedef struct gX_CursorEntry {
+    gX_CursorState state;
+    gX_I8 owner[GX_CURSOR_OWNER_MAX];
+    gX_I32 priority;
+} gX_CursorEntry;
+
+static gX_CursorEntry s_cursorStack[GX_CURSOR_STACK_MAX];
+static gX_I32 s_cursorDepth = 0;
+static gX_CursorState s_cursorDefault = GX_CURSOR_STATE_UI;
+static gX_CursorState s_cursorLastState = GX_CURSOR_STATE_UI;
+static gX_I8 s_cursorLastOwner[GX_CURSOR_OWNER_MAX] = "scene";
+static gX_I1 s_cursorHasLast = 0;
+
+static const gX_I8 *cursor_state_label(gX_CursorState state) {
+    return state == GX_CURSOR_STATE_CAPTURED ? "CAPTURED" : "UI";
+}
+
+static gX_I32 cursor_best_index(gX_I0) {
+    gX_I32 best = -1;
+    gX_I32 bestPriority = -1;
+    for (gX_I32 i = 0; i < s_cursorDepth; i++) {
+        if (s_cursorStack[i].priority >= bestPriority) {
+            best = i;
+            bestPriority = s_cursorStack[i].priority;
+        }
+    }
+    return best;
+}
+
+static gX_I0 gX_Cursor_Apply(gX_I0) {
+    gX_I32 best = cursor_best_index();
+    gX_CursorState state = best >= 0
+        ? s_cursorStack[best].state : s_cursorDefault;
+    const gX_I8 *owner = best >= 0
+        ? s_cursorStack[best].owner : "scene";
+    gX_I1 changed = !s_cursorHasLast || state != s_cursorLastState
+        || strcmp((const char *)owner, (const char *)s_cursorLastOwner) != 0;
+    s_cursorHasLast = 1;
+    s_cursorLastState = state;
+    snprintf((char *)s_cursorLastOwner, sizeof(s_cursorLastOwner), "%s",
+        (const char *)owner);
+    input.cursorEnabled = state == GX_CURSOR_STATE_UI ? 1 : 0;
+    input.cursorSwitched = 1;
+    if (!changed) return;
+    const gX_I8 *trace = getenv("GX_CURSOR_TRACE");
+    if (trace && trace[0] && trace[0] != '0') {
+        gX_TraceLog(gX_LOG_INFO, "CURSOR: state=%s owner=%s depth=%d",
+            (const char *)cursor_state_label(state), (const char *)owner,
+            s_cursorDepth);
+    }
+}
+
+gX_I0 gX_Cursor_SetDefault(gX_CursorState state) {
+    s_cursorDefault = state == GX_CURSOR_STATE_CAPTURED
+        ? GX_CURSOR_STATE_CAPTURED : GX_CURSOR_STATE_UI;
+    gX_Cursor_Apply();
+}
+
+gX_I0 gX_Cursor_Reset(gX_CursorState state) {
+    s_cursorDepth = 0;
+    gX_Cursor_SetDefault(state);
+}
+
+gX_I0 gX_Cursor_Push(gX_CursorState state, const gX_I8 *owner, gX_I32 priority) {
+    if (!owner || !owner[0]) owner = "?";
+    state = state == GX_CURSOR_STATE_CAPTURED
+        ? GX_CURSOR_STATE_CAPTURED : GX_CURSOR_STATE_UI;
+    for (gX_I32 i = s_cursorDepth - 1; i >= 0; i--) {
+        if (strcmp((const char *)s_cursorStack[i].owner,
+                (const char *)owner) != 0) continue;
+        if (s_cursorStack[i].state == state
+            && s_cursorStack[i].priority == priority)
+            return;
+        for (gX_I32 j = i; j < s_cursorDepth - 1; j++)
+            s_cursorStack[j] = s_cursorStack[j + 1];
+        s_cursorDepth--;
+        break;
+    }
+    if (s_cursorDepth >= GX_CURSOR_STACK_MAX) s_cursorDepth = GX_CURSOR_STACK_MAX - 1;
+    s_cursorStack[s_cursorDepth].state = state;
+    s_cursorStack[s_cursorDepth].priority = priority;
+    snprintf((char *)s_cursorStack[s_cursorDepth].owner,
+        sizeof(s_cursorStack[s_cursorDepth].owner), "%s", (const char *)owner);
+    s_cursorDepth++;
+    gX_Cursor_Apply();
+}
+
+gX_I0 gX_Cursor_Pop(const gX_I8 *owner) {
+    if (!owner || !owner[0]) return;
+    for (gX_I32 i = 0; i < s_cursorDepth; i++) {
+        if (strcmp((const char *)s_cursorStack[i].owner,
+                (const char *)owner) != 0) continue;
+        for (gX_I32 j = i; j < s_cursorDepth - 1; j++)
+            s_cursorStack[j] = s_cursorStack[j + 1];
+        s_cursorDepth--;
+        gX_Cursor_Apply();
+        return;
+    }
+}
+
+gX_CursorState gX_Cursor_Get(gX_I0) {
+    gX_I32 best = cursor_best_index();
+    return best >= 0 ? s_cursorStack[best].state : s_cursorDefault;
+}
+
+const gX_I8 *gX_Cursor_Owner(gX_I0) {
+    gX_I32 best = cursor_best_index();
+    return best >= 0 ? s_cursorStack[best].owner : "scene";
+}
+
+gX_I0 gX_Cursor_Toggle(gX_I0) {
+    if (gX_Cursor_Get() == GX_CURSOR_STATE_UI)
+        gX_Cursor_Push(GX_CURSOR_STATE_CAPTURED, "manual", 40);
+    else
+        gX_Cursor_Push(GX_CURSOR_STATE_UI, "manual", 40);
+}
 static gX_I1 gX_Input_IsAutomated(gX_I0) {
     const gX_I8 *script = getenv("GX_AI_INPUT");
     const gX_I8 *frames = getenv("GX_FRAMES");
@@ -417,6 +536,11 @@ gX_I0 gX_Input_Respond(gX_I0) {
     for (gX_U32 i = 0; i < input.bindAmount && i < gX_BIND_COMMON_AMOUNT; i++) {
         gX_Input_Bind_ApplyPersistent(i);
     }
+    //opencode: scene default drives the cursor state machine; scene switches
+    //   drop stale tool/freecam owners. Automated runs still keep the OS
+    //   cursor visible through the audit-window guard below.
+    gX_Cursor_Reset(input.cursorEnabled ? GX_CURSOR_STATE_UI
+        : GX_CURSOR_STATE_CAPTURED);
     if (gX_Input_IsAutomated()) {
         input.cursorEnabled = true;
         input.cursorSwitched = true;
@@ -992,8 +1116,7 @@ gX_I0 gX_Input_Update(gX_I0) {
     //opencode: use input system's PRESSED state (not raylib gX_Key_IsPressed)
     //so AI virtual key presses work correctly
     if (input.keyboard.keys[gX_KEY_INSERT].state.PRESSED) {
-        input.cursorEnabled = !input.cursorEnabled;
-        input.cursorSwitched = true;
+        gX_Cursor_Toggle();
     }    if (input.keyboard.keys[input.menuKey].state.PRESSED
         && !gX_Tools_RuntimeActive()) {
         //opencode: ignore ESC during scene transition (fade in progress, canvases may not exist)
@@ -1052,7 +1175,8 @@ gX_I0 gX_Input_Update(gX_I0) {
         gX_I1 auditCursor = auditWindow
             && (auditWindow[0] == '1'
                 || strcmp((const char *)auditWindow, "hidden") == 0);
-        if (input.cursorEnabled || auditCursor) {
+        gX_I1 automated = gX_Input_IsAutomated();
+        if (input.cursorEnabled || auditCursor || automated) {
             if (!input.cursorEnabled && auditCursor) {
                 static gX_I1 auditCursorLogged = 0;
                 if (!auditCursorLogged) {
@@ -1070,6 +1194,14 @@ gX_I0 gX_Input_Update(gX_I0) {
                     "INPUT: scene locked the cursor (free-look path)");
             }
             gX_Cursor_Disable();
+        }
+        {
+            const gX_I8 *trace = getenv("GX_CURSOR_TRACE");
+            if (trace && trace[0] && trace[0] != '0') {
+                gX_TraceLog(gX_LOG_INFO, "CURSOR: applied state=%s hidden=%d",
+                    (const char *)cursor_state_label(gX_Cursor_Get()),
+                    (gX_I32)gX_Cursor_IsHidden());
+            }
         }
         input.cursorSwitched = false;
     }

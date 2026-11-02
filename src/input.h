@@ -242,6 +242,23 @@ gX_I0 gX_Input_Bind_Process(gX_Input_Bind *bind);
 
 //opencode: convenience — set all 6 free-camera movement binds (WASD+EQ)
 //   and map gamepad analog stick axis 0/1 to movement binds.
+//opencode: cursor state machine — UI (visible/free) vs captured (hidden,
+//   locked for look). Owners push/pop; the top owner wins and a scene switch
+//   resets the stack to the scene default. The gate traces transitions with
+//   GX_CURSOR_TRACE=1.
+typedef enum gX_CursorState {
+    GX_CURSOR_STATE_UI = 0,
+    GX_CURSOR_STATE_CAPTURED = 1
+} gX_CursorState;
+
+gX_I0 gX_Cursor_SetDefault(gX_CursorState state);
+gX_I0 gX_Cursor_Reset(gX_CursorState state);
+gX_I0 gX_Cursor_Push(gX_CursorState state, const gX_I8 *owner, gX_I32 priority);
+gX_I0 gX_Cursor_Pop(const gX_I8 *owner);
+gX_CursorState gX_Cursor_Get(gX_I0);
+const gX_I8 *gX_Cursor_Owner(gX_I0);
+gX_I0 gX_Cursor_Toggle(gX_I0);
+
 gX_I0 gX_Input_Bind_SetFreeCam(gX_I0);
 
 gX_Input_State gX_Input_Get_Bind_State(gX_U32 index);

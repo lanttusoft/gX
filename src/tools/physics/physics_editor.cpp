@@ -85,7 +85,6 @@ extern "C" gX_I1 *gX_Tools_RuntimePhysicsFlag(gX_I0);
 //   editor's modal pattern: WASD/EQ + mouse look take the keyboard and the
 //   cursor while active, and Esc hands both back to the panel.
 static gX_I1 s_peFreeCamera = 0;
-static gX_I1 s_peCursorBefore = 1;
 //ai: a forced (capture-hook) camera ignores the cursor-exit: automated runs
 //   force the cursor on every frame, which would end the mode instantly.
 static gX_I1 s_peFreeCamForced = 0;
@@ -97,17 +96,14 @@ static gX_I0 PeEditor_Toolgun(gX_I1 active);
 static gX_I0 PeEditor_FreeCamera(gX_I1 active) {
     if ((active ? 1 : 0) == s_peFreeCamera) return;
     if (active) {
-        s_peCursorBefore = input.cursorEnabled ? 1 : 0;
         s_peFreeCamera = 1;
         input.toolCameraInputEnabled = 1;
-        input.cursorEnabled = 0;
-        input.cursorSwitched = 1;
+        gX_Cursor_Push(GX_CURSOR_STATE_CAPTURED, "physics-freecam", 20);
     } else {
         PeEditor_Toolgun(0);
         s_peFreeCamera = 0;
         input.toolCameraInputEnabled = 0;
-        input.cursorEnabled = s_peCursorBefore;
-        input.cursorSwitched = 1;
+        gX_Cursor_Pop("physics-freecam");
     }
     gX_TraceLog(gX_LOG_NOTICE, "PHYSICS_EDITOR: free camera %s",
         s_peFreeCamera ? "on" : "off");
@@ -388,6 +384,10 @@ extern "C" gX_I0 gX_Tools_Physics_Draw(gX_I0);
 extern "C" gX_I0 gX_Tools_Physics_Draw(gX_I0) {
     gX_I1 open = *gX_Tools_RuntimePhysicsFlag();
     if (!open) return;
+    //opencode: re-assert the free-cam owner after scene resets (the reset
+    //   clears the stack, but the camera mode is still active).
+    if (s_peFreeCamera)
+        gX_Cursor_Push(GX_CURSOR_STATE_CAPTURED, "physics-freecam", 20);
 
     //ai: free-camera mode — Esc (or the cursor returning) restores the
     //   panel; while active the panel is replaced by a small hint window.

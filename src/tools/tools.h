@@ -67,6 +67,8 @@ gX_I0 gX_Tools_OpenGfx_Runtime(gX_I0);
 gX_I0 gX_Tools_OpenWavetable_Runtime(gX_I0);
 //opencode: textwriter editor — line/tag/choice authoring with scene preview.
 gX_I0 gX_Tools_OpenTextwriter_Runtime(gX_I0);
+//ai: physics editor — sandbox/applier tuning with JSON presets.
+gX_I0 gX_Tools_OpenPhysics_Runtime(gX_I0);
 //opencode: camera rail editor — module-drawn (gx_shell) rail panel.
 gX_I0 gX_Tools_OpenRail_Runtime(gX_I0);
 //opencode: background editor — focused background authoring + presets.
@@ -86,6 +88,7 @@ gX_I1 *gX_Tools_RuntimeGfxFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeScriptFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeWavetableFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeTextwriterFlag(gX_I0);
+gX_I1 *gX_Tools_RuntimePhysicsFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeRailFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeBackgroundFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeSkyFlag(gX_I0);

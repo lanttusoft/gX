@@ -93,3 +93,23 @@ Tests that round-trip preset or text files resolve the scratch root as
 `GX_SCRATCH` -> `TMPDIR` -> `/tmp`; the audit harness sets `GX_SCRATCH`.
 A `--test-only` run intentionally logs expected ERROR lines from its negative
 cases; the exit code is authoritative.
+
+## Cursor state machine
+
+`input.c` owns one cursor state: **UI** (visible, free) or **CAPTURED**
+(hidden, pointer locked for look). Owners push with a priority and pop on
+release; the scene default is restored on scene switches.
+
+| Owner | State | Priority |
+| --- | --- | ---: |
+| scene default | UI or CAPTURED per scene | 0 |
+| hosted tool/editor | UI | 10 |
+| free camera (GFX/physics) | CAPTURED | 20 |
+| editor host toolbar | UI | 30 |
+| Insert/manual override | toggled | 40 |
+
+Higher priority wins; ties keep the most recent push. `GX_CURSOR_TRACE=1`
+logs `CURSOR: state=... owner=...` transitions and the applied OS cursor
+state. Automated/audit runs never lock the pointer (`hidden=0`), while the
+traced state still follows the machine. `make cursor-check` pins the title,
+GFX editor, host, free-camera and host-over-free-camera cases.

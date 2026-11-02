@@ -174,6 +174,18 @@ gX_I32 gX_MainData_Update_After(gX_I0) {
         shouldclose = gX_Window_ShouldClose();
         maindata.timeElapsed += gX_FrameTime_Get();
     }
+    //opencode: the editor host toolbar is always summonable — F9 toggles it
+    //   from any scene or editor and loads the ImGui chrome on demand.
+    if (input.keyboard.keys[input.toolbarKey].state.PRESSED) {
+        extern gX_I0 gX_EditorHost_Toggle(gX_I0);
+        extern gX_I1 gX_EditorHost_IsOpen(gX_I0);
+        gX_EditorHost_Toggle();
+        if (gX_EditorHost_IsOpen()) gX_GUI_Load_ImGui();
+    }
+    {
+        extern gX_I0 gX_EditorHost_Update(gX_I0);
+        gX_EditorHost_Update();
+    }
     //opencode: exit confirmation — F4 first press marks exit, second closes
     //   Window close button (X) exits immediately
     if (input.keyboard.keys[input.exitKey].state.PRESSED) {
