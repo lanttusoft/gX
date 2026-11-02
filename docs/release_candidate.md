@@ -25,13 +25,13 @@ items. Until all three gates and the operations contract hold, gX stays a
 
 | Item | Value |
 | --- | --- |
-| Version | v0.32.1 (beta) |
+| Version | v0.33.0 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
 | Audit baseline | 86 gates (latest: `shader-cache`); last full run 83/83 on `bf873f5` (2026-11-02); the incremental gates are verified individually |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
 | Lean gate | payload 4,118,331 B (75,973 B headroom), BSS 2,698,976 B (6,024 B headroom) |
-| Release class | PATCH (v0.32.1: gx-proofs v0.19.0 pin) |
+| Release class | MINOR (v0.33.0: renderer lab panels, shader program cache, public agent docs) |
 
 ## Completeness ledger
 
@@ -89,6 +89,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-02 | v0.31.0: editor host, workspaces and cursor state machine; matrix gains `editor-host` and `cursor` (85 gates), both green. | owner/agent |
 | 2026-11-02 | v0.32.0: GFX hosted below the bars; scene/inspector/asset/footer panels and per-suite masks; editor-host gate extended. | owner/agent |
 | 2026-11-02 | v0.32.1: proof pin bumped to `v0.19.0-proofs` (60/125, 1,347/3,071); no engine changes. | owner/agent |
+| 2026-11-02 | v0.33.0: renderer lab panels, shader program cache and public agent docs; matrix 86 gates. | owner/agent |
 
 ## Change rule
 
