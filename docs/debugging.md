@@ -80,3 +80,16 @@ safe.
 
 Controlled fault for gate coverage: `GX_DEBUG_CRASH_TEST=<frame>` triggers a
 null write at that frame (never set it in normal runs).
+
+## Tests and scratch files
+
+The unit suite is **opt-in**: `--test-only` always runs it, `GX_RUN_TESTS=1`
+runs it on a normal boot, and `GX_SKIP_TESTS=1` suppresses it. Scene launches
+skip it by default, so their logs no longer carry the suite's negative-test
+diagnostics (shipped-path refusals, missing presets, allocation-failure
+probes).
+
+Tests that round-trip preset or text files resolve the scratch root as
+`GX_SCRATCH` -> `TMPDIR` -> `/tmp`; the audit harness sets `GX_SCRATCH`.
+A `--test-only` run intentionally logs expected ERROR lines from its negative
+cases; the exit code is authoritative.

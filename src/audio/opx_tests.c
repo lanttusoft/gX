@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include "opx.h"
+#include "../common/macros.h"
 #include "opx_schema.h"
 
 #include "../common/log.h"
@@ -436,7 +437,7 @@ static gX_I32 opx_test_preset_round_trip(void) {
     errors += opx_test_prepare();
 
     const gX_I8 *scratch = getenv("GX_SCRATCH");
-    if (!scratch || !scratch[0]) scratch = "/tmp/opencode";
+    if (!scratch || !scratch[0]) scratch = GX_TEST_SCRATCH_ROOT;
     gX_I8 path[256];
     snprintf((char *)path, sizeof(path),
         "%s/opx_tests_preset_%ld.json", scratch, (long)getpid());

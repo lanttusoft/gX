@@ -134,10 +134,18 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    //opencode: GPU capture harnesses validate rendering independently from
-    //   headless unit regressions; --test-only always runs the full suite.
+    //opencode: the unit suite is opt-in. Scene launches used to run it
+    //   implicitly, so its negative-test diagnostics (shipped-path refusals,
+    //   missing scratch files) read as errors on every boot and cost ~2 s.
+    //   `--test-only` and GX_RUN_TESTS=1 run it; GX_SKIP_TESTS=1 still wins.
+    const gX_I8 *runTests = getenv("GX_RUN_TESTS");
     const gX_I8 *skipTests = getenv("GX_SKIP_TESTS");
-    if (arguments.hasTestOnly || !skipTests || strcmp(skipTests, "1") != 0)
+    gX_I1 skipBootTests = (skipTests && strcmp(skipTests, "1") == 0) ? 1 : 0;
+    //opencode: --test-only always runs (the audit helpers inherit
+    //   GX_SKIP_TESTS=1 and still call it explicitly); a plain boot is opt-in.
+    gX_I1 testsRequested = (arguments.hasTestOnly
+        || ((runTests && strcmp(runTests, "1") == 0) && !skipBootTests)) ? 1 : 0;
+    if (testsRequested)
         errors = gX_Tests();
     else
         errors = 0;

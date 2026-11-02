@@ -31,6 +31,7 @@
 
 #include "../game/game.h"
 #include "../common/log.h"
+#include "../common/macros.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,9 +52,9 @@ gX_I32 gX_Tests_Sky(gX_I0) {
     memset(&sky, 0, sizeof(sky));
     gX_Ephemeris_SetupDefaults(&gamedata.ephemeris);
 
-    gX_I8 path[128];
-    snprintf((char *)path, sizeof(path), "/tmp/opencode/gx_sky_preset_%ld.json",
-             (long)getpid());
+    gX_I8 path[256];
+    snprintf((char *)path, sizeof(path), "%s/gx_sky_preset_%ld.json",
+             GX_TEST_SCRATCH_ROOT, (long)getpid());
 
     sky.skyDensity = 1.7f;
     sky.turbidity = 6.5f;
@@ -75,8 +76,11 @@ gX_I32 gX_Tests_Sky(gX_I0) {
         "look fields restored");
     SKY_TEST_ASSERT(gamedata.ephemeris.timeSec == 12345.0, "clock restored");
 
-    SKY_TEST_ASSERT(gX_RendererSky_Preset_Load(&sky,
-        "/tmp/opencode/gx_sky_preset_missing.json") == 1, "missing preset fails");
+    gX_I8 missing[256];
+    snprintf((char *)missing, sizeof(missing), "%s/gx_sky_preset_missing.json",
+             GX_TEST_SCRATCH_ROOT);
+    SKY_TEST_ASSERT(gX_RendererSky_Preset_Load(&sky, missing) == 1,
+        "missing preset fails");
 
     //opencode: the shipped sample must stay loadable (the editor's fixture
     //   list ships it).

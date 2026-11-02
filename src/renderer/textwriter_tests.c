@@ -37,6 +37,7 @@
 #include <unistd.h>
 
 #include "../common/log.h"
+#include "../common/macros.h"
 #include "../common/path.h"
 
 #define TW_TEST_ASSERT(cond, msg) do { \
@@ -210,14 +211,17 @@ gX_I32 gX_Tests_TextWriter(gX_I0) {
         && writer.lineBuffer.linesAmount == 0, "txt unload clears state");
 
     //opencode: missing file fails loudly (LoadFile flags it).
-    TW_TEST_ASSERT(gX_TextWriter_LoadFile(&writer,
-        "/tmp/opencode/definitely_missing_textwriter.txt") == 1
+    gX_I8 missing[256];
+    snprintf((char *)missing, sizeof(missing),
+        "%s/definitely_missing_textwriter.txt", GX_TEST_SCRATCH_ROOT);
+    TW_TEST_ASSERT(gX_TextWriter_LoadFile(&writer, missing) == 1
         && writer.textFileFailed, "missing file rejected");
 
     //opencode: scratch files — empty input rejected, overlong lines split,
     //   and the <jump> flow honored (jump to line 0 from line 1; without the
     //   jump NextLine would have advanced to line 2).
-    gX_I8 path[] = "/tmp/opencode/gx_tw_XXXXXX";
+    gX_I8 path[256];
+    snprintf((char *)path, sizeof(path), "%s/gx_tw_XXXXXX", GX_TEST_SCRATCH_ROOT);
     FILE *scratch = NULL;
     gX_I32 fd = mkstemp(path);
     TW_TEST_ASSERT(fd >= 0, "scratch creation");
@@ -261,7 +265,9 @@ gX_I32 gX_Tests_TextWriter(gX_I0) {
     //   fill the writer list on the current line; SelectChoice jumps to the
     //   option target and clears the list; lines without options stay empty.
     {
-        static gX_I8 choicePath[] = "/tmp/opencode/gx_tw_choicesXXXXXX";
+        gX_I8 choicePath[256];
+        snprintf((char *)choicePath, sizeof(choicePath),
+            "%s/gx_tw_choicesXXXXXX", GX_TEST_SCRATCH_ROOT);
         gX_I32 cfd = mkstemp(choicePath);
         TW_TEST_ASSERT(cfd >= 0, "choice scratch creation");
         if (cfd >= 0) {
@@ -320,7 +326,9 @@ gX_I32 gX_Tests_TextWriter(gX_I0) {
     //   literal resource-path tokens and this deliberate non-file must not
     //   read as a missing reference.
     {
-        static gX_I8 savePath[] = "/tmp/opencode/gx_tw_saveXXXXXX";
+        gX_I8 savePath[256];
+        snprintf((char *)savePath, sizeof(savePath),
+            "%s/gx_tw_saveXXXXXX", GX_TEST_SCRATCH_ROOT);
         gX_I32 sfd = mkstemp(savePath);
         TW_TEST_ASSERT(sfd >= 0, "save scratch creation");
         if (sfd >= 0) {

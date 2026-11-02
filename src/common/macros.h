@@ -78,4 +78,12 @@
 #define gX_GL_TESS_CONTROL_SHADER               0x8E88
 #define gX_GL_TESS_EVALUATION_SHADER            0x8E87
 
+//opencode: scratch root for unit tests that round-trip files. The developer
+//   harness sets GX_SCRATCH; a user machine falls back to TMPDIR or /tmp.
+//   Never assume the OpenCode-specific /tmp/opencode path exists.
+#define GX_TEST_SCRATCH_ROOT \
+    ((getenv("GX_SCRATCH") && getenv("GX_SCRATCH")[0]) \
+        ? getenv("GX_SCRATCH") \
+        : ((getenv("TMPDIR") && getenv("TMPDIR")[0]) ? getenv("TMPDIR") : "/tmp"))
+
 #endif //MACROS_H

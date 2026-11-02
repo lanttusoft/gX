@@ -29,6 +29,7 @@
 //   seeded by hand with shader id 0 (Remove/Move then touch no GL objects).
 
 #include "../postprocess.h"
+#include "../../common/macros.h"
 #include "schema2.h"
 
 #include <math.h>
@@ -112,7 +113,7 @@ gX_I32 gX_Tests_PostProcess(gX_I0)
         //ai: honor the harness scratch contract (GX_SCRATCH) instead of the
         //   hardcoded /tmp/opencode path.
         const gX_I8 *scratch = getenv("GX_SCRATCH");
-        if (!scratch || !scratch[0]) scratch = "/tmp/opencode";
+        if (!scratch || !scratch[0]) scratch = GX_TEST_SCRATCH_ROOT;
         gX_I8 path[256];
         //ai: per-process filename — parallel suite instances (concurrent audit
         //   captures) must not clobber each other's preset round-trip file.
