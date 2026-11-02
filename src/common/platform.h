@@ -86,11 +86,6 @@ static inline gX_I32 gX_Platform_SetEnv(const gX_I8 *name, const gX_I8 *value)
 #endif
 }
 
-static inline gX_I32 gX_Platform_UnsetEnv(const gX_I8 *name)
-{
-    return gX_Platform_SetEnv(name, NULL);
-}
-
 #if defined(_WIN32)
 //ai: MinGW has no setenv/unsetenv; the test and parse paths use the POSIX
 //   names, so provide the standard two wrappers in this translation unit.
