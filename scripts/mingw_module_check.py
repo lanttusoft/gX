@@ -44,6 +44,8 @@ def ensure_runtime_dll():
         [compiler, "-print-file-name=libwinpthread-1.dll"],
         text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     source = Path(result.stdout.strip())
+    if not source.is_file():
+        source = Path("/usr/x86_64-w64-mingw32/bin/libwinpthread-1.dll")
     if source.is_file():
         shutil.copyfile(source, target)
 
