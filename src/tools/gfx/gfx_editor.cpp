@@ -1037,10 +1037,19 @@ static int gfx_preset_asset_compare(const void *left, const void *right) {
     return strcmp(leftPath, rightPath);
 }
 
+//ai: authoring presets can live outside the shipped resource tree; the env
+//   override is also what the preset-dir gate points at.
+static const gX_I8 *gfx_preset_dir(gX_I0)
+{
+    const gX_I8 *env = getenv("GX_GFX_PRESET_DIR");
+    return (env && env[0]) ? env : (const gX_I8 *)"resources/tools";
+}
+
 //opencode: refresh and release the lightweight list of authoring presets.
 static gX_I0 gfx_preset_assets_scan(gX_I0) {
     if (s_presetFiles.paths) UnloadDirectoryFiles(s_presetFiles);
-    s_presetFiles = LoadDirectoryFilesEx("resources/tools", "FILES*", false);
+    const gX_I8 *presetDir = gfx_preset_dir();
+    s_presetFiles = LoadDirectoryFilesEx(presetDir, "FILES*", false);
     if (s_presetFiles.count > 1)
         qsort(s_presetFiles.paths, s_presetFiles.count,
             sizeof(s_presetFiles.paths[0]), gfx_preset_asset_compare);
@@ -1054,6 +1063,8 @@ static gX_I0 gfx_preset_assets_scan(gX_I0) {
             snprintf(s_presetSelectedPath, sizeof(s_presetSelectedPath), "%s", path);
     }
     s_presetFiles.count = validCount;
+    gX_TraceLog(gX_LOG_INFO, "GFX_PRESET_DIR: dir=%s presets=%u",
+        (const char *)presetDir, (unsigned)validCount);
 }
 
 //opencode: close the transient raylib directory index when the editor restarts.
@@ -11360,6 +11371,12 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
         const gX_I8 *rayEnv = getenv("GX_RAYMARCH_EDITOR_INSPECT");
         if (rayEnv && rayEnv[0] && rayEnv[0] != '0')
             s_labMask |= 1u << GX_GFX_LAB_RAY;
+    }
+    //ai: headless preset-dir probe: scan the configured dir and report it.
+    {
+        const gX_I8 *scanEnv = getenv("GX_GFX_PRESET_SCAN");
+        if (scanEnv && scanEnv[0] && scanEnv[0] != '0')
+            gfx_preset_assets_scan();
     }
     s_freeCameraActive = 0;
     input.toolCameraInputEnabled = 0;

@@ -115,7 +115,7 @@ damage and incoming risk.
 
 Guest assets: `GX_ASSETS=/path` (or `--assets`, or the editor's Asset sources
 block) registers browse-only external roots; nothing is copied into the repo
-(see docs/guest_assets.md). A GL 4.3 context (compute, SSBO, GPU particles)
+(see docs/guest_assets.md). Preset browser root: `GX_GFX_PRESET_DIR=/path` (default `resources/tools`). A GL 4.3 context (compute, SSBO, GPU particles)
 is opt-in: `GX_GL43_CONTEXT=1 ./build/gX_build --gfx-editor`; the editor's
 GL level panel persists the preference.
 

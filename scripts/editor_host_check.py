@@ -8,7 +8,9 @@
 #   open. The sky editor is the pilot panel. F9 is raylib KEY_F9 = 298.
 
 import re
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -252,6 +254,22 @@ def main():
         if labs_dock[-1][:4] != host_dock[-1][:4]:
             raise RuntimeError("GFX lab panels resized the docked viewport")
 
+        #ai: the preset browser root is env-overridable for authoring outside
+        #   the shipped resource tree.
+        with tempfile.TemporaryDirectory(prefix="gx_presets_",
+                                         dir="/tmp/opencode") as presetDir:
+            shutil.copyfile(audit.ROOT / "resources/tools/gfx_showcase.json",
+                            Path(presetDir) / "custom.json")
+            preset_code, preset_log, _ = run("gfx-preset-dir", "--gfx",
+                {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "gfx",
+                 "GX_GFX_PRESET_DIR": presetDir,
+                 "GX_GFX_PRESET_SCAN": "1", "GX_DOCK_TRACE": "1"},
+                frames=60, shot=40)
+            if preset_code != 0:
+                raise RuntimeError("GFX preset-dir run failed")
+            if f"GFX_PRESET_DIR: dir={presetDir} presets=1" not in preset_log:
+                raise RuntimeError("GFX preset-dir scan did not use the override")
+
         default_code, default_log, _ = run("default", "--title",
             {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "Default"},
             frames=40, shot=30)
@@ -291,7 +309,8 @@ def main():
           "Sky/Background/Default workspaces, tab hit boxes sane, GFX hosted "
           "below the bars, scene/inspector panels summonable, "
           "GFX/GFX Focus suite masks, aux asset/footer panels, "
-          "renderer lab panels summonable without moving the dock")
+          "renderer lab panels summonable without moving the dock, "
+          "preset-dir override")
     return 0
 
 

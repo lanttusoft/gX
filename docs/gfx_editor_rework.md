@@ -205,6 +205,13 @@ The inspector keeps selection and the document/preset controls.
 `scripts/editor_host_check.py` pins the summon/close path, the suite mask and
 the unchanged dock geometry.
 
+Presets can live outside the shipped tree: `GX_GFX_PRESET_DIR=<dir>` overrides
+the preset browser root (default `resources/tools`), and
+`GX_GFX_PRESET_SCAN=1` scans it at open and logs
+`GFX_PRESET_DIR: dir=<dir> presets=<n>` for headless checks. The environment
+is read-only; saving still follows the typed path. Guest asset roots remain
+`GX_ASSETS` / `--assets`.
+
 ## Peer-review gate
 
 The reusable contract is [`peer_review_gate.md`](peer_review_gate.md). For this

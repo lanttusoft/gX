@@ -13,6 +13,9 @@ Release-Class: minor
   summonable panels too; the inspector keeps selection and the document
   controls only. The suite mask grows to eleven bits (`1`..`1024`) and
   `GX_RAYMARCH_EDITOR_INSPECT` opens the Ray panel.
+- **Authoring preset directory**: `GX_GFX_PRESET_DIR=<dir>` overrides the GFX
+  preset browser root; `GX_GFX_PRESET_SCAN=1` logs the scan for headless
+  checks. `GX_ASSETS`/`--assets` remain the resource roots.
 
 ## [0.36.0] - 2026-11-02
 
