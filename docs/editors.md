@@ -18,7 +18,7 @@ round-trips presets under `resources/tools/`.
 
 | Surface | Source | Edits | Tier | Gate / gap |
 |---|---|---|---|---|
-| Global editor host | `src/tools/editor_host.cpp` | always-summonable menu bar (`gX/File/Edit/View/<Active Editor>/Window/Help`), editor registry (GUI, theme, sky, background, physics, wavetable, textwriter, rail; GFX pending), console/quit | Alpha/WIP | `editor-host`; workspace/panel migration pending |
+| Global editor host | `src/tools/editor_host.cpp` | always-summonable menu bar (`gX/File/Edit/View/<Active Editor>/Window/Help`), editor registry (GUI, theme, sky, background, physics, wavetable, textwriter, rail; GFX pending), workspaces with per-suite layouts (`gx_editor_<suite>.ini`, `gx_editor_workspace.txt`), console/quit | Alpha/WIP | `editor-host`; user-saved suites, tabs and the GFX migration pending |
 | GFX editor | `src/tools/gfx/gfx_editor.cpp` | renderer scene (models/materials/lights/camera/sky/weather/decals/water/particles/SSAO/SSR/quality) + blockout/texture/export/bake panels | Beta | full audit matrix; UI rework open (reference surface) |
 | GUI editor | `src/tools/editor/editor.cpp` | markup templates on the GUIPLAYGROUND canvas | Alpha/WIP | `ui-audit` open path; hard to use — list/property workflow, no direct-manipulation pass or tutorial |
 | Theme editor | `src/tools/theme/theme_editor.cpp` | GUI theme tokens (live) | Alpha/WIP | `ui-audit` open path; token-list surface, manual workflow |

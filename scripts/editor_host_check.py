@@ -91,7 +91,7 @@ def main():
             raise RuntimeError("host did not open in the gfx scene")
 
         sky_code, sky_log, sky = run("sky", "--title",
-            {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "sky"},
+            {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "Sky"},
             frames=90, shot=70)
         if sky_code != 0:
             raise RuntimeError(f"sky host run failed ({sky_code})")
@@ -101,6 +101,8 @@ def main():
             raise RuntimeError("sky panel did not open")
         if "EDITOR_HOST: active=Sky" not in sky_log:
             raise RuntimeError("editor registry did not report Sky as active")
+        if "EDITOR_HOST: workspace=Sky" not in sky_log:
+            raise RuntimeError("Sky workspace was not applied")
         if sky is None:
             raise RuntimeError("sky capture missing")
         #opencode: the sky scene opens its own (wider) window; compare the
@@ -112,19 +114,31 @@ def main():
             raise RuntimeError("toolbar bar missing in the sky capture")
 
         bg_code, bg_log, _ = run("background", "--title",
-            {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "background"},
+            {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "Background"},
             frames=60, shot=40)
         if bg_code != 0:
             raise RuntimeError(f"background host run failed ({bg_code})")
         if "EDITOR_HOST: active=Background" not in bg_log:
             raise RuntimeError("editor registry did not report Background")
+        if "EDITOR_HOST: workspace=Background" not in bg_log:
+            raise RuntimeError("Background workspace was not applied")
         if "BG_EDITOR_UI: panel=1" not in bg_log:
             raise RuntimeError("background panel did not open")
+
+        default_code, default_log, _ = run("default", "--title",
+            {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "Default"},
+            frames=40, shot=30)
+        if default_code != 0:
+            raise RuntimeError(f"default workspace run failed ({default_code})")
+        if "EDITOR_HOST: workspace=Default" not in default_log:
+            raise RuntimeError("Default workspace was not applied")
+        if "EDITOR_HOST: active=none" not in default_log:
+            raise RuntimeError("Default workspace unexpectedly opened an editor")
     except (OSError, RuntimeError, ValueError) as error:
         print(f"EDITOR_HOST_CHECK: FAIL — {error}", file=sys.stderr)
         return 1
     print("EDITOR_HOST_CHECK: PASS toolbar in title/gfx, F9 open+close, "
-          "sky + background panels via the editor registry")
+          "Sky/Background/Default workspaces via the editor registry")
     return 0
 
 
