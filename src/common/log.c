@@ -40,6 +40,12 @@
 
 #include "../audio.h"
 
+#if defined(_WIN32)
+    #define GX_LOG_WRITE(...) fprintf(stderr, __VA_ARGS__)
+#else
+    #define GX_LOG_WRITE(...) dprintf(STDERR_FILENO, __VA_ARGS__)
+#endif
+
 //opencode: crash-context log ring — heap-backed (the static footprint would
 //   blow the lean gate's bss budget), allocated on the first emitted line.
 #define GX_LOG_RING_LINE 512
@@ -576,13 +582,13 @@ gX_I0 gX_Log_RingDump(gX_I0) {
     if (!gX_LogRing || gX_LogRingCount == 0) return;
     //opencode: signal-handler safe — dprintf only, no allocation, and the
     //   ring buffer is preallocated and stable.
-    dprintf(STDERR_FILENO, "LOG TAIL (%u lines):\n", gX_LogRingCount);
+    GX_LOG_WRITE("LOG TAIL (%u lines):\n", gX_LogRingCount);
     gX_U32 start = (gX_LogRingCount < gX_LogRingCapacity)
         ? 0 : gX_LogRingHead;
     for (gX_U32 i = 0; i < gX_LogRingCount; i++) {
         const gX_I8 *line = gX_LogRing
             + (((start + i) % gX_LogRingCapacity) * GX_LOG_RING_LINE);
-        dprintf(STDERR_FILENO, "  %s\n", line);
+        GX_LOG_WRITE("  %s\n", line);
     }
 }
 

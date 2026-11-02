@@ -30,7 +30,7 @@
 
 #include <string.h>
 #include <time.h>
-#include <json-c/json.h>
+#include "../../common/marshal/json_impl.h"
 
 #include "../common/log.h"
 #include "../common/path.h"

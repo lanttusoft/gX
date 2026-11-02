@@ -27,19 +27,34 @@
 //   through `renderdoccmd capture`, RENDERDOC_GetAPI is present in the global
 //   symbol table; GX_RD_CAPTURE=1 then marks the frame containing the SDF
 //   flush for capture (capture written on frame end as .rdc).
+#if !defined(_WIN32)
 #include <dlfcn.h>
+#endif
 #include <stdlib.h>
 
 #include "renderdoc_hook.h"
 #include "../common/log.h"
 
+#if !defined(_WIN32)
 #include <renderdoc_app.h>
 
 static RENDERDOC_DevicePointer  s_rdocDevice = 0;
 static pRENDERDOC_TriggerCapture s_trigger = NULL;
 static pRENDERDOC_SetCaptureOptionU32 s_optU32 = NULL;
+#endif
 static gX_I1 s_init = false;
 
+#if defined(_WIN32)
+gX_I0 gX_RenderDoc_Init(gX_I0)
+{
+    if (s_init) return;
+    s_init = true;
+    //ai: Windows capture uses the RenderDoc UI/launcher; the POSIX in-process
+    //   symbol probe is a no-op here until a DLL probe is added.
+    gX_TraceLog(gX_LOG_NOTICE,
+        "RenderDoc: in-process trigger unavailable on this platform build");
+}
+#else
 gX_I0 gX_RenderDoc_Init(gX_I0)
 {
     if (s_init) return;
@@ -67,9 +82,13 @@ gX_I0 gX_RenderDoc_Init(gX_I0)
     gX_TraceLog(gX_LOG_NOTICE,
         "RenderDoc: API v1.4 acquired — GX_RD_CAPTURE frames will be captured");
 }
+#endif
 
 gX_I0 gX_RenderDoc_Trigger(gX_I0)
 {
+#if defined(_WIN32)
+    //ai: see gX_RenderDoc_Init — no in-process probe in this build.
+#else
     static gX_I1 done = false;
     if (!s_trigger || done) return;
     const gX_I8 *env = getenv("GX_RD_CAPTURE");
@@ -77,4 +96,5 @@ gX_I0 gX_RenderDoc_Trigger(gX_I0)
     done = true;
     s_trigger();
     gX_TraceLog(gX_LOG_NOTICE, "RenderDoc: capture triggered this frame");
+#endif
 }

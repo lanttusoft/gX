@@ -4,6 +4,19 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: minor
+
+### Added
+- **Windows x86_64 beta**: MinGW-w64 cross-build (`./build-mingw.sh`,
+  `make mingw-check`), statically linked runtime and a portable
+  `gX_Platform_*` shim layer. The unit suite passes under Wine and the GFX
+  scene renders; the full audit matrix remains Linux. The audio preset
+  schemas now use gX's self-contained JSON implementation, removing the
+  external `json-c` dependency. Dynamic modules, the RenderDoc probe and
+  crash register dumps remain Linux-only. See `docs/platforms.md`.
+
 ## [0.33.0] - 2026-11-02
 
 Release-Class: minor

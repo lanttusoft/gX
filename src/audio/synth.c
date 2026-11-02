@@ -41,7 +41,7 @@
 
 //opencode: raylib audio processor API
 #include "raylib.h"
-#include <json-c/json.h>
+#include "../../common/marshal/json_impl.h"
 
 //ai: gX frame time (honors GX_FIXED_DT for deterministic audits).
 #include "../wrappers/wrappers.h"

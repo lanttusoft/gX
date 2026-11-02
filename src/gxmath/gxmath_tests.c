@@ -47,6 +47,11 @@
 #include "gxmath.h"
 #include "../common/log.h"
 
+//ai: CMPLXF is optional in C11 and absent from some MinGW headers.
+#if !defined(CMPLXF)
+    #define CMPLXF(real, imag) ((gX_F32_complex)((real) + (imag) * _Complex_I))
+#endif
+
 //opencode: declaration for test entry point called from main_tests.c
 gX_I32 gX_Tests_Math(gX_I0);
 

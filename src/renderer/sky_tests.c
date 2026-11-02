@@ -27,6 +27,7 @@
 //opencode: headless pins for the sky preset IO (no GPU/window): look-field
 //   round trip with the ephemeris clock, a missing-file failure, the shipped
 //   sample preset loading, and the shipped-path harness guard.
+#include "../common/platform.h"
 #include "sky.h"
 
 #include "../game/game.h"

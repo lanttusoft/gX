@@ -40,6 +40,7 @@
 
 #include "../common/log.h"
 #include "../common/marshal/json_impl.h"
+#include "../common/platform.h"
 #include "../scripting.h"
 
 #define AS_CHECK(r) do { if (r < 0) \
@@ -155,7 +156,7 @@ static gX_I0 gX_Scripting_State_EnsureParentDir(const gX_I8 *path) {
     if (len >= sizeof(dir)) return;
     memcpy(dir, path, len);
     dir[len] = '\0';
-    mkdir(dir, 0755);
+    gX_Platform_MakeDirectory((const gX_I8 *)dir);
 }
 
 struct json_object *gX_Scripting_State_ToJSON(gX_I0) {

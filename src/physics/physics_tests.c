@@ -25,6 +25,7 @@
 //   properties, joints, forces, raycast, sensors, contact events, the
 //   ragdoll articulation, and single-threaded step determinism.
 //   Ported from gameX src/physics/physics_tests.c.
+#include "../common/platform.h"
 #include "../common/log.h"
 #include "../gxmath/quaternion.h"
 #include "../gxmath/vector3.h"

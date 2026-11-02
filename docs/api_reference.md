@@ -709,6 +709,9 @@ the not-in-slice list live in `docs/scripting.md`.
 
 ## tools (ImGui suite, deterministic editor chrome)
 
+- `gX_Platform_*` — portable process/filesystem shims: `ExecutablePath`,
+  `MakeDirectory`, `SetEnv`, `UnsetEnv` (Win32 and POSIX implementations in
+  `src/common/platform.h`)
 - `gX_Tools_*` — runtime open/close + CLI inits (`--tools`, `--theme-editor`)
 - `gX_EditorHost_*` — always-summonable global host (F9): menu bar, editor
   registry, workspace suites and per-suite layouts. `Toggle`, `SetOpen`,

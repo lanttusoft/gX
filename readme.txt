@@ -95,6 +95,8 @@ Build
     ./build/gX_build --test-only  # run unit tests, exit immediately
     GX_RUN_TESTS=1 ./build/gX_build --gfx  # opt-in boot tests (skipped by default)
     make check-fast             # public fast CI: build, tests, scene smoke
+    ./build-mingw.sh            # Windows x86_64 cross-build (MinGW-w64)
+    make mingw-check            # cross-build + Wine unit-test smoke
 
 raylib source is vendored in `external/raylib` for this beta (upstream
 6.0-58-gcf9f27db). The release helper vendors the same source into tarballs.

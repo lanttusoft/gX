@@ -30,6 +30,7 @@
 //   modulation makes a steady tone breathe), stereo width, the moving
 //   filter (LFO sweep and mode differences), stealing, determinism, mute,
 //   extreme-setting boundedness and the preset schema (round trip + guard).
+#include "../common/platform.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

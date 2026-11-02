@@ -5,6 +5,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(CompilerFlags)
 
+#ai: winpthreads provides the POSIX threads API on MinGW; CMake resolves the
+#   right target on every platform.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 #opencode: v0.5.0 — compute/SSBO light culling. raylib must build with
 #   GRAPHICS_API_OPENGL_43 (OPENGL_VERSION=4.3) or compute+SSBO compile out
 #   of rlgl with only log warnings. Default build stays GL 3.3 (uniform
@@ -507,7 +512,11 @@ if(GX_USE_ANGELSCRIPT)
         ${CMAKE_CURRENT_SOURCE_DIR}/external)
     #opencode: modules resolve engine symbols from the exe at dlopen
     #   (Route A) — no engine link, only libc/libm/libstdc++.
-    target_link_libraries(gx_shell m pthread)
+    if(WIN32)
+        target_link_libraries(gx_shell Threads::Threads)
+    else()
+        target_link_libraries(gx_shell m Threads::Threads)
+    endif()
 
     #ai: the vendored AngelScript SDK is third-party source — keep gX's
     #   warning budget clean by compiling it without project warnings.
@@ -520,7 +529,9 @@ endif()
 
 #ai: devcube lab module — the engine avatar. Output stays under build/labs so
 #   the host never auto-loads it; --module/GX_MODULE opt in explicitly.
-if(GX_ENABLE_RENDERER)
+#ai: Win32 DLLs cannot carry unresolved engine imports the way the
+#   Linux module does; module export/import is a follow-up.
+if(GX_ENABLE_RENDERER AND NOT WIN32)
     add_library(gx_devcube SHARED src/module/devcube.c)
     set_target_properties(gx_devcube PROPERTIES
         POSITION_INDEPENDENT_CODE ON
@@ -528,7 +539,11 @@ if(GX_ENABLE_RENDERER)
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/labs)
     target_include_directories(gx_devcube PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    target_link_libraries(gx_devcube m)
+    if(WIN32)
+        target_link_libraries(gx_devcube)
+    else()
+        target_link_libraries(gx_devcube m)
+    endif()
 endif()
 
 add_executable(${PROJECT_NAME} ${GX_APP_SOURCES})
@@ -646,13 +661,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         PROPERTIES COMPILE_OPTIONS "$<$<CONFIG:Release>:-Oz>")
 endif()
 #opencode: Debug builds export symbols so crash traces name functions.
-target_link_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:-rdynamic>)
+if(UNIX AND NOT APPLE)
+    target_link_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:-rdynamic>)
+endif()
 
 #opencode: v0.4.0 — vendored rlImGui: skip the FontAwesome icon font (not
 #   used by the tools; avoids shipping the icon glyph header + font data)
 set_source_files_properties(src/tools/imgui/rlImGui.cpp PROPERTIES COMPILE_DEFINITIONS NO_FONT_AWESOME)
 
-target_link_libraries(${PROJECT_NAME} m)
+if(NOT WIN32)
+    target_link_libraries(${PROJECT_NAME} m)
+endif()
 
 #ai: ODE link/include for the physics wrapper (see the GX_USE_ODE option).
 if(GX_USE_ODE)
@@ -684,7 +703,20 @@ include_directories(${GX_RAYLIB_DIR}/src/external)  # for "glad.h" (RHI) + par_s
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external)  # for "raylib/src/external/par_shapes.h"
 target_link_libraries(${PROJECT_NAME} raylib)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/backend/raylib)
-target_link_libraries(${PROJECT_NAME} m pthread X11 Xrandr Xinerama Xcursor Xi Xxf86vm GL dl)
+#ai: platform link set — X11/GLX on Linux, Win32/OpenGL on Windows, Cocoa on
+#   macOS. The raylib target already carries its own window backend.
+if(WIN32)
+    #ai: self-contained exe — no MinGW runtime DLLs next to the build.
+    target_link_options(${PROJECT_NAME} PRIVATE -static)
+    target_link_libraries(${PROJECT_NAME} Threads::Threads opengl32 gdi32 winmm)
+elseif(APPLE)
+    target_link_libraries(${PROJECT_NAME} Threads::Threads
+        "-framework Cocoa" "-framework IOKit" "-framework CoreVideo"
+        "-framework OpenGL")
+else()
+    target_link_libraries(${PROJECT_NAME} Threads::Threads
+        X11 Xrandr Xinerama Xcursor Xi Xxf86vm GL dl)
+endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src

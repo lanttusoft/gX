@@ -31,7 +31,7 @@
 *
 **********************************************************************************************/
 //lanttu: original wrapper for raylib backend init/shutdown/FPS/volume/screenshot
-#define _POSIX_C_SOURCE 199309L
+#define _POSIX_C_SOURCE 200809L
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,6 +41,7 @@
 #include "wrappers_header.h"
 #include "wrappers.h"
 #include "../main.h"
+#include "../common/platform.h"
 //ai: register the context backend's extension resolver after window creation.
 #include "../rhi/rhi_bindless.h"
 
@@ -147,7 +148,7 @@ static gX_I0 gX_MakeParentDirs(const gX_I8 *path)
         if (buf[i] == '/')
         {
             buf[i] = '\0';
-            if ((mkdir((const char *)buf, 0755) != 0) && (errno != EEXIST))
+            if ((gX_Platform_MakeDirectory(buf) != 0) && (errno != EEXIST))
             {
                 gX_TraceLog_WRAPPERS(gX_LOG_WARNING, "Screenshot: mkdir failed for %s", buf);
                 return;

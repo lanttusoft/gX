@@ -30,10 +30,38 @@
 //   and the kernel-side hook registry the engine calls unconditionally.
 #include "module.h"
 
-#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if defined(_WIN32)
+    #include <windows.h>
+    typedef HMODULE gX_Module_Handle;
+    static gX_Module_Handle gX_Module_OpenHandle(const char *path) {
+        return LoadLibraryA(path);
+    }
+    static void *gX_Module_Symbol(gX_Module_Handle handle, const char *name) {
+        return (void *)GetProcAddress(handle, name);
+    }
+    static const char *gX_Module_Error(void) {
+        static char message[128];
+        snprintf(message, sizeof(message), "Win32 error %lu",
+            (unsigned long)GetLastError());
+        return message;
+    }
+#else
+    #include <dlfcn.h>
+    typedef void *gX_Module_Handle;
+    static gX_Module_Handle gX_Module_OpenHandle(const char *path) {
+        return dlopen(path, RTLD_NOW | RTLD_LOCAL);
+    }
+    static void *gX_Module_Symbol(gX_Module_Handle handle, const char *name) {
+        return dlsym(handle, name);
+    }
+    static const char *gX_Module_Error(void) {
+        return dlerror();
+    }
+#endif
 
 #include "../common/data.h"
 #include "../common/log.h"
@@ -45,7 +73,7 @@
 typedef struct gX_Module_Slot {
     gX_I1 used;
     gX_I8 path[256];
-    void *handle;
+    gX_Module_Handle handle;
 
     gX_Module_FrameFn update;
     gX_Module_FrameFn draw;
@@ -161,13 +189,15 @@ gX_I32 gX_Module_Load(const gX_I8 *path) {
 
     //opencode: handles are never dlclose'd (static constructors/TLS make
     //   reload unsafe) — a failed load also keeps its handle.
-    void *handle = dlopen((const char *)path, RTLD_NOW | RTLD_LOCAL);
+    gX_Module_Handle handle = gX_Module_OpenHandle((const char *)path);
     if (!handle) {
-        gX_TraceLog(gX_LOG_ERROR, "MODULE: dlopen '%s' failed: %s", path, dlerror());
+        gX_TraceLog(gX_LOG_ERROR, "MODULE: load '%s' failed: %s",
+            path, gX_Module_Error());
         return 1;
     }
 
-    gX_Module_EntryFn entry = (gX_Module_EntryFn)dlsym(handle, "gX_Module_Entry");
+    gX_Module_EntryFn entry =
+        (gX_Module_EntryFn)gX_Module_Symbol(handle, "gX_Module_Entry");
     if (!entry) {
         gX_TraceLog(gX_LOG_ERROR, "MODULE: '%s' has no gX_Module_Entry", path);
         return 1;
@@ -176,7 +206,8 @@ gX_I32 gX_Module_Load(const gX_I8 *path) {
     //opencode: both directions of the handshake — the module declares its ABI
     //   major (optional symbol), the host passes version + struct size in the
     //   table and the entry refuses mismatch itself.
-    gX_U32 (*moduleAbi)(gX_I0) = (gX_U32 (*)(gX_I0))dlsym(handle, "gX_Module_ABI");
+    gX_U32 (*moduleAbi)(gX_I0) =
+        (gX_U32 (*)(gX_I0))gX_Module_Symbol(handle, "gX_Module_ABI");
     if (moduleAbi && moduleAbi() != GX_MODULE_ABI_VERSION) {
         gX_TraceLog(gX_LOG_ERROR, "MODULE: '%s' ABI %u != host %u",
             path, moduleAbi(), (gX_U32)GX_MODULE_ABI_VERSION);

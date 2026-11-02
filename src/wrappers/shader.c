@@ -44,6 +44,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "../common/platform.h"
 #include "../common/shader_compiler.h"
 #include "../common/text.h"
 #include "../common/utils/shader.h"
@@ -152,7 +153,7 @@ static gX_I1 gX_Shader_CachePath(gX_U64 key, gX_I8 *out, gX_U32 size, gX_I1 crea
     gX_I32 written = snprintf((char *)directory, sizeof(directory), "%s/%s",
         (const char *)work, GX_SHADER_CACHE_DIR);
     if (written <= 0 || written >= (gX_I32)sizeof(directory)) return false;
-    if (create) mkdir((const char *)directory, 0755);
+    if (create) gX_Platform_MakeDirectory((const gX_I8 *)directory);
     written = snprintf((char *)out, size, "%s/%016llx.bin",
         (const char *)directory, (unsigned long long)key);
     return written > 0 && written < (gX_I32)size;

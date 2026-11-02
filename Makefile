@@ -660,6 +660,18 @@ gfx-decal-bake-check: all
 	@echo "== [gX CI] decal bake =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_decal_bake_check.py
 
+#ai: Windows cross-build + Wine unit-test smoke (needs mingw-w64; wine is
+#   optional — the cross-build still runs without it).
+.PHONY: mingw-check
+mingw-check:
+	./build-mingw.sh
+	@if command -v wine >/dev/null 2>&1; then \
+		WINEDEBUG=-all WINEPREFIX=$${WINEPREFIX:-$$PWD/build/mingw/wineprefix} \
+		wine build/mingw/gX_build.exe --test-only; \
+	else \
+		echo "mingw-check: wine not found — cross-build only"; \
+	fi
+
 #ai: shader program-cache pin (cold vs warm timing + identical frame).
 shader-cache-check: all
 	@echo "== [gX CI] shader program cache =="

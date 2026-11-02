@@ -29,6 +29,7 @@
 //   (timbre changes measured as high-frequency energy), per-operator
 //   envelopes and release, feedback boundedness, stealing, determinism,
 //   mute/silence, the pan law and the preset schema (round trip + guard).
+#include "../common/platform.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

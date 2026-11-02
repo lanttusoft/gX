@@ -30,6 +30,7 @@
 //   attenuation, the arp/sequencer drivers, patches/presets, the delay tail
 //   and the wavetable oscillator.
 
+#include "../common/platform.h"
 #include "synth.h"
 #include "synth_schema.h"
 

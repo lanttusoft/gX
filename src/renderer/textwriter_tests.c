@@ -29,6 +29,7 @@
 //   the state stack reset, UTF-8 decoding, capacity guards, the TXT file
 //   reader (line split/truncation/empty/missing) and the <jump> flow through
 //   Update → NextLine.
+#include "../common/platform.h"
 #include "textwriter.h"
 
 #include <stdio.h>

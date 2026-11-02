@@ -26,7 +26,9 @@
 #define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
+#if !defined(_WIN32)
 #include <dlfcn.h>
+#endif
 
 #include "alloc.h"
 #include "log.h"
@@ -213,6 +215,13 @@ gX_U32 gX_Alloc_Dump(gX_I0) {
             //opencode: the binary is PIE, so raw addresses do not resolve
             //   with addr2line; dladdr gives symbol+offset directly.
             const void *site = gX_Alloc_Sites ? gX_Alloc_Sites[i] : NULL;
+#if defined(_WIN32)
+            gX_TraceLog(gX_LOG_INFO,
+                "GX_MEM: leak %u addr=%lld bytes=%llu site=%p",
+                leaks, (long long)heaptracker.instances[i].address,
+                (unsigned long long)heaptracker.instances[i].amount,
+                site);
+#else
             Dl_info info;
             if (site && dladdr(site, &info) && info.dli_sname) {
                 gX_TraceLog(gX_LOG_INFO,
@@ -239,6 +248,7 @@ gX_U32 gX_Alloc_Dump(gX_I0) {
                     (unsigned long long)heaptracker.instances[i].amount,
                     site);
             }
+#endif
         }
     }
     gX_TraceLog(gX_LOG_INFO,

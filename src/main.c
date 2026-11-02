@@ -25,7 +25,6 @@
 
 
 #include <signal.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
@@ -35,6 +34,7 @@
 #include "common/alloc.h"
 #include "common/debug.h"
 #include "common/color_code.h"
+#include "common/platform.h"
 
 #include "module/module.h"
 
@@ -72,7 +72,7 @@ static gX_I0 gX_Main_ResolveResourceRoot(const gX_I8 *argv0) {
 
     if (gX_Main_HasResources(".")) return;
 
-    len = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+    len = gX_Platform_ExecutablePath(exe, (gX_U32)sizeof(exe));
     if (len <= 0) {
         if (!argv0 || !argv0[0]) return;
         len = (ssize_t)strlen(argv0);
@@ -89,6 +89,7 @@ static gX_I0 gX_Main_ResolveResourceRoot(const gX_I8 *argv0) {
         snprintf(base, sizeof(base), "%s", exe);
         for (strip = 0; strip < level; strip++) {
             slash = strrchr(base, '/');
+            if (!slash) slash = strrchr(base, '\\');
             if (!slash) break;
             *slash = '\0';
         }

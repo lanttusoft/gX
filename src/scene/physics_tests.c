@@ -27,6 +27,7 @@
 //ai: sandbox lifecycle test. Leaving the scene must destroy the sandbox
 //   bodies and clear the EM/thermal appliers so nothing simulates while
 //   another scene runs; the shared world itself must stay alive.
+#include "../common/platform.h"
 #include "physics.h"
 
 #include "../common/log.h"

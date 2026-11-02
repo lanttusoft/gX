@@ -29,17 +29,25 @@
 #define _GNU_SOURCE
 #include "debug.h"
 
+#if !defined(_WIN32)
 #include <execinfo.h>
+#include <ucontext.h>
+#endif
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ucontext.h>
 #include <unistd.h>
 
 #include "log.h"
 #include "error.h"
 #include "../main.h"
+
+#if defined(_WIN32)
+    #define GX_CRASH_PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+    #define GX_CRASH_PRINT(...) dprintf(STDERR_FILENO, __VA_ARGS__)
+#endif
 
 #define GX_DEBUG_WATCH_MAX 16
 
@@ -70,19 +78,30 @@ static gX_I1 gX_Debug_BacktraceDone;
 // Crash handler — registers, stack, addr2line recipe
 // ---------------------------------------------------------------------------
 
+#if defined(_WIN32)
+static gX_I0 gX_Debug_CrashHandler(gX_I32 sig) {
+    //ai: MinGW has no execinfo/ucontext; keep the ring dump and exit code.
+    GX_CRASH_PRINT("\nCaught signal %d — gX crashed!\n", sig);
+    {
+        extern gX_I0 gX_Log_RingDump(gX_I0);
+        gX_Log_RingDump();
+    }
+    exit(128 + sig);
+}
+#else
 static gX_I0 gX_Debug_CrashHandler(gX_I32 sig, siginfo_t *info, void *context) {
     (void)info;
     //opencode: no gX_TraceLog here — the FATAL level exits the process before
     //   the register/stack dump; dprintf is async-signal-safe.
-    dprintf(STDERR_FILENO, "\nCaught signal %d — gX crashed!\n", sig);
-    dprintf(STDERR_FILENO, "=== gX crash: signal %d (%s) ===\n", sig,
+    GX_CRASH_PRINT("\nCaught signal %d — gX crashed!\n", sig);
+    GX_CRASH_PRINT("=== gX crash: signal %d (%s) ===\n", sig,
         strsignal(sig));
 #if defined(__x86_64__)
     {
         ucontext_t *uc = (ucontext_t *)context;
         if (uc) {
             greg_t *g = uc->uc_mcontext.gregs;
-            dprintf(STDERR_FILENO,
+            GX_CRASH_PRINT(
                 "REGISTERS:\n"
                 "  RIP=%016llx RSP=%016llx RBP=%016llx EFL=%016llx\n"
                 "  RAX=%016llx RBX=%016llx RCX=%016llx RDX=%016llx\n"
@@ -110,8 +129,6 @@ static gX_I0 gX_Debug_CrashHandler(gX_I32 sig, siginfo_t *info, void *context) {
         }
     }
 #endif
-    //opencode: the recent log lines give the lead-up the register and stack
-    //   dumps lack (best-effort: the ring may be partially written)
     {
         extern gX_I0 gX_Log_RingDump(gX_I0);
         gX_Log_RingDump();
@@ -119,17 +136,24 @@ static gX_I0 gX_Debug_CrashHandler(gX_I32 sig, siginfo_t *info, void *context) {
     {
         void *frames[64];
         gX_I32 count = backtrace(frames, 64);
-        dprintf(STDERR_FILENO, "STACK (%d frames):\n", count);
+        GX_CRASH_PRINT("STACK (%d frames):\n", count);
         backtrace_symbols_fd(frames, count, STDERR_FILENO);
     }
-    dprintf(STDERR_FILENO,
+    GX_CRASH_PRINT(
         "HINT: resolve frames with: addr2line -e build/gX_build -f -C <addr>\n");
     _exit(128 + sig);
 }
+#endif
 
 gX_I0 gX_Debug_Init(gX_I0) {
     if (gX_Debug_Inited) return;
     gX_Debug_Inited = 1;
+#if defined(_WIN32)
+    signal(SIGSEGV, gX_Debug_CrashHandler);
+    signal(SIGABRT, gX_Debug_CrashHandler);
+    signal(SIGFPE, gX_Debug_CrashHandler);
+    signal(SIGILL, gX_Debug_CrashHandler);
+#else
     struct sigaction action;
     memset(&action, 0, sizeof(action));
     action.sa_sigaction = gX_Debug_CrashHandler;
@@ -139,13 +163,18 @@ gX_I0 gX_Debug_Init(gX_I0) {
     sigaction(SIGFPE, &action, NULL);
     sigaction(SIGBUS, &action, NULL);
     sigaction(SIGILL, &action, NULL);
+#endif
 }
 
 gX_I0 gX_Debug_Backtrace(gX_I0) {
+#if defined(_WIN32)
+    GX_CRASH_PRINT("STACK: backtrace unavailable on this platform\n");
+#else
     void *frames[64];
     gX_I32 count = backtrace(frames, 64);
-    dprintf(STDERR_FILENO, "STACK (%d frames):\n", count);
+    GX_CRASH_PRINT("STACK (%d frames):\n", count);
     backtrace_symbols_fd(frames, count, STDERR_FILENO);
+#endif
 }
 
 // ---------------------------------------------------------------------------

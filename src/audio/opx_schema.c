@@ -33,7 +33,7 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <json-c/json.h>
+#include "../../common/marshal/json_impl.h"
 
 #include "../common/log.h"
 

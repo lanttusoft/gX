@@ -31,6 +31,7 @@ Start here:
 
 - [Active-ragdoll lab — body-first contract](active_ragdoll_lab.md)
 - [gX — Architecture](architecture.md)
+- [Platform support](platforms.md) — Linux supported; Windows beta; macOS source-only
 - [gX — audio subsystem](audio.md)
 - [gX — Backend Study (L0: what raylib-only means, and what a second target costs)](backends.md)
 - [Battle client/server proposal — 2026-10-05](battle_multiplayer_plan.md)
