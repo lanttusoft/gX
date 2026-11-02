@@ -95,6 +95,7 @@ typedef struct HostSuite {
     gX_I1 user;
     gX_I1 scenePanel;
     gX_I1 inspectorPanel;
+    gX_U32 labMask; // GFX renderer panels
 } HostSuite;
 
 static HostSuite s_suites[HOST_SUITE_MAX];
@@ -105,17 +106,19 @@ static const struct {
     gX_I32 editor;
     gX_I1 scenePanel;
     gX_I1 inspectorPanel;
+    gX_U32 labMask;
 } kBuiltinSuites[] = {
-    { "Default",    -1, 1, 1 },
-    { "Sky",         2, 1, 1 },
-    { "Background",  3, 1, 1 },
-    { "Physics",     4, 1, 1 },
-    { "Audio",       5, 1, 1 },
-    { "Writing",     6, 1, 1 },
-    { "GUI",         0, 1, 1 },
-    { "Theme",       1, 1, 1 },
-    { "GFX",         8, 1, 1 },
-    { "GFX Focus",   8, 0, 1 },
+    { "Default",    -1, 1, 1, 0 },
+    { "Sky",         2, 1, 1, 0 },
+    { "Background",  3, 1, 1, 0 },
+    { "Physics",     4, 1, 1, 0 },
+    { "Audio",       5, 1, 1, 0 },
+    { "Writing",     6, 1, 1, 0 },
+    { "GUI",         0, 1, 1, 0 },
+    { "Theme",       1, 1, 1, 0 },
+    //ai: the GFX workspace opens the Models lab; Focus keeps the stage clean.
+    { "GFX",         8, 1, 1, 1 },
+    { "GFX Focus",   8, 0, 1, 0 },
 };
 static const gX_I32 kBuiltinSuiteCount =
     (gX_I32)(sizeof(kBuiltinSuites) / sizeof(kBuiltinSuites[0]));
@@ -199,11 +202,18 @@ static gX_I0 host_suites_persist(gX_I0) {
     if (!file) return;
     for (gX_I32 i = 0; i < s_suiteCount; i++) {
         if (!s_suites[i].user) continue;
-        fprintf(file, "%s|%d|%d|%d\n", (const char *)s_suites[i].name,
+        fprintf(file, "%s|%d|%d|%d|%u\n", (const char *)s_suites[i].name,
             s_suites[i].editor, (gX_I32)s_suites[i].scenePanel,
-            (gX_I32)s_suites[i].inspectorPanel);
+            (gX_I32)s_suites[i].inspectorPanel, (unsigned)s_suites[i].labMask);
     }
     fclose(file);
+}
+
+static gX_U32 host_lab_mask_all(gX_I0) {
+    gX_I32 count = gX_Tools_Gfx_LabPanelCount();
+    if (count <= 0) return 0;
+    if (count >= 32) return 0xFFFFFFFFu;
+    return (1u << count) - 1u;
 }
 
 static gX_I1 host_suite_name_used(const gX_I8 *name) {
@@ -224,6 +234,7 @@ static gX_I0 host_suites_init(gX_I0) {
         s_suites[s_suiteCount].user = 0;
         s_suites[s_suiteCount].scenePanel = kBuiltinSuites[i].scenePanel;
         s_suites[s_suiteCount].inspectorPanel = kBuiltinSuites[i].inspectorPanel;
+        s_suites[s_suiteCount].labMask = kBuiltinSuites[i].labMask;
         s_suiteCount++;
     }
     if (s_guarded) return;
@@ -244,11 +255,17 @@ static gX_I0 host_suites_init(gX_I0) {
         if (bar2) *bar2 = '\0';
         gX_I32 editor = atoi(cursor);
         gX_I32 scene = 1, inspector = 1;
+        gX_U32 labs = 0;
         if (bar2) {
             char *bar3 = strchr(bar2 + 1, '|');
             if (bar3) *bar3 = '\0';
             scene = atoi(bar2 + 1);
-            if (bar3) inspector = atoi(bar3 + 1);
+            if (bar3) {
+                char *bar4 = strchr(bar3 + 1, '|');
+                if (bar4) *bar4 = '\0';
+                inspector = atoi(bar3 + 1);
+                if (bar4) labs = (gX_U32)strtoul(bar4 + 1, NULL, 10);
+            }
             scene = scene ? 1 : 0;
             inspector = inspector ? 1 : 0;
         }
@@ -261,6 +278,7 @@ static gX_I0 host_suites_init(gX_I0) {
         s_suites[s_suiteCount].user = 1;
         s_suites[s_suiteCount].scenePanel = (gX_I1)scene;
         s_suites[s_suiteCount].inspectorPanel = (gX_I1)inspector;
+        s_suites[s_suiteCount].labMask = labs & host_lab_mask_all();
         s_suiteCount++;
     }
     fclose(file);
@@ -380,10 +398,13 @@ static gX_I0 host_save_user_suite(const gX_I8 *name) {
     s_suites[found].editor = editor;
     s_suites[found].scenePanel = 1;
     s_suites[found].inspectorPanel = 1;
+    s_suites[found].labMask = 0;
     if (strcmp((const char *)kEditors[editor].label, "GFX") == 0) {
         s_suites[found].scenePanel = *gX_Tools_Gfx_ScenePanelFlag() ? 1 : 0;
         s_suites[found].inspectorPanel =
             *gX_Tools_Gfx_InspectorPanelFlag() ? 1 : 0;
+        s_suites[found].labMask =
+            *gX_Tools_Gfx_LabPanelMask() & host_lab_mask_all();
     }
     host_suites_persist();
     s_suite = found;
@@ -430,6 +451,8 @@ static gX_I0 host_apply_suite(gX_I32 index) {
         && strcmp((const char *)kEditors[editorIndex].label, "GFX") == 0) {
         *gX_Tools_Gfx_ScenePanelFlag() = s_suites[index].scenePanel;
         *gX_Tools_Gfx_InspectorPanelFlag() = s_suites[index].inspectorPanel;
+        *gX_Tools_Gfx_LabPanelMask() =
+            s_suites[index].labMask & host_lab_mask_all();
     }
     host_load_layout(index);
     host_save_selection();
@@ -547,6 +570,21 @@ static gX_I0 host_editor_menu(const HostEditor *editor) {
         gX_I1 footer = *gX_Tools_Gfx_FooterPanelFlag() ? 1 : 0;
         if (ImGui::MenuItem("Shortcut footer", NULL, &footer))
             *gX_Tools_Gfx_FooterPanelFlag() = footer;
+        ImGui::Separator();
+        if (ImGui::BeginMenu("Renderer panels")) {
+            gX_U32 *labs = gX_Tools_Gfx_LabPanelMask();
+            gX_I32 labCount = gX_Tools_Gfx_LabPanelCount();
+            for (gX_I32 i = 0; i < labCount; i++) {
+                gX_U32 bit = 1u << i;
+                bool open = (*labs & bit) != 0;
+                if (ImGui::MenuItem(
+                        (const char *)gX_Tools_Gfx_LabPanelLabel(i), NULL, &open)) {
+                    if (open) *labs |= bit;
+                    else *labs &= ~bit;
+                }
+            }
+            ImGui::EndMenu();
+        }
     }
     ImGui::EndMenu();
 }

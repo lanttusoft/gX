@@ -198,9 +198,15 @@ static gX_I1 s_headlessPresetLoadDone = 0;
 static gX_I1 s_headlessSnapshotSmokeDone = 0;
 static gX_I1 s_scenePanelOpen = 1;
 static gX_I1 s_inspectorPanelOpen = 1;
+//ai: each renderer lab is a summonable panel; the mask is workspace-persisted.
+#define GX_GFX_LAB_COUNT 7
+static gX_U32 s_labMask = 0;
+static gX_U32 s_focusSavedLabs = 0;
+static gX_U32 s_labTracedMask = 0;
 
 extern "C" gX_I1 *gX_Tools_Gfx_ScenePanelFlag(gX_I0) { return &s_scenePanelOpen; }
 extern "C" gX_I1 *gX_Tools_Gfx_InspectorPanelFlag(gX_I0) { return &s_inspectorPanelOpen; }
+extern "C" gX_U32 *gX_Tools_Gfx_LabPanelMask(gX_I0) { return &s_labMask; }
 //ai: one-action viewport focus; remembers which panels were open.
 static gX_I1 s_focusViewport = 0;
 static gX_I1 s_focusSavedScene = 1;
@@ -217,11 +223,14 @@ static gX_I0 gfx_focus_viewport_set(gX_I1 on)
     if (on) {
         s_focusSavedScene = s_scenePanelOpen;
         s_focusSavedInspector = s_inspectorPanelOpen;
+        s_focusSavedLabs = s_labMask;
         s_scenePanelOpen = 0;
         s_inspectorPanelOpen = 0;
+        s_labMask = 0;
     } else {
         s_scenePanelOpen = s_focusSavedScene;
         s_inspectorPanelOpen = s_focusSavedInspector;
+        s_labMask = s_focusSavedLabs;
     }
     s_focusViewport = on;
 }
@@ -11016,6 +11025,131 @@ static gX_I0 gfx_editor_selection_panel(gX_RendererGFX *gfx) {
     }
 }
 
+//ai: renderer labs were inspector tabs; each now owns a summonable panel.
+static gX_I0 gfx_lab_models_draw(gX_RendererGFX *gfx)
+{
+    const gX_I8 *reflectFocus = getenv("GX_GFX_REFLECT_FOCUS");
+    gX_I1 reflectSelected = (reflectFocus && reflectFocus[0]
+        && reflectFocus[0] != '0') ? 1 : 0;
+    if (ImGui::BeginTabBar("GfxModelSections", ImGuiTabBarFlags_FittingPolicyScroll)) {
+        if (ImGui::BeginTabItem("Model")) {
+            gfx_models_panel(gfx);
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Surface", NULL,
+                reflectSelected ? ImGuiTabItemFlags_SetSelected : 0)) {
+            gfx_model_surface_panel(gfx);
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
+}
+
+static gX_I0 gfx_lab_sky_draw(gX_RendererGFX *gfx)
+{
+    gfx_skylab_panel(gfx);
+    gfx_sky_panel(gfx);
+}
+
+static gX_I0 gfx_lab_world_draw(gX_RendererGFX *gfx)
+{
+    gfx_camera_panel(gfx);
+    gfx_weather_panel(gfx);
+    gfx_decals_panel(gfx);
+}
+
+static gX_I0 gfx_lab_fx_draw(gX_RendererGFX *gfx)
+{
+    gfx_fog_panel(gfx);
+    gfx_fogvolume_panel(gfx);
+    gfx_bloom_panel(gfx);
+    gfx_godray_panel(gfx);
+    gfx_lensflare_panel(gfx);
+}
+
+static gX_I0 gfx_lab_lights_draw(gX_RendererGFX *gfx)
+{
+    gfx_lights_panel(gfx);
+    gfx_shadow_panel(gfx);
+    gfx_csm_panel(gfx);
+}
+
+static gX_I0 gfx_lab_render_draw(gX_RendererGFX *gfx)
+{
+    gfx_look_panel(gfx);
+    gfx_ssao_panel(gfx);
+    gfx_shader_tuning_panel(gfx);
+    gfx_quality_panel(gfx);
+    gfx_toggles_panel(gfx);
+}
+
+static gX_I0 gfx_lab_water_draw(gX_RendererGFX *gfx)
+{
+    gfx_editor_water_panel(gfx, &s_selectedWave, gfx_water_normal_browse,
+        gfx_color_edit, gfx_text_disabled_wrapped);
+}
+
+typedef struct GfxLabPanel {
+    const gX_I8 *label;
+    gX_I0 (*draw)(gX_RendererGFX *gfx);
+} GfxLabPanel;
+
+static const GfxLabPanel kGfxLabs[GX_GFX_LAB_COUNT] = {
+    { "Models", gfx_lab_models_draw },
+    { "Sky",    gfx_lab_sky_draw },
+    { "World",  gfx_lab_world_draw },
+    { "FX",     gfx_lab_fx_draw },
+    { "Lights", gfx_lab_lights_draw },
+    { "Render", gfx_lab_render_draw },
+    { "Water",  gfx_lab_water_draw },
+};
+
+extern "C" gX_I32 gX_Tools_Gfx_LabPanelCount(gX_I0) { return GX_GFX_LAB_COUNT; }
+
+extern "C" const gX_I8 *gX_Tools_Gfx_LabPanelLabel(gX_I32 index)
+{
+    if (index < 0 || index >= GX_GFX_LAB_COUNT) return (const gX_I8 *)"";
+    return kGfxLabs[index].label;
+}
+
+static gX_I0 gfx_lab_menu_items(gX_I0)
+{
+    for (gX_I32 i = 0; i < GX_GFX_LAB_COUNT; i++) {
+        gX_U32 bit = 1u << i;
+        bool open = (s_labMask & bit) != 0;
+        if (ImGui::MenuItem((const char *)kGfxLabs[i].label, NULL, &open)) {
+            if (open) s_labMask |= bit;
+            else s_labMask &= ~bit;
+            s_focusViewport = 0;
+        }
+    }
+}
+
+//ai: compact launcher keeps the panels discoverable after the tab split.
+static gX_I0 gfx_lab_launcher(gX_I0)
+{
+    ImGui::SeparatorText("Renderer panels");
+    gX_F32 avail = ImGui::GetContentRegionAvail().x;
+    gX_F32 used = 0.0f;
+    gX_F32 spacing = ImGui::GetStyle().ItemSpacing.x;
+    gX_F32 pad = ImGui::GetStyle().FramePadding.x * 2.0f;
+    for (gX_I32 i = 0; i < GX_GFX_LAB_COUNT; i++) {
+        gX_F32 width = ImGui::CalcTextSize((const char *)kGfxLabs[i].label).x + pad;
+        if (used > 0.0f && used + spacing + width > avail) used = 0.0f;
+        else if (used > 0.0f) ImGui::SameLine();
+        gX_U32 bit = 1u << i;
+        bool open = (s_labMask & bit) != 0;
+        if (open) ImGui::PushStyleColor(ImGuiCol_Button,
+            ImVec4(0.30f, 0.21f, 0.44f, 1.0f));
+        if (ImGui::SmallButton((const char *)kGfxLabs[i].label)) {
+            s_labMask ^= bit;
+            s_focusViewport = 0;
+        }
+        if (open) ImGui::PopStyleColor();
+        used += width + spacing;
+    }
+}
+
 //opencode: hold other editor actions while a browser target is captured.
 static gX_I0 gfx_menu_bar(gX_RendererGFX *gfx) {
     if (s_assetBrowserOpen || s_freeCameraActive) return;
@@ -11076,6 +11210,10 @@ static gX_I0 gfx_menu_bar(gX_RendererGFX *gfx) {
         if (ImGui::MenuItem(s_focusViewport ? "Exit focus viewport" : "Focus viewport",
                 "F6", s_focusViewport))
             gfx_focus_viewport_set(!s_focusViewport);
+        if (ImGui::BeginMenu("Renderer panels")) {
+            gfx_lab_menu_items();
+            ImGui::EndMenu();
+        }
         if (gfx) {
             bool gizmo = gfx->state.SHOW_GIZMO != 0;
             bool boxes = gfx->state.SHOW_BOUNDING_BOX != 0;
@@ -11149,9 +11287,12 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
     s_sunInit = 0;
     s_scenePanelOpen = 1;
     s_inspectorPanelOpen = 1;
+    s_labMask = 0;
+    s_labTracedMask = 0;
     s_focusViewport = 0;
     s_focusSavedScene = 1;
     s_focusSavedInspector = 1;
+    s_focusSavedLabs = 0;
     s_pickEnabled = 1;
     //ai: headless capture hook for the focus-viewport state.
     const char *focusEnv = getenv("GX_EDITOR_FOCUS_VIEWPORT");
@@ -11165,10 +11306,22 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
         const gX_I8 *inspEnv = getenv("GX_GFX_PANEL_INSPECTOR");
         const gX_I8 *assetEnv = getenv("GX_GFX_PANEL_ASSET");
         const gX_I8 *footerEnv = getenv("GX_GFX_PANEL_FOOTER");
+        const gX_I8 *labsEnv = getenv("GX_GFX_PANEL_LABS");
         if (sceneEnv && sceneEnv[0]) s_scenePanelOpen = atoi((const char *)sceneEnv) != 0;
         if (inspEnv && inspEnv[0]) s_inspectorPanelOpen = atoi((const char *)inspEnv) != 0;
         if (assetEnv && assetEnv[0]) s_assetBrowserOpen = atoi((const char *)assetEnv) != 0;
         if (footerEnv && footerEnv[0]) s_shortcutFooterOpen = atoi((const char *)footerEnv) != 0;
+        if (labsEnv && labsEnv[0]) {
+            s_labMask = (gX_U32)strtoul((const char *)labsEnv, NULL, 0)
+                & ((1u << GX_GFX_LAB_COUNT) - 1u);
+        }
+    }
+    //ai: the reflection UI fixture drives the Surface controls; keep the
+    //   Models panel open so its traced widgets still render headlessly.
+    {
+        const gX_I8 *reflectEnv = getenv("GX_GFX_REFLECT_FOCUS");
+        if (reflectEnv && reflectEnv[0] && reflectEnv[0] != '0')
+            s_labMask |= 1u << 0;
     }
     s_freeCameraActive = 0;
     input.toolCameraInputEnabled = 0;
@@ -11311,13 +11464,15 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
         gX_Rectangle dockBox = gX_GUI_ViewportBox_Get();
         gX_TraceLog(gX_LOG_INFO,
             "GFX_DOCK: docked=%d window=%ux%u viewport=(%.0f,%.0f,%.0f,%.0f) "
-            "inset=%.0f inspector=%.0f scene=%.0f panels=%d/%d aux=%d/%d",
+            "inset=%.0f inspector=%.0f scene=%.0f panels=%d/%d aux=%d/%d "
+            "labs=%u",
             gui.viewportDocked ? 1 : 0, maindata.windowWidth,
             maindata.windowHeight, dockBox.x, dockBox.y, dockBox.width,
             dockBox.height, (gui.viewportDocked && s_inspectorPanelOpen)
                 ? inspectorW : 0.0f, inspectorW, sceneW,
             (gX_I32)s_scenePanelOpen, (gX_I32)s_inspectorPanelOpen,
-            (gX_I32)s_assetBrowserOpen, (gX_I32)s_shortcutFooterOpen);
+            (gX_I32)s_assetBrowserOpen, (gX_I32)s_shortcutFooterOpen,
+            (unsigned)s_labMask);
     }
     ImGuiCond panelCond = gui.viewportDocked ? ImGuiCond_Always : ImGuiCond_FirstUseEver;
 
@@ -11363,6 +11518,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
                     ImGui::TextColored(ImVec4(0.45f, 0.90f, 0.60f, 1.0f), "LIVE");
                     ImGui::TextDisabled("Edit live; save preset.");
                 }
+                gfx_lab_launcher();
                 ImGui::Separator();
                 ImGui::BeginChild("GfxInspectorContent", ImVec2(0, 0), false,
                     ImGuiWindowFlags_AlwaysVerticalScrollbar);
@@ -11374,65 +11530,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
                 //opencode: task-oriented lab tabs keep the full renderer surface
                 //   available without forcing a narrow dock to show every section.
                 gX_I1 inspectRaymarch = getenv("GX_RAYMARCH_EDITOR_INSPECT") != NULL;
-                const gX_I8 *reflectTabFocus = getenv("GX_GFX_REFLECT_FOCUS");
-                gX_I1 reflectSelected = (reflectTabFocus && reflectTabFocus[0]
-                    && reflectTabFocus[0] != '0') ? 1 : 0;
                 if (ImGui::BeginTabBar("GfxLabs", ImGuiTabBarFlags_FittingPolicyScroll)) {
-                    if (ImGui::BeginTabItem("Models", NULL,
-                            reflectSelected ? ImGuiTabItemFlags_SetSelected : 0)) {
-                        if (ImGui::BeginTabBar("GfxModelSections", ImGuiTabBarFlags_FittingPolicyScroll)) {
-                            if (ImGui::BeginTabItem("Model")) {
-                                gfx_models_panel(gfx);
-                                ImGui::EndTabItem();
-                            }
-                            if (ImGui::BeginTabItem("Surface", NULL,
-                                    reflectSelected ? ImGuiTabItemFlags_SetSelected : 0)) {
-                                gfx_model_surface_panel(gfx);
-                                ImGui::EndTabItem();
-                            }
-                            ImGui::EndTabBar();
-                        }
-                        ImGui::EndTabItem();
-                    }
-                    if (ImGui::BeginTabItem("Sky")) {
-                        gfx_skylab_panel(gfx);
-                        gfx_sky_panel(gfx);
-                        ImGui::EndTabItem();
-                    }
-                    if (ImGui::BeginTabItem("World")) {
-                        gfx_camera_panel(gfx);
-                        gfx_weather_panel(gfx);
-                        gfx_decals_panel(gfx);
-                        ImGui::EndTabItem();
-                    }
-                    if (ImGui::BeginTabItem("FX")) {
-                        gfx_fog_panel(gfx);
-                        gfx_fogvolume_panel(gfx);
-                        gfx_bloom_panel(gfx);
-                        gfx_godray_panel(gfx);
-                        gfx_lensflare_panel(gfx);
-                        ImGui::EndTabItem();
-                    }
-                    if (ImGui::BeginTabItem("Lights")) {
-                        gfx_lights_panel(gfx);
-                        gfx_shadow_panel(gfx);
-                        gfx_csm_panel(gfx);
-                        ImGui::EndTabItem();
-                    }
-                    if (ImGui::BeginTabItem("Render")) {
-                        gfx_look_panel(gfx);
-                        gfx_ssao_panel(gfx);
-                        gfx_shader_tuning_panel(gfx);
-                        gfx_quality_panel(gfx);
-                        gfx_toggles_panel(gfx);
-                        ImGui::EndTabItem();
-                    }
-                    //ai: water authoring is discoverable without opening general render tuning.
-                    if (ImGui::BeginTabItem("Water")) {
-                        gfx_editor_water_panel(gfx, &s_selectedWave, gfx_water_normal_browse,
-                            gfx_color_edit, gfx_text_disabled_wrapped);
-                        ImGui::EndTabItem();
-                    }
                     if (ImGui::BeginTabItem("Ray", NULL,
                             inspectRaymarch ? ImGuiTabItemFlags_SetSelected : 0)) {
                         gfx_ray_preview_panel(gfx);
@@ -11458,6 +11556,57 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
         }
         ImGui::End();
         s_inspectorPanelOpen = inspectorOpen ? 1 : 0;
+    }
+
+    //ai: renderer labs are independent floating panels. They default closed so
+    //   the docked viewport stays unobstructed; the GFX menu and the inspector
+    //   launcher summon them.
+    if (s_labMask) {
+        gX_F32 labW = 360.0f * uiScale;
+        gX_F32 room = scrW - sceneW - inspectorW - 40.0f;
+        if (labW > room) labW = room;
+        if (labW < 260.0f) labW = 260.0f;
+        gX_F32 labH = panelH * 0.72f;
+        gX_F32 rightEdge = s_inspectorPanelOpen ? inspectorW : 0.0f;
+        gX_I32 order = 0;
+        for (gX_I32 i = 0; i < GX_GFX_LAB_COUNT; i++) {
+            gX_U32 bit = 1u << i;
+            if (!(s_labMask & bit)) continue;
+            gX_F32 cascade = 24.0f * (gX_F32)(order % 4);
+            //ai: the reflection UI fixture scans the top-center band for its
+            //   dialog buttons; keep its forced Models panel below that band.
+            const gX_I8 *reflectFocus = getenv("GX_GFX_REFLECT_FOCUS");
+            gX_F32 defaultY = menuH + 12.0f + cascade;
+            if (reflectFocus && reflectFocus[0] && reflectFocus[0] != '0')
+                defaultY = menuH + panelH * 0.55f + cascade;
+            ImGui::SetNextWindowPos(ImVec2(
+                scrW - rightEdge - labW - 12.0f + cascade,
+                defaultY), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(labW, labH), ImGuiCond_FirstUseEver);
+            gX_I8 title[64];
+            snprintf((char *)title, sizeof(title), "GFX %s",
+                (const char *)kGfxLabs[i].label);
+            bool labOpen = true;
+            ImGuiWindowFlags labFlags = s_assetBrowserOpen
+                ? ImGuiWindowFlags_NoInputs : 0;
+            if (ImGui::Begin((const char *)title, &labOpen, labFlags)) {
+                gX_Tools_ImGui_Aero_Panel();
+                if (!(s_labTracedMask & bit)) {
+                    gX_TraceLog(gX_LOG_INFO, "GFX_LAB: panel=%s open=1",
+                        (const char *)kGfxLabs[i].label);
+                    s_labTracedMask |= bit;
+                }
+                if (!gfx) {
+                    ImGui::TextWrapped(
+                        "No GFX state — open a GFX scene first (--gfx).");
+                } else {
+                    kGfxLabs[i].draw(gfx);
+                }
+            }
+            ImGui::End();
+            if (!labOpen) s_labMask &= ~bit;
+            order++;
+        }
     }
     gfx_editor_camera_markers_draw(gfx);
     if (s_shortcutFooterOpen) gfx_editor_shortcut_footer(gfx, 0);

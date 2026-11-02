@@ -159,6 +159,8 @@ def main():
                 f"host {host_y:.0f})")
         if "panels=1/1" not in host_gfx_log:
             raise RuntimeError("hosted GFX panels do not default to 1/1")
+        if "labs=0" not in host_gfx_log:
+            raise RuntimeError("GFX lab panels do not default closed")
 
         focus_code, focus_log, _ = run("gfx-focus", "--gfx",
             {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "gfx",
@@ -205,10 +207,14 @@ def main():
             raise RuntimeError("GFX suite did not apply")
         if "panels=1/1" not in suite_log:
             raise RuntimeError("GFX suite did not restore both panels")
+        if "labs=1" not in suite_log:
+            raise RuntimeError("GFX suite did not restore the Models lab")
         if "EDITOR_HOST: workspace=GFX Focus" not in focus_suite_log:
             raise RuntimeError("GFX Focus suite did not apply")
         if "panels=0/1" not in focus_suite_log:
             raise RuntimeError("GFX Focus suite did not hide the scene panel")
+        if "labs=0" not in focus_suite_log:
+            raise RuntimeError("GFX Focus suite did not close the labs")
         suite_dock = DOCK_RE.findall(suite_log)
         focus_suite_dock = DOCK_RE.findall(focus_suite_log)
         if not suite_dock or not focus_suite_dock:
@@ -225,6 +231,26 @@ def main():
             raise RuntimeError("GFX aux panel run failed")
         if "aux=1/0" not in aux_log:
             raise RuntimeError("GFX asset/footer toggles did not apply")
+
+        #ai: renderer labs are independent floating panels. Summoning two must
+        #   draw both and must not resize the docked viewport (they float over
+        #   the stage, unlike the fixed scene/inspector panels).
+        labs_code, labs_log, _ = run("gfx-labs", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "gfx",
+             "GX_GFX_PANEL_LABS": "3", "GX_DOCK_TRACE": "1"},
+            frames=90, shot=60)
+        if labs_code != 0:
+            raise RuntimeError("GFX lab panel run failed")
+        if "labs=3" not in labs_log:
+            raise RuntimeError("GFX lab panel mask did not apply")
+        for name in ("Models", "Sky"):
+            if f"GFX_LAB: panel={name} open=1" not in labs_log:
+                raise RuntimeError(f"GFX {name} lab panel did not draw")
+        labs_dock = DOCK_RE.findall(labs_log)
+        if not labs_dock:
+            raise RuntimeError("GFX lab dock trace missing")
+        if labs_dock[-1][:4] != host_dock[-1][:4]:
+            raise RuntimeError("GFX lab panels resized the docked viewport")
 
         default_code, default_log, _ = run("default", "--title",
             {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "Default"},
@@ -264,7 +290,8 @@ def main():
     print("EDITOR_HOST_CHECK: PASS toolbar in title/gfx, F9 open+close, "
           "Sky/Background/Default workspaces, tab hit boxes sane, GFX hosted "
           "below the bars, scene/inspector panels summonable, "
-          "GFX/GFX Focus suite masks, aux asset/footer panels")
+          "GFX/GFX Focus suite masks, aux asset/footer panels, "
+          "renderer lab panels summonable without moving the dock")
     return 0
 
 

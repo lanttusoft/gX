@@ -9,6 +9,13 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **Renderer lab panels**: Models, Sky, World, FX, Lights, Render and Water
+  are separate summonable windows instead of inspector tabs. Open them from
+  the host GFX menu, the editor View menu or the inspector launcher; suites
+  persist the panel mask as an optional fifth field
+  (`name|editor|scene|inspector|labs`). `GX_GFX_PANEL_LABS=<mask>` and
+  `GFX_DOCK labs=<mask>` expose the mask for captures, and the floating
+  panels leave the docked viewport geometry unchanged.
 - **Shader program cache**: linked GL program binaries are cached under
   `gx_shader_cache/` and keyed by the processed vertex/fragment sources, the
   driver identity, the compiler mode and a cache version. A warm start skips
@@ -17,6 +24,10 @@ Release-Class: minor
   disables it, `GX_SHADER_TIME=1` logs per-shader timings, and
   `make shader-cache-check` pins the cold/warm frame and timing contract.
   The cache is local scratch state and is never shipped.
+- **Public agent docs**: `AGENTS.md` is the harness-neutral guide for AI
+  coding agents (build/gates, conventions, attribution, provenance and
+  review); `AI_CONTRIBUTING.md` is the short contributor checklist. Both are
+  linked from `CONTRIBUTING.md`, `README.md` and the documentation index.
 
 ## [0.32.1] - 2026-11-02
 

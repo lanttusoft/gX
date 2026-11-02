@@ -714,6 +714,10 @@ the not-in-slice list live in `docs/scripting.md`.
   registry, workspace suites and per-suite layouts. `Toggle`, `SetOpen`,
   `IsOpen`, `Update`, `Draw`; `GX_EDITOR_HOST=1` opens it for captures and
   `GX_EDITOR_WORKSPACE=<name>` selects a suite
+- `gX_Tools_Gfx_LabPanel*` — renderer lab panels: `Mask`, `Count`,
+  `Label` (Models/Sky/World/FX/Lights/Render/Water; bit order matches the
+  panel list). `GX_GFX_PANEL_LABS=<mask>` pins the mask for captures and the
+  host suites persist it.
 - `gX_Tools_RuntimeActive` — any in-app tool open (draw gate)
 - `gX_Tools_Toolgun_*` — the shared crosshair/tool mode for in-engine
   editors (open a tool table, step the input each frame, draw the crosshair

@@ -175,6 +175,34 @@ selected camera's target handle remains draggable. The overlay is editor-only,
 is skipped for render captures, and is controlled by the schema flag
 `SHOW_CAMERA_MARKERS` (off by default).
 
+## Renderer panels
+
+<!-- //ai: the renderer tabs are separate summonable windows. -->
+
+The seven task labs — **Models**, **Sky**, **World**, **FX**, **Lights**,
+**Render** and **Water** — are separate panels rather than tabs inside the
+inspector. They open from **GFX → Renderer panels** in the host menu, from
+**View → Renderer panels** in the editor menu, or from the compact launcher
+at the top of the inspector. **Ray**, **Particles**, **Refl** and **Debug**
+remain inspector tabs.
+
+- Panels are floating windows; they do not change the docked viewport inset.
+  The first open places the window left of the inspector and later positions
+  are remembered per suite in the ImGui layout file (cascade by open order).
+- The visibility mask is bit-packed in panel order: Models `1`, Sky `2`,
+  World `4`, FX `8`, Lights `16`, Render `32`, Water `64`.
+  `GX_GFX_PANEL_LABS=<mask>` pins it for captures; `GFX_DOCK` reports
+  `labs=<mask>`.
+- Suites store the mask as an optional fifth field:
+  `name|editor|scene|inspector|labs`. Two-, three- and four-field files stay
+  valid (missing labs default closed). Built-in **GFX** opens Models;
+  **GFX Focus** opens none.
+- `GX_GFX_REFLECT_FOCUS=1` keeps the Models panel open (Surface sub-tab
+  selected) so the reflection UI fixture still traces its controls.
+
+`scripts/editor_host_check.py` pins the summon/close path, the suite mask and
+the unchanged dock geometry.
+
 ## Peer-review gate
 
 The reusable contract is [`peer_review_gate.md`](peer_review_gate.md). For this
