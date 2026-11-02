@@ -191,6 +191,31 @@ def main():
                 f"hiding the inspector did not widen the viewport start "
                 f"({noinsp_x:.0f} vs {host_x:.0f})")
 
+        #opencode: suites carry GFX panel masks; the built-in Focus suite
+        #   restores the scene panel hidden.
+        suite_code, suite_log, _ = run("gfx-suite", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "GFX",
+             "GX_DOCK_TRACE": "1"}, frames=90, shot=60)
+        focus_suite_code, focus_suite_log, _ = run("gfx-focus-suite", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "GFX Focus",
+             "GX_DOCK_TRACE": "1"}, frames=90, shot=60)
+        if suite_code != 0 or focus_suite_code != 0:
+            raise RuntimeError("GFX suite runs failed")
+        if "EDITOR_HOST: workspace=GFX" not in suite_log:
+            raise RuntimeError("GFX suite did not apply")
+        if "panels=1/1" not in suite_log:
+            raise RuntimeError("GFX suite did not restore both panels")
+        if "EDITOR_HOST: workspace=GFX Focus" not in focus_suite_log:
+            raise RuntimeError("GFX Focus suite did not apply")
+        if "panels=0/1" not in focus_suite_log:
+            raise RuntimeError("GFX Focus suite did not hide the scene panel")
+        suite_dock = DOCK_RE.findall(suite_log)
+        focus_suite_dock = DOCK_RE.findall(focus_suite_log)
+        if not suite_dock or not focus_suite_dock:
+            raise RuntimeError("GFX suite dock traces missing")
+        if float(focus_suite_dock[-1][0]) >= float(suite_dock[-1][0]):
+            raise RuntimeError("GFX Focus suite did not reclaim the left margin")
+
         default_code, default_log, _ = run("default", "--title",
             {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "Default"},
             frames=40, shot=30)
@@ -228,7 +253,8 @@ def main():
         return 1
     print("EDITOR_HOST_CHECK: PASS toolbar in title/gfx, F9 open+close, "
           "Sky/Background/Default workspaces, tab hit boxes sane, GFX hosted "
-          "below the bars, scene/inspector panels summonable")
+          "below the bars, scene/inspector panels summonable, "
+          "GFX/GFX Focus suite masks")
     return 0
 
 
