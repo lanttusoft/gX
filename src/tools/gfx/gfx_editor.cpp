@@ -188,7 +188,7 @@ typedef struct GfxMirrorSnapshot {
     gX_Color albedoTint;
     gX_Color emissiveColor;
 } GfxMirrorSnapshot;
-static GfxMirrorSnapshot s_mirrorSnapshots[GX_GFX_MIRROR_SNAPSHOT_MAX];
+static GfxMirrorSnapshot *s_mirrorSnapshots = NULL;
 #endif
 static gX_I8 s_modelPath[256] = "resources/model/primitive/cube.glb";
 //ai: new normal-map selections start with the shipped project texture, not a quarantined file.
@@ -207,7 +207,8 @@ static gX_I1 s_presetStatusOK = 1;
 static gX_I8 s_presetSearch[128] = { 0 };
 static gX_I8 s_presetSelectedPath[256] = { 0 };
 #define GX_GFX_PRESET_MAX 96
-static gX_I8 s_presetFiles[GX_GFX_PRESET_MAX][256];
+//ai: the browser index is heap-backed so the Release BSS budget stays flat.
+static gX_I8 (*s_presetFiles)[256] = NULL;
 static gX_U32 s_presetFileCount = 0;
 //opencode: cached shipped font list for the label font picker (loaded once).
 static FilePathList s_fontFiles = { 0 };
@@ -1065,7 +1066,8 @@ static int gfx_preset_asset_compare(const void *left, const void *right) {
 //ai: one preset can come from the shipped tree, the authoring dir, or a guest
 //   root's tools/presets folder; keep a fixed, deduplicated list.
 static gX_I0 gfx_preset_add_dir(const gX_I8 *dir) {
-    if (!dir || !dir[0] || s_presetFileCount >= GX_GFX_PRESET_MAX) return;
+    if (!dir || !dir[0] || !s_presetFiles
+        || s_presetFileCount >= GX_GFX_PRESET_MAX) return;
     FilePathList files = LoadDirectoryFilesEx(dir, "FILES*", false);
     if (!files.paths) return;
     for (gX_U32 i = 0; i < files.count && s_presetFileCount < GX_GFX_PRESET_MAX; i++) {
@@ -1096,6 +1098,11 @@ static const gX_I8 *gfx_preset_dir(gX_I0)
 
 //opencode: refresh and release the lightweight list of authoring presets.
 static gX_I0 gfx_preset_assets_scan(gX_I0) {
+    if (!s_presetFiles) {
+        s_presetFiles = (gX_I8 (*)[256])gX_Calloc(
+            GX_GFX_PRESET_MAX * (gX_U32)sizeof(s_presetFiles[0]));
+        if (!s_presetFiles) return;
+    }
     s_presetFileCount = 0;
     s_presetSelectedPath[0] = 0;
     const gX_I8 *presetDir = gfx_preset_dir();
@@ -1137,6 +1144,10 @@ static gX_I0 gfx_preset_assets_scan(gX_I0) {
 static gX_I0 gfx_preset_assets_release(gX_I0) {
     s_presetFileCount = 0;
     s_presetSelectedPath[0] = 0;
+    if (s_presetFiles) {
+        gX_Free((gX_I0 *)s_presetFiles);
+        s_presetFiles = NULL;
+    }
 }
 
 //opencode: the preset browser uses the same explicit replace confirmation as typed paths.
@@ -5708,6 +5719,7 @@ static gX_I32 gfx_model_reflection_mode(const gX_RendererGFX_Model *model)
 
 static GfxMirrorSnapshot *gfx_mirror_snapshot_find(gX_I32 model)
 {
+    if (!s_mirrorSnapshots) return NULL;
     for (gX_I32 i = 0; i < GX_GFX_MIRROR_SNAPSHOT_MAX; i++) {
         if (s_mirrorSnapshots[i].valid && s_mirrorSnapshots[i].model == model)
             return &s_mirrorSnapshots[i];
@@ -5720,6 +5732,11 @@ static GfxMirrorSnapshot *gfx_mirror_snapshot_find(gX_I32 model)
 static gX_I0 gfx_mirror_snapshot_store(gX_RendererGFX_Model *model)
 {
     if (!model || s_selModel < 0) return;
+    if (!s_mirrorSnapshots) {
+        s_mirrorSnapshots = (GfxMirrorSnapshot *)gX_Calloc(
+            GX_GFX_MIRROR_SNAPSHOT_MAX * (gX_U32)sizeof(GfxMirrorSnapshot));
+        if (!s_mirrorSnapshots) return;
+    }
     GfxMirrorSnapshot *slot = gfx_mirror_snapshot_find(s_selModel);
     //ai: keep the first pre-mirror snapshot; pressing Make planar mirror again
     //   must not replace it with the already-polished material.
@@ -5782,8 +5799,10 @@ static gX_I0 gfx_mirror_snapshot_restore(gX_RendererGFX_Model *model)
 
 static gX_I0 gfx_mirror_snapshots_clear(gX_I0)
 {
-    for (gX_I32 i = 0; i < GX_GFX_MIRROR_SNAPSHOT_MAX; i++)
-        s_mirrorSnapshots[i].valid = 0;
+    if (s_mirrorSnapshots) {
+        gX_Free((gX_I0 *)s_mirrorSnapshots);
+        s_mirrorSnapshots = NULL;
+    }
 }
 
 //ai: reflection mode transition — enter planar modes fit the plane; leaving
