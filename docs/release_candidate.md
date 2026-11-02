@@ -28,9 +28,9 @@ items. Until all three gates and the operations contract hold, gX stays a
 | Version | v0.36.0 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 86 quick/full gates (87 manifest entries); last full run **86/86** on `86d893b` (2026-11-02, `AUDIT_CACHE=0`) |
+| Audit baseline | 86 quick/full gates (87 manifest entries); last full run **86/86** on `ceabb04` (2026-11-02, `AUDIT_CACHE=0`) |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 4,123,675 B (70,629 B headroom), BSS 2,699,072 B (5,928 B headroom) — v0.34.1 `make check` |
+| Lean gate | payload 4,123,675 B (70,629 B headroom), BSS 2,699,072 B (5,928 B headroom) — v0.36.0 `make check` |
 | Release class | MINOR (v0.36.0: Windows AngelScript shell DLL) |
 
 ## Completeness ledger
@@ -44,7 +44,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Source | archive reproduces from the release tag | holds | `git archive` + checksum sidecar |
 | Admission | `make check` (build, tests, scene smoke, audits, proofs, lean gate) | holds | release CI logs |
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
-| Admission | full audit matrix green (`make audit-summary-full`) | holds | **86/86** on `86d893b` (2026-11-02, `AUDIT_CACHE=0`, 1,337.7 s wall / 2,641.1 s gate time) |
+| Admission | full audit matrix green (`make audit-summary-full`) | holds | **86/86** on `ceabb04` (2026-11-02, `AUDIT_CACHE=0`, 1,290.8 s wall / 2,545.7 s gate time) |
 | Tests | unit suite + contract gates green | holds | `--test-only`, gate manifest |
 | Stability | 3 consecutive full admission runs without a flake | holds | 3 x `make check` on 2026-11-01 (v0.30.0 + readiness docs), logs archived privately; the rare test-only SIGSEGV remains a watch item |
 | Docs | documentation index covers public surfaces; API/enum coverage gates | holds | `docs/README.md`, `api_coverage.py`, `enum_coverage.py` |
