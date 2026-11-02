@@ -47,8 +47,8 @@ The timing hook is diagnostic only; it is not part of the gate contract.
 
 ## Verification
 
-`scripts/shader_cache_check.py` runs the same scene twice — once with the
-cache disabled and once warm — and requires:
+`scripts/shader_cache_check.py` runs the same scene twice — once cold with
+the cache directory removed and once warm — and requires:
 
 - at least one `binary cache` hit on the warm run,
 - the cold and warm captures to match within the usual image tolerance,
@@ -61,8 +61,8 @@ Reference measurement (GTX 1060 6 GB, editor preset, 46 shaders):
 
 | Run | Shader time |
 | --- | ---: |
-| Cold (cache removed) | 7,328 ms |
-| Warm (binary cache) | 139 ms |
+| Cold (cache removed) | 7,266 ms |
+| Warm (binary cache) | 134 ms |
 
 The cold and warm captures matched exactly (mean absolute difference 0.00).
 Most of the win is the driver's GLSL compile/link, which the cached program
