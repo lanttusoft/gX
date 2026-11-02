@@ -28,7 +28,7 @@ items. Until all three gates and the operations contract hold, gX stays a
 | Version | v0.36.0 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 86 quick/full gates (87 manifest entries); last full run **86/86** on `ceabb04` (2026-11-02, `AUDIT_CACHE=0`) |
+| Audit baseline | 87 quick/full gates (88 manifest entries; latest: `reflection-lab`); last full run **86/86** on `ceabb04` (2026-11-02, `AUDIT_CACHE=0`) |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
 | Lean gate | payload 4,123,675 B (70,629 B headroom), BSS 2,699,072 B (5,928 B headroom) — v0.36.0 `make check` |
 | Release class | MINOR (v0.36.0: Windows AngelScript shell DLL) |
