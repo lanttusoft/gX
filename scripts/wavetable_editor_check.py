@@ -27,6 +27,10 @@ def clean_env(**extra):
     environment = {k: v for k, v in os.environ.items() if not k.startswith("GX_")}
     environment["DISPLAY"] = DISPLAY
     environment["GX_NO_SETTINGS_SAVE"] = "1"
+    #ai: audit windows stay unmapped and skip the unit suite; the editor
+    #   surface is what this gate measures.
+    environment["GX_AUDIT_WINDOW"] = "hidden"
+    environment["GX_SKIP_TESTS"] = "1"
     environment["GX_SYNTH_MUTE"] = "1"
     environment["GX_FRAMES"] = "40"
     environment.update(extra)
