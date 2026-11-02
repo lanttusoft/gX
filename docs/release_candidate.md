@@ -25,13 +25,13 @@ items. Until all three gates and the operations contract hold, gX stays a
 
 | Item | Value |
 | --- | --- |
-| Version | v0.30.1 (beta) |
+| Version | v0.31.0 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 83/83 on the readiness base `bf873f5` (2026-11-02); v0.30.1 reran the affected gates |
+| Audit baseline | 85 gates (two new: `editor-host`, `cursor`); last full run 83/83 on `bf873f5` (2026-11-02); both new gates verified individually |
 | Proof pin | `gx-proofs` `v0.18.0-proofs`, 52 core modules / 1,145 declarations |
-| Lean gate | payload 4,103,099 B (91,205 B headroom), BSS 2,697,248 B (7,752 B headroom) |
-| Release class | PATCH (v0.30.1: boot-test isolation, editor maturity) |
+| Lean gate | payload 4,117,787 B (76,517 B headroom), BSS 2,698,976 B (6,024 B headroom) |
+| Release class | MINOR (v0.31.0: editor host, workspaces, cursor state machine) |
 
 ## Completeness ledger
 
@@ -44,7 +44,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Source | archive reproduces from the release tag | holds | `git archive` + checksum sidecar |
 | Admission | `make check` (build, tests, scene smoke, audits, proofs, lean gate) | holds | release CI logs |
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
-| Admission | full audit matrix green (`make audit-summary-full`) | partial | 83/83 on `bf873f5` (2026-11-02); v0.30.1 reran the affected gates; a fresh full matrix on the final commit is the RC execution step |
+| Admission | full audit matrix green (`make audit-summary-full`) | partial | last full run 83/83 on `bf873f5`; the matrix now has 85 gates and both new gates pass; a fresh full run on the final commit is the RC execution step |
 | Tests | unit suite + contract gates green | holds | `--test-only`, gate manifest |
 | Stability | 3 consecutive full admission runs without a flake | holds | 3 x `make check` on 2026-11-01 (v0.30.0 + readiness docs), logs archived privately; the rare test-only SIGSEGV remains a watch item |
 | Docs | documentation index covers public surfaces; API/enum coverage gates | holds | `docs/README.md`, `api_coverage.py`, `enum_coverage.py` |
@@ -61,6 +61,8 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 
 ## Known limitations (accepted for the beta line)
 
+- The global editor host and workspaces are **alpha**; the GFX editor is not
+  hosted yet (migration pending), and user layouts are runtime files.
 - The GFX editor ships as **beta**; the rework is complete but the UI is not
   release-grade for every workflow. Every other editor is **alpha/WIP**: a
   usable preview with known gaps (no undo on most, barebones workflows, no
@@ -83,6 +85,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-01 | Stability soak: 3 consecutive full `make check` runs green; row moves to holds. | owner/agent |
 | 2026-11-02 | Full audit matrix 83/83 on `bf873f5` (2,926.8 s wall). | owner/agent |
 | 2026-11-02 | v0.30.1: unit suite opt-in, portable test scratch, non-GFX editors alpha/WIP; affected gates rerun. | owner/agent |
+| 2026-11-02 | v0.31.0: editor host, workspaces and cursor state machine; matrix gains `editor-host` and `cursor` (85 gates), both green. | owner/agent |
 
 ## Change rule
 
