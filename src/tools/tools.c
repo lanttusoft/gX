@@ -367,6 +367,7 @@ gX_I0 gX_Tools_Close_Runtime(gX_I0) {
     //opencode: drop host panel insets so the next dock starts from the defaults.
     gX_GUI_Viewport_SetLeftInset(0.0f);
     gX_GUI_Viewport_SetRightInset(0.0f);
+    gX_GUI_Viewport_SetTopInset(0.0f);
     gX_TraceLog(gX_LOG_INFO, "Tools: runtime tools closed");
 }
 

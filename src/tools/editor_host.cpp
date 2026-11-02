@@ -78,7 +78,7 @@ static const HostEditor kEditors[] = {
     { "Wavetable",  "alpha/WIP", gX_Tools_RuntimeWavetableFlag,  gX_Tools_OpenWavetable_Runtime,  1 },
     { "Textwriter", "alpha/WIP", gX_Tools_RuntimeTextwriterFlag, gX_Tools_OpenTextwriter_Runtime, 1 },
     { "Rail",       "alpha/WIP", gX_Tools_RuntimeRailFlag,       gX_Tools_OpenRail_Runtime,       1 },
-    { "GFX",        "beta",      gX_Tools_RuntimeGfxFlag,        gX_Tools_OpenGfx_Runtime,        0 },
+    { "GFX",        "beta",      gX_Tools_RuntimeGfxFlag,        gX_Tools_OpenGfx_Runtime,        1 },
     { "Script",     "alpha/WIP", gX_Tools_RuntimeScriptFlag,     gX_Tools_OpenScript_Runtime,     1 },
 };
 

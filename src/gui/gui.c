@@ -528,6 +528,14 @@ gX_I0 gX_GUI_Viewport_SetLeftInset(gX_F32 inset) {
     gX_GUI_Viewport_Refresh();
 }
 
+//opencode: reserve the host menu bar + workspace tab strip above the scene.
+gX_I0 gX_GUI_Viewport_SetTopInset(gX_F32 inset) {
+    if (!isfinite(inset) || inset < 0.0f) inset = 0.0f;
+    if (inset == gui.viewportTopInset) return;
+    gui.viewportTopInset = inset;
+    gX_GUI_Viewport_Refresh();
+}
+
 static gX_F32 gX_GUI_Dock_LeftMargin(gX_I0) {
     gX_F32 left = GX_DOCK_MARGIN_MIN + gui.viewportLeftInset;
     return left > 0.0f ? left : 0.0f;
@@ -546,17 +554,21 @@ gX_I0 gX_GUI_Viewport_Refresh(gX_I0) {
     gX_F32 gh0 = (gX_F32)maindata.screenHeight;
     if (ww <= 0) ww = gw0;
     if (wh <= 0) wh = gh0;
+    gX_F32 top = gui.viewportTopInset;
+    if (top < 0.0f) top = 0.0f;
+    if (top > wh - 1.0f) top = (wh > 1.0f) ? wh - 1.0f : 0.0f;
+    gX_F32 availH = wh - top;
     if (!gui.viewportDocked) {
         //opencode: same pillarbox as drawinfo (manual window resizes safe).
-        gX_F32 wa = ww / wh, sa = gw0 / gh0;
+        gX_F32 wa = ww / availH, sa = gw0 / gh0;
         if (wa > sa + 0.001f) {
-            gX_F32 vw = wh * sa;
-            gui.viewportBox = (gX_Rectangle){(ww - vw) * 0.5f, 0.0f, vw, wh};
+            gX_F32 vw = availH * sa;
+            gui.viewportBox = (gX_Rectangle){(ww - vw) * 0.5f, top, vw, availH};
         } else if (sa > wa + 0.001f) {
             gX_F32 vh = ww / sa;
-            gui.viewportBox = (gX_Rectangle){0.0f, (wh - vh) * 0.5f, ww, vh};
+            gui.viewportBox = (gX_Rectangle){0.0f, top + (availH - vh) * 0.5f, ww, vh};
         } else {
-            gui.viewportBox = (gX_Rectangle){0.0f, 0.0f, ww, wh};
+            gui.viewportBox = (gX_Rectangle){0.0f, top, ww, availH};
         }
         return;
     }
@@ -567,7 +579,7 @@ gX_I0 gX_GUI_Viewport_Refresh(gX_I0) {
     gX_F32 usable = ww - gX_GUI_Dock_LeftMargin() - gui.viewportRightInset;
     if (usable < 1.0f) usable = 1.0f;
     gX_F32 s = usable / gw;
-    gX_F32 heightScale = wh / gh;
+    gX_F32 heightScale = availH / gh;
     if (s > heightScale) s = heightScale;
     if (s < GX_DOCK_SCALE_MIN) s = GX_DOCK_SCALE_MIN;
     if (s > 1.0f) s = 1.0f;
@@ -577,7 +589,7 @@ gX_I0 gX_GUI_Viewport_Refresh(gX_I0) {
     //   leaving a one-sided black band at the old dock edge.
     if (left <= 0.0f && gui.viewportRightInset <= 0.0f && vw < ww)
         left = (ww - vw) * 0.5f;
-    gui.viewportBox = (gX_Rectangle){left, (wh - vh) * 0.5f, vw, vh};
+    gui.viewportBox = (gX_Rectangle){left, top + (availH - vh) * 0.5f, vw, vh};
 }
 
 //opencode: input owns game coords — ScreenToGame maps every frame in

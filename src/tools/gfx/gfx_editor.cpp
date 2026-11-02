@@ -74,6 +74,7 @@
 #endif
 #include "../../gui/gui.h"
 #include "../../input.h"
+#include "../editor_host.h"
 #include "../../wrappers/input.h"
 #include "../../wrappers/camera.h"
 
@@ -11215,8 +11216,13 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     gX_F32 scrH = (gX_F32)maindata.windowHeight;
     if (scrW <= 0) scrW = ImGui::GetIO().DisplaySize.x;
     if (scrH <= 0) scrH = ImGui::GetIO().DisplaySize.y;
-    gX_F32 menuH = ImGui::GetFrameHeight();
+    //opencode: when the global host is open, reserve its menu bar + workspace
+    //   tab strip above the editor panels and viewport.
+    gX_I1 hostOpen = gX_EditorHost_IsOpen();
+    gX_F32 hostBar = hostOpen ? ImGui::GetFrameHeight() : 0.0f;
+    gX_F32 menuH = ImGui::GetFrameHeight() + hostBar;
     gX_F32 panelH = scrH - menuH;
+    gX_GUI_Viewport_SetTopInset(hostOpen ? menuH : 0.0f);
     if (panelH < 100.0f) panelH = 100.0f;
     //opencode: scale the fixed side panels with text so enlarged controls
     //   retain room for labels, then cap them on narrow displays.

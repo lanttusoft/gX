@@ -22,6 +22,7 @@ HEIGHT = 768
 TOP = 46  # menu bar + workspace tab row
 TAB_RE = re.compile(r'EDITOR_HOST: tab=Sky x=(\d+) y=(\d+) w=(\d+) h=(\d+)')
 TAB_ALL_RE = re.compile(r'EDITOR_HOST: tab=(\S+) x=(\d+) y=(\d+) w=(\d+) h=(\d+)')
+DOCK_RE = re.compile(r'GFX_DOCK:.*viewport=\(([-0-9.]+),([-0-9.]+),([-0-9.]+),([-0-9.]+)\)')
 
 
 def run(tag, scene, extra, frames=30, shot=20):
@@ -128,6 +129,34 @@ def main():
         if "BG_EDITOR_UI: panel=1" not in bg_log:
             raise RuntimeError("background panel did not open")
 
+        #opencode: the GFX editor is hosted now; its panels/viewport must start
+        #   below the host menu bar + workspace tab strip.
+        base_gfx_code, base_gfx_log, _ = run("gfx-base", "--gfx",
+            {"GX_TOOLS_OPEN": "gfx", "GX_DOCK_TRACE": "1"},
+            frames=80, shot=60)
+        host_gfx_code, host_gfx_log, _ = run("gfx-host", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "gfx",
+             "GX_DOCK_TRACE": "1"}, frames=80, shot=60)
+        if base_gfx_code != 0 or host_gfx_code != 0:
+            raise RuntimeError("hosted GFX editor run failed")
+        if "Tools: GFX editor opened" not in host_gfx_log:
+            raise RuntimeError("GFX editor did not open under the host")
+        if "EDITOR_HOST: active=GFX" not in host_gfx_log:
+            raise RuntimeError("host registry did not report GFX active")
+        base_dock = DOCK_RE.findall(base_gfx_log)
+        host_dock = DOCK_RE.findall(host_gfx_log)
+        if not base_dock or not host_dock:
+            raise RuntimeError("GFX dock trace missing")
+        base_y = float(base_dock[-1][1])
+        host_y = float(host_dock[-1][1])
+        if host_y < 40.0:
+            raise RuntimeError(
+                f"GFX viewport does not clear the host bars (y={host_y:.0f})")
+        if host_y <= base_y:
+            raise RuntimeError(
+                f"host inset did not move the GFX viewport (base {base_y:.0f}, "
+                f"host {host_y:.0f})")
+
         default_code, default_log, _ = run("default", "--title",
             {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "Default"},
             frames=40, shot=30)
@@ -164,7 +193,8 @@ def main():
         print(f"EDITOR_HOST_CHECK: FAIL — {error}", file=sys.stderr)
         return 1
     print("EDITOR_HOST_CHECK: PASS toolbar in title/gfx, F9 open+close, "
-          "Sky/Background/Default workspaces, tab hit boxes sane")
+          "Sky/Background/Default workspaces, tab hit boxes sane, GFX hosted "
+          "below the bars")
     return 0
 
 
