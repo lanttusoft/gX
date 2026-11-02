@@ -4,6 +4,19 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: minor
+
+### Added
+- **Renderer lab panels**: Models, Sky, World, FX, Lights, Render and Water
+  are separate summonable windows instead of inspector tabs. Open them from
+  the host GFX menu, the editor View menu or the inspector launcher; suites
+  persist the panel mask as an optional fifth field
+  (`name|editor|scene|inspector|labs`). `GX_GFX_PANEL_LABS=<mask>` and
+  `GFX_DOCK labs=<mask>` expose the mask for captures, and the floating
+  panels leave the docked viewport geometry unchanged.
+
 ## [0.32.1] - 2026-11-02
 
 Release-Class: patch

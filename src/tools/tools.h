@@ -90,6 +90,11 @@ gX_I1 *gX_Tools_Gfx_ScenePanelFlag(gX_I0);
 gX_I1 *gX_Tools_Gfx_InspectorPanelFlag(gX_I0);
 gX_I1 *gX_Tools_Gfx_AssetPanelFlag(gX_I0);
 gX_I1 *gX_Tools_Gfx_FooterPanelFlag(gX_I0);
+//ai: renderer lab panels — Models/Sky/World/FX/Lights/Render/Water own
+//   windows, a suite-persisted mask (bit index = lab panel index).
+gX_U32 *gX_Tools_Gfx_LabPanelMask(gX_I0);
+gX_I32 gX_Tools_Gfx_LabPanelCount(gX_I0);
+const gX_I8 *gX_Tools_Gfx_LabPanelLabel(gX_I32 index);
 gX_I1 *gX_Tools_RuntimeScriptFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeWavetableFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeTextwriterFlag(gX_I0);
