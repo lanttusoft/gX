@@ -30,7 +30,7 @@
 //   scene, editor or non-editor. Each suite owns a visible-editor selection
 //   and an ImGui layout file (per-suite geometry); the GFX editor stays
 //   disabled until the workspace/panel migration lands.
-//   See private-docs/post-gfx-plan.md, H2.
+//   See docs/editors.md and docs/gfx_editor_rework.md.
 
 extern "C" {
 #include "../main.h"

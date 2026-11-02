@@ -108,6 +108,9 @@ def run_capture(preset, shot_dir, frame, input_script):
         "GX_AI_INPUT": input_script,
         "GX_FIXED_DT": "0.0166666667",
         "GX_GFX_PRESET_LOAD": str(preset),
+        #ai: the stale-plane warning lives in the Models lab's Model tab;
+        #   summon the lab (not the Surface focus) after the inspector split.
+        "GX_GFX_PANEL_LABS": "1",
         "GX_MIRROR_ALIGN_TRACE": "1",
     }, clean=True)
     try:

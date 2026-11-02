@@ -4,6 +4,18 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.34.1] - 2026-11-02
+
+Release-Class: patch
+
+### Fixed
+- **Renderer lab fixtures**: `GX_GFX_MATMAP_FOCUS`, `GX_GFX_ANIM_FOCUS`,
+  `GX_ANIMPOSE_FOCUS` and `GX_GFX_PATH_FOCUS` now open the Models lab, so the
+  headless animation, material-asset and motion-path authoring traces render
+  after the v0.33.0 inspector tab split. The mirror-alignment gate summons the
+  lab explicitly.
+- Removed a private-docs path from a public source comment.
+
 ## [0.34.0] - 2026-11-02
 
 Release-Class: minor

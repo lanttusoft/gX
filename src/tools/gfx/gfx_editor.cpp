@@ -11316,12 +11316,21 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
                 & ((1u << GX_GFX_LAB_COUNT) - 1u);
         }
     }
-    //ai: the reflection UI fixture drives the Surface controls; keep the
-    //   Models panel open so its traced widgets still render headlessly.
+    //ai: headless authoring fixtures target controls inside the Models lab;
+    //   keep it open so their traced widgets still render after the tab split.
     {
-        const gX_I8 *reflectEnv = getenv("GX_GFX_REFLECT_FOCUS");
-        if (reflectEnv && reflectEnv[0] && reflectEnv[0] != '0')
-            s_labMask |= 1u << 0;
+        static const char *labFocusEnvs[] = {
+            "GX_GFX_REFLECT_FOCUS", "GX_GFX_ANIM_FOCUS",
+            "GX_ANIMPOSE_FOCUS", "GX_GFX_MATMAP_FOCUS",
+            "GX_GFX_PATH_FOCUS"
+        };
+        for (gX_U32 i = 0; i < sizeof(labFocusEnvs) / sizeof(labFocusEnvs[0]); i++) {
+            const gX_I8 *env = getenv(labFocusEnvs[i]);
+            if (env && env[0] && env[0] != '0') {
+                s_labMask |= 1u << 0;
+                break;
+            }
+        }
     }
     s_freeCameraActive = 0;
     input.toolCameraInputEnabled = 0;
