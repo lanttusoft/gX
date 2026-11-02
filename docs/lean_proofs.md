@@ -6,9 +6,9 @@
 > source tarball or linked into the engine executable. `make proofs` and
 > `make proofs-full` expect a sibling `../proofs` checkout.
 
-The gate pins the published tree at `v0.18.0-proofs`
-(`1760307f18ed8824afbafafa3e916afbd257f0f9`). `proofs.lock.json` records 52
-core and 117 total modules; `scripts/proof_pin_check.py` rejects the archived
+The gate pins the published tree at `v0.19.0-proofs`
+(`ff1a54676c87c3efd328e22491ceedc535492522`). `proofs.lock.json` records 60
+core and 125 total modules; `scripts/proof_pin_check.py` rejects the archived
 private staging (`ef8569d`) or any other checkout before the build.
 
 ## What the gates establish
@@ -40,13 +40,16 @@ every module to its namespace and counts authored axioms, definitions,
 structures, inductives, instances, lemmas and theorems. Lean has no
 `corollary` keyword; corollaries are `theorem` or `lemma` declarations.
 
-At this inventory the pinned corpus has 117 modules: 52 core, 47 Mathlib-GFX
-and 18 GxMath. The static source count is 1,422 `theorem` declarations plus 2
-`lemma` declarations, 765 `def`, 68 `structure`, 22 `inductive`, 11
-`instance`, 6 `abbrev`, and zero project `axiom`/`opaque` declarations. The
-core kernel audit reports 52 reachable modules and 1,145 theorem declarations;
-the full audit reports 117 modules and 2,869 declarations, including generated
-helpers, with standard axioms only. The small-matrix
+At this inventory the pinned corpus has 125 modules: 60 core, 47 Mathlib-GFX
+and 18 GxMath. The static source count is 1,489 `theorem` declarations plus 2
+`lemma` declarations, 807 `def`, 72 `structure`, 26 `inductive`, 11
+`instance`, 8 `abbrev`, and zero project `axiom`/`opaque` declarations. The
+core kernel audit reports 60 reachable modules and 1,347 theorem declarations;
+the full audit reports 125 modules and 3,071 declarations, including generated
+helpers, with standard axioms only. The v0.19.0 batch adds the cursor owner
+stack, the editor-host state machines/tabs/workspaces, IBL double-buffer
+ownership, the texture-unit budget and the bounded battle/input queues; all
+new modules are core tier. The small-matrix
 module adds 12 contracts for the 2×2/3×3 determinant/trace helpers; the F64v4
 module adds 4 lerp contracts; `GxMath.Quaternion` covers algebra/norm/inverse,
 rotation and branch-aware Lerp/Nlerp/Slerp contracts. Native vector action is
