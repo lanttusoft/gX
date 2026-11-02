@@ -7,6 +7,7 @@
 #   renders the application menu bar in any scene, not only while an editor is
 #   open. The sky editor is the pilot panel. F9 is raylib KEY_F9 = 298.
 
+import re
 import sys
 from pathlib import Path
 
@@ -19,6 +20,8 @@ OUT = audit.SCRATCH / "editor_host_check"
 WIDTH = 1024
 HEIGHT = 768
 TOP = 46  # menu bar + workspace tab row
+TAB_RE = re.compile(r'EDITOR_HOST: tab=Sky x=(\d+) y=(\d+) w=(\d+) h=(\d+)')
+TAB_ALL_RE = re.compile(r'EDITOR_HOST: tab=(\S+) x=(\d+) y=(\d+) w=(\d+) h=(\d+)')
 
 
 def run(tag, scene, extra, frames=30, shot=20):
@@ -134,11 +137,34 @@ def main():
             raise RuntimeError("Default workspace was not applied")
         if "EDITOR_HOST: active=none" not in default_log:
             raise RuntimeError("Default workspace unexpectedly opened an editor")
+
+        trace_code, trace_log, _ = run("tabs", "--title",
+            {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "Default",
+             "GX_EDITOR_HOST_TAB_TRACE": "1"}, frames=60, shot=40)
+        match = TAB_RE.search(trace_log)
+        if trace_code != 0 or not match:
+            raise RuntimeError("workspace tab rect trace missing")
+        #opencode: every tab owns only its own hit box. A full-row Selectable
+        #   (the v0.30.1 host bug) made the first tab swallow every click.
+        tabs = [(name, int(x), int(y), int(w), int(h))
+                for name, x, y, w, h in TAB_ALL_RE.findall(trace_log)]
+        if len(tabs) < 3:
+            raise RuntimeError(f"workspace tab rects missing ({len(tabs)})")
+        for name, x, y, w, h in tabs:
+            if w > 200:
+                raise RuntimeError(
+                    f"workspace tab '{name}' is too wide ({w}px)")
+        for index in range(len(tabs) - 1):
+            name, x, y, w, h = tabs[index]
+            next_x = tabs[index + 1][1]
+            if x + w > next_x:
+                raise RuntimeError(
+                    f"workspace tab '{name}' overlaps the next tab")
     except (OSError, RuntimeError, ValueError) as error:
         print(f"EDITOR_HOST_CHECK: FAIL — {error}", file=sys.stderr)
         return 1
     print("EDITOR_HOST_CHECK: PASS toolbar in title/gfx, F9 open+close, "
-          "Sky/Background/Default workspaces via the editor registry")
+          "Sky/Background/Default workspaces, tab hit boxes sane")
     return 0
 
 

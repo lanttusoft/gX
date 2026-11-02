@@ -522,10 +522,26 @@ static gX_I0 host_draw_suite_tabs(void) {
             gX_I1 selected = (s_suite == i);
             if (selected)
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.78f, 0.35f, 1.0f));
-            if (ImGui::Selectable(host_suite_name(i), selected, 0, ImVec2(0, 0)))
+            ImVec2 tabText = ImGui::CalcTextSize(host_suite_name(i));
+            if (ImGui::Selectable(host_suite_name(i), selected, 0,
+                    ImVec2(tabText.x + 10.0f, 0.0f)))
                 s_pendingSuite = i;
             if (selected)
                 ImGui::PopStyleColor();
+            {
+                const gX_I8 *tabTrace = getenv("GX_EDITOR_HOST_TAB_TRACE");
+                static gX_I1 traced = 0;
+                if (tabTrace && tabTrace[0] && !traced
+                    && ImGui::GetFrameCount() > 20) {
+                    ImVec2 mn = ImGui::GetItemRectMin();
+                    ImVec2 mx = ImGui::GetItemRectMax();
+                    gX_TraceLog(gX_LOG_INFO,
+                        "EDITOR_HOST: tab=%s x=%.0f y=%.0f w=%.0f h=%.0f",
+                        (const char *)host_suite_name(i), mn.x, mn.y,
+                        mx.x - mn.x, mx.y - mn.y);
+                    if (i == s_suiteCount - 1) traced = 1;
+                }
+            }
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Switch to the %s workspace",
                     (const char *)host_suite_name(i));
