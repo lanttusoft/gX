@@ -118,7 +118,8 @@ def probe_module(workdir, failures):
         capture_output=True, text=True, timeout=TIMEOUT)
     log = audit.strip_ansi(result.stdout + result.stderr)
     check("module: missing path fails the boot loudly",
-          result.returncode != 0 and "dlopen" in log,
+          result.returncode != 0 and "MODULE: load" in log
+          and "failed" in log,
           f"exit {result.returncode}", failures)
 
     #--script without a module: warned and ignored, clean exit
@@ -996,6 +997,52 @@ def probe_opx_pad_demo(workdir, failures):
           f"exit {play.returncode}", failures)
 
 
+def probe_opx_bell_demo(workdir, failures):
+    presetBase = workdir / "opx_bell_demo"
+    seed = workdir / "opx_bell_selftest_seed.as"
+    seed.write_text(
+        "void main()\n"
+        "{\n"
+        "    ScriptSetInt(\"opx_bell_selftest\", 1);\n"
+        "    ScriptSetString(\"opx_bell_preset_path\", \"%s\");\n"
+        "    Quit(0);\n"
+        "}\n" % presetBase)
+    statePath = workdir / "opx_bell_state.json"
+    env = clean_env(GX_FRAMES="60", GX_SCRIPT_STATE=str(statePath))
+    first = subprocess.run([str(BIN), "--script", str(seed)], cwd=str(ROOT),
+                           env=env, capture_output=True, text=True, timeout=TIMEOUT)
+    demo = subprocess.run(
+        [str(BIN), "--script", "resources/script/audio/opx_bell_demo.as"],
+        cwd=str(ROOT), env=env, capture_output=True, text=True, timeout=TIMEOUT)
+    log = audit.strip_ansi(demo.stdout + demo.stderr)
+    check("opx/bell demo: self-test (patch/notes/mute/preset round-trip)",
+          first.returncode == 0 and demo.returncode == 0
+          and "opx/bell demo: selftest ok" in log
+          and "opx/bell demo: muted by default" in log
+          and "opx/bell demo: mute toggle" in log
+          and "opx/bell demo: bell algorithm" in log
+          and "opx/bell demo: prime carrier enabled" in log
+          and "opx/bell demo: hum carrier enabled" in log
+          and "opx/bell demo: hum ratio 0.5" in log
+          and "opx/bell demo: note on" in log
+          and "opx/bell demo: voice active" in log
+          and "opx/bell demo: preset save" in log
+          and "opx/bell demo: preset load" in log
+          and "opx/bell demo: preset ratio restored" in log
+          and (presetBase.parent / "opx_bell_demo_roundtrip.json").is_file(),
+          f"exit {demo.returncode}", failures)
+
+    play = subprocess.run(
+        [str(BIN), "--script", "resources/script/audio/opx_bell_demo.as"],
+        cwd=str(ROOT),
+        env=clean_env(GX_FRAMES="60",
+                      GX_SCRIPT_STATE=str(workdir / "opx_bell_play_state.json")),
+        capture_output=True, text=True, timeout=TIMEOUT)
+    check("opx/bell demo: interactive boot smoke (frames cap)",
+          play.returncode == 0,
+          f"exit {play.returncode}", failures)
+
+
 def probe_camera_rail(workdir, failures):
     #opencode: the rail is shell-owned (module-side); this probe covers the
     #   script API persistence + the module-drawn editor open path. The guard
@@ -1451,6 +1498,7 @@ def main():
         probe_pp_apis(workdir, failures)
         probe_synth_demo(workdir, failures)
         probe_opx_pad_demo(workdir, failures)
+        probe_opx_bell_demo(workdir, failures)
         probe_markup_bridge(workdir, failures)
 
     if failures:

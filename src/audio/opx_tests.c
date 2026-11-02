@@ -522,6 +522,58 @@ static gX_I32 opx_test_preset_guard(void) {
     return errors;
 }
 
+//ai: the large-bell preset must actually ring: a bright strike, a long
+//   monotonic tail, and no runaway gain. This is the offline half of the
+//   demo's sound contract.
+static gX_I32 opx_test_large_bell(void) {
+    gX_I32 errors = 0;
+    gX_OPX_Init();
+    gX_OPX_SetMuted(0);
+    gX_OPX_SetMasterVolume(1.0f);
+    gX_OPX_SetSampleRate(48000);
+    if (gX_OPX_Preset_Load("resources/audio/presets/opx_large_bell.json") != 0) {
+        OPX_TEST_ASSERT(0, "large-bell preset loaded");
+        return errors;
+    }
+    OPX_TEST_ASSERT(gX_OPX_GetDefaultAlgorithm() == 6, "large bell uses BELL");
+    OPX_TEST_ASSERT(g_opx.defaults[1].enabled, "bell prime carrier enabled");
+    OPX_TEST_ASSERT(g_opx.defaults[7].enabled, "bell hum carrier enabled");
+    OPX_TEST_ASSERT(fabsf(g_opx.defaults[7].ratio - 0.5f) < 1e-4f,
+        "bell hum ratio");
+    OPX_TEST_ASSERT(g_opx.defaults[1].decayTime >= 7.0f, "bell long decay");
+
+    gX_I32 voice = gX_OPX_NoteOn(73.42f, 0.85f, 6);
+    OPX_TEST_ASSERT(voice >= 0, "large-bell note on");
+    gX_F32 rms[6] = {0};
+    gX_F32 hf[6] = {0};
+    gX_F32 peak = 0.0f;
+    for (gX_I32 second = 0; second < 6; second++) {
+        gX_F64 sum = 0.0;
+        gX_F64 diff = 0.0;
+        gX_U32 count = 0;
+        for (gX_I32 block = 0; block < 24; block++) {
+            opx_test_render(OPX_TEST_FRAMES);
+            gX_F32 blockPeak = opx_test_peak(opxBuf, OPX_TEST_FRAMES);
+            if (blockPeak > peak) peak = blockPeak;
+            for (gX_U32 i = 0; i < OPX_TEST_FRAMES * 2; i++) {
+                sum += (gX_F64)opxBuf[i] * opxBuf[i];
+                if (i > 0) diff += fabs((gX_F64)opxBuf[i] - opxBuf[i - 1]);
+                count++;
+            }
+        }
+        rms[second] = (gX_F32)sqrt(sum / (gX_F64)count);
+        hf[second] = (gX_F32)(diff / (gX_F64)count);
+    }
+    OPX_TEST_ASSERT(rms[0] > 0.004f, "bell strike audible");
+    OPX_TEST_ASSERT(rms[1] > 0.001f, "bell first-second tail");
+    OPX_TEST_ASSERT(rms[3] > 0.0002f, "bell third-second tail");
+    OPX_TEST_ASSERT(rms[5] < rms[1], "bell tail decays");
+    OPX_TEST_ASSERT(hf[0] > hf[3], "bell strike is brighter than the tail");
+    OPX_TEST_ASSERT(peak < 4.0f, "bell does not run away");
+    gX_OPX_NoteOff((gX_U32)voice);
+    return errors;
+}
+
 gX_I32 gX_Tests_OPX(gX_I0) {
     gX_I32 errors = 0;
     errors += opx_test_algorithm_table();
@@ -537,6 +589,7 @@ gX_I32 gX_Tests_OPX(gX_I0) {
     errors += opx_test_pan_edge();
     errors += opx_test_preset_round_trip();
     errors += opx_test_preset_guard();
+    errors += opx_test_large_bell();
     gX_TraceLog(gX_LOG_INFO, "OPX_TESTS: %d errors", errors);
     return errors;
 }

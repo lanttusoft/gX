@@ -15,6 +15,12 @@
    "publish": "keep"
   },
   {
+   "match": "resources/audio/presets/**",
+   "origin": "ai-generated",
+   "license": "author-prompted patch data (JSON operator/envelope values, no samples)",
+   "publish": "keep"
+  },
+  {
    "match": "resources/model/teapot.glb",
    "origin": "public-domain",
    "license": "Utah teapot dataset (public domain), project-exported",

@@ -14,7 +14,7 @@ ideas (including the parked SID-flavor work).
 | SFX pool | `src/audio/sfx.{h,c}` | procedural one-shot effects (thud/clack/metal/arc/click), 4 copies per variant, 3D-positioned, rate-limited; used by the physics sandbox impacts and the toolgun |
 | Filter core + master filter | `src/audio/filter.{h,c}` | the shared **TPT/ZDF state-variable filter** (LP/HP/BP, full 0..1 cutoff range — no Chamberlin `2*sin` saturation) and the optional **master filter** on the final mix, kept at the mixed-processor chain *tail* as the engines attach lazily; off by default, persisted with the settings, scriptable via `Audio_*` |
 | Tests | `synth_tests.c`, `opx_tests.c`, `pad_tests.c`, `sfx_tests.c` | offline render cores — no audio device needed (`--test-only`) |
-| Surfaces | `src/scripting/tour/tour_synth.cpp`, `tour_opx.cpp`, `tour_pad.cpp`, `tour_audio.cpp`, `src/scene/synthvis.c`, `resources/script/synth/synth.as`, `resources/script/audio/opx_pad_demo.as` | the shell tour APIs for the engines/audio, the playable synthvis scene, the synth instrument script and the OPX/PAD ambient demo (self-tested by the scripting gate) |
+| Surfaces | `src/scripting/tour/tour_synth.cpp`, `tour_opx.cpp`, `tour_pad.cpp`, `tour_audio.cpp`, `src/scene/synthvis.c`, `resources/script/synth/synth.as`, `resources/script/audio/opx_pad_demo.as`, `opx_bell_demo.as`, `resources/audio/presets/opx_large_bell.json` | the shell tour APIs for the engines/audio, the playable synthvis scene, the synth instrument script, the OPX/PAD ambient demo and the large-bell OPX demo (both self-tested by the scripting gate) |
 | Tools | `src/tools/synth/wavetable_editor.cpp` | wavetable authoring panel (`--wavetable-editor`) |
 
 ## Wiring conventions
@@ -88,7 +88,11 @@ ideas (including the parked SID-flavor work).
 ## Gates
 
 - `--test-only` runs the offline suites (`gX_Tests_Synth`, `gX_Tests_OPX`,
-  `gX_Tests_Pad`, `gX_Tests_AudioSFX`).
+  `gX_Tests_Pad`, `gX_Tests_AudioSFX`). The OPX suite includes
+  `opx_test_large_bell`: the shipped bell patch must show a bright strike, a
+  long monotonic tail and bounded gain.
+- `make check-scripting` runs the OPX/PAD demo self-tests and the large-bell
+  demo (patch load, mute, note-on, preset round-trip, interactive boot).
 - `GX_AUDIO_MUTE=1` is set by the sandbox gates (`physics-editor-check`,
   `ui-audit`) so procedural SFX never leak into a capture run; the synth
   gates use `GX_SYNTH_MUTE=1`.

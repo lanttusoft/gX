@@ -24,6 +24,13 @@ Release-Class: minor
 - **Reflection lab**: `resources/tools/gfx_reflection_lab.json` (metal sphere
   over a planar checker floor) and `make reflection-lab-check`, covering the
   strength ladder and behind-plane culling.
+- **Large-bell OPX demo**: `resources/audio/presets/opx_large_bell.json`
+  (BELL pairs with 0.5 hum, prime/nominal/tierce partials, short high-index
+  strike modulators and 7-9 s tails) plus
+  `resources/script/audio/opx_bell_demo.as` (four roots, hold, auto-strike,
+  silence, mute). `opx_test_large_bell` pins the strike/tail spectrum and
+  bounded gain offline; the scripting gate runs the demo self-test and a
+  boot smoke.
 
 ## [0.36.0] - 2026-11-02
 

@@ -224,7 +224,11 @@ textwriter, overlay, raymarch, pp — the reel surface is complete.
   (`Pad_Preset_Save/Load`). The demo `resources/script/audio/opx_pad_demo.as`
   plays a PAD chord progression under an OPX bell melody + bass (A S D B V X Z R pick
   the OPX algorithm, C chorus, W width, M sound); the scripting
-  gate runs its self-test and an interactive boot smoke.
+  gate runs its self-test and an interactive boot smoke. The companion
+  `resources/script/audio/opx_bell_demo.as` loads
+  `resources/audio/presets/opx_large_bell.json` and strikes four low bell
+  roots (A S D V, Space) with a 2.5 s hold and an automatic 6 s cycle; the
+  gate runs its self-test, preset round-trip and boot smoke too.
 - TextWriter (`tour_textwriter.cpp`): the textwriter module
   (`renderer.textwriter.data`; it draws itself in the
   `SCENE_RENDERER_TEXTWRITER` scene and auto-loads
