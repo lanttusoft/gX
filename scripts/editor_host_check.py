@@ -215,6 +215,16 @@ def main():
             raise RuntimeError("GFX suite dock traces missing")
         if float(focus_suite_dock[-1][0]) >= float(suite_dock[-1][0]):
             raise RuntimeError("GFX Focus suite did not reclaim the left margin")
+        if "aux=0/1" not in host_gfx_log:
+            raise RuntimeError("hosted GFX aux panels do not default to 0/1")
+        aux_code, aux_log, _ = run("gfx-aux", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "gfx",
+             "GX_GFX_PANEL_ASSET": "1", "GX_GFX_PANEL_FOOTER": "0",
+             "GX_DOCK_TRACE": "1"}, frames=90, shot=60)
+        if aux_code != 0:
+            raise RuntimeError("GFX aux panel run failed")
+        if "aux=1/0" not in aux_log:
+            raise RuntimeError("GFX asset/footer toggles did not apply")
 
         default_code, default_log, _ = run("default", "--title",
             {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "Default"},
@@ -254,7 +264,7 @@ def main():
     print("EDITOR_HOST_CHECK: PASS toolbar in title/gfx, F9 open+close, "
           "Sky/Background/Default workspaces, tab hit boxes sane, GFX hosted "
           "below the bars, scene/inspector panels summonable, "
-          "GFX/GFX Focus suite masks")
+          "GFX/GFX Focus suite masks, aux asset/footer panels")
     return 0
 
 

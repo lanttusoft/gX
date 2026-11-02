@@ -541,6 +541,12 @@ static gX_I0 host_editor_menu(const HostEditor *editor) {
         gX_I1 inspector = *gX_Tools_Gfx_InspectorPanelFlag() ? 1 : 0;
         if (ImGui::MenuItem("Inspector panel", NULL, &inspector))
             *gX_Tools_Gfx_InspectorPanelFlag() = inspector;
+        gX_I1 asset = *gX_Tools_Gfx_AssetPanelFlag() ? 1 : 0;
+        if (ImGui::MenuItem("Asset browser", NULL, &asset))
+            *gX_Tools_Gfx_AssetPanelFlag() = asset;
+        gX_I1 footer = *gX_Tools_Gfx_FooterPanelFlag() ? 1 : 0;
+        if (ImGui::MenuItem("Shortcut footer", NULL, &footer))
+            *gX_Tools_Gfx_FooterPanelFlag() = footer;
     }
     ImGui::EndMenu();
 }
