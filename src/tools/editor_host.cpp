@@ -55,6 +55,10 @@ static gX_I1 s_aboutOpen = 0;
 static gX_I1 s_shortcutsOpen = 0;
 static gX_I32 s_suite = 0;
 static gX_I32 s_pendingSuite = -2; // -2 = none, >=0 = apply
+static gX_I32 s_pendingDelete = -1;
+static gX_I1 s_saveOpen = 0;
+static gX_I8 s_saveName[64] = {0};
+static gX_I8 s_saveError[128] = {0};
 
 typedef struct HostEditor {
     const gX_I8 *label;
@@ -78,15 +82,22 @@ static const HostEditor kEditors[] = {
 };
 
 static const gX_I32 kEditorCount = (gX_I32)(sizeof(kEditors) / sizeof(kEditors[0]));
+static const HostEditor *host_active_editor(void);
 static const HostEditor *s_lastActive = NULL;
 static gX_I1 s_activeTraced = 0;
 
+#define HOST_SUITE_MAX 16
+
 typedef struct HostSuite {
-    const gX_I8 *name;
+    gX_I8 name[64];
     gX_I32 editor; // registry index, -1 = no editor
+    gX_I1 user;
 } HostSuite;
 
-static const HostSuite kSuites[] = {
+static HostSuite s_suites[HOST_SUITE_MAX];
+static gX_I32 s_suiteCount = 0;
+
+static const struct { const gX_I8 *name; gX_I32 editor; } kBuiltinSuites[] = {
     { "Default",    -1 },
     { "Sky",         2 },
     { "Background",  3 },
@@ -96,7 +107,36 @@ static const HostSuite kSuites[] = {
     { "GUI",         0 },
     { "Theme",       1 },
 };
-static const gX_I32 kSuiteCount = (gX_I32)(sizeof(kSuites) / sizeof(kSuites[0]));
+static const gX_I32 kBuiltinSuiteCount =
+    (gX_I32)(sizeof(kBuiltinSuites) / sizeof(kBuiltinSuites[0]));
+
+static const gX_I8 *host_suite_name(gX_I32 index) {
+    if (index < 0 || index >= s_suiteCount) return "Default";
+    return s_suites[index].name;
+}
+
+static gX_I32 host_suite_editor(gX_I32 index) {
+    if (index < 0 || index >= s_suiteCount) return -1;
+    return s_suites[index].editor;
+}
+
+static gX_I1 host_suite_user(gX_I32 index) {
+    if (index < 0 || index >= s_suiteCount) return 0;
+    return s_suites[index].user;
+}
+
+static gX_I1 host_suite_name_valid(const gX_I8 *name) {
+    if (!name || !name[0]) return 0;
+    gX_U32 len = (gX_U32)strlen((const char *)name);
+    if (len < 1 || len >= 64) return 0;
+    for (gX_U32 i = 0; i < len; i++) {
+        gX_I8 c = name[i];
+        gX_I1 ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+            || (c >= '0' && c <= '9') || c == '_' || c == '-';
+        if (!ok) return 0;
+    }
+    return 1;
+}
 
 static gX_I0 host_trace(gX_I1 open) {
     gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: open=%d", (gX_I32)open);
@@ -117,8 +157,8 @@ static gX_I0 host_trace_active(gX_I0) {
 
 static gX_I0 host_suite_path(gX_I32 index, gX_I8 *out, gX_U32 size) {
     const gX_I8 *work = gX_Directory_Working_Get();
-    const gX_I8 *name = (index >= 0 && index < kSuiteCount)
-        ? kSuites[index].name : "Default";
+    const gX_I8 *name = (index >= 0 && index < s_suiteCount)
+        ? host_suite_name(index) : "Default";
     snprintf((char *)out, size, "%s/gx_editor_%s.ini",
         (const char *)work, (const char *)name);
 }
@@ -136,8 +176,71 @@ static gX_I1 host_file_exists(const gX_I8 *path) {
     return 1;
 }
 
+static gX_I0 host_suites_file_path(gX_I8 *out, gX_U32 size) {
+    const gX_I8 *work = gX_Directory_Working_Get();
+    snprintf((char *)out, size, "%s/gx_editor_suites.txt", (const char *)work);
+}
+
+static gX_I0 host_suites_persist(gX_I0) {
+    if (s_guarded) return;
+    gX_I8 path[512];
+    host_suites_file_path(path, sizeof(path));
+    FILE *file = fopen((const char *)path, "wb");
+    if (!file) return;
+    for (gX_I32 i = 0; i < s_suiteCount; i++) {
+        if (!s_suites[i].user) continue;
+        fprintf(file, "%s|%d\n", (const char *)s_suites[i].name,
+            s_suites[i].editor);
+    }
+    fclose(file);
+}
+
+static gX_I1 host_suite_name_used(const gX_I8 *name) {
+    for (gX_I32 i = 0; i < s_suiteCount; i++) {
+        if (strcmp((const char *)name, (const char *)s_suites[i].name) == 0)
+            return 1;
+    }
+    return 0;
+}
+
+static gX_I0 host_suites_init(gX_I0) {
+    s_suiteCount = 0;
+    for (gX_I32 i = 0; i < kBuiltinSuiteCount; i++) {
+        snprintf((char *)s_suites[s_suiteCount].name,
+            sizeof(s_suites[s_suiteCount].name), "%s",
+            (const char *)kBuiltinSuites[i].name);
+        s_suites[s_suiteCount].editor = kBuiltinSuites[i].editor;
+        s_suites[s_suiteCount].user = 0;
+        s_suiteCount++;
+    }
+    if (s_guarded) return;
+    gX_I8 path[512];
+    host_suites_file_path(path, sizeof(path));
+    FILE *file = fopen((const char *)path, "rb");
+    if (!file) return;
+    gX_I8 line[160];
+    while (fgets((char *)line, sizeof(line), file) && s_suiteCount < HOST_SUITE_MAX) {
+        for (gX_U32 i = 0; i < sizeof(line); i++) {
+            if (line[i] == '\n' || line[i] == '\r') { line[i] = '\0'; break; }
+        }
+        char *bar = strchr((char *)line, '|');
+        if (!bar) continue;
+        *bar = '\0';
+        gX_I32 editor = atoi(bar + 1);
+        if (editor < -1 || editor >= kEditorCount) continue;
+        if (!host_suite_name_valid(line)) continue;
+        if (host_suite_name_used(line)) continue;
+        snprintf((char *)s_suites[s_suiteCount].name,
+            sizeof(s_suites[s_suiteCount].name), "%s", (char *)line);
+        s_suites[s_suiteCount].editor = editor;
+        s_suites[s_suiteCount].user = 1;
+        s_suiteCount++;
+    }
+    fclose(file);
+}
+
 static gX_I0 host_save_layout(gX_I0) {
-    if (s_guarded || s_suite < 0 || s_suite >= kSuiteCount) return;
+    if (s_guarded || s_suite < 0 || s_suite >= s_suiteCount) return;
     if (!ImGui::GetCurrentContext()) return;
     gX_I8 path[512];
     host_suite_path(s_suite, path, sizeof(path));
@@ -145,7 +248,7 @@ static gX_I0 host_save_layout(gX_I0) {
 }
 
 static gX_I0 host_load_layout(gX_I32 index) {
-    if (s_guarded || index < 0 || index >= kSuiteCount) return;
+    if (s_guarded || index < 0 || index >= s_suiteCount) return;
     if (!ImGui::GetCurrentContext()) return;
     gX_I8 path[512];
     host_suite_path(index, path, sizeof(path));
@@ -154,12 +257,12 @@ static gX_I0 host_load_layout(gX_I32 index) {
 }
 
 static gX_I0 host_save_selection(gX_I0) {
-    if (s_guarded || s_suite < 0 || s_suite >= kSuiteCount) return;
+    if (s_guarded || s_suite < 0 || s_suite >= s_suiteCount) return;
     gX_I8 path[512];
     host_selection_path(path, sizeof(path));
     FILE *file = fopen((const char *)path, "wb");
     if (!file) return;
-    fprintf(file, "%s\n", (const char *)kSuites[s_suite].name);
+    fprintf(file, "%s\n", (const char *)host_suite_name(s_suite));
     fclose(file);
 }
 
@@ -178,8 +281,8 @@ static gX_I32 host_read_selection(gX_I0) {
     for (gX_U32 i = 0; i < sizeof(line); i++) {
         if (line[i] == '\n' || line[i] == '\r') { line[i] = '\0'; break; }
     }
-    for (gX_I32 i = 0; i < kSuiteCount; i++) {
-        if (strcmp((const char *)line, (const char *)kSuites[i].name) == 0)
+    for (gX_I32 i = 0; i < s_suiteCount; i++) {
+        if (strcmp((const char *)line, (const char *)host_suite_name(i)) == 0)
             return i;
     }
     return -1;
@@ -199,15 +302,95 @@ static gX_I0 host_close_editor(void) {
     host_trace_active();
 }
 
+static gX_I0 host_save_user_suite(const gX_I8 *name) {
+    if (s_guarded) {
+        snprintf((char *)s_saveError, sizeof(s_saveError),
+            "read-only run (GX_NO_SETTINGS_SAVE)");
+        return;
+    }
+    if (!host_suite_name_valid(name)) {
+        snprintf((char *)s_saveError, sizeof(s_saveError),
+            "use letters, digits, _ or -");
+        return;
+    }
+    gX_I32 found = -1;
+    for (gX_I32 i = 0; i < s_suiteCount; i++) {
+        if (strcmp((const char *)name, (const char *)s_suites[i].name) != 0)
+            continue;
+        if (!s_suites[i].user) {
+            snprintf((char *)s_saveError, sizeof(s_saveError),
+                "a built-in workspace already uses that name");
+            return;
+        }
+        found = i;
+        break;
+    }
+    gX_I32 editor = -1;
+    for (gX_I32 i = 0; i < kEditorCount; i++) {
+        if (kEditors[i].flag && *kEditors[i].flag()) { editor = i; break; }
+    }
+    if (editor < 0) {
+        snprintf((char *)s_saveError, sizeof(s_saveError),
+            "open an editor first");
+        return;
+    }
+    if (!kEditors[editor].enabled) {
+        snprintf((char *)s_saveError, sizeof(s_saveError),
+            "that editor is not hostable yet");
+        return;
+    }
+    if (found < 0) {
+        if (s_suiteCount >= HOST_SUITE_MAX) {
+            snprintf((char *)s_saveError, sizeof(s_saveError),
+                "workspace limit reached");
+            return;
+        }
+        found = s_suiteCount++;
+        snprintf((char *)s_suites[found].name,
+            sizeof(s_suites[found].name), "%s", (const char *)name);
+        s_suites[found].user = 1;
+    }
+    s_suites[found].editor = editor;
+    host_suites_persist();
+    s_suite = found;
+    host_save_selection();
+    s_saveOpen = 0;
+    s_saveError[0] = '\0';
+    gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: suite saved=%s", (const char *)name);
+}
+
+static gX_I0 host_delete_suite(gX_I32 index) {
+    if (!host_suite_user(index)) return;
+    gX_I8 name[64];
+    snprintf((char *)name, sizeof(name), "%s", (const char *)host_suite_name(index));
+    if (s_suite == index) {
+        host_close_editor();
+        s_suite = 0;
+    } else if (s_suite > index) {
+        s_suite--;
+    }
+    if (!s_guarded) {
+        gX_I8 path[512];
+        host_suite_path(index, path, sizeof(path));
+        remove((const char *)path);
+    }
+    for (gX_I32 i = index; i < s_suiteCount - 1; i++)
+        s_suites[i] = s_suites[i + 1];
+    s_suiteCount--;
+    s_pendingDelete = -1;
+    host_suites_persist();
+    host_save_selection();
+    gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: suite deleted=%s", (const char *)name);
+}
+
 static gX_I0 host_apply_suite(gX_I32 index) {
-    if (index < 0 || index >= kSuiteCount) return;
+    if (index < 0 || index >= s_suiteCount) return;
     host_save_layout();
     host_close_editor();
     s_suite = index;
-    const HostSuite *suite = &kSuites[index];
     gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: workspace=%s",
-        (const char *)suite->name);
-    if (suite->editor >= 0) host_open_editor(suite->editor);
+        (const char *)host_suite_name(index));
+    if (host_suite_editor(index) >= 0) host_open_editor(host_suite_editor(index));
     host_load_layout(index);
     host_save_selection();
 }
@@ -217,13 +400,14 @@ static gX_I0 host_init_env(gX_I0) {
     s_inited = 1;
     const gX_I8 *guard = getenv("GX_NO_SETTINGS_SAVE");
     s_guarded = (guard && guard[0] && guard[0] != '0') ? 1 : 0;
+    host_suites_init();
 
     gX_I32 selected = host_read_selection();
     const gX_I8 *suiteEnv = getenv("GX_EDITOR_WORKSPACE");
     if (suiteEnv && suiteEnv[0]) {
         selected = -1;
-        for (gX_I32 i = 0; i < kSuiteCount; i++) {
-            if (strcmp((const char *)suiteEnv, (const char *)kSuites[i].name) == 0) {
+        for (gX_I32 i = 0; i < s_suiteCount; i++) {
+            if (strcmp((const char *)suiteEnv, (const char *)host_suite_name(i)) == 0) {
                 selected = i;
                 break;
             }
@@ -271,10 +455,23 @@ extern "C" gX_I0 gX_EditorHost_Update(gX_I0) {
     host_init_env();
     if (!s_hostOpen) return;
     if (!ImGui::GetCurrentContext()) gX_GUI_Load_ImGui();
+    if (s_pendingDelete >= 0) host_delete_suite(s_pendingDelete);
     if (s_pendingSuite != -2) {
         gX_I32 pending = s_pendingSuite;
         s_pendingSuite = -2;
         if (pending >= 0) host_apply_suite(pending);
+    }
+    {
+        //opencode: capture/test hook — save the active editor as a user suite.
+        static gX_I1 saveEnvDone = 0;
+        if (!saveEnvDone) {
+            const gX_I8 *saveEnv = getenv("GX_EDITOR_SUITE_SAVE");
+            if (!saveEnv || !saveEnv[0]) saveEnvDone = 1;
+            else if (!s_guarded && host_active_editor()) {
+                saveEnvDone = 1;
+                host_save_user_suite(saveEnv);
+            }
+        }
     }
     if (!s_guarded && s_suite >= 0 && ImGui::GetCurrentContext()) {
         ImGuiIO &io = ImGui::GetIO();
@@ -297,11 +494,43 @@ static gX_I0 host_editor_menu(const HostEditor *editor) {
     ImGui::EndMenu();
 }
 
+static const HostEditor *host_active_editor(void);
+
 static const HostEditor *host_active_editor(void) {
     for (gX_I32 i = 0; i < kEditorCount; i++) {
         if (kEditors[i].flag && *kEditors[i].flag()) return &kEditors[i];
     }
     return NULL;
+}
+
+static gX_I0 host_draw_suite_tabs(void) {
+    ImGuiIO &io = ImGui::GetIO();
+    gX_F32 barH = ImGui::GetFrameHeight();
+    ImGui::SetNextWindowPos(ImVec2(0.0f, barH));
+    ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, barH));
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar
+        | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
+        | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings
+        | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar;
+    if (ImGui::Begin("##gx_workspace_tabs", NULL, flags)) {
+        for (gX_I32 i = 0; i < s_suiteCount; i++) {
+            ImGui::PushID(i);
+            if (ImGui::Selectable(host_suite_name(i), s_suite == i, 0, ImVec2(0, 0)))
+                s_pendingSuite = i;
+            if (host_suite_user(i)) {
+                ImGui::SameLine(0.0f, 2.0f);
+                if (ImGui::SmallButton("x")) s_pendingDelete = i;
+            }
+            ImGui::PopID();
+            ImGui::SameLine();
+        }
+        if (ImGui::SmallButton("+")) {
+            s_saveName[0] = '\0';
+            s_saveError[0] = '\0';
+            s_saveOpen = 1;
+        }
+    }
+    ImGui::End();
 }
 
 static gX_I0 host_draw_menu_bar(void) {
@@ -353,8 +582,8 @@ static gX_I0 host_draw_menu_bar(void) {
         ImGui::MenuItem("Reset Layout", NULL, false, false);
         ImGui::Separator();
         if (ImGui::BeginMenu("Workspaces")) {
-            for (gX_I32 i = 0; i < kSuiteCount; i++) {
-                if (ImGui::MenuItem(kSuites[i].name, NULL, s_suite == i))
+            for (gX_I32 i = 0; i < s_suiteCount; i++) {
+                if (ImGui::MenuItem(host_suite_name(i), NULL, s_suite == i))
                     s_pendingSuite = i;
             }
             ImGui::EndMenu();
@@ -404,7 +633,7 @@ static gX_I0 host_draw_menu_bar(void) {
     {
         const HostEditor *active = host_active_editor();
         ImGui::SameLine(ImGui::GetWindowWidth() - 420.0f);
-        ImGui::Text("%s | %s  %s", (const char *)kSuites[s_suite].name,
+        ImGui::Text("%s | %s  %s", (const char *)host_suite_name(s_suite),
             active ? (const char *)active->label : "No editor",
             active ? (const char *)active->tier : "");
     }
@@ -427,6 +656,21 @@ static gX_I0 host_draw_windows(void) {
         }
         ImGui::End();
     }
+    if (s_saveOpen) {
+        ImGui::SetNextWindowSize(ImVec2(380, 0), ImGuiCond_Appearing);
+        if (ImGui::Begin("Save Workspace", &s_saveOpen,
+                ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::TextUnformatted("Capture the active editor as a workspace.");
+            ImGui::InputText("Name", (char *)s_saveName, sizeof(s_saveName));
+            if (s_saveError[0])
+                ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.45f, 1.0f), "%s",
+                    (const char *)s_saveError);
+            if (ImGui::Button("Save")) host_save_user_suite(s_saveName);
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) s_saveOpen = 0;
+        }
+        ImGui::End();
+    }
     if (s_shortcutsOpen) {
         ImGui::SetNextWindowSize(ImVec2(380, 0), ImGuiCond_Appearing);
         if (ImGui::Begin("Shortcuts", &s_shortcutsOpen,
@@ -445,5 +689,6 @@ extern "C" gX_I0 gX_EditorHost_Draw(gX_I0) {
     if (!s_hostOpen) return;
     host_trace_active();
     host_draw_menu_bar();
+    host_draw_suite_tabs();
     host_draw_windows();
 }

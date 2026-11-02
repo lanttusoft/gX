@@ -18,7 +18,7 @@ import audit_common as audit
 OUT = audit.SCRATCH / "editor_host_check"
 WIDTH = 1024
 HEIGHT = 768
-TOP = 22  # menu-bar band
+TOP = 46  # menu bar + workspace tab row
 
 
 def run(tag, scene, extra, frames=30, shot=20):
