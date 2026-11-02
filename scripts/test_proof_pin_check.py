@@ -43,11 +43,13 @@ def make_pin(path, **overrides):
 class PinTests(unittest.TestCase):
     def test_committed_pin(self):
         document = pin.load_pin(pin.DEFAULT_PIN)
-        self.assertEqual(document["tag"], "v0.18.0-proofs")
+        self.assertEqual(document["tag"], "v0.19.0-proofs")
         self.assertEqual(document["commit"],
-                         "1760307f18ed8824afbafafa3e916afbd257f0f9")
-        self.assertEqual(document["coreModules"], 52)
-        self.assertEqual(document["fullModules"], 117)
+                         "ff1a54676c87c3efd328e22491ceedc535492522")
+        self.assertEqual(document["coreModules"], 60)
+        self.assertEqual(document["fullModules"], 125)
+        self.assertEqual(document["coreDeclarations"], 1347)
+        self.assertEqual(document["fullDeclarations"], 3071)
 
     def test_missing_key(self):
         with tempfile.TemporaryDirectory() as directory:

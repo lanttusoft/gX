@@ -12,14 +12,14 @@ or `lemma` declarations.
 
 | Tier | Modules | Theorems | Lemmas | Defs | Structures | Inductives | Instances | Abbrevs | Axioms | Opaque |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `GxProofs` | 52 | 527 | 0 | 335 | 42 | 20 | 1 | 4 | 0 | 0 |
+| `GxProofs` | 60 | 594 | 0 | 377 | 46 | 24 | 1 | 6 | 0 | 0 |
 | `GxProofsGfx` | 47 | 548 | 1 | 271 | 17 | 2 | 0 | 2 | 0 | 0 |
 | `GxMath` | 18 | 347 | 1 | 159 | 9 | 0 | 10 | 0 | 0 | 0 |
-| **All** | **117** | **1422** | **2** | **765** | **68** | **22** | **11** | **6** | **0** | **0** |
+| **All** | **125** | **1489** | **2** | **807** | **72** | **26** | **11** | **8** | **0** | **0** |
 
 ## Root coverage
 
-- `GxProofs`: complete (52 modules)
+- `GxProofs`: complete (60 modules)
 - `GxProofsGfx`: complete (47 modules)
 - `GxMath`: complete (18 modules)
 
@@ -30,7 +30,7 @@ Tier is the dependency set; domain is the subject area.
 | Domain | Modules |
 |---|---:|
 | `audio` | 3 |
-| `core` | 50 |
+| `core` | 58 |
 | `kernel` | 5 |
 | `math` | 18 |
 | `matrix` | 3 |
@@ -139,11 +139,13 @@ in this reviewed table.
 | `GxProofs.AiInput` | B | 50 | checked | checked | AI input routing is event-scoped and does not persist state. |
 | `GxProofs.DrawState` | B | 50 | checked | checked | Draw state ordering affects pass correctness with bounded scope. |
 | `GxProofs.EffectSources` | B | 50 | checked | checked | Effect-source routing is renderer pipeline policy. |
+| `GxProofs.IblSwap` | B | 50 | checked | guarded | IBL refresh ownership can drop a frame to the fallback map or double-free a pair. |
 | `GxProofs.RhiBatch` | B | 50 | checked | checked | Batch submission state affects draw correctness. |
 | `GxProofs.RhiBuf` | B | 50 | checked | checked | Buffer binding/cache state affects vertex/index submission. |
 | `GxProofs.RhiProgramRegistry` | B | 50 | checked | checked | Program registry state affects shader lookup. |
 | `GxProofs.ShaderActive` | B | 50 | checked | checked | Active shader state is a per-pass invariant. |
 | `GxProofs.TAAHalton` | B | 50 | checked | checked | Halton sampling affects temporal jitter quality. |
+| `GxProofs.TextureUnits` | B | 50 | checked | guarded | Texture-unit collisions silently bind the wrong sampler in a pass. |
 | `GxProofsGfx.Postprocess.PostprocessContracts` | B | 50 | checked | checked | Postprocess target/UV errors affect every effect pass. |
 | `GxProofsGfx.Postprocess.SsgiContracts` | B | 50 | checked | checked | SSGI fallback and confidence errors cause banding or missing bounce. |
 | `GxProofsGfx.Renderer.Affine` | B | 50 | checked | checked | Affine map algebra drives viewport/canvas transforms. |
@@ -152,6 +154,7 @@ in this reviewed table.
 | `GxProofsGfx.Renderer.SunUV` | B | 50 | checked | checked | Sun UV mapping controls sky/light alignment. |
 | `GxProofsGfx.Weather.GodrayContracts` | B | 50 | checked | checked | Godray tap bounds affect weather lighting. |
 | `GxMath.Units` | B | 45 | checked | guarded | Basic length and temperature conversions are bounded numeric utilities; bidirectional identities and source constants matter more than broad engine state. |
+| `GxProofs.BoundedQueue` | B | 45 | checked | guarded | Queue capacity/order bugs drop turns or typed characters. |
 | `GxProofsGfx.Renderer.BehindCamera` | B | 45 | checked | checked | Behind-camera classification affects clipping behavior. |
 | `GxProofsGfx.Renderer.CameraLimits` | B | 45 | checked | checked | Camera limit consistency affects authoring bounds. |
 | `GxProofsGfx.Renderer.LightAccumulation` | B | 45 | checked | checked | Per-light accumulation affects shading quality. |
@@ -175,8 +178,10 @@ in this reviewed table.
 | `GxProofsGfx.Renderer.LabelContracts` | B | 32 | checked | checked | Label fit/anchor errors are visible UI defects with bounded impact. |
 | `GxMath.Easing` | B | 30 | checked | checked | Easing bounds affect animation/UI, not engine state. |
 | `GxProofs.EmissiveFill` | B | 30 | checked | checked | Emissive fallback affects material appearance. |
+| `GxProofs.Queues` | C | 25 | registered | guarded | Capacity instance tables for the shared queue policy. |
 | `GxProofs.ViewportRoundtrip` | C | 25 | registered | checked | Viewport round-trip is a bounded UI mapping. |
 | `GxProofsGfx.Postprocess.LensflareGhost` | C | 25 | registered | checked | Lensflare ghost geometry is an optional visual effect. |
+| `GxProofs.CursorState` | C | 20 | registered | guarded | Cursor ownership is a tooling/navigation concern. |
 | `GxProofs.DockMargins` | C | 20 | registered | checked | Dock feasibility is presentation layout policy. |
 | `GxProofs.DockRestore` | C | 20 | registered | checked | Dock restore state is reversible UI state. |
 | `GxProofs.EditLock` | C | 20 | registered | checked | Editor edit locking is a tooling concern. |
@@ -185,12 +190,15 @@ in this reviewed table.
 | `GxProofs.GridLayout` | C | 20 | registered | checked | Grid layout is tooling/presentation guidance. |
 | `GxProofs.GridRectTransform` | C | 20 | registered | checked | Grid rectangle transforms are UI geometry. |
 | `GxProofs.SoloRestore` | C | 20 | registered | checked | Solo restore is editor state. |
+| `GxProofs.TabHitBoxes` | C | 20 | registered | guarded | Workspace tab geometry is presentation layout policy. |
+| `GxProofs.ToolsRegistry` | C | 20 | registered | grounded | The editor tier table is a tooling/navigation concern. |
+| `GxProofs.ToolsState` | C | 20 | registered | guarded | Tool-flag exclusivity is a bounded editor state machine. |
+| `GxProofs.WorkspaceSuites` | C | 20 | registered | guarded | Workspace suite bookkeeping is a tooling concern. |
 | `GxProofsGfx.Renderer.Snap` | C | 20 | registered | checked | Grid snap is a tooling convenience, not an engine invariant. |
 | `GxProofsGfx.Ssr.ProbeBoxExit` | C | 20 | registered | guarded | Illustrative probe-box exit counterexample, not a production policy. |
 | `GxProofs.FocusRing` | C | 15 | registered | checked | Focus-ring geometry is presentation-only. |
 | `GxProofs.HaloInset` | C | 15 | registered | checked | Halo inset is a visual placement detail. |
 | `GxProofs.TitleYield` | C | 15 | registered | checked | Title yield is presentation-only. |
-| `GxProofs.ToolsState` | C | 15 | registered | checked | Tools state is editor-local. |
 
 ## Importance gaps
 
@@ -204,8 +212,10 @@ in this reviewed table.
 | Module | Domain | Class | Sig | Level | Namespace | Thm | Lem | Def | Struct | Ind | Inst | Ax | Opaque |
 |---|---|---|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
 | `GxProofs.AiInput` | `core` | B | 50 | checked | `GxProofs.AiInput` | 6 | 0 | 4 | 0 | 1 | 0 | 0 | 0 |
+| `GxProofs.BoundedQueue` | `core` | B | 45 | guarded | `GxProofs.BoundedQueue` | 7 | 0 | 3 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.BufferPool` | `core` | B | 55 | checked | `GxProofs.BufferPool` | 8 | 0 | 7 | 1 | 0 | 0 | 0 | 0 |
 | `GxProofs.CascadeSplits` | `core` | B | 55 | checked | `GxProofs.CascadeSplits` | 4 | 0 | 12 | 0 | 0 | 0 | 0 | 0 |
+| `GxProofs.CursorState` | `core` | C | 20 | guarded | `GxProofs.CursorState` | 18 | 0 | 17 | 2 | 1 | 0 | 0 | 0 |
 | `GxProofs.DockMargins` | `core` | C | 20 | checked | `GxProofs.DockMargins` | 9 | 0 | 8 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.DockRestore` | `core` | C | 20 | checked | `GxProofs.DockRestore` | 4 | 0 | 1 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.DrawState` | `core` | B | 50 | checked | `GxProofs.DrawState` | 15 | 0 | 13 | 0 | 1 | 0 | 0 | 0 |
@@ -223,6 +233,7 @@ in this reviewed table.
 | `GxProofs.GridLayout` | `core` | C | 20 | checked | `GxProofs.GridLayout` | 7 | 0 | 2 | 1 | 0 | 0 | 0 | 0 |
 | `GxProofs.GridRectTransform` | `core` | C | 20 | checked | `GxProofs.GridRectTransform` | 10 | 0 | 6 | 5 | 0 | 0 | 0 | 0 |
 | `GxProofs.HaloInset` | `core` | C | 15 | checked | `GxProofs.HaloInset` | 5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| `GxProofs.IblSwap` | `core` | B | 50 | guarded | `GxProofs.IblSwap` | 11 | 0 | 4 | 1 | 0 | 0 | 0 | 0 |
 | `GxProofs.MainDataSwitch` | `kernel` | K | 90 | guarded | `GxProofs.MainDataSwitch` | 14 | 0 | 3 | 1 | 0 | 0 | 0 | 0 |
 | `GxProofs.MatrixAccess` | `core` | K | 95 | guarded | `GxProofs.MatrixAccess` | 3 | 0 | 5 | 1 | 0 | 0 | 0 | 0 |
 | `GxProofs.ModuleInfoConsistency` | `kernel` | K | 90 | guarded | `GxProofs.ModuleInfoConsistency` | 7 | 0 | 1 | 2 | 0 | 0 | 0 | 0 |
@@ -231,6 +242,7 @@ in this reviewed table.
 | `GxProofs.PoolAlloc` | `core` | K | 85 | guarded | `GxProofs.PoolAlloc` | 6 | 0 | 7 | 1 | 0 | 0 | 0 | 0 |
 | `GxProofs.PressRoute` | `core` | B | 40 | checked | `GxProofs.PressRoute` | 4 | 0 | 1 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.QualityPreset` | `core` | B | 35 | checked | `GxProofs.QualityPreset` | 4 | 0 | 10 | 1 | 0 | 0 | 0 | 0 |
+| `GxProofs.Queues` | `core` | C | 25 | guarded | `GxProofs.Queues` | 6 | 0 | 6 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.Random32` | `core` | A | 60 | guarded | `GxProofs.Random32` | 5 | 0 | 1 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.ReflectFlags` | `core` | A | 65 | guarded | `GxProofs.ReflectFlags` | 34 | 0 | 20 | 1 | 5 | 0 | 0 | 0 |
 | `GxProofs.RenderTextureLifecycle` | `core` | B | 55 | checked | `GxProofs.RenderTextureLifecycle` | 10 | 0 | 8 | 1 | 0 | 0 | 0 | 0 |
@@ -248,13 +260,17 @@ in this reviewed table.
 | `GxProofs.SoloRestore` | `core` | C | 20 | checked | `GxProofs.SoloRestore` | 4 | 0 | 1 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.SsrCoverage` | `core` | A | 65 | guarded | `GxProofs.SsrCoverage` | 22 | 0 | 8 | 1 | 2 | 0 | 0 | 0 |
 | `GxProofs.TAAHalton` | `core` | B | 50 | checked | `GxProofs.TAAHalton` | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| `GxProofs.TabHitBoxes` | `core` | C | 20 | guarded | `GxProofs.TabHitBoxes` | 3 | 0 | 2 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.TemporalHistory` | `core` | A | 80 | guarded | `GxProofs.TemporalHistory` | 52 | 0 | 19 | 4 | 0 | 1 | 0 | 0 |
 | `GxProofs.TemporalSnapshots` | `core` | A | 80 | guarded | `GxProofs.TemporalSnapshots` | 19 | 0 | 9 | 2 | 0 | 0 | 0 | 0 |
+| `GxProofs.TextureUnits` | `core` | B | 50 | guarded | `GxProofs.TextureUnits` | 4 | 0 | 3 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.TitleYield` | `core` | C | 15 | checked | `GxProofs.TitleYield` | 4 | 0 | 1 | 0 | 1 | 0 | 0 | 0 |
-| `GxProofs.ToolsState` | `core` | C | 15 | checked | `GxProofs.ToolsState` | 7 | 0 | 3 | 1 | 2 | 0 | 0 | 0 |
+| `GxProofs.ToolsRegistry` | `core` | C | 20 | grounded | `GxProofs.ToolsRegistry` | 6 | 0 | 2 | 0 | 3 | 0 | 0 | 0 |
+| `GxProofs.ToolsState` | `core` | C | 20 | guarded | `GxProofs.ToolsState` | 11 | 0 | 4 | 1 | 2 | 0 | 0 | 0 |
 | `GxProofs.ViewportMath` | `core` | B | 40 | checked | `GxProofs.ViewportMath` | 9 | 0 | 10 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.ViewportRoundtrip` | `core` | C | 25 | checked | `GxProofs.ViewportRoundtrip` | 5 | 0 | 2 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofs.VisibleImageSky` | `core` | B | 40 | checked | `GxProofs.VisibleImageSky` | 8 | 0 | 5 | 1 | 1 | 0 | 0 | 0 |
+| `GxProofs.WorkspaceSuites` | `core` | C | 20 | guarded | `GxProofs.WorkspaceSuites` | 8 | 0 | 4 | 1 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Audio.Attenuation` | `audio` | B | 40 | checked | `GxProofsGfx.Audio.Attenuation` | 9 | 0 | 3 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Audio.Envelope` | `audio` | B | 35 | checked | `GxProofsGfx.Audio.Envelope` | 15 | 1 | 6 | 0 | 0 | 0 | 0 | 0 |
 | `GxProofsGfx.Audio.SynthFilter` | `audio` | B | 40 | checked | `GxProofsGfx.Audio.SynthFilter` | 13 | 0 | 3 | 0 | 0 | 0 | 0 | 0 |

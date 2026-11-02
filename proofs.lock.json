@@ -1,11 +1,11 @@
 {
  "schema": 1,
  "repo": "https://github.com/lanttusoft/gx-proofs",
- "tag": "v0.18.0-proofs",
- "commit": "1760307f18ed8824afbafafa3e916afbd257f0f9",
- "coreModules": 52,
- "fullModules": 117,
- "coreDeclarations": 1145,
- "fullDeclarations": 2869,
- "note": "Engine proof gate pin. The sibling ../proofs checkout must be this published tree; the archived private staging ef8569d is rejected by scripts/proof_pin_check.py."
+ "tag": "v0.19.0-proofs",
+ "commit": "ff1a54676c87c3efd328e22491ceedc535492522",
+ "coreModules": 60,
+ "fullModules": 125,
+ "coreDeclarations": 1347,
+ "fullDeclarations": 3071,
+ "note": "Engine proof gate pin. The cursor/editor-host/IBL/queue batch (60 core / 125 total; 1,347 / 3,071 declarations) is published as v0.19.0-proofs; the sibling ../proofs checkout must be this tree."
 }
