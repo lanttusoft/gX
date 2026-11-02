@@ -10,6 +10,11 @@ include(CompilerFlags)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+#ai: Windows modules link this generated import library from the exe.
+if(WIN32)
+    set(GX_MODULE_IMPORT_LIB libgX_build.dll.a)
+endif()
+
 #opencode: v0.5.0 — compute/SSBO light culling. raylib must build with
 #   GRAPHICS_API_OPENGL_43 (OPENGL_VERSION=4.3) or compute+SSBO compile out
 #   of rlgl with only log warnings. Default build stays GL 3.3 (uniform
@@ -529,9 +534,9 @@ endif()
 
 #ai: devcube lab module — the engine avatar. Output stays under build/labs so
 #   the host never auto-loads it; --module/GX_MODULE opt in explicitly.
-#ai: Win32 DLLs cannot carry unresolved engine imports the way the
-#   Linux module does; module export/import is a follow-up.
-if(GX_ENABLE_RENDERER AND NOT WIN32)
+#ai: Windows modules link the exe's import library (the exe exports the
+#   module-facing symbol set); Linux keeps the unresolved-symbol/dlopen model.
+if(GX_ENABLE_RENDERER)
     add_library(gx_devcube SHARED src/module/devcube.c)
     set_target_properties(gx_devcube PROPERTIES
         POSITION_INDEPENDENT_CODE ON
@@ -540,7 +545,15 @@ if(GX_ENABLE_RENDERER AND NOT WIN32)
     target_include_directories(gx_devcube PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src)
     if(WIN32)
-        target_link_libraries(gx_devcube)
+        add_dependencies(gx_devcube ${PROJECT_NAME})
+        #ai: PE resolves the exe import by name, so the DLL lives next to it;
+        #   it is still opt-in (`--module`), never auto-loaded.
+        set_target_properties(gx_devcube PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+        #ai: link the exe's import library after the object. CMake resolves the
+        #   name to -lgX_build, so point the linker at the build directory.
+        target_link_directories(gx_devcube PRIVATE ${CMAKE_BINARY_DIR})
+        target_link_libraries(gx_devcube ${GX_MODULE_IMPORT_LIB})
     else()
         target_link_libraries(gx_devcube m)
     endif()
@@ -548,6 +561,16 @@ endif()
 
 add_executable(${PROJECT_NAME} ${GX_APP_SOURCES})
 target_link_libraries(${PROJECT_NAME} gx_engine_core)
+
+#ai: the Win32 exe link writes the module import library; declare the output
+#   so Ninja can order the module link after it.
+if(WIN32)
+    add_custom_command(OUTPUT ${GX_MODULE_IMPORT_LIB}
+        COMMAND ${CMAKE_COMMAND} -E true
+        DEPENDS ${PROJECT_NAME}
+        COMMENT "Recording the gX module import library")
+endif()
+
 
 #ai: embed a best-effort source revision for offline bug reports. The custom
 #   target runs every build but rewrites the header only when the revision or
@@ -567,7 +590,8 @@ add_dependencies(${PROJECT_NAME} gx_build_info)
 #   list is generated from the module undefined symbols (make module-exports)
 #   and is the ABI — append-only within GX_MODULE_ABI_VERSION. Applies to the
 #   default profile too: devcube is a lab module loaded without the shell.
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/module_exports.txt)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/module_exports.txt
+   AND UNIX AND NOT APPLE)
     target_link_options(${PROJECT_NAME} PRIVATE
         "LINKER:--dynamic-list=${CMAKE_CURRENT_SOURCE_DIR}/modules/module_exports.txt")
     set_property(TARGET ${PROJECT_NAME} APPEND PROPERTY
@@ -706,8 +730,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/s
 #ai: platform link set — X11/GLX on Linux, Win32/OpenGL on Windows, Cocoa on
 #   macOS. The raylib target already carries its own window backend.
 if(WIN32)
-    #ai: self-contained exe — no MinGW runtime DLLs next to the build.
-    target_link_options(${PROJECT_NAME} PRIVATE -static)
+    #ai: self-contained exe — no MinGW runtime DLLs next to the build. The
+    #   export-all table + import library are the module ABI (Route A on
+    #   Windows; see docs/dynamic_modules.md).
+    target_link_options(${PROJECT_NAME} PRIVATE -static
+        -Wl,--export-all-symbols
+        -Wl,--out-implib=${CMAKE_BINARY_DIR}/libgX_build.dll.a)
     target_link_libraries(${PROJECT_NAME} Threads::Threads opengl32 gdi32 winmm)
 elseif(APPLE)
     target_link_libraries(${PROJECT_NAME} Threads::Threads

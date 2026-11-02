@@ -4,6 +4,17 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: minor
+
+### Added
+- **Windows dynamic modules**: the Win32 exe now exports the module ABI and
+  emits an import library, and the devcube lab module builds as
+  `gx_devcube.dll` beside the executable. `make mingw-check` loads it under
+  Wine and verifies the handshake and overlay palette. `gx_shell` remains
+  Linux-only.
+
 ## [0.34.1] - 2026-11-02
 
 Release-Class: patch

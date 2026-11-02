@@ -37,9 +37,9 @@ engine resolves the resource root from the executable location.
 What works today: the full unit suite under Wine, the GFX demo scene with
 OpenGL rendering, and JSON presets (audio/GFX). What is not ported yet:
 
-- **Dynamic modules**: Linux modules carry unresolved engine symbols resolved
-  from the exe; Win32 DLLs need an import/export design. `gx_devcube` and
-  `gx_shell` are not built for Windows yet.
+- **Dynamic modules**: the devcube lab module now builds as a Win32 DLL and
+  loads under Wine (the exe exports the module ABI and emits an import
+  library). `gx_shell` (AngelScript) still needs the same treatment.
 - **RenderDoc hook**: the in-process `RENDERDOC_GetAPI` probe is POSIX-only;
   use the RenderDoc UI/launcher on Windows.
 - **Crash dumps**: `execinfo`/`ucontext` register+stack dumps are Linux-only;

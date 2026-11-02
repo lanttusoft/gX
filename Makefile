@@ -668,6 +668,7 @@ mingw-check:
 	@if command -v wine >/dev/null 2>&1; then \
 		WINEDEBUG=-all WINEPREFIX=$${WINEPREFIX:-$$PWD/build/mingw/wineprefix} \
 		wine build/mingw/gX_build.exe --test-only; \
+		DISPLAY=$${DISPLAY:-:1} python3 scripts/mingw_module_check.py; \
 	else \
 		echo "mingw-check: wine not found — cross-build only"; \
 	fi

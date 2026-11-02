@@ -16,4 +16,11 @@ cmake -B build/mingw -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/mingw-w64.cmake \
     -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/mingw -j"${JOBS:-$(nproc)}"
-echo "build-mingw: build/mingw/gX_build.exe"
+
+#ai: the lab module is a DLL and needs the MinGW pthread runtime next to the
+#   exe; the engine executable itself is static.
+runtime="$(x86_64-w64-mingw32-gcc -print-file-name=libwinpthread-1.dll)"
+if [ -f "$runtime" ]; then
+    cp -f "$runtime" build/mingw/
+fi
+echo "build-mingw: build/mingw/gX_build.exe (+ gx_devcube.dll)"
