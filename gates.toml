@@ -238,6 +238,14 @@ group = "gui"
 cache = "content"
 description = "cursor state-machine audit gate."
 
+[gate.shader-cache]
+script = "shader_cache_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "never"
+description = "shader program cache hit/image/timing gate."
+
 [gate.editor-host]
 script = "editor_host_check.py"
 args = []
