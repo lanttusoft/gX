@@ -36,6 +36,7 @@ extern "C" {
 #include "../main.h"
 #include "../gui/gui.h"
 #include "../wrappers/file.h"
+#include "../input.h"
 #include "../common/log.h"
 }
 
@@ -436,6 +437,7 @@ extern "C" gX_I0 gX_EditorHost_SetOpen(gX_I1 open) {
     if (!open) {
         host_save_layout();
         host_save_selection();
+        gX_Cursor_Pop("editor-host");
     }
     s_hostOpen = open;
     host_trace(open);
@@ -454,6 +456,7 @@ extern "C" gX_I1 gX_EditorHost_IsOpen(gX_I0) {
 extern "C" gX_I0 gX_EditorHost_Update(gX_I0) {
     host_init_env();
     if (!s_hostOpen) return;
+    gX_Cursor_Push(GX_CURSOR_STATE_UI, "editor-host", 30);
     if (!ImGui::GetCurrentContext()) gX_GUI_Load_ImGui();
     if (s_pendingDelete >= 0) host_delete_suite(s_pendingDelete);
     if (s_pendingSuite != -2) {

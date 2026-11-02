@@ -230,6 +230,14 @@ group = "gui"
 cache = "content"
 description = "gui-matrix audit gate."
 
+[gate.cursor]
+script = "cursor_check.py"
+args = []
+tier = ["quick"]
+group = "gui"
+cache = "content"
+description = "cursor state-machine audit gate."
+
 [gate.editor-host]
 script = "editor_host_check.py"
 args = []

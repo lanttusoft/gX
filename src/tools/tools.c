@@ -127,8 +127,6 @@ static gX_I1 s_runtimePhysics = 0;
 //   GX_USE_ANGELSCRIPT is off).
 static gX_I1 s_runtimeScript = 0;
 //opencode: preserve the scene's camera-cursor mode across the GFX editor.
-static gX_I1 s_gfxCursorRestore = 0;
-static gX_I1 s_gfxCursorRestoreValid = 0;
 
 gX_I0 gX_Tools_Init(gX_I0) {
     const gX_I8 *path = arguments.toolsMarkupPath;
@@ -351,13 +349,11 @@ gX_I0 gX_Tools_Close_Runtime(gX_I0) {
     gX_Tools_Editor_SoloRestore();
     gX_Tools_Wavetable_Shutdown();
     gX_Tools_Physics_Shutdown();
-    //opencode: do not leave runtime camera binds enabled after closing tools.
+    //opencode: do not leave runtime camera binds or captured cursor owners
+    //   behind after closing tools.
     input.toolCameraInputEnabled = 0;
-    if (s_gfxCursorRestoreValid) {
-        input.cursorEnabled = s_gfxCursorRestore;
-        input.cursorSwitched = 1;
-        s_gfxCursorRestoreValid = 0;
-    }
+    gX_Cursor_Pop("gfx-freecam");
+    gX_Cursor_Pop("physics-freecam");
     s_runtimeEditor = 0;
     s_runtimeTheme = 0;
     s_runtimeGfx = 0;
@@ -408,15 +404,6 @@ gX_I0 gX_Tools_OpenScript_Runtime(gX_I0) {
 //   (one dock panel at a time); edits live GFX state, needs no path.
 gX_I0 gX_Tools_OpenGfx_Runtime(gX_I0) {
     extern gX_I0 gX_Tools_Gfx_Open(gX_I0);
-    if (!s_gfxCursorRestoreValid) {
-        s_gfxCursorRestore = input.cursorEnabled;
-        if (maindata.masterIndex == gX_SCENE_RENDERER_GFX
-            && !input.masterIndexSwitchResponse)
-            s_gfxCursorRestore = 0;
-        s_gfxCursorRestoreValid = 1;
-    }
-    input.cursorEnabled = 1;
-    input.cursorSwitched = 1;
     gX_GUI_Load_ImGui();
     gX_Tools_SetImGuiThemeMode(0);
     gX_Tools_Gfx_Open();

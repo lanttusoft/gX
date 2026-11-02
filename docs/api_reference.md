@@ -520,6 +520,11 @@ It is inactive by default; paths outside `/tmp/` and faces larger than
 - `gX_Bind_*` — per-scene input binds; `gX_Input_*` — raw
   keyboard/mouse/gamepad state (input.c); F4 exit + ESC-cancel handling;
   `gX_AI_Input_Synth` feeds scripted keyboard/mouse events to ImGui
+- `gX_Cursor_*` — cursor state machine (input.h): UI (visible/free) vs
+  captured (hidden/locked), owner stack with priorities
+  (`gX_Cursor_Push(state, owner, priority)`, `Pop`, `SetDefault`, `Reset`),
+  scene resets, Insert toggle; `GX_CURSOR_TRACE=1` logs transitions. The
+  audit-window and automated-run guards keep the OS pointer visible
 - `gX_Key_IsPressed/IsDown` — edge/held query via `gX_Keys` enum
 
 ## headless input (GX_AI_INPUT)
@@ -705,6 +710,10 @@ the not-in-slice list live in `docs/scripting.md`.
 ## tools (ImGui suite, deterministic editor chrome)
 
 - `gX_Tools_*` — runtime open/close + CLI inits (`--tools`, `--theme-editor`)
+- `gX_EditorHost_*` — always-summonable global host (F9): menu bar, editor
+  registry, workspace suites and per-suite layouts. `Toggle`, `SetOpen`,
+  `IsOpen`, `Update`, `Draw`; `GX_EDITOR_HOST=1` opens it for captures and
+  `GX_EDITOR_WORKSPACE=<name>` selects a suite
 - `gX_Tools_RuntimeActive` — any in-app tool open (draw gate)
 - `gX_Tools_Toolgun_*` — the shared crosshair/tool mode for in-engine
   editors (open a tool table, step the input each frame, draw the crosshair

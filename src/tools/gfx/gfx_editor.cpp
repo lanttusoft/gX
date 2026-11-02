@@ -8145,8 +8145,10 @@ static gX_I0 gfx_ssao_panel(gX_RendererGFX *gfx) {
 static gX_I0 gfx_free_camera_set(gX_I1 active) {
     s_freeCameraActive = active ? 1 : 0;
     input.toolCameraInputEnabled = s_freeCameraActive;
-    input.cursorEnabled = s_freeCameraActive ? 0 : 1;
-    input.cursorSwitched = 1;
+    if (s_freeCameraActive)
+        gX_Cursor_Push(GX_CURSOR_STATE_CAPTURED, "gfx-freecam", 20);
+    else
+        gX_Cursor_Pop("gfx-freecam");
 }
 
 //opencode: show click-through, context-sensitive keycaps at the viewport edge.
@@ -11182,11 +11184,8 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     if (s_freeCameraActive && (input.keyboard.keys[gX_KEY_ESCAPE].state.PRESSED
         || input.cursorEnabled))
         gfx_free_camera_set(0);
-    if (!s_freeCameraActive && !input.cursorEnabled) {
-        input.cursorEnabled = 1;
-        input.cursorSwitched = 1;
-    }
     if (s_freeCameraActive) {
+        gX_Cursor_Push(GX_CURSOR_STATE_CAPTURED, "gfx-freecam", 20);
         gfx_free_camera_overlay();
         gfx_editor_shortcut_footer(0, 1);
         gfx_editor_palette_pop(palette);

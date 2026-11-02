@@ -1306,6 +1306,14 @@ static gX_I0 gX_GUI_Dock_Update(gX_I0) {
 static gX_I0 gX_GUI_Draw_ToolsOverlay(gX_I0) {    //opencode: v0.6.9 Phase B — dock controller (per-frame transition
     //   check, cheap). See call site for the full contract.
     gX_GUI_Dock_Update();
+    //opencode: any hosted editor is a UI owner; free-cam owners push above it.
+    {
+        extern gX_I1 gX_Tools_RuntimeActive(gX_I0);
+        if (gX_Tools_RuntimeActive())
+            gX_Cursor_Push(GX_CURSOR_STATE_UI, "tool", 10);
+        else
+            gX_Cursor_Pop("tool");
+    }
 
     //opencode: v0.4.0 — gX Tools suite: ImGui tool chrome drawn after the
     //   canvases + overlays.
