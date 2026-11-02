@@ -74,6 +74,7 @@
 #endif
 #include "../../gui/gui.h"
 #include "../../input.h"
+#include "../editor_host.h"
 #include "../../wrappers/input.h"
 #include "../../wrappers/camera.h"
 
@@ -197,6 +198,9 @@ static gX_I1 s_headlessPresetLoadDone = 0;
 static gX_I1 s_headlessSnapshotSmokeDone = 0;
 static gX_I1 s_scenePanelOpen = 1;
 static gX_I1 s_inspectorPanelOpen = 1;
+
+extern "C" gX_I1 *gX_Tools_Gfx_ScenePanelFlag(gX_I0) { return &s_scenePanelOpen; }
+extern "C" gX_I1 *gX_Tools_Gfx_InspectorPanelFlag(gX_I0) { return &s_inspectorPanelOpen; }
 //ai: one-action viewport focus; remembers which panels were open.
 static gX_I1 s_focusViewport = 0;
 static gX_I1 s_focusSavedScene = 1;
@@ -322,6 +326,10 @@ static gX_I8 s_assetGuestRoots[GX_GFX_ASSET_ROOT_CAP][256] = {};
 static gX_U32 s_assetSourceCount = 0;
 static gX_I1 s_assetsReady = 0;
 static gX_I1 s_assetBrowserOpen = 0;
+static gX_I1 s_shortcutFooterOpen = 1;
+
+extern "C" gX_I1 *gX_Tools_Gfx_AssetPanelFlag(gX_I0) { return &s_assetBrowserOpen; }
+extern "C" gX_I1 *gX_Tools_Gfx_FooterPanelFlag(gX_I0) { return &s_shortcutFooterOpen; }
 static gX_I1 s_assetBrowserFocus = 0;
 static gX_I32 s_assetBrowserKind = gX_GFX_ASSET_MODELS;
 static gX_I32 s_assetTextureTarget = gX_GFX_ASSET_TARGET_NONE;
@@ -11149,6 +11157,19 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
     const char *focusEnv = getenv("GX_EDITOR_FOCUS_VIEWPORT");
     if (focusEnv && focusEnv[0] && focusEnv[0] != '0')
         gfx_focus_viewport_set(1);
+    //opencode: capture/gate hook — force the summonable panels after the
+    //   open resets; the host menu toggles the same flags.
+    s_shortcutFooterOpen = 1;
+    {
+        const gX_I8 *sceneEnv = getenv("GX_GFX_PANEL_SCENE");
+        const gX_I8 *inspEnv = getenv("GX_GFX_PANEL_INSPECTOR");
+        const gX_I8 *assetEnv = getenv("GX_GFX_PANEL_ASSET");
+        const gX_I8 *footerEnv = getenv("GX_GFX_PANEL_FOOTER");
+        if (sceneEnv && sceneEnv[0]) s_scenePanelOpen = atoi((const char *)sceneEnv) != 0;
+        if (inspEnv && inspEnv[0]) s_inspectorPanelOpen = atoi((const char *)inspEnv) != 0;
+        if (assetEnv && assetEnv[0]) s_assetBrowserOpen = atoi((const char *)assetEnv) != 0;
+        if (footerEnv && footerEnv[0]) s_shortcutFooterOpen = atoi((const char *)footerEnv) != 0;
+    }
     s_freeCameraActive = 0;
     input.toolCameraInputEnabled = 0;
     s_moveAxis = 0;
@@ -11187,7 +11208,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     if (s_freeCameraActive) {
         gX_Cursor_Push(GX_CURSOR_STATE_CAPTURED, "gfx-freecam", 20);
         gfx_free_camera_overlay();
-        gfx_editor_shortcut_footer(0, 1);
+        if (s_shortcutFooterOpen) gfx_editor_shortcut_footer(0, 1);
         gfx_editor_palette_pop(palette);
         return;
     }
@@ -11215,8 +11236,13 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     gX_F32 scrH = (gX_F32)maindata.windowHeight;
     if (scrW <= 0) scrW = ImGui::GetIO().DisplaySize.x;
     if (scrH <= 0) scrH = ImGui::GetIO().DisplaySize.y;
-    gX_F32 menuH = ImGui::GetFrameHeight();
+    //opencode: when the global host is open, reserve its menu bar + workspace
+    //   tab strip above the editor panels and viewport.
+    gX_I1 hostOpen = gX_EditorHost_IsOpen();
+    gX_F32 hostBar = hostOpen ? ImGui::GetFrameHeight() : 0.0f;
+    gX_F32 menuH = ImGui::GetFrameHeight() + hostBar;
     gX_F32 panelH = scrH - menuH;
+    gX_GUI_Viewport_SetTopInset(hostOpen ? menuH : 0.0f);
     if (panelH < 100.0f) panelH = 100.0f;
     //opencode: scale the fixed side panels with text so enlarged controls
     //   retain room for labels, then cap them on narrow displays.
@@ -11285,11 +11311,13 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
         gX_Rectangle dockBox = gX_GUI_ViewportBox_Get();
         gX_TraceLog(gX_LOG_INFO,
             "GFX_DOCK: docked=%d window=%ux%u viewport=(%.0f,%.0f,%.0f,%.0f) "
-            "inset=%.0f inspector=%.0f scene=%.0f",
+            "inset=%.0f inspector=%.0f scene=%.0f panels=%d/%d aux=%d/%d",
             gui.viewportDocked ? 1 : 0, maindata.windowWidth,
             maindata.windowHeight, dockBox.x, dockBox.y, dockBox.width,
             dockBox.height, (gui.viewportDocked && s_inspectorPanelOpen)
-                ? inspectorW : 0.0f, inspectorW, sceneW);
+                ? inspectorW : 0.0f, inspectorW, sceneW,
+            (gX_I32)s_scenePanelOpen, (gX_I32)s_inspectorPanelOpen,
+            (gX_I32)s_assetBrowserOpen, (gX_I32)s_shortcutFooterOpen);
     }
     ImGuiCond panelCond = gui.viewportDocked ? ImGuiCond_Always : ImGuiCond_FirstUseEver;
 
@@ -11432,7 +11460,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
         s_inspectorPanelOpen = inspectorOpen ? 1 : 0;
     }
     gfx_editor_camera_markers_draw(gfx);
-    gfx_editor_shortcut_footer(gfx, 0);
+    if (s_shortcutFooterOpen) gfx_editor_shortcut_footer(gfx, 0);
     gfx_asset_browser_window(gfx);
     if (gfx) gfx_snapshot_headless_smoke(gfx);
     gfx_editor_palette_pop(palette);

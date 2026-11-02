@@ -78,7 +78,7 @@ static const HostEditor kEditors[] = {
     { "Wavetable",  "alpha/WIP", gX_Tools_RuntimeWavetableFlag,  gX_Tools_OpenWavetable_Runtime,  1 },
     { "Textwriter", "alpha/WIP", gX_Tools_RuntimeTextwriterFlag, gX_Tools_OpenTextwriter_Runtime, 1 },
     { "Rail",       "alpha/WIP", gX_Tools_RuntimeRailFlag,       gX_Tools_OpenRail_Runtime,       1 },
-    { "GFX",        "beta",      gX_Tools_RuntimeGfxFlag,        gX_Tools_OpenGfx_Runtime,        0 },
+    { "GFX",        "beta",      gX_Tools_RuntimeGfxFlag,        gX_Tools_OpenGfx_Runtime,        1 },
     { "Script",     "alpha/WIP", gX_Tools_RuntimeScriptFlag,     gX_Tools_OpenScript_Runtime,     1 },
 };
 
@@ -93,20 +93,29 @@ typedef struct HostSuite {
     gX_I8 name[64];
     gX_I32 editor; // registry index, -1 = no editor
     gX_I1 user;
+    gX_I1 scenePanel;
+    gX_I1 inspectorPanel;
 } HostSuite;
 
 static HostSuite s_suites[HOST_SUITE_MAX];
 static gX_I32 s_suiteCount = 0;
 
-static const struct { const gX_I8 *name; gX_I32 editor; } kBuiltinSuites[] = {
-    { "Default",    -1 },
-    { "Sky",         2 },
-    { "Background",  3 },
-    { "Physics",     4 },
-    { "Audio",       5 },
-    { "Writing",     6 },
-    { "GUI",         0 },
-    { "Theme",       1 },
+static const struct {
+    const gX_I8 *name;
+    gX_I32 editor;
+    gX_I1 scenePanel;
+    gX_I1 inspectorPanel;
+} kBuiltinSuites[] = {
+    { "Default",    -1, 1, 1 },
+    { "Sky",         2, 1, 1 },
+    { "Background",  3, 1, 1 },
+    { "Physics",     4, 1, 1 },
+    { "Audio",       5, 1, 1 },
+    { "Writing",     6, 1, 1 },
+    { "GUI",         0, 1, 1 },
+    { "Theme",       1, 1, 1 },
+    { "GFX",         8, 1, 1 },
+    { "GFX Focus",   8, 0, 1 },
 };
 static const gX_I32 kBuiltinSuiteCount =
     (gX_I32)(sizeof(kBuiltinSuites) / sizeof(kBuiltinSuites[0]));
@@ -190,8 +199,9 @@ static gX_I0 host_suites_persist(gX_I0) {
     if (!file) return;
     for (gX_I32 i = 0; i < s_suiteCount; i++) {
         if (!s_suites[i].user) continue;
-        fprintf(file, "%s|%d\n", (const char *)s_suites[i].name,
-            s_suites[i].editor);
+        fprintf(file, "%s|%d|%d|%d\n", (const char *)s_suites[i].name,
+            s_suites[i].editor, (gX_I32)s_suites[i].scenePanel,
+            (gX_I32)s_suites[i].inspectorPanel);
     }
     fclose(file);
 }
@@ -212,6 +222,8 @@ static gX_I0 host_suites_init(gX_I0) {
             (const char *)kBuiltinSuites[i].name);
         s_suites[s_suiteCount].editor = kBuiltinSuites[i].editor;
         s_suites[s_suiteCount].user = 0;
+        s_suites[s_suiteCount].scenePanel = kBuiltinSuites[i].scenePanel;
+        s_suites[s_suiteCount].inspectorPanel = kBuiltinSuites[i].inspectorPanel;
         s_suiteCount++;
     }
     if (s_guarded) return;
@@ -227,7 +239,19 @@ static gX_I0 host_suites_init(gX_I0) {
         char *bar = strchr((char *)line, '|');
         if (!bar) continue;
         *bar = '\0';
-        gX_I32 editor = atoi(bar + 1);
+        char *cursor = bar + 1;
+        char *bar2 = strchr(cursor, '|');
+        if (bar2) *bar2 = '\0';
+        gX_I32 editor = atoi(cursor);
+        gX_I32 scene = 1, inspector = 1;
+        if (bar2) {
+            char *bar3 = strchr(bar2 + 1, '|');
+            if (bar3) *bar3 = '\0';
+            scene = atoi(bar2 + 1);
+            if (bar3) inspector = atoi(bar3 + 1);
+            scene = scene ? 1 : 0;
+            inspector = inspector ? 1 : 0;
+        }
         if (editor < -1 || editor >= kEditorCount) continue;
         if (!host_suite_name_valid(line)) continue;
         if (host_suite_name_used(line)) continue;
@@ -235,6 +259,8 @@ static gX_I0 host_suites_init(gX_I0) {
             sizeof(s_suites[s_suiteCount].name), "%s", (char *)line);
         s_suites[s_suiteCount].editor = editor;
         s_suites[s_suiteCount].user = 1;
+        s_suites[s_suiteCount].scenePanel = (gX_I1)scene;
+        s_suites[s_suiteCount].inspectorPanel = (gX_I1)inspector;
         s_suiteCount++;
     }
     fclose(file);
@@ -352,6 +378,13 @@ static gX_I0 host_save_user_suite(const gX_I8 *name) {
         s_suites[found].user = 1;
     }
     s_suites[found].editor = editor;
+    s_suites[found].scenePanel = 1;
+    s_suites[found].inspectorPanel = 1;
+    if (strcmp((const char *)kEditors[editor].label, "GFX") == 0) {
+        s_suites[found].scenePanel = *gX_Tools_Gfx_ScenePanelFlag() ? 1 : 0;
+        s_suites[found].inspectorPanel =
+            *gX_Tools_Gfx_InspectorPanelFlag() ? 1 : 0;
+    }
     host_suites_persist();
     s_suite = found;
     host_save_selection();
@@ -391,7 +424,13 @@ static gX_I0 host_apply_suite(gX_I32 index) {
     s_suite = index;
     gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: workspace=%s",
         (const char *)host_suite_name(index));
-    if (host_suite_editor(index) >= 0) host_open_editor(host_suite_editor(index));
+    gX_I32 editorIndex = host_suite_editor(index);
+    if (editorIndex >= 0) host_open_editor(editorIndex);
+    if (editorIndex >= 0
+        && strcmp((const char *)kEditors[editorIndex].label, "GFX") == 0) {
+        *gX_Tools_Gfx_ScenePanelFlag() = s_suites[index].scenePanel;
+        *gX_Tools_Gfx_InspectorPanelFlag() = s_suites[index].inspectorPanel;
+    }
     host_load_layout(index);
     host_save_selection();
 }
@@ -493,6 +532,21 @@ static gX_I0 host_editor_menu(const HostEditor *editor) {
     if (ImGui::MenuItem("Close")) {
         *editor->flag() = 0;
         host_trace_active();
+    }
+    if (strcmp((const char *)editor->label, "GFX") == 0) {
+        ImGui::Separator();
+        gX_I1 scene = *gX_Tools_Gfx_ScenePanelFlag() ? 1 : 0;
+        if (ImGui::MenuItem("Scene panel", NULL, &scene))
+            *gX_Tools_Gfx_ScenePanelFlag() = scene;
+        gX_I1 inspector = *gX_Tools_Gfx_InspectorPanelFlag() ? 1 : 0;
+        if (ImGui::MenuItem("Inspector panel", NULL, &inspector))
+            *gX_Tools_Gfx_InspectorPanelFlag() = inspector;
+        gX_I1 asset = *gX_Tools_Gfx_AssetPanelFlag() ? 1 : 0;
+        if (ImGui::MenuItem("Asset browser", NULL, &asset))
+            *gX_Tools_Gfx_AssetPanelFlag() = asset;
+        gX_I1 footer = *gX_Tools_Gfx_FooterPanelFlag() ? 1 : 0;
+        if (ImGui::MenuItem("Shortcut footer", NULL, &footer))
+            *gX_Tools_Gfx_FooterPanelFlag() = footer;
     }
     ImGui::EndMenu();
 }

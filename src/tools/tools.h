@@ -85,6 +85,11 @@ gX_I0 gX_Tools_Editor_SoloRestore(gX_I0);
 gX_I1 *gX_Tools_RuntimeEditorFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeThemeFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeGfxFlag(gX_I0);
+//opencode: summonable GFX side panels (host menu + capture hooks).
+gX_I1 *gX_Tools_Gfx_ScenePanelFlag(gX_I0);
+gX_I1 *gX_Tools_Gfx_InspectorPanelFlag(gX_I0);
+gX_I1 *gX_Tools_Gfx_AssetPanelFlag(gX_I0);
+gX_I1 *gX_Tools_Gfx_FooterPanelFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeScriptFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeWavetableFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeTextwriterFlag(gX_I0);

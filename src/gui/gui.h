@@ -612,6 +612,9 @@ gX_U32  makeAmount;
     //opencode: additional left-edge inset; the GFX editor widens/shrinks the
     //   dock with its scene panel and uses -320 for focus mode.
     gX_F32 viewportLeftInset;
+    //opencode: top inset reserved for the global editor host bar + workspace
+    //   tabs; only the GFX editor sets it while the host is open.
+    gX_F32 viewportTopInset;
     
 #if GX_GUI_USE_POOLS
     //opencode: pool-based element/module system — experimental, replaces per-element
@@ -707,6 +710,7 @@ gX_I1 gX_GUI_Dock_Cramped_Check(gX_I0);
 //   the value changes.
 gX_I0 gX_GUI_Viewport_SetRightInset(gX_F32 inset);
 gX_I0 gX_GUI_Viewport_SetLeftInset(gX_F32 inset);
+gX_I0 gX_GUI_Viewport_SetTopInset(gX_F32 inset);
 gX_F32v2 gX_GUI_ScreenToGame(gX_F32 sx, gX_F32 sy);
 gX_Rectangle gX_GUI_GameToScreen(gX_Rectangle r);
 gX_Rectangle gX_GUI_ViewportBox_Get(gX_I0);

@@ -22,6 +22,8 @@ HEIGHT = 768
 TOP = 46  # menu bar + workspace tab row
 TAB_RE = re.compile(r'EDITOR_HOST: tab=Sky x=(\d+) y=(\d+) w=(\d+) h=(\d+)')
 TAB_ALL_RE = re.compile(r'EDITOR_HOST: tab=(\S+) x=(\d+) y=(\d+) w=(\d+) h=(\d+)')
+DOCK_RE = re.compile(r'GFX_DOCK:.*viewport=\(([-0-9.]+),([-0-9.]+),([-0-9.]+),([-0-9.]+)\)')
+PANELS_RE = re.compile(r'GFX_DOCK:.*panels=(\d)/(\d)')
 
 
 def run(tag, scene, extra, frames=30, shot=20):
@@ -128,6 +130,102 @@ def main():
         if "BG_EDITOR_UI: panel=1" not in bg_log:
             raise RuntimeError("background panel did not open")
 
+        #opencode: the GFX editor is hosted now; its panels/viewport must start
+        #   below the host menu bar + workspace tab strip.
+        base_gfx_code, base_gfx_log, _ = run("gfx-base", "--gfx",
+            {"GX_TOOLS_OPEN": "gfx", "GX_DOCK_TRACE": "1"},
+            frames=80, shot=60)
+        host_gfx_code, host_gfx_log, _ = run("gfx-host", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "gfx",
+             "GX_DOCK_TRACE": "1"}, frames=80, shot=60)
+        if base_gfx_code != 0 or host_gfx_code != 0:
+            raise RuntimeError("hosted GFX editor run failed")
+        if "Tools: GFX editor opened" not in host_gfx_log:
+            raise RuntimeError("GFX editor did not open under the host")
+        if "EDITOR_HOST: active=GFX" not in host_gfx_log:
+            raise RuntimeError("host registry did not report GFX active")
+        base_dock = DOCK_RE.findall(base_gfx_log)
+        host_dock = DOCK_RE.findall(host_gfx_log)
+        if not base_dock or not host_dock:
+            raise RuntimeError("GFX dock trace missing")
+        base_y = float(base_dock[-1][1])
+        host_y = float(host_dock[-1][1])
+        if host_y < 40.0:
+            raise RuntimeError(
+                f"GFX viewport does not clear the host bars (y={host_y:.0f})")
+        if host_y <= base_y:
+            raise RuntimeError(
+                f"host inset did not move the GFX viewport (base {base_y:.0f}, "
+                f"host {host_y:.0f})")
+        if "panels=1/1" not in host_gfx_log:
+            raise RuntimeError("hosted GFX panels do not default to 1/1")
+
+        focus_code, focus_log, _ = run("gfx-focus", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "gfx",
+             "GX_GFX_PANEL_SCENE": "0", "GX_DOCK_TRACE": "1"},
+            frames=80, shot=60)
+        noinsp_code, noinsp_log, _ = run("gfx-noinsp", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "gfx",
+             "GX_GFX_PANEL_INSPECTOR": "0", "GX_DOCK_TRACE": "1"},
+            frames=80, shot=60)
+        if focus_code != 0 or noinsp_code != 0:
+            raise RuntimeError("GFX panel toggle runs failed")
+        if "panels=0/1" not in focus_log:
+            raise RuntimeError("scene panel did not hide")
+        if "panels=1/0" not in noinsp_log:
+            raise RuntimeError("inspector panel did not hide")
+        host_dock = DOCK_RE.findall(host_gfx_log)
+        focus_dock = DOCK_RE.findall(focus_log)
+        noinsp_dock = DOCK_RE.findall(noinsp_log)
+        if not host_dock or not focus_dock or not noinsp_dock:
+            raise RuntimeError("GFX panel dock traces missing")
+        host_x = float(host_dock[-1][0])
+        focus_x = float(focus_dock[-1][0])
+        noinsp_x = float(noinsp_dock[-1][0])
+        if focus_x >= host_x:
+            raise RuntimeError(
+                f"hiding the scene panel did not reclaim the left margin "
+                f"({focus_x:.0f} vs {host_x:.0f})")
+        if noinsp_x <= host_x:
+            raise RuntimeError(
+                f"hiding the inspector did not widen the viewport start "
+                f"({noinsp_x:.0f} vs {host_x:.0f})")
+
+        #opencode: suites carry GFX panel masks; the built-in Focus suite
+        #   restores the scene panel hidden.
+        suite_code, suite_log, _ = run("gfx-suite", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "GFX",
+             "GX_DOCK_TRACE": "1"}, frames=90, shot=60)
+        focus_suite_code, focus_suite_log, _ = run("gfx-focus-suite", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "GFX Focus",
+             "GX_DOCK_TRACE": "1"}, frames=90, shot=60)
+        if suite_code != 0 or focus_suite_code != 0:
+            raise RuntimeError("GFX suite runs failed")
+        if "EDITOR_HOST: workspace=GFX" not in suite_log:
+            raise RuntimeError("GFX suite did not apply")
+        if "panels=1/1" not in suite_log:
+            raise RuntimeError("GFX suite did not restore both panels")
+        if "EDITOR_HOST: workspace=GFX Focus" not in focus_suite_log:
+            raise RuntimeError("GFX Focus suite did not apply")
+        if "panels=0/1" not in focus_suite_log:
+            raise RuntimeError("GFX Focus suite did not hide the scene panel")
+        suite_dock = DOCK_RE.findall(suite_log)
+        focus_suite_dock = DOCK_RE.findall(focus_suite_log)
+        if not suite_dock or not focus_suite_dock:
+            raise RuntimeError("GFX suite dock traces missing")
+        if float(focus_suite_dock[-1][0]) >= float(suite_dock[-1][0]):
+            raise RuntimeError("GFX Focus suite did not reclaim the left margin")
+        if "aux=0/1" not in host_gfx_log:
+            raise RuntimeError("hosted GFX aux panels do not default to 0/1")
+        aux_code, aux_log, _ = run("gfx-aux", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "gfx",
+             "GX_GFX_PANEL_ASSET": "1", "GX_GFX_PANEL_FOOTER": "0",
+             "GX_DOCK_TRACE": "1"}, frames=90, shot=60)
+        if aux_code != 0:
+            raise RuntimeError("GFX aux panel run failed")
+        if "aux=1/0" not in aux_log:
+            raise RuntimeError("GFX asset/footer toggles did not apply")
+
         default_code, default_log, _ = run("default", "--title",
             {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "Default"},
             frames=40, shot=30)
@@ -164,7 +262,9 @@ def main():
         print(f"EDITOR_HOST_CHECK: FAIL — {error}", file=sys.stderr)
         return 1
     print("EDITOR_HOST_CHECK: PASS toolbar in title/gfx, F9 open+close, "
-          "Sky/Background/Default workspaces, tab hit boxes sane")
+          "Sky/Background/Default workspaces, tab hit boxes sane, GFX hosted "
+          "below the bars, scene/inspector panels summonable, "
+          "GFX/GFX Focus suite masks, aux asset/footer panels")
     return 0
 
 
