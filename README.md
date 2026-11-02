@@ -10,7 +10,8 @@ generic engine demo.
 - License: GPLv3; third-party notices in `license/NOTICE.md`.
 - Build: `./build.sh`; unit tests: `./build/gX_build --test-only`;
   fast checks: `make check-fast`. Windows x86_64 cross-build:
-  `./build-mingw.sh` and `make mingw-check` (MinGW-w64; Wine optional).
+  `./build-mingw.sh`, `make mingw-check` and `make mingw-scripting-check`
+  (MinGW-w64; Wine optional).
 - Docs index: `docs/README.md`.
 - Proof sources: https://github.com/lanttusoft/gx-proofs
 - AI usage, limitations and disclaimer: `docs/ai_disclosure.md`.

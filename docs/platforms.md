@@ -37,9 +37,11 @@ engine resolves the resource root from the executable location.
 What works today: the full unit suite under Wine, the GFX demo scene with
 OpenGL rendering, and JSON presets (audio/GFX). What is not ported yet:
 
-- **Dynamic modules**: the devcube lab module now builds as a Win32 DLL and
-  loads under Wine (the exe exports the module ABI and emits an import
-  library). `gx_shell` (AngelScript) still needs the same treatment.
+- **Dynamic modules**: both the devcube lab module and the AngelScript shell
+  build as Win32 DLLs and load under Wine (the exe exports the module ABI and
+  emits an import library). `make mingw-scripting-check` builds and runs the
+  shell. The runtime ships the MinGW libstdc++/pthread DLLs next to the
+  build.
 - **RenderDoc hook**: the in-process `RENDERDOC_GetAPI` probe is POSIX-only;
   use the RenderDoc UI/launcher on Windows.
 - **Crash dumps**: `execinfo`/`ucontext` register+stack dumps are Linux-only;

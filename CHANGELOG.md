@@ -4,6 +4,17 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: minor
+
+### Added
+- **Windows AngelScript shell**: `gx_shell` builds as a Win32 DLL against
+  the exe import library and runs scripts under Wine. New
+  `build-mingw-scripting.sh` and `make mingw-scripting-check`; the shell
+  runtime DLLs are copied beside the exe. `gx_shell` is no longer
+  Linux-only.
+
 ## [0.35.0] - 2026-11-02
 
 Release-Class: minor

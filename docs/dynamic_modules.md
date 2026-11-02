@@ -170,8 +170,10 @@ Route A + the shell as the first client is built:
   handling, and the module-less `--script` warning.
 - **Windows**: the exe exports the module ABI and emits
   `libgX_build.dll.a` for module links. `gx_devcube` builds as
-  `build/mingw/gx_devcube.dll` beside the exe and loads with
-  `--module` under Wine; `gx_shell` remains Linux-only for now.
+  `build/mingw/gx_devcube.dll` and `gx_shell` as
+  `build/mingw-scripting/gx_shell.dll`, both beside their exe and loaded
+  with `--module` under Wine. `make mingw-check` and
+  `make mingw-scripting-check` cover them.
 - **DevCube lab module** (`gx_devcube`, `build/labs/gx_devcube.so`): the
   engine avatar draws a native-resolution overlay (green wireframe cube,
   pink 3:2 Lissajous, three RGB orbs) after the scene/renderer/GUI frame.

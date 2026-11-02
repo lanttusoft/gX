@@ -660,6 +660,16 @@ gfx-decal-bake-check: all
 	@echo "== [gX CI] decal bake =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_decal_bake_check.py
 
+#ai: Windows scripting-shell cross-build + Wine script smoke.
+.PHONY: mingw-scripting-check
+mingw-scripting-check:
+	./build-mingw-scripting.sh
+	@if command -v wine >/dev/null 2>&1; then \
+		DISPLAY=$${DISPLAY:-:1} python3 scripts/mingw_scripting_check.py; \
+	else \
+		echo "mingw-scripting-check: wine not found — cross-build only"; \
+	fi
+
 #ai: Windows cross-build + Wine unit-test smoke (needs mingw-w64; wine is
 #   optional — the cross-build still runs without it).
 .PHONY: mingw-check

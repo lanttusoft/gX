@@ -518,7 +518,12 @@ if(GX_USE_ANGELSCRIPT)
     #opencode: modules resolve engine symbols from the exe at dlopen
     #   (Route A) — no engine link, only libc/libm/libstdc++.
     if(WIN32)
-        target_link_libraries(gx_shell Threads::Threads)
+        #ai: PE needs the exe import library; the exe exports the module ABI.
+        add_dependencies(gx_shell ${PROJECT_NAME})
+        set_target_properties(gx_shell PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+        target_link_directories(gx_shell PRIVATE ${CMAKE_BINARY_DIR})
+        target_link_libraries(gx_shell Threads::Threads ${GX_MODULE_IMPORT_LIB})
     else()
         target_link_libraries(gx_shell m Threads::Threads)
     endif()

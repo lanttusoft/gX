@@ -119,8 +119,14 @@ static gX_I0 gx_shell_overlay_draw(gX_I0) {
 // module entry
 //=============================================================================
 
-gX_I32 gX_Module_Entry(const gX_Module_Host *host);
-gX_I32 gX_Module_Entry(const gX_Module_Host *host) {
+#if defined(_WIN32)
+    #define GX_MODULE_EXPORT __declspec(dllexport)
+#else
+    #define GX_MODULE_EXPORT
+#endif
+
+GX_MODULE_EXPORT gX_I32 gX_Module_Entry(const gX_Module_Host *host);
+GX_MODULE_EXPORT gX_I32 gX_Module_Entry(const gX_Module_Host *host) {
     if (!host || host->abiVersion != GX_MODULE_ABI_VERSION
         || host->structSize < sizeof(gX_Module_Host)) {
         gX_TraceLog(gX_LOG_ERROR,

@@ -97,6 +97,7 @@ Build
     make check-fast             # public fast CI: build, tests, scene smoke
     ./build-mingw.sh            # Windows x86_64 cross-build (MinGW-w64)
     make mingw-check            # cross-build + Wine unit-test smoke
+    make mingw-scripting-check  # AngelScript shell DLL + Wine script smoke
 
 raylib source is vendored in `external/raylib` for this beta (upstream
 6.0-58-gcf9f27db). The release helper vendors the same source into tarballs.
