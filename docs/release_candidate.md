@@ -25,13 +25,13 @@ items. Until all three gates and the operations contract hold, gX stays a
 
 | Item | Value |
 | --- | --- |
-| Version | v0.35.0 (beta) |
+| Version | v0.36.0 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
 | Audit baseline | 86 quick/full gates (87 manifest entries); last full run **86/86** on `86d893b` (2026-11-02, `AUDIT_CACHE=0`) |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
 | Lean gate | payload 4,123,675 B (70,629 B headroom), BSS 2,699,072 B (5,928 B headroom) — v0.34.1 `make check` |
-| Release class | MINOR (v0.35.0: Windows dynamic modules) |
+| Release class | MINOR (v0.36.0: Windows AngelScript shell DLL) |
 
 ## Completeness ledger
 
@@ -93,6 +93,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-02 | v0.34.0: Windows x86_64 beta (MinGW cross-build, Wine smoke), internal JSON schemas, platform shims; Linux matrix unchanged. | owner/agent |
 | 2026-11-02 | v0.34.1: full matrix exposed three lab-focus fixture regressions (83/86); fixed and re-run. | owner/agent |
 | 2026-11-02 | v0.35.0: Windows devcube module DLL + `mingw-check` module smoke; Linux matrix unchanged. | owner/agent |
+| 2026-11-02 | v0.36.0: Windows AngelScript shell DLL + `mingw-scripting-check`; Linux matrix unchanged. | owner/agent |
 
 ## Change rule
 
