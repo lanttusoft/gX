@@ -28,9 +28,9 @@ items. Until all three gates and the operations contract hold, gX stays a
 | Version | v0.34.1 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 86 quick/full gates (87 manifest entries; latest: `shader-cache`); last full run 83/83 on `bf873f5` (2026-11-02); the incremental gates are verified individually |
+| Audit baseline | 86 quick/full gates (87 manifest entries); last full run **86/86** on `86d893b` (2026-11-02, `AUDIT_CACHE=0`) |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 4,123,675 B (70,629 B headroom), BSS 2,699,072 B (5,928 B headroom) — v0.34.0 `make check` |
+| Lean gate | payload 4,123,675 B (70,629 B headroom), BSS 2,699,072 B (5,928 B headroom) — v0.34.1 `make check` |
 | Release class | PATCH (v0.34.1: renderer lab fixture focus + public comment hygiene) |
 
 ## Completeness ledger
@@ -44,7 +44,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Source | archive reproduces from the release tag | holds | `git archive` + checksum sidecar |
 | Admission | `make check` (build, tests, scene smoke, audits, proofs, lean gate) | holds | release CI logs |
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
-| Admission | full audit matrix green (`make audit-summary-full`) | partial | last full run 83/83 on `bf873f5`; the matrix now has 86 quick/full gates (87 manifest entries) and the incremental gates pass; a fresh full run on the final commit is the RC execution step |
+| Admission | full audit matrix green (`make audit-summary-full`) | holds | **86/86** on `86d893b` (2026-11-02, `AUDIT_CACHE=0`, 1,337.7 s wall / 2,641.1 s gate time) |
 | Tests | unit suite + contract gates green | holds | `--test-only`, gate manifest |
 | Stability | 3 consecutive full admission runs without a flake | holds | 3 x `make check` on 2026-11-01 (v0.30.0 + readiness docs), logs archived privately; the rare test-only SIGSEGV remains a watch item |
 | Docs | documentation index covers public surfaces; API/enum coverage gates | holds | `docs/README.md`, `api_coverage.py`, `enum_coverage.py` |
