@@ -199,7 +199,9 @@ static gX_I1 s_headlessSnapshotSmokeDone = 0;
 static gX_I1 s_scenePanelOpen = 1;
 static gX_I1 s_inspectorPanelOpen = 1;
 //ai: each renderer lab is a summonable panel; the mask is workspace-persisted.
-#define GX_GFX_LAB_COUNT 7
+#define GX_GFX_LAB_COUNT 11
+//ai: Ray/Particles/Refl/Debug follow the seven authoring labs.
+#define GX_GFX_LAB_RAY 7
 static gX_U32 s_labMask = 0;
 static gX_U32 s_focusSavedLabs = 0;
 static gX_U32 s_labTracedMask = 0;
@@ -11089,6 +11091,26 @@ static gX_I0 gfx_lab_water_draw(gX_RendererGFX *gfx)
         gfx_color_edit, gfx_text_disabled_wrapped);
 }
 
+static gX_I0 gfx_lab_ray_draw(gX_RendererGFX *gfx)
+{
+    gfx_ray_preview_panel(gfx);
+}
+
+static gX_I0 gfx_lab_particles_draw(gX_RendererGFX *gfx)
+{
+    gfx_particles_panel(gfx);
+}
+
+static gX_I0 gfx_lab_reflect_draw(gX_RendererGFX *gfx)
+{
+    gfx_reflect_panel(gfx);
+}
+
+static gX_I0 gfx_lab_debug_draw(gX_RendererGFX *gfx)
+{
+    gfx_debug_panel(gfx);
+}
+
 typedef struct GfxLabPanel {
     const gX_I8 *label;
     gX_I0 (*draw)(gX_RendererGFX *gfx);
@@ -11102,6 +11124,10 @@ static const GfxLabPanel kGfxLabs[GX_GFX_LAB_COUNT] = {
     { "Lights", gfx_lab_lights_draw },
     { "Render", gfx_lab_render_draw },
     { "Water",  gfx_lab_water_draw },
+    { "Ray",    gfx_lab_ray_draw },
+    { "Particles", gfx_lab_particles_draw },
+    { "Refl",   gfx_lab_reflect_draw },
+    { "Debug",  gfx_lab_debug_draw },
 };
 
 extern "C" gX_I32 gX_Tools_Gfx_LabPanelCount(gX_I0) { return GX_GFX_LAB_COUNT; }
@@ -11331,6 +11357,9 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
                 break;
             }
         }
+        const gX_I8 *rayEnv = getenv("GX_RAYMARCH_EDITOR_INSPECT");
+        if (rayEnv && rayEnv[0] && rayEnv[0] != '0')
+            s_labMask |= 1u << GX_GFX_LAB_RAY;
     }
     s_freeCameraActive = 0;
     input.toolCameraInputEnabled = 0;
@@ -11528,39 +11557,6 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
                     ImGui::TextDisabled("Edit live; save preset.");
                 }
                 gfx_lab_launcher();
-                ImGui::Separator();
-                ImGui::BeginChild("GfxInspectorContent", ImVec2(0, 0), false,
-                    ImGuiWindowFlags_AlwaysVerticalScrollbar);
-                ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.12f, 0.16f, 0.22f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_TabHovered, ImVec4(0.18f, 0.30f, 0.46f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_TabSelected, ImVec4(0.22f, 0.48f, 0.72f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_TabSelectedOverline, ImVec4(0.55f, 0.82f, 1.0f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_TabDimmedSelected, ImVec4(0.18f, 0.32f, 0.46f, 1.0f));
-                //opencode: task-oriented lab tabs keep the full renderer surface
-                //   available without forcing a narrow dock to show every section.
-                gX_I1 inspectRaymarch = getenv("GX_RAYMARCH_EDITOR_INSPECT") != NULL;
-                if (ImGui::BeginTabBar("GfxLabs", ImGuiTabBarFlags_FittingPolicyScroll)) {
-                    if (ImGui::BeginTabItem("Ray", NULL,
-                            inspectRaymarch ? ImGuiTabItemFlags_SetSelected : 0)) {
-                        gfx_ray_preview_panel(gfx);
-                        ImGui::EndTabItem();
-                    }
-                    if (ImGui::BeginTabItem("Particles")) {
-                        gfx_particles_panel(gfx);
-                        ImGui::EndTabItem();
-                    }
-                    if (ImGui::BeginTabItem("Refl")) {
-                        gfx_reflect_panel(gfx);
-                        ImGui::EndTabItem();
-                    }
-                    if (ImGui::BeginTabItem("Debug")) {
-                        gfx_debug_panel(gfx);
-                        ImGui::EndTabItem();
-                    }
-                    ImGui::EndTabBar();
-                }
-                ImGui::PopStyleColor(5);
-                ImGui::EndChild();
             }
         }
         ImGui::End();

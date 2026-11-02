@@ -4,6 +4,16 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: minor
+
+### Added
+- **Complete renderer panel split**: Ray, Particles, Refl and Debug now own
+  summonable panels too; the inspector keeps selection and the document
+  controls only. The suite mask grows to eleven bits (`1`..`1024`) and
+  `GX_RAYMARCH_EDITOR_INSPECT` opens the Ray panel.
+
 ## [0.36.0] - 2026-11-02
 
 Release-Class: minor
