@@ -25,13 +25,13 @@ items. Until all three gates and the operations contract hold, gX stays a
 
 | Item | Value |
 | --- | --- |
-| Version | v0.30.0 (beta) |
+| Version | v0.30.1 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 83/83 expected (targeted gates rerun on the release tree) |
+| Audit baseline | 83/83 on the readiness base `bf873f5` (2026-11-02); v0.30.1 reran the affected gates |
 | Proof pin | `gx-proofs` `v0.18.0-proofs`, 52 core modules / 1,145 declarations |
-| Lean gate | payload 4,103,035 B (91,269 B headroom), BSS 2,697,248 B (7,752 B headroom) |
-| Release class | MINOR (v0.30.0: maturity metadata, IBL refresh fix, gate hygiene) |
+| Lean gate | payload 4,103,099 B (91,205 B headroom), BSS 2,697,248 B (7,752 B headroom) |
+| Release class | PATCH (v0.30.1: boot-test isolation, editor maturity) |
 
 ## Completeness ledger
 
@@ -44,7 +44,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Source | archive reproduces from the release tag | holds | `git archive` + checksum sidecar |
 | Admission | `make check` (build, tests, scene smoke, audits, proofs, lean gate) | holds | release CI logs |
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
-| Admission | full audit matrix green (`make audit-summary-full`) | partial | 83/83 expected; a fresh full-matrix run is required for the RC claim |
+| Admission | full audit matrix green (`make audit-summary-full`) | partial | 83/83 on `bf873f5` (2026-11-02); v0.30.1 reran the affected gates; a fresh full matrix on the final commit is the RC execution step |
 | Tests | unit suite + contract gates green | holds | `--test-only`, gate manifest |
 | Stability | 3 consecutive full admission runs without a flake | holds | 3 x `make check` on 2026-11-01 (v0.30.0 + readiness docs), logs archived privately; the rare test-only SIGSEGV remains a watch item |
 | Docs | documentation index covers public surfaces; API/enum coverage gates | holds | `docs/README.md`, `api_coverage.py`, `enum_coverage.py` |
@@ -81,6 +81,8 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | --- | --- | --- |
 | 2026-11-01 | Ledger opened; RC not claimed. Open: full matrix, stability soak, hardware walk, dogfooding, demand signals, secret scan, operations contract. | owner/agent |
 | 2026-11-01 | Stability soak: 3 consecutive full `make check` runs green; row moves to holds. | owner/agent |
+| 2026-11-02 | Full audit matrix 83/83 on `bf873f5` (2,926.8 s wall). | owner/agent |
+| 2026-11-02 | v0.30.1: unit suite opt-in, portable test scratch, non-GFX editors alpha/WIP; affected gates rerun. | owner/agent |
 
 ## Change rule
 
