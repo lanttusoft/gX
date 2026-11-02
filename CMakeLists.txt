@@ -223,6 +223,7 @@ set(GX_SOURCES
     #ai: private leaf panels keep their asset/history ownership in the editor.
     src/tools/gfx/water_panel.cpp
     src/tools/gfx/glass_panel.cpp
+    src/tools/editor_host.cpp
     src/tools/tools.c
     #ai: standalone screen-code presentation mode.
     src/tools/color_code_present.c

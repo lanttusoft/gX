@@ -86,6 +86,7 @@ gX_I1 *gX_Tools_RuntimeGfxFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeScriptFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeWavetableFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeTextwriterFlag(gX_I0);
+gX_I1 *gX_Tools_RuntimePhysicsFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeRailFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeBackgroundFlag(gX_I0);
 gX_I1 *gX_Tools_RuntimeSkyFlag(gX_I0);
