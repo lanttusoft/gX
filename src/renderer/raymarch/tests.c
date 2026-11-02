@@ -31,6 +31,7 @@
 //   stay pinned).
 
 #include "../raymarch.h"
+#include "../../common/macros.h"
 
 #include "../../gxmath/sdf.h"
 
@@ -471,7 +472,9 @@ static gX_I32 rm_test_graph(gX_I0)
     rm.graph.root = -1;
     RM_TEST_ASSERT(gX_RendererRaymarch_Graph_Compile(&rm) && rm.graph.count == 0,
         "legacy graph bypass failed");
-    gX_I8 path[] = "/tmp/opencode/gx_rm_graph_XXXXXX";
+    gX_I8 path[256];
+    snprintf((char *)path, sizeof(path), "%s/gx_rm_graph_XXXXXX",
+        GX_TEST_SCRATCH_ROOT);
     gX_I32 fd = mkstemp(path);
     RM_TEST_ASSERT(fd >= 0,"graph scratch creation failed");
     if (fd >= 0)

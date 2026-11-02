@@ -93,6 +93,7 @@ Build
     ./build.sh
     ./build/gX_build            # run (windowed)
     ./build/gX_build --test-only  # run unit tests, exit immediately
+    GX_RUN_TESTS=1 ./build/gX_build --gfx  # opt-in boot tests (skipped by default)
     make check-fast             # public fast CI: build, tests, scene smoke
 
 raylib source is vendored in `external/raylib` for this beta (upstream

@@ -801,7 +801,7 @@ static gX_I0 gX_RendererGFX_DumpHDR(gX_RendererGFX *gfx)
     gX_RHI_UnbindReadFBO();
 
     const gX_I8 *path = getenv("GX_HDRDUMP_PATH");
-    if (!path || !path[0]) path = "/tmp/opencode/gx_hdr.bin";
+    if (!path || !path[0]) path = "/tmp/gx_hdr.bin";
     FILE *file = fopen((const char *)path, "wb");
     if (!file) {
         gX_TraceLog_GFX(gX_LOG_ERROR, "HDRDUMP open failed: %s", path);

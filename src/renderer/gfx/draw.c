@@ -2349,7 +2349,7 @@ static gX_I0 gX_RendererGFX_SSR_DumpNormals(gX_RendererGFX *gfx)
     gX_RHI_ReadPixels(0, 0, width, height, gX_RHI_RGBA, gX_RHI_UNSIGNED_BYTE, pixels);
     gX_RHI_UnbindReadFBO();
     const gX_I8 *path = hook;
-    if (!strcmp((const char *)hook, "1")) path = "/tmp/opencode/gx_ssr_normals.rgba";
+    if (!strcmp((const char *)hook, "1")) path = "/tmp/gx_ssr_normals.rgba";
     FILE *file = fopen((const char *)path, "wb");
     if (!file) {
         gX_TraceLog_GFX(gX_LOG_ERROR, "SSR_NORMAL dump open failed: %s", path);
