@@ -4,6 +4,10 @@ Start here:
 
 - [gX readme](../readme.txt) — what gX is, build, license and controls.
 - [Contributing](../CONTRIBUTING.md), [support](../SUPPORT.md), [security policy](../SECURITY.md), [code of conduct](../CODE_OF_CONDUCT.md).
+<!-- //ai: public agent entry points. -->
+- [Agent guide](../AGENTS.md) — harness-neutral workflow for AI coding
+  agents; [AI-assisted contributions](../AI_CONTRIBUTING.md) — the short
+  review and provenance checklist.
 - [Changelog](../CHANGELOG.md) — released versions and current changes.
 - [Versioning policy](versioning.md) — official MAJOR/MINOR/PATCH rules,
   `Release-Class` metadata and the change classifier.

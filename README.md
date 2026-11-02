@@ -13,6 +13,7 @@ generic engine demo.
 - Docs index: `docs/README.md`.
 - Proof sources: https://github.com/lanttusoft/gx-proofs
 - AI usage, limitations and disclaimer: `docs/ai_disclosure.md`.
+- Agent guide: `AGENTS.md`; AI-assisted contributions: `AI_CONTRIBUTING.md`.
 - Security reports: see `SECURITY.md`.
 - Contributing: see `CONTRIBUTING.md`; support: `SUPPORT.md`; conduct: `CODE_OF_CONDUCT.md`.
 

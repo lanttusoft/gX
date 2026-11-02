@@ -25,8 +25,19 @@ minimum build, pass the unit tests, and pass its own focused gate.
 - Allman braces. Keep comments outside function bodies.
 - New public `gX_*` families need an entry in `docs/api_reference.md`; new
   enums need their `String()` implementation.
-- AI-assisted contributions must be marked with `//ai:` above the affected
-  code. The historical `//opencode:` alias is also accepted.
+- AI-assisted contributions are welcome and follow the same review and
+  gates. Mark them with `//ai:` above the affected code (`#ai:` in shell,
+  `<!-- //ai: -->` in Markdown); the historical `//opencode:` alias is also
+  accepted. Read [`AI_CONTRIBUTING.md`](AI_CONTRIBUTING.md) and the
+  [AI policy](docs/ai_policy.md).
+
+<!-- //ai: public agent entry points; see docs/ai_policy.md. -->
+## Working with agents
+
+Coding agents are welcome. [`AGENTS.md`](AGENTS.md) is the harness-neutral
+agent guide: build/verify commands, conventions, the marker rules, the
+evidence to report, and the limits of autonomous changes. The short
+reviewer checklist is [`AI_CONTRIBUTING.md`](AI_CONTRIBUTING.md).
 
 ## Licensing, provenance, and scope
 
