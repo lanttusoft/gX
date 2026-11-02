@@ -4,6 +4,30 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.32.0] - 2026-11-02
+
+Release-Class: minor
+
+### Added
+- **Hosted GFX editor**: open it from the global host (`gX > Change Editor >
+  GFX`); the viewport reserves the menu bar + workspace tabs via
+  `gX_GUI_Viewport_SetTopInset`, and the editor panels start below both bars.
+- **Summonable GFX panels**: scene, inspector, asset browser and shortcut
+  footer can be toggled from the host's GFX menu.
+  `GX_GFX_PANEL_SCENE/INSPECTOR/ASSET/FOOTER` pin the capture state, and
+  `GFX_DOCK` reports `panels=scene/inspector aux=asset/footer`.
+- **GFX workspaces**: built-in `GFX` and `GFX Focus` suites; suites carry
+  scene/inspector masks. User suite lines are
+  `name|editor|scene|inspector` (two-field files still load).
+- **Gates/docs**: the `editor-host` gate covers hosted GFX below the bars,
+  all four panel toggles, and the suite masks; the API reference and editor
+  docs follow.
+
+### Changed
+- New `gX_Tools_Gfx_*PanelFlag` accessors and
+  `gX_GUI_Viewport_SetTopInset` (additive API).
+- Workspace suite persistence gains panel masks (backward compatible).
+
 ## [0.31.0] - 2026-11-02
 
 Release-Class: minor
