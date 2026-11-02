@@ -513,13 +513,27 @@ static gX_I0 host_draw_suite_tabs(void) {
         | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings
         | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar;
     if (ImGui::Begin("##gx_workspace_tabs", NULL, flags)) {
+        ImGui::TextDisabled("Workspaces");
+        ImGui::SameLine();
+        ImGui::TextDisabled("|");
+        ImGui::SameLine();
         for (gX_I32 i = 0; i < s_suiteCount; i++) {
             ImGui::PushID(i);
-            if (ImGui::Selectable(host_suite_name(i), s_suite == i, 0, ImVec2(0, 0)))
+            gX_I1 selected = (s_suite == i);
+            if (selected)
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.78f, 0.35f, 1.0f));
+            if (ImGui::Selectable(host_suite_name(i), selected, 0, ImVec2(0, 0)))
                 s_pendingSuite = i;
+            if (selected)
+                ImGui::PopStyleColor();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Switch to the %s workspace",
+                    (const char *)host_suite_name(i));
             if (host_suite_user(i)) {
                 ImGui::SameLine(0.0f, 2.0f);
                 if (ImGui::SmallButton("x")) s_pendingDelete = i;
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Delete this user workspace");
             }
             ImGui::PopID();
             ImGui::SameLine();
@@ -529,6 +543,8 @@ static gX_I0 host_draw_suite_tabs(void) {
             s_saveError[0] = '\0';
             s_saveOpen = 1;
         }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Save the active editor as a user workspace");
     }
     ImGui::End();
 }
