@@ -208,9 +208,9 @@ the unchanged dock geometry.
 Presets can live outside the shipped tree: `GX_GFX_PRESET_DIR=<dir>` overrides
 the preset browser root (default `resources/tools`), and
 `GX_GFX_PRESET_SCAN=1` scans it at open and logs
-`GFX_PRESET_DIR: dir=<dir> presets=<n>` for headless checks. The environment
-is read-only; saving still follows the typed path. Guest asset roots remain
-`GX_ASSETS` / `--assets`.
+`GFX_PRESET_DIR: dir=<dir> presets=<n>` for headless checks. The preset path
+defaults to `<dir>/untitled.json` for saving; `GX_GFX_PRESET_LOAD` wins when
+set. Guest asset roots remain `GX_ASSETS` / `--assets`.
 
 ## Peer-review gate
 

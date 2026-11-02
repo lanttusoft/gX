@@ -257,18 +257,26 @@ def main():
         #ai: the preset browser root is env-overridable for authoring outside
         #   the shipped resource tree.
         with tempfile.TemporaryDirectory(prefix="gx_presets_",
-                                         dir="/tmp/opencode") as presetDir:
-            shutil.copyfile(audit.ROOT / "resources/tools/gfx_showcase.json",
-                            Path(presetDir) / "custom.json")
+                                         dir="/tmp/opencode") as presetRoot, \
+             tempfile.TemporaryDirectory(prefix="gx_guest_",
+                                         dir="/tmp/opencode") as guestRoot:
+            presetDir = Path(presetRoot)
+            Path(guestRoot, "tools").mkdir(parents=True, exist_ok=True)
+            source = audit.ROOT / "resources/tools/gfx_showcase.json"
+            shutil.copyfile(source, presetDir / "custom.json")
+            shutil.copyfile(source, Path(guestRoot) / "tools" / "guest.json")
             preset_code, preset_log, _ = run("gfx-preset-dir", "--gfx",
                 {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "gfx",
-                 "GX_GFX_PRESET_DIR": presetDir,
+                 "GX_GFX_PRESET_DIR": presetRoot,
+                 "GX_ASSETS": guestRoot,
                  "GX_GFX_PRESET_SCAN": "1", "GX_DOCK_TRACE": "1"},
                 frames=60, shot=40)
             if preset_code != 0:
                 raise RuntimeError("GFX preset-dir run failed")
-            if f"GFX_PRESET_DIR: dir={presetDir} presets=1" not in preset_log:
-                raise RuntimeError("GFX preset-dir scan did not use the override")
+            if f"GFX_PRESET_SCAN: primary={presetRoot} roots=4 presets=2" not in preset_log:
+                raise RuntimeError("GFX preset-dir/guest scan mismatch")
+            if f"GFX_PRESET_DEFAULT: path={presetRoot}/untitled.json" not in preset_log:
+                raise RuntimeError("GFX preset-dir default save path is wrong")
 
         default_code, default_log, _ = run("default", "--title",
             {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "Default"},

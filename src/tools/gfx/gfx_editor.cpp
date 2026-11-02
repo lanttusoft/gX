@@ -181,7 +181,9 @@ static gX_I1 s_presetStatusOK = 1;
 //opencode: transient search, selection, and filesystem index for the preset browser.
 static gX_I8 s_presetSearch[128] = { 0 };
 static gX_I8 s_presetSelectedPath[256] = { 0 };
-static FilePathList s_presetFiles = { 0 };
+#define GX_GFX_PRESET_MAX 96
+static gX_I8 s_presetFiles[GX_GFX_PRESET_MAX][256];
+static gX_U32 s_presetFileCount = 0;
 //opencode: cached shipped font list for the label font picker (loaded once).
 static FilePathList s_fontFiles = { 0 };
 static gX_I1 s_fontFilesLoaded = 0;
@@ -1032,9 +1034,31 @@ static gX_I1 gfx_preset_asset_is_valid(const gX_I8 *path) {
 
 //opencode: deterministic preset ordering keeps the browser stable between runs.
 static int gfx_preset_asset_compare(const void *left, const void *right) {
-    const gX_I8 *leftPath = *(const gX_I8 *const *)left;
-    const gX_I8 *rightPath = *(const gX_I8 *const *)right;
-    return strcmp(leftPath, rightPath);
+    return strcmp((const char *)left, (const char *)right);
+}
+
+//ai: one preset can come from the shipped tree, the authoring dir, or a guest
+//   root's tools/presets folder; keep a fixed, deduplicated list.
+static gX_I0 gfx_preset_add_dir(const gX_I8 *dir) {
+    if (!dir || !dir[0] || s_presetFileCount >= GX_GFX_PRESET_MAX) return;
+    FilePathList files = LoadDirectoryFilesEx(dir, "FILES*", false);
+    if (!files.paths) return;
+    for (gX_U32 i = 0; i < files.count && s_presetFileCount < GX_GFX_PRESET_MAX; i++) {
+        const gX_I8 *path = files.paths[i];
+        if (!gfx_preset_asset_is_valid(path)) continue;
+        gX_I1 duplicate = 0;
+        for (gX_U32 j = 0; j < s_presetFileCount; j++) {
+            if (strcmp((const char *)s_presetFiles[j], (const char *)path) == 0) {
+                duplicate = 1;
+                break;
+            }
+        }
+        if (duplicate) continue;
+        snprintf((char *)s_presetFiles[s_presetFileCount],
+            sizeof(s_presetFiles[0]), "%s", (const char *)path);
+        s_presetFileCount++;
+    }
+    UnloadDirectoryFiles(files);
 }
 
 //ai: authoring presets can live outside the shipped resource tree; the env
@@ -1047,30 +1071,46 @@ static const gX_I8 *gfx_preset_dir(gX_I0)
 
 //opencode: refresh and release the lightweight list of authoring presets.
 static gX_I0 gfx_preset_assets_scan(gX_I0) {
-    if (s_presetFiles.paths) UnloadDirectoryFiles(s_presetFiles);
-    const gX_I8 *presetDir = gfx_preset_dir();
-    s_presetFiles = LoadDirectoryFilesEx(presetDir, "FILES*", false);
-    if (s_presetFiles.count > 1)
-        qsort(s_presetFiles.paths, s_presetFiles.count,
-            sizeof(s_presetFiles.paths[0]), gfx_preset_asset_compare);
-    gX_U32 validCount = 0;
+    s_presetFileCount = 0;
     s_presetSelectedPath[0] = 0;
-    for (gX_U32 pi = 0; pi < s_presetFiles.count; pi++) {
-        const gX_I8 *path = s_presetFiles.paths[pi];
-        if (!gfx_preset_asset_is_valid(path)) continue;
-        s_presetFiles.paths[validCount++] = s_presetFiles.paths[pi];
-        if (strcmp(path, s_presetPath) == 0)
-            snprintf(s_presetSelectedPath, sizeof(s_presetSelectedPath), "%s", path);
+    const gX_I8 *presetDir = gfx_preset_dir();
+    gX_U32 roots = 0;
+    gfx_preset_add_dir(presetDir);
+    roots++;
+    const gX_I8 *assets = getenv("GX_ASSETS");
+    if (assets && assets[0]) {
+        gX_I8 rootsBuf[1024];
+        snprintf((char *)rootsBuf, sizeof(rootsBuf), "%s", (const char *)assets);
+        gX_I8 *save = NULL;
+        for (gX_I8 *root = strtok_r((char *)rootsBuf, ":", &save); root;
+             root = strtok_r(NULL, ":", &save)) {
+            if (!root[0]) continue;
+            gX_I8 dir[512];
+            snprintf((char *)dir, sizeof(dir), "%s/tools", (const char *)root);
+            gfx_preset_add_dir(dir);
+            snprintf((char *)dir, sizeof(dir), "%s/presets", (const char *)root);
+            gfx_preset_add_dir(dir);
+            snprintf((char *)dir, sizeof(dir), "%s/resources/tools", (const char *)root);
+            gfx_preset_add_dir(dir);
+            roots += 3;
+        }
     }
-    s_presetFiles.count = validCount;
-    gX_TraceLog(gX_LOG_INFO, "GFX_PRESET_DIR: dir=%s presets=%u",
-        (const char *)presetDir, (unsigned)validCount);
+    if (s_presetFileCount > 1)
+        qsort(s_presetFiles, s_presetFileCount, sizeof(s_presetFiles[0]),
+            gfx_preset_asset_compare);
+    for (gX_U32 i = 0; i < s_presetFileCount; i++) {
+        if (strcmp((const char *)s_presetFiles[i], (const char *)s_presetPath) == 0)
+            snprintf((char *)s_presetSelectedPath,
+                sizeof(s_presetSelectedPath), "%s", (const char *)s_presetFiles[i]);
+    }
+    gX_TraceLog(gX_LOG_INFO,
+        "GFX_PRESET_SCAN: primary=%s roots=%u presets=%u",
+        (const char *)presetDir, (unsigned)roots, (unsigned)s_presetFileCount);
 }
 
 //opencode: close the transient raylib directory index when the editor restarts.
 static gX_I0 gfx_preset_assets_release(gX_I0) {
-    if (s_presetFiles.paths) UnloadDirectoryFiles(s_presetFiles);
-    s_presetFiles = (FilePathList){0};
+    s_presetFileCount = 0;
     s_presetSelectedPath[0] = 0;
 }
 
@@ -1087,8 +1127,8 @@ static gX_I0 gfx_preset_browser_popup(gX_I0) {
         s_presetSearch, sizeof(s_presetSearch));
     ImGui::BeginChild("GfxPresetFiles", ImVec2(560.0f, 300.0f), true);
     gX_U32 matching = 0;
-    for (gX_U32 pi = 0; pi < s_presetFiles.count; pi++) {
-        const gX_I8 *path = s_presetFiles.paths[pi];
+    for (gX_U32 pi = 0; pi < s_presetFileCount; pi++) {
+        const gX_I8 *path = s_presetFiles[pi];
         if (!gfx_text_search_matches(path, s_presetSearch)) continue;
         matching++;
         gX_I1 selected = strcmp(s_presetSelectedPath, path) == 0;
@@ -3061,7 +3101,7 @@ static gX_I0 gfx_model_snapshot_restore(gX_RendererGFX *gfx,
 
 static gX_I0 gfx_model_history_panel(gX_RendererGFX *gfx,
     gX_RendererGFX_Model *model, gX_I32 index) {
-    if (!ImGui::CollapsingHeader("History", ImGuiTreeNodeFlags_DefaultOpen)) return;
+    if (!ImGui::CollapsingHeader("History")) return;
     if (ImGui::Button("Undo")) gfx_model_history_step(index, model, 0);
     ImGui::SameLine();
     if (ImGui::Button("Redo")) gfx_model_history_step(index, model, 1);
@@ -6613,7 +6653,7 @@ static gX_I0 gfx_model_animation_panel(gX_RendererGFX_Model *model) {
     //   override, and key the effective pose into the selected clip. The fields
     //   stay laid out (disabled) without an override so the harness trace can
     //   aim at them before the first click.
-    if (ImGui::TreeNodeEx("Pose", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::TreeNodeEx("Pose")) {
         //opencode: harness hook — pose controls sit below the timeline; scroll
         //   the section to the top until the timeline handoff frame.
         if (poseFocus && maindata.frameCount < 200)
@@ -7001,7 +7041,7 @@ static gX_I0 gfx_models_panel(gX_RendererGFX *gfx) {
         if (ImGui::SliderInt("instances", &instances, 1, 1024))
             model->params.instanceCount = (gX_U32)instances;
     }
-    if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader("Material")) {
         gX_I1 pbr = model->params.usePBR ? 1 : 0;
         if (ImGui::Checkbox("use PBR", (bool *)&pbr)) {
             model->params.usePBR = pbr ? 1 : 0;
@@ -7994,7 +8034,7 @@ static gX_I0 gfx_skylab_panel(gX_RendererGFX *gfx) {
 }
 
 static gX_I0 gfx_reflect_panel(gX_RendererGFX *gfx) {
-    if (!ImGui::CollapsingHeader("Reflect", ImGuiTreeNodeFlags_DefaultOpen)) return;
+    if (!ImGui::CollapsingHeader("Reflect")) return;
     gX_I1 se = gfx->state.ENABLE_SSR ? 1 : 0;
     if (ImGui::Checkbox("SSR", (bool *)&se)) gfx->state.ENABLE_SSR = se ? 1 : 0;
     ImGui::TextDisabled("SSR is global; Surface > receive SSR opts each model in or out.");
@@ -8564,7 +8604,7 @@ static gX_I0 gfx_weather_panel(gX_RendererGFX *gfx) {
 
 //opencode: compute-particle emitter authoring; emitters are included in presets.
 static gX_I0 gfx_particles_panel(gX_RendererGFX *gfx) {
-    if (!ImGui::CollapsingHeader("GPU particles (experimental)", ImGuiTreeNodeFlags_DefaultOpen)) return;
+    if (!ImGui::CollapsingHeader("GPU particles (experimental)")) return;
     gX_I1 enabled = gfx->state.ENABLE_PARTICLES ? 1 : 0;
     if (ImGui::Checkbox("enable particle system", (bool *)&enabled))
         gfx->state.ENABLE_PARTICLES = enabled;
@@ -8615,7 +8655,7 @@ static gX_I0 gfx_particles_panel(gX_RendererGFX *gfx) {
 
 //opencode: place and edit persistent decals from a selected model or camera target.
 static gX_I0 gfx_decals_panel(gX_RendererGFX *gfx) {
-    if (!ImGui::CollapsingHeader("Decals", ImGuiTreeNodeFlags_DefaultOpen)) return;
+    if (!ImGui::CollapsingHeader("Decals")) return;
     gX_I1 enabled = gfx->state.ENABLE_DECALS ? 1 : 0;
     if (ImGui::Checkbox("enable decals", (bool *)&enabled)) gfx->state.ENABLE_DECALS = enabled;
     ImGui::DragFloat("new decal size", &s_decalSize, 0.05f, 0.01f, 100.0f);
@@ -8839,7 +8879,7 @@ static gX_I0 gfx_light_orbit_capture_center(gX_RendererGFX_Light *light) {
 //opencode: point-light path authoring exposes circular and waypoint motion
 //   next to the selected light's ordinary properties.
 static gX_I0 gfx_light_orbit_panel(gX_RendererGFX_Light *light) {
-    if (!ImGui::CollapsingHeader("Motion path", ImGuiTreeNodeFlags_DefaultOpen)) return;
+    if (!ImGui::CollapsingHeader("Motion path")) return;
     bool enabled = light->orbitEnabled != 0;
     if (ImGui::Checkbox("Enable motion path", &enabled)) {
         light->orbitEnabled = enabled ? 1 : 0;
@@ -9964,7 +10004,7 @@ static gX_I0 gfx_raymarch_panel(gX_RendererRaymarch *rm) {
     bool inspectFixture = getenv("GX_RAYMARCH_EDITOR_INSPECT") != NULL;
     //ai: expose the preset clock with play/pause, scrubbing, and an explicit reset.
     if (inspectFixture) ImGui::SetNextItemOpen(false, ImGuiCond_Always);
-    if (ImGui::CollapsingHeader("Time", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader("Time")) {
         bool animate = rm->state.useInternalTime != 0;
         if (ImGui::Checkbox("animate##rmTime", &animate))
             rm->state.useInternalTime = animate;
@@ -9974,7 +10014,7 @@ static gX_I0 gfx_raymarch_panel(gX_RendererRaymarch *rm) {
         ImGui::TextDisabled("Pause preserves time; water/cloud speeds drive motion.");
     }
     if (inspectFixture) ImGui::SetNextItemOpen(false, ImGuiCond_Always);
-    if (ImGui::CollapsingHeader("Render", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader("Render")) {
         static const char *qualities[] = {"Draft (25%)", "Balanced (35%)",
             "High (50%)", "Full (100%)"};
         gX_I32 quality = gX_RendererRaymarch_Quality_Get(rm);
@@ -10952,17 +10992,22 @@ static gX_I0 gfx_scene_panel(gX_RendererGFX *gfx) {
     gX_I1 inspectRaymarch = getenv("GX_RAYMARCH_EDITOR_INSPECT") != NULL;
     if (ImGui::CollapsingHeader("Scene", inspectRaymarch ? 0
             : ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Indent();
         gfx_model_list_panel(gfx);
         gfx_scene_lights_panel(gfx);
         gfx_scene_cameras_panel(gfx);
+        ImGui::Unindent();
     }
     if (ImGui::CollapsingHeader("Create", inspectRaymarch ? 0
             : ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Indent();
         gfx_scene_create_panel(gfx);
         gfx_scene_prefabs_panel(gfx);
         gfx_scene_sources_panel(gfx);
+        ImGui::Unindent();
     }
     if (ImGui::CollapsingHeader("Renderer", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Indent();
         gX_RendererRaymarch *rm = gfx_raymarch_active();
         if (rm) gfx_raymarch_panel(rm);
         if (renderer.ppLoaded) gfx_pp_panel(&renderer.pp);
@@ -10981,9 +11026,12 @@ static gX_I0 gfx_scene_panel(gX_RendererGFX *gfx) {
         ImGui::TextDisabled("Camera: middle-drag orbit, Shift+middle-drag pan, wheel zoom.");
         gX_Tools_BG_PanelBody(1, 1);
         gfx_polisher_panel();
+        ImGui::Unindent();
     }
     if (ImGui::CollapsingHeader("Document")) {
+        ImGui::Indent();
         gfx_scene_export_panel(gfx);
+        ImGui::Unindent();
     }
 }
 
@@ -11390,6 +11438,24 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
     s_dragLight = -1;
     s_presetStatus[0] = 0;
     s_presetOverwritePending = 0;
+    //ai: default save target follows the authoring preset directory; an
+    //   explicit load path wins so Save acts on what the user opened.
+    {
+        const gX_I8 *loadPath = getenv("GX_GFX_PRESET_LOAD");
+        const gX_I8 *presetDir = getenv("GX_GFX_PRESET_DIR");
+        if (loadPath && loadPath[0]) {
+            snprintf((char *)s_presetPath, sizeof(s_presetPath), "%s",
+                (const char *)loadPath);
+        } else if (presetDir && presetDir[0]) {
+            size_t len = strlen((const char *)presetDir);
+            gX_I1 slash = len > 0
+                && (presetDir[len - 1] == '/' || presetDir[len - 1] == '\\');
+            snprintf((char *)s_presetPath, sizeof(s_presetPath), "%s%suntitled.json",
+                (const char *)presetDir, slash ? "" : "/");
+        }
+        gX_TraceLog(gX_LOG_INFO, "GFX_PRESET_DEFAULT: path=%s",
+            (const char *)s_presetPath);
+    }
     s_headlessPresetSaveDone = 0;
     s_headlessPresetSaveUiDone = 0;
     s_headlessPresetLoadDone = 0;
