@@ -23,6 +23,7 @@ TOP = 46  # menu bar + workspace tab row
 TAB_RE = re.compile(r'EDITOR_HOST: tab=Sky x=(\d+) y=(\d+) w=(\d+) h=(\d+)')
 TAB_ALL_RE = re.compile(r'EDITOR_HOST: tab=(\S+) x=(\d+) y=(\d+) w=(\d+) h=(\d+)')
 DOCK_RE = re.compile(r'GFX_DOCK:.*viewport=\(([-0-9.]+),([-0-9.]+),([-0-9.]+),([-0-9.]+)\)')
+PANELS_RE = re.compile(r'GFX_DOCK:.*panels=(\d)/(\d)')
 
 
 def run(tag, scene, extra, frames=30, shot=20):
@@ -156,6 +157,39 @@ def main():
             raise RuntimeError(
                 f"host inset did not move the GFX viewport (base {base_y:.0f}, "
                 f"host {host_y:.0f})")
+        if "panels=1/1" not in host_gfx_log:
+            raise RuntimeError("hosted GFX panels do not default to 1/1")
+
+        focus_code, focus_log, _ = run("gfx-focus", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "gfx",
+             "GX_GFX_PANEL_SCENE": "0", "GX_DOCK_TRACE": "1"},
+            frames=80, shot=60)
+        noinsp_code, noinsp_log, _ = run("gfx-noinsp", "--gfx",
+            {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "gfx",
+             "GX_GFX_PANEL_INSPECTOR": "0", "GX_DOCK_TRACE": "1"},
+            frames=80, shot=60)
+        if focus_code != 0 or noinsp_code != 0:
+            raise RuntimeError("GFX panel toggle runs failed")
+        if "panels=0/1" not in focus_log:
+            raise RuntimeError("scene panel did not hide")
+        if "panels=1/0" not in noinsp_log:
+            raise RuntimeError("inspector panel did not hide")
+        host_dock = DOCK_RE.findall(host_gfx_log)
+        focus_dock = DOCK_RE.findall(focus_log)
+        noinsp_dock = DOCK_RE.findall(noinsp_log)
+        if not host_dock or not focus_dock or not noinsp_dock:
+            raise RuntimeError("GFX panel dock traces missing")
+        host_x = float(host_dock[-1][0])
+        focus_x = float(focus_dock[-1][0])
+        noinsp_x = float(noinsp_dock[-1][0])
+        if focus_x >= host_x:
+            raise RuntimeError(
+                f"hiding the scene panel did not reclaim the left margin "
+                f"({focus_x:.0f} vs {host_x:.0f})")
+        if noinsp_x <= host_x:
+            raise RuntimeError(
+                f"hiding the inspector did not widen the viewport start "
+                f"({noinsp_x:.0f} vs {host_x:.0f})")
 
         default_code, default_log, _ = run("default", "--title",
             {"GX_EDITOR_HOST": "1", "GX_EDITOR_WORKSPACE": "Default"},
@@ -194,7 +228,7 @@ def main():
         return 1
     print("EDITOR_HOST_CHECK: PASS toolbar in title/gfx, F9 open+close, "
           "Sky/Background/Default workspaces, tab hit boxes sane, GFX hosted "
-          "below the bars")
+          "below the bars, scene/inspector panels summonable")
     return 0
 
 

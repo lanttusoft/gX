@@ -198,6 +198,9 @@ static gX_I1 s_headlessPresetLoadDone = 0;
 static gX_I1 s_headlessSnapshotSmokeDone = 0;
 static gX_I1 s_scenePanelOpen = 1;
 static gX_I1 s_inspectorPanelOpen = 1;
+
+extern "C" gX_I1 *gX_Tools_Gfx_ScenePanelFlag(gX_I0) { return &s_scenePanelOpen; }
+extern "C" gX_I1 *gX_Tools_Gfx_InspectorPanelFlag(gX_I0) { return &s_inspectorPanelOpen; }
 //ai: one-action viewport focus; remembers which panels were open.
 static gX_I1 s_focusViewport = 0;
 static gX_I1 s_focusSavedScene = 1;
@@ -11150,6 +11153,14 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
     const char *focusEnv = getenv("GX_EDITOR_FOCUS_VIEWPORT");
     if (focusEnv && focusEnv[0] && focusEnv[0] != '0')
         gfx_focus_viewport_set(1);
+    //opencode: capture/gate hook — force the summonable panels after the
+    //   open resets; the host menu toggles the same flags.
+    {
+        const gX_I8 *sceneEnv = getenv("GX_GFX_PANEL_SCENE");
+        const gX_I8 *inspEnv = getenv("GX_GFX_PANEL_INSPECTOR");
+        if (sceneEnv && sceneEnv[0]) s_scenePanelOpen = atoi((const char *)sceneEnv) != 0;
+        if (inspEnv && inspEnv[0]) s_inspectorPanelOpen = atoi((const char *)inspEnv) != 0;
+    }
     s_freeCameraActive = 0;
     input.toolCameraInputEnabled = 0;
     s_moveAxis = 0;
@@ -11291,11 +11302,12 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
         gX_Rectangle dockBox = gX_GUI_ViewportBox_Get();
         gX_TraceLog(gX_LOG_INFO,
             "GFX_DOCK: docked=%d window=%ux%u viewport=(%.0f,%.0f,%.0f,%.0f) "
-            "inset=%.0f inspector=%.0f scene=%.0f",
+            "inset=%.0f inspector=%.0f scene=%.0f panels=%d/%d",
             gui.viewportDocked ? 1 : 0, maindata.windowWidth,
             maindata.windowHeight, dockBox.x, dockBox.y, dockBox.width,
             dockBox.height, (gui.viewportDocked && s_inspectorPanelOpen)
-                ? inspectorW : 0.0f, inspectorW, sceneW);
+                ? inspectorW : 0.0f, inspectorW, sceneW,
+            (gX_I32)s_scenePanelOpen, (gX_I32)s_inspectorPanelOpen);
     }
     ImGuiCond panelCond = gui.viewportDocked ? ImGuiCond_Always : ImGuiCond_FirstUseEver;
 

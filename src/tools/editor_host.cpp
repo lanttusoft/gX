@@ -494,6 +494,15 @@ static gX_I0 host_editor_menu(const HostEditor *editor) {
         *editor->flag() = 0;
         host_trace_active();
     }
+    if (strcmp((const char *)editor->label, "GFX") == 0) {
+        ImGui::Separator();
+        gX_I1 scene = *gX_Tools_Gfx_ScenePanelFlag() ? 1 : 0;
+        if (ImGui::MenuItem("Scene panel", NULL, &scene))
+            *gX_Tools_Gfx_ScenePanelFlag() = scene;
+        gX_I1 inspector = *gX_Tools_Gfx_InspectorPanelFlag() ? 1 : 0;
+        if (ImGui::MenuItem("Inspector panel", NULL, &inspector))
+            *gX_Tools_Gfx_InspectorPanelFlag() = inspector;
+    }
     ImGui::EndMenu();
 }
 
