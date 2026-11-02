@@ -30,7 +30,7 @@ items. Until all three gates and the operations contract hold, gX stays a
 | License | GPL-3.0-or-later, plus the asset provenance contract |
 | Audit baseline | 86 quick/full gates (87 manifest entries; latest: `shader-cache`); last full run 83/83 on `bf873f5` (2026-11-02); the incremental gates are verified individually |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 4,123,675 B (70,629 B headroom), BSS 2,699,072 B (5,928 B headroom) — v0.33.0 `make check` |
+| Lean gate | payload 4,123,675 B (70,629 B headroom), BSS 2,699,072 B (5,928 B headroom) — v0.34.0 `make check` |
 | Release class | MINOR (v0.34.0: Windows x86_64 beta, self-contained JSON, platform shims) |
 
 ## Completeness ledger
