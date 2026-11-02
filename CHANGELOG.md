@@ -4,6 +4,31 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.31.0] - 2026-11-02
+
+Release-Class: minor
+
+### Added
+- **Global editor host** (`gX_EditorHost_*`): an always-summonable toolbar
+  (F9) with the application menu bar (`gX/File/Edit/View/<Active Editor>/
+  Window/Help`), an editor registry, workspace suites and tabs, user-saved
+  suites with per-suite layouts, console and quit. The host is an alpha
+  surface; the GFX editor migration is still pending.
+- **Cursor state machine** (`gX_Cursor_*`): UI (visible/free) vs CAPTURED
+  (hidden/locked) states with an owner stack and priorities (scene 0, hosted
+  tool 10, free camera 20, editor host 30, manual Insert 40), scene-default
+  reset and automated pointer safety. `GX_CURSOR_TRACE=1` logs transitions.
+- **Gates and docs**: `editor-host` and `cursor` gates (also in `check-fast`),
+  workspace tab/registry checks, the editor toolkit/workspace docs and the
+  cursor state-machine contract.
+
+### Fixed
+- **Workspace tab hit boxes**: every tab had a full-row `Selectable`, so the
+  first tab (`Default`) swallowed every click; tabs now own text+padding
+  widths and are covered by the `editor-host` rect check.
+- **Scene-reset cursor ownership**: free-camera and host owners re-assert
+  after a scene switch, and the host outranks the free camera while open.
+
 ## [0.30.1] - 2026-11-02
 
 Release-Class: patch
