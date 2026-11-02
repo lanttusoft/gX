@@ -15,6 +15,12 @@ Release-Class: minor
   Wine and verifies the handshake and overlay palette. `gx_shell` remains
   Linux-only.
 
+### Fixed
+- The editor gate probes (`physics`, `scripting`, `textwriter`, `wavetable`,
+  `background`, `sky`) keep their audit windows unmapped and skip the unit
+  suite, matching the shared gate environment and removing foreground-window
+  flakes.
+
 ## [0.34.1] - 2026-11-02
 
 Release-Class: patch
