@@ -202,10 +202,12 @@ Renderer modules — **beta**: gfx, sky, water, background, postprocess,
 textwriter. **Alpha**: analog, clock, fractal, teletext, wireframe, generate,
 raymarch, oscillo, lissajous, spectrum, ws2d.
 
-Editor surfaces — **beta**: GUI editor, theme editor, GFX editor, wavetable
-editor, textwriter editor, physics editor, background editor, sky editor.
-**Alpha**: ThemeLab, MaterialsLab, ShaderLab, camera rail editor, script
-debugger. The long-form inventory is `docs/editors.md`.
+Editor surfaces — **beta**: GFX editor only (the reference surface).
+**Alpha/WIP** (usable previews, gates noted in the docs): GUI editor, theme
+editor, wavetable editor, textwriter editor, physics editor, background
+editor, sky editor, ThemeLab, MaterialsLab, ShaderLab, camera rail editor,
+script debugger. The long-form inventory, gate coverage and per-editor gaps
+are in `docs/editors.md`.
 
 | Subsystem | State |
 |---|---|

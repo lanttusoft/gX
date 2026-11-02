@@ -4,6 +4,30 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.30.1] - 2026-11-02
+
+Release-Class: patch
+
+### Fixed
+- **Boot-time test isolation**: the unit suite is now opt-in (`--test-only`
+  or `GX_RUN_TESTS=1`; `GX_SKIP_TESTS=1` suppresses it). Scene launches no
+  longer run the suite, so their logs stop carrying expected negative-test
+  ERRORs (shipped-path refusals, missing presets, allocation-failure probes)
+  and every boot saves ~2 s. `--test-only` still always forces the suite.
+- **Test scratch portability**: tests resolve the scratch root as
+  `GX_SCRATCH` -> `TMPDIR` -> `/tmp` instead of assuming `/tmp/opencode`.
+  Preset/text round-trips now pass on machines without the developer harness
+  directory; the remaining `--test-only` ERROR lines are the suite's
+  intentional negative cases.
+
+### Changed
+- **Editor maturity**: only the GFX editor is beta. The GUI, theme, wavetable,
+  textwriter, physics, background and sky editors, plus ThemeLab/MaterialsLab/
+  ShaderLab, the camera rail editor and the script debugger, are alpha/WIP.
+  `docs/editors.md` records gate coverage and the concrete gaps (usability,
+  missing undo, incomplete authoring loops); the internal `gX_Tools_Status`
+  tiers and EXTRAS tooltips follow.
+
 ## [0.30.0] - 2026-11-01
 
 Release-Class: minor

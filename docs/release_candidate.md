@@ -62,7 +62,9 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 ## Known limitations (accepted for the beta line)
 
 - The GFX editor ships as **beta**; the rework is complete but the UI is not
-  release-grade for every workflow.
+  release-grade for every workflow. Every other editor is **alpha/WIP**: a
+  usable preview with known gaps (no undo on most, barebones workflows, no
+  tutorials); gate coverage is listed in `docs/editors.md`.
 - The raymarch renderer is **alpha**: no deferred material buffers or motion
   vectors; cross-renderer shadows/secondary hits and transparent interleaving
   are unsupported.

@@ -36,8 +36,10 @@ extern "C" {
 //opencode: v0.6.5 — runtime tool open/close (EXTRAS menu). CLI flags init at
 //   load; these work from in-app buttons at any time.
 //opencode: tool maturity metadata — the tier ships with the tool, not in a
-//   separate maturity document: alpha = usable preview, beta = gate-covered
-//   and documented. The EXTRAS cards carry the description as their tooltip.
+//   separate maturity document: alpha/WIP = usable preview whose workflow may
+//   be incomplete (gates may still exist), beta = workflow-complete for the
+//   stated use plus gate + docs. The EXTRAS cards carry the description as
+//   their tooltip.
 typedef enum {
     GX_TOOL_TIER_ALPHA = 0,
     GX_TOOL_TIER_BETA  = 1
