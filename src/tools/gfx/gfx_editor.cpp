@@ -6802,6 +6802,7 @@ static gX_I0 gfx_model_animation_panel(gX_RendererGFX_Model *model) {
     //   override, and key the effective pose into the selected clip. The fields
     //   stay laid out (disabled) without an override so the harness trace can
     //   aim at them before the first click.
+    if (poseFocus) ImGui::SetNextItemOpen(1, ImGuiCond_Always);
     if (ImGui::TreeNodeEx("Pose")) {
         //opencode: harness hook — pose controls sit below the timeline; scroll
         //   the section to the top until the timeline handoff frame.
