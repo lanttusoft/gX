@@ -49,6 +49,7 @@ Start here:
 
 - [Bloom pipeline audit](bloom_audit.md)
 - [gfx shader inventory](gfx_shader_inventory.md)
+- [Shader program cache](shader_cache.md)
 - [GFX visual review](gfx_visual_review.md)
 - [“Good enough” audit — reflections](good_enough_audit.md)
 - [Light Culling Upgrade — Research Note (v0.5.0 prep)](light_culling_research.md)

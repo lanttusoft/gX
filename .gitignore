@@ -42,3 +42,6 @@ resources/tools/scratch.json
 # editor workspace layouts (runtime output)
 gx_editor_*.ini
 gx_editor_workspace.txt
+
+#opencode: local GL program binary cache (regenerated; never shipped).
+gx_shader_cache/

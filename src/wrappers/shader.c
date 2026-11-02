@@ -32,6 +32,7 @@
 **********************************************************************************************/
 //lanttu: original wrapper for raylib shader functions
 #include "wrappers_header.h"
+#include "file.h"
 #include "shader.h"
 #include "../../rhi/rhi_gl.h"
 #include "../common/error.h"
@@ -40,6 +41,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "../common/shader_compiler.h"
 #include "../common/text.h"
@@ -50,8 +53,15 @@
 #include "../main.h"
 
 
-//opencode: GL program binary caching — save compiled binary to skip GLSL recompile
-//   Binary stored at <fragPath>.bin. Only valid if .bin mtime >= source mtime.
+//opencode: GL program binary cache — skip the driver compile on warm starts.
+//   Keyed by the processed source (includes/defines already expanded), the
+//   driver identity and the compiler mode; a stale entry can never shadow an
+//   edited shader because the key changes with the source text.
+#define GX_SHADER_CACHE_MAGIC   0x47534843u /* GSHC */
+#define GX_SHADER_CACHE_VERSION 1u
+#define GX_SHADER_CACHE_MAX     (8u * 1024u * 1024u)
+#define GX_SHADER_CACHE_DIR     "gx_shader_cache"
+
 //opencode: compute a simple hash of the GL driver identifier string.
 //   Used to invalidate shader binary caches when the GPU driver changes.
 //   DJB2a hash — simple, fast, good enough for cache invalidation.
@@ -69,82 +79,183 @@ static gX_U64 gX_Shader_DriverHash(gX_I0)
     return hash;
 }
 
-// Cache file header: [driverHash(8), reserved(8), format(4), binLen(4), bin...]
-#define GX_SHADER_CACHE_HEADER_SIZE 24
-
-//opencode: compute a simple 64-bit hash from a string
-static gX_U64 gX_Shader_PathHash(const gX_I8 *s) {
-    gX_U64 h = 0;
-    if (!s) return h;
-    while (*s) { h = h * 131 + (gX_U8)(*s); s++; }
-    return h;
+static gX_U64 gX_Shader_HashBytes(gX_U64 hash, const void *data, gX_U64 len)
+{
+    const gX_U8 *bytes = (const gX_U8*)data;
+    for (gX_U64 i = 0; i < len; i++) {
+        hash ^= bytes[i];
+        hash *= 1099511628211ULL;
+    }
+    return hash;
 }
 
-static gX_I1 gX_Shader_SaveBinary(gX_U32 progId, const gX_I8 *vertPath, const gX_I8 *fragPath)
+static gX_U64 gX_Shader_HashString(gX_U64 hash, const gX_I8 *text)
 {
-    if (!vertPath && !fragPath) return false;
-    if (!progId) return false;
+    gX_U64 len = text ? (gX_U64)strlen((const char *)text) + 1 : 0;
+    hash = gX_Shader_HashBytes(hash, &len, sizeof(len));
+    if (len) hash = gX_Shader_HashBytes(hash, text, len);
+    return hash;
+}
+
+//ai: processed source + driver + dialect fully determine the program. A
+//   compiler version bump or a key-format change invalidates old entries.
+static gX_U64 gX_Shader_CacheKey(const gX_I8 *vertSrc, const gX_I8 *fragSrc)
+{
+    gX_U64 hash = 1469598103934665603ULL;
+    gX_U32 version = GX_SHADER_CACHE_VERSION;
+    gX_U64 driver = gX_Shader_DriverHash();
+    gX_U32 mode = 0;
+    const gX_RHI_Caps *caps = gX_RHI_GetCaps();
+    if (caps && caps->isGLES) mode |= 1u;
+    if (gX_Shader_Compiler_IsVulkanMode()) mode |= 2u;
+    mode |= (gX_U32)(gX_Shader_Compiler_DesktopLegacyGLSL() & 0xffff) << 8;
+    hash = gX_Shader_HashBytes(hash, &version, sizeof(version));
+    hash = gX_Shader_HashBytes(hash, &driver, sizeof(driver));
+    hash = gX_Shader_HashBytes(hash, &mode, sizeof(mode));
+    hash = gX_Shader_HashString(hash, vertSrc);
+    hash = gX_Shader_HashString(hash, fragSrc);
+    return hash;
+}
+
+static gX_I1 gX_Shader_CacheEnabled(gX_I0)
+{
+    static gX_I32 enabled = -1;
+    if (enabled < 0) {
+        const gX_I8 *guard = getenv("GX_NO_SHADER_CACHE");
+        enabled = !(guard && guard[0] && guard[0] != '0');
+    }
+    return enabled ? 1 : 0;
+}
+
+static gX_I1 gX_Shader_TimingEnabled(gX_I0)
+{
+    static gX_I32 enabled = -1;
+    if (enabled < 0) {
+        const gX_I8 *trace = getenv("GX_SHADER_TIME");
+        enabled = (trace && trace[0] && trace[0] != '0') ? 1 : 0;
+    }
+    return enabled ? 1 : 0;
+}
+
+static gX_F64 gX_Shader_Now(gX_I0)
+{
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return 0.0;
+    return (gX_F64)ts.tv_sec + (gX_F64)ts.tv_nsec / 1000000000.0;
+}
+
+static gX_I1 gX_Shader_CachePath(gX_U64 key, gX_I8 *out, gX_U32 size, gX_I1 create)
+{
+    const gX_I8 *work = gX_Directory_Working_Get();
+    if (!work || !out || size < 32) return false;
+    gX_I8 directory[1024];
+    gX_I32 written = snprintf((char *)directory, sizeof(directory), "%s/%s",
+        (const char *)work, GX_SHADER_CACHE_DIR);
+    if (written <= 0 || written >= (gX_I32)sizeof(directory)) return false;
+    if (create) mkdir((const char *)directory, 0755);
+    written = snprintf((char *)out, size, "%s/%016llx.bin",
+        (const char *)directory, (unsigned long long)key);
+    return written > 0 && written < (gX_I32)size;
+}
+
+static gX_I1 gX_Shader_SaveBinary(gX_U32 progId, const gX_I8 *vertSrc, const gX_I8 *fragSrc)
+{
+    if (!progId || !fragSrc || !gX_Shader_CacheEnabled()) return false;
+    const gX_RHI_Caps *caps = gX_RHI_GetCaps();
+    if (!caps || !caps->hasProgramBinary) return false;
     gX_I32 binLen = 0;
     gX_RHI_GetProgramiv(progId, gX_RHI_PROGRAM_BINARY_LENGTH, &binLen);
-    if (binLen <= 0) return false;
+    if (binLen <= 0 || (gX_U32)binLen > GX_SHADER_CACHE_MAX) return false;
     gX_U8 *bin = (gX_U8*)malloc((gX_U64)binLen);
+    if (!bin) return false;
     gX_U32 format = 0;
-    gX_RHI_GetProgramBinary(progId, (gX_U32)binLen, NULL, (gX_U32*)&format, bin);
-    // Compute cache key from both paths
-    gX_U64 pathHash = gX_Shader_PathHash(vertPath) ^ (gX_Shader_PathHash(fragPath) * 0x9e3779b9);
-    gX_I8 binPath[1024];
-    snprintf(binPath, sizeof(binPath), "%s.shader_%016llx.bin",
-        fragPath ? fragPath : (vertPath ? vertPath : "shader"), (unsigned long long)pathHash);
-    FILE *f = fopen(binPath, "wb");
-    if (!f) { free(bin); return false; }
-    // Header: driverHash | pathHash | format | binLen | binary
-    gX_U64 driverHash = gX_Shader_DriverHash();
-    fwrite(&driverHash, sizeof(driverHash), 1, f);
-    fwrite(&pathHash, sizeof(pathHash), 1, f);
-    fwrite(&format, sizeof(format), 1, f);
-    fwrite(&binLen, sizeof(binLen), 1, f);
-    fwrite(bin, 1, (gX_U64)binLen, f);
-    fclose(f);
+    gX_RHI_GetProgramBinary(progId, (gX_U32)binLen, NULL, &format, bin);
+    gX_U64 key = gX_Shader_CacheKey(vertSrc, fragSrc);
+    gX_I8 path[1200];
+    gX_I8 temporary[1280];
+    if (!gX_Shader_CachePath(key, path, sizeof(path), 1)) {
+        free(bin);
+        return false;
+    }
+    //ai: parallel audits can compile the same shader; publish the entry with
+    //   an atomic rename so a reader never sees a partial binary.
+    snprintf((char *)temporary, sizeof(temporary), "%s.tmp.%ld",
+        (const char *)path, (long)getpid());
+    FILE *file = fopen((const char *)temporary, "wb");
+    if (!file) { free(bin); return false; }
+    gX_U32 magic = GX_SHADER_CACHE_MAGIC;
+    gX_U32 version = GX_SHADER_CACHE_VERSION;
+    gX_U32 length = (gX_U32)binLen;
+    gX_U64 driver = gX_Shader_DriverHash();
+    fwrite(&magic, sizeof(magic), 1, file);
+    fwrite(&version, sizeof(version), 1, file);
+    fwrite(&driver, sizeof(driver), 1, file);
+    fwrite(&key, sizeof(key), 1, file);
+    fwrite(&format, sizeof(format), 1, file);
+    fwrite(&length, sizeof(length), 1, file);
+    size_t wrote = fwrite(bin, 1, (size_t)length, file);
+    fclose(file);
     free(bin);
+    if (wrote != (size_t)length) {
+        remove((const char *)temporary);
+        return false;
+    }
+    if (rename((const char *)temporary, (const char *)path) != 0) {
+        remove((const char *)temporary);
+        return false;
+    }
     return true;
 }
 
-static gX_U32 gX_Shader_TryLoadBinary(const gX_I8 *vertPath, const gX_I8 *fragPath)
+static gX_U32 gX_Shader_TryLoadBinary(const gX_I8 *vertSrc, const gX_I8 *fragSrc)
 {
-    if (!vertPath && !fragPath) return 0;
-    gX_U64 pathHash = gX_Shader_PathHash(vertPath) ^ (gX_Shader_PathHash(fragPath) * 0x9e3779b9);
-    gX_I8 binPath[1024];
-    snprintf(binPath, sizeof(binPath), "%s.shader_%016llx.bin",
-        fragPath ? fragPath : (vertPath ? vertPath : "shader"), (unsigned long long)pathHash);
-    FILE *f = fopen(binPath, "rb");
-    if (!f) return 0;
+    if (!fragSrc || !gX_Shader_CacheEnabled()) return 0;
+    gX_U64 key = gX_Shader_CacheKey(vertSrc, fragSrc);
+    gX_I8 path[1200];
+    if (!gX_Shader_CachePath(key, path, sizeof(path), 0)) return 0;
+    FILE *file = fopen((const char *)path, "rb");
+    if (!file) return 0;
 
-    // Validate: driverHash + pathHash
-    gX_U64 fileDriver = 0, filePathHash = 0;
-    fread(&fileDriver, sizeof(fileDriver), 1, f);
-    fread(&filePathHash, sizeof(filePathHash), 1, f);
-    gX_U64 currentHash = gX_Shader_DriverHash();
-    if (fileDriver != currentHash || filePathHash != pathHash)
-    {
-        fclose(f);
-        remove(binPath);
+    gX_U32 magic = 0, version = 0, format = 0, length = 0;
+    gX_U64 driver = 0, fileKey = 0;
+    if (fread(&magic, sizeof(magic), 1, file) != 1
+        || fread(&version, sizeof(version), 1, file) != 1
+        || fread(&driver, sizeof(driver), 1, file) != 1
+        || fread(&fileKey, sizeof(fileKey), 1, file) != 1
+        || fread(&format, sizeof(format), 1, file) != 1
+        || fread(&length, sizeof(length), 1, file) != 1
+        || magic != GX_SHADER_CACHE_MAGIC
+        || version != GX_SHADER_CACHE_VERSION
+        || driver != gX_Shader_DriverHash()
+        || fileKey != key
+        || length == 0 || length > GX_SHADER_CACHE_MAX) {
+        fclose(file);
+        remove((const char *)path);
         return 0;
     }
-
-    gX_U32 format = 0;
-    gX_I32 binLen = 0;
-    fread(&format, sizeof(format), 1, f);
-    fread(&binLen, sizeof(binLen), 1, f);
-    if (binLen <= 0 || binLen > 1024*1024) { fclose(f); return 0; }
-    gX_U8 *bin = (gX_U8*)malloc((gX_U64)binLen);
-    fread(bin, 1, (gX_U64)binLen, f);
-    fclose(f);
+    gX_U8 *bin = (gX_U8*)malloc((gX_U64)length);
+    if (!bin) { fclose(file); return 0; }
+    size_t read = fread(bin, 1, (size_t)length, file);
+    fclose(file);
+    if (read != (size_t)length) {
+        free(bin);
+        remove((const char *)path);
+        return 0;
+    }
     gX_U32 prog = gX_RHI_CreateProgram();
-    gX_RHI_ProgramBinary(prog, (gX_U32)format, bin, (gX_U32)binLen);
+    if (!prog) {
+        free(bin);
+        return 0;
+    }
+    gX_RHI_ProgramBinary(prog, format, bin, length);
     free(bin);
     gX_I32 status = 0;
     gX_RHI_GetProgramiv(prog, gX_RHI_LINK_STATUS, &status);
-    if (status != gX_RHI_TRUE) { gX_RHI_Shader_Delete(prog); return 0; }
+    if (status != gX_RHI_TRUE) {
+        gX_RHI_Shader_Delete(prog);
+        remove((const char *)path);
+        return 0;
+    }
     return prog;
 }
 
@@ -314,6 +425,7 @@ static gX_Shader gX_Shader_Compile(
     gX_I8 *processedFrag = NULL;
     gX_Shader result = {0};
     Shader raylibShader = {0};
+    gX_F64 startTime = gX_Shader_TimingEnabled() ? gX_Shader_Now() : 0.0;
 
     if (vertSrc) {
         processedVert = gX_Shader_Compiler_Preprocess(vertSrc, NULL, &vertLen);
@@ -378,13 +490,59 @@ static gX_Shader gX_Shader_Compile(
             uniforms, &uniformCount, GX_SHADER_COMPILER_MAX_UNIFORMS);
     }
 
-    //opencode: try loading cached GL program binary first (avoids slow GLSL recompile)
+    //opencode: for fragment-only shaders (processedVert == NULL), supply our
+    //   own vertex shader with explicit layout(location=N) qualifiers to match
+    //   DrawScreenQuad's hardcoded VAO attrib locations 0 (position) and
+    //   1 (texcoord). Raylib's default vertex shader lacks these qualifiers,
+    //   causing the driver to assign arbitrary locations that mismatch the VAO.
+    //   ES variant uses #version 300 es + precision (desktop 330 is invalid in ES).
+    const gX_I1 esMode = gX_RHI_GetCaps() && gX_RHI_GetCaps()->isGLES;
+    const gX_I32 legacyGLSL = gX_Shader_Compiler_DesktopLegacyGLSL();
+    //opencode: no-layout vertex fallback for the legacy rungs — `in`
+    // without locations is valid GLSL on 130, 140 and 150 alike.
+    static gX_I8 gx_legacy_vert[256];
+    if (legacyGLSL) {
+        snprintf(gx_legacy_vert, sizeof(gx_legacy_vert),
+            "#version %d\n"
+            "in vec3 vertexPosition;\n"
+            "in vec2 vertexTexCoord;\n"
+            "out vec2 fragTexCoord;\n"
+            "uniform mat4 mvp;\n"
+            "void main() {\n"
+            "    fragTexCoord = vertexTexCoord;\n"
+            "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
+            "}\n", (int)legacyGLSL);
+    }
+    const char *gx_default_vert = esMode ?
+        "#version 300 es\n"
+        "precision highp float;\n"
+        "layout(location = 0) in vec3 vertexPosition;\n"
+        "layout(location = 1) in vec2 vertexTexCoord;\n"
+        "out vec2 fragTexCoord;\n"
+        "uniform mat4 mvp;\n"
+        "void main() {\n"
+        "    fragTexCoord = vertexTexCoord;\n"
+        "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
+        "}\n" : legacyGLSL ?
+        gx_legacy_vert :
+        "#version 330\n"
+        "layout(location = 0) in vec3 vertexPosition;\n"
+        "layout(location = 1) in vec2 vertexTexCoord;\n"
+        "out vec2 fragTexCoord;\n"
+        "uniform mat4 mvp;\n"
+        "void main() {\n"
+        "    fragTexCoord = vertexTexCoord;\n"
+        "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
+        "}\n";
+    const gX_I8 *effectiveVert = processedVert
+        ? processedVert : (const gX_I8 *)gx_default_vert;
+
+    //ai: the cache key is the exact processed source, so an edited shader
+    //   (or a defines/quality change) can never hit a stale binary.
+    gX_I1 cacheHit = 0;
     if (fragLabel && !result.id)
     {
-        //opencode: DISABLED — program binary cache can load stale binaries
-        //   when shader source changes but file path + driver hash stay the same.
-        //   Forcing recompile ensures the UBO fix (individual uniforms) takes effect.
-        gX_U32 cachedProg = 0; //gX_Shader_TryLoadBinary(vertLabel, fragLabel);
+        gX_U32 cachedProg = gX_Shader_TryLoadBinary(effectiveVert, processedFrag);
         if (cachedProg)
         {
             Shader cachedShader = {0};
@@ -395,57 +553,13 @@ static gX_Shader gX_Shader_Compile(
             //   uploads → matView/matProjection remain identity → geometry clips.
             gX_Shader_PopulateDefaultLocs(&cachedShader);
             raylibShader = cachedShader;
+            cacheHit = 1;
             gX_TraceLog(gX_LOG_INFO, "SHADER: loaded cached binary for '%s'", fragLabel);
         }
     }
 
     if (!raylibShader.id)
     {
-        //opencode: for fragment-only shaders (processedVert == NULL), supply our
-        //   own vertex shader with explicit layout(location=N) qualifiers to match
-        //   DrawScreenQuad's hardcoded VAO attrib locations 0 (position) and
-        //   1 (texcoord). Raylib's default vertex shader lacks these qualifiers,
-        //   causing the driver to assign arbitrary locations that mismatch the VAO.
-        //   ES variant uses #version 300 es + precision (desktop 330 is invalid in ES).
-        const gX_I1 esMode = gX_RHI_GetCaps() && gX_RHI_GetCaps()->isGLES;
-        const gX_I32 legacyGLSL = gX_Shader_Compiler_DesktopLegacyGLSL();
-        //opencode: no-layout vertex fallback for the legacy rungs — `in`
-        // without locations is valid GLSL on 130, 140 and 150 alike.
-        static gX_I8 gx_legacy_vert[256];
-        if (legacyGLSL) {
-            snprintf(gx_legacy_vert, sizeof(gx_legacy_vert),
-                "#version %d\n"
-                "in vec3 vertexPosition;\n"
-                "in vec2 vertexTexCoord;\n"
-                "out vec2 fragTexCoord;\n"
-                "uniform mat4 mvp;\n"
-                "void main() {\n"
-                "    fragTexCoord = vertexTexCoord;\n"
-                "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
-                "}\n", (int)legacyGLSL);
-        }
-        const char *gx_default_vert = esMode ?
-            "#version 300 es\n"
-            "precision highp float;\n"
-            "layout(location = 0) in vec3 vertexPosition;\n"
-            "layout(location = 1) in vec2 vertexTexCoord;\n"
-            "out vec2 fragTexCoord;\n"
-            "uniform mat4 mvp;\n"
-            "void main() {\n"
-            "    fragTexCoord = vertexTexCoord;\n"
-            "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
-            "}\n" : legacyGLSL ?
-            gx_legacy_vert :
-            "#version 330\n"
-            "layout(location = 0) in vec3 vertexPosition;\n"
-            "layout(location = 1) in vec2 vertexTexCoord;\n"
-            "out vec2 fragTexCoord;\n"
-            "uniform mat4 mvp;\n"
-            "void main() {\n"
-            "    fragTexCoord = vertexTexCoord;\n"
-            "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
-            "}\n";
-
         //ai: loader-enabled programs use completion polling rather than raylib's
         //   immediate blocking link-status query. Keep the normal location table.
         if ((legacyGLSL || gX_RHI_Shader_HasLoading()) && processedFrag) {
@@ -454,7 +568,7 @@ static gX_Shader gX_Shader_Compile(
             if (legacyGLSL) snprintf(progLabel, sizeof(progLabel), "glsl%d", (int)legacyGLSL);
             else snprintf(progLabel, sizeof(progLabel), "loading");
             raylibShader.id = gX_RHI_Shader_Compile(
-                processedVert ? processedVert : gx_default_vert, NULL, processedFrag,
+                effectiveVert, NULL, processedFrag,
                 progLabel, errorLog, sizeof(errorLog));
             if (raylibShader.id) gX_Shader_PopulateDefaultLocs(&raylibShader);
             else gX_TraceLog(gX_LOG_ERROR, "SHADER: GLSL %d compile failed for '%s' + '%s': %s",
@@ -465,22 +579,18 @@ static gX_Shader gX_Shader_Compile(
             gX_LogState.backendMode = true;
             raylibShader = gX_Shader_ConvertToBackend(
                 raylib_Shader_LoadFromMemory(
-                    processedVert ? processedVert : gx_default_vert,
+                    effectiveVert,
                     processedFrag ? processedFrag : NULL
                 ));
             gX_LogState.backendMode = false;
         }
     }
 
-        //opencode: DISABLED — program binary cache disabled to force recompile
-        //   on shader source changes. See load-side disable above.
-        //if (raylibShader.id > 0 && fragLabel)
-        //{
-        //    if (gX_Shader_SaveBinary(raylibShader.id, vertLabel, fragLabel))
-        //    {
-        //        gX_TraceLog(gX_LOG_INFO, "SHADER: cached binary for '%s'", fragLabel);
-        //    }
-        //}
+    if (raylibShader.id > 0 && fragLabel && !cacheHit)
+    {
+        if (gX_Shader_SaveBinary(raylibShader.id, effectiveVert, processedFrag))
+            gX_TraceLog(gX_LOG_TRACE, "SHADER: cached binary for '%s'", fragLabel);
+    }
 
     if (raylibShader.id > 0) {
         result = gX_Shader_ConvertFromBackend(raylibShader);
@@ -516,6 +626,12 @@ static gX_Shader gX_Shader_Compile(
         }
     }
 
+    if (gX_Shader_TimingEnabled()) {
+        gX_F64 elapsed = (gX_Shader_Now() - startTime) * 1000.0;
+        gX_TraceLog(gX_LOG_INFO, "SHADER_TIME: %s %.2f ms (%s)",
+            fragLabel ? (const char *)fragLabel : "(default)", elapsed,
+            cacheHit ? "binary cache" : "compiled");
+    }
     gX_Shader_Compiler_FreeSource(processedVert);
     gX_Shader_Compiler_FreeSource(processedFrag);
     return result;

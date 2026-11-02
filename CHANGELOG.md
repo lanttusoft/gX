@@ -4,6 +4,20 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: minor
+
+### Added
+- **Shader program cache**: linked GL program binaries are cached under
+  `gx_shader_cache/` and keyed by the processed vertex/fragment sources, the
+  driver identity, the compiler mode and a cache version. A warm start skips
+  the driver compile and links the cached binary; stale, corrupt or
+  link-failing entries fall back to a normal compile. `GX_NO_SHADER_CACHE=1`
+  disables it, `GX_SHADER_TIME=1` logs per-shader timings, and
+  `make shader-cache-check` pins the cold/warm frame and timing contract.
+  The cache is local scratch state and is never shipped.
+
 ## [0.32.1] - 2026-11-02
 
 Release-Class: patch
