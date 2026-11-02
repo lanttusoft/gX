@@ -246,6 +246,7 @@ typedef struct gX_RendererGFX_ShaderLocs {
     gX_I32  reflTexLoc;
     gX_I32  reflMVPLoc;
     gX_I32  planarReflectionLoc;
+    gX_I32  planarReflectionStrengthLoc;
     //opencode: mirror fill renders linear (no tonemap/exposure/SSAO) so the
     //   RT holds display-independent content tonemapped once in main
     gX_I32  mirrorFillLoc;

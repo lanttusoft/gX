@@ -15,8 +15,15 @@ Release-Class: minor
   `GX_RAYMARCH_EDITOR_INSPECT` opens the Ray panel.
 - **Authoring preset directory**: `GX_GFX_PRESET_DIR=<dir>` overrides the GFX
   preset browser root and defaults Save to `<dir>/untitled.json`;
-  `GX_GFX_PRESET_SCAN=1` logs the scan for headless checks.
-  `GX_ASSETS`/`--assets` remain the resource roots.
+  `GX_GFX_PRESET_SCAN=1` logs the scan for headless checks. Guest
+  `GX_ASSETS` roots are searched for `tools/`, `presets/` and
+  `resources/tools/` presets as well.
+- **Reflection mode transitions**: planar strength (`0..1`, default `1`) and
+  a material snapshot for **Make planar mirror**; switching to Off/Environment
+  restores the previous material instead of leaving the mirror preset behind.
+- **Reflection lab**: `resources/tools/gfx_reflection_lab.json` (metal sphere
+  over a planar checker floor) and `make reflection-lab-check`, covering the
+  strength ladder and behind-plane culling.
 
 ## [0.36.0] - 2026-11-02
 

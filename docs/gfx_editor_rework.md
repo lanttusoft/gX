@@ -212,6 +212,34 @@ the preset browser root (default `resources/tools`), and
 defaults to `<dir>/untitled.json` for saving; `GX_GFX_PRESET_LOAD` wins when
 set. Guest asset roots remain `GX_ASSETS` / `--assets`.
 
+## Reflection modes and material layers
+
+The per-model reflection mode is a small state machine:
+
+| State | `planarReflection` | `nonPlanarReflection` | `receiveSSR` | `enableReflections` |
+| --- | --- | --- | --- | --- |
+| Off | 0 | 0 | 0 | 0 |
+| Environment | 0 | 0 | 0 | 1 |
+| Planar + SSR | 1 | 0 | 1 | 0 |
+| Planar only | 1 | 0 | 0 | 0 |
+| Curved + SSR | 1 | 1 | 1 | 0 |
+| Curved only | 1 | 1 | 0 | 0 |
+
+- Entering a planar/curved state fits the plane and enables the global
+  capture gate; leaving planar states clears the per-model flags.
+- **Make planar mirror** pushes a polished material layer; switching back to
+  Off or Environment pops that layer, restoring the material fields it
+  replaced. The plane/transform are not part of the layer.
+- `planarReflectionStrength` (Surface, 0..1, default 1) blends the surface's
+  own shading with the planar image; `1` is the exact mirror the gates pin.
+- The full material stack (base → preset → per-material override →
+  reflection layer) is the next step; the current snapshot is the minimal
+  enter/exit behaviour for a single mirror layer.
+- `resources/tools/gfx_reflection_lab.json` is the reflection lab scene: a
+  metal sphere over a planar checker floor. `make reflection-lab-check`
+  asserts the strength ladder (off/0.5/1) and that a marker behind the plane
+  is culled from the mirror.
+
 ## Peer-review gate
 
 The reusable contract is [`peer_review_gate.md`](peer_review_gate.md). For this

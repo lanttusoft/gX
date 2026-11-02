@@ -871,6 +871,7 @@ gX_I32 gX_RendererGFX_Model_Init(gX_RendererGFX_Model *model, const gX_I8 *path)
     //opencode: keep existing SSR coverage unless a model opts out explicitly.
     model->params.receiveSSR = true;
     model->params.planarReflection = false;
+    model->params.planarReflectionStrength = 1.0f;
     model->params.excludeFromPlanarCapture = false;
     model->params.reflectionPlaneFollowsModel = false;
     model->params.nonPlanarReflection = false;
@@ -1998,6 +1999,10 @@ gX_I0 gX_RendererGFX_Model_Draw(gX_RendererGFX_Model *model, gX_RendererGFX *gfx
         }
         gX_Shader_SetValue_Int(shaderProg, rshader->locations.planarReflectionLoc,
             planarActive ? 1 : 0);
+        if (rshader->locations.planarReflectionStrengthLoc >= 0)
+            gX_Shader_SetValue_Float(shaderProg,
+                rshader->locations.planarReflectionStrengthLoc,
+                model->params.planarReflectionStrength);
         //opencode: non-planar reflection — per-fragment local plane + the
         //   global mirror plane the RT was rendered from. Uploaded for
         //   every planar-reflection model (its own plane matches the

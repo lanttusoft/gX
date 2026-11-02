@@ -199,6 +199,8 @@ typedef struct gX_RendererGFX_Model_Parameters {
     //opencode: SSR receiver participation is independent of direct env shading.
     gX_I1       receiveSSR;        // default true
     gX_I1       planarReflection;   // enable planar reflection (mirror across plane)
+    //ai: per-model blend between the surface's own shading and the planar image.
+    gX_F32      planarReflectionStrength;
     //opencode: omit this backing/occluding model from planar reflection captures.
     gX_I1       excludeFromPlanarCapture;
     gX_I1       reflectionSource;   //opencode: v0.3.4 - owns the mirror view (fill-only, not a consumer)

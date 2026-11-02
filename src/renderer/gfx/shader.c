@@ -290,6 +290,7 @@ static gX_I32 gX_RendererGFX_Shader_Load_Locations(gX_RendererGFX_Shader *shader
     GFX_SHADER_GETLOC(reflTex)
     GFX_SHADER_GETLOC(reflMVP)
     GFX_SHADER_GETLOC(planarReflection)
+    GFX_SHADER_GETLOC(planarReflectionStrength)
     GFX_SHADER_GETLOC(mirrorFill)
     //opencode: non-planar reflection (GTA4/5 style) + wave displacement
     GFX_SHADER_GETLOC(nonPlanarReflection)

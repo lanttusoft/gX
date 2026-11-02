@@ -105,6 +105,7 @@ uniform int enableRefraction = 0;
 //ai: opt-in environment replacement keeps the historical additive reflection default.
 uniform int balancedReflection = 0;
 uniform int planarReflection = 0;
+uniform float planarReflectionStrength = 1.0; //ai: per-model mirror blend (0..1)
 uniform int mirrorFill = 0; //opencode: 1 inside the planar mirror fill: emit linear HDR (skip tonemap/exposure/SSAO) so the RT is tonemapped once, in main
 //opencode: non-planar reflection - per-fragment local-plane lookup (GTA4/5
 //   style): reflect the view ray across the fragment's own plane and
@@ -1162,8 +1163,13 @@ void reflection(inout vec4 color, in vec3 normal, inout Positions pos) {
     //opencode: v0.1.35 - planar reflections REPLACE rather than add: an
     //   exact mirror image must not wash out under the surface's own
     //   lighting (bright-lit floor regions turned the mirrored cube pale).
-    if (planarReflection == 1)
-        color.rgb = mix(color.rgb, ref, clamp(reflectionBias + 0.45, 0.0, 1.0));
+    if (planarReflection == 1) {
+        //ai: strength lets a planar receiver sit between its own material and
+        //   a full mirror; default 1.0 keeps the exact mirror reads.
+        float planarMix = clamp((reflectionBias + 0.45) * planarReflectionStrength,
+            0.0, 1.0);
+        color.rgb = mix(color.rgb, ref, planarMix);
+    }
     else {
         //opencode: Schlick fresnel on the additive env term — dielectric
         //   head-on reflects ~4%, grazing ~100%. The unweighted add washed

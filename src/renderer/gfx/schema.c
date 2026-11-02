@@ -474,6 +474,7 @@ static gX_SchemaField gfx_model_params_fields[] = {
     //opencode: SSR receiver participation is separate from direct environment reflections.
     GX_SCHEMA_BOOL("receiveSSR",             gX_RendererGFX_Model_Parameters, receiveSSR),
     GX_SCHEMA_BOOL("planarReflection",      gX_RendererGFX_Model_Parameters, planarReflection),
+    GX_SCHEMA_F32("planarReflectionStrength", gX_RendererGFX_Model_Parameters, planarReflectionStrength),
     GX_SCHEMA_I32("mirrorPair",             gX_RendererGFX_Model_Parameters, mirrorPair),
     GX_SCHEMA_BOOL_DEF("excludeFromPlanarCapture", gX_RendererGFX_Model_Parameters,
         excludeFromPlanarCapture, false),

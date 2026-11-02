@@ -238,6 +238,14 @@ group = "gui"
 cache = "content"
 description = "cursor state-machine audit gate."
 
+[gate.reflection-lab]
+script = "gfx_reflection_lab_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "reflective-sphere/checker-floor reflection strength + culling gate."
+
 [gate.shader-cache]
 script = "shader_cache_check.py"
 args = []

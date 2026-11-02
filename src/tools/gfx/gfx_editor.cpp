@@ -164,6 +164,31 @@ static gX_I1 s_modelRevertValid = 0;
 static gX_I1 s_modelRevertUseTextures = 1;
 #if gX_ENABLE_RENDERER == 1
 static gX_RendererGFX_Model_Parameters s_modelRevertParams;
+//ai: "Make planar mirror" pushes a material layer; leaving the planar modes
+//   pops it so Off returns to the surface's own material.
+#define GX_GFX_MIRROR_SNAPSHOT_MAX 8
+typedef struct GfxMirrorSnapshot {
+    gX_I32 model;
+    gX_I8 path[256];
+    gX_I1 valid;
+    gX_I1 usePBR;
+    gX_I1 enableReflections;
+    gX_I1 receiveSSR;
+    gX_I1 planarReflection;
+    gX_I1 nonPlanarReflection;
+    gX_I1 enableBlending;
+    gX_I1 enableRefraction;
+    gX_I1 hasNormalMap;
+    gX_I32 injectedNormalMapID;
+    gX_F32 metalness;
+    gX_F32 roughness;
+    gX_F32 blendOpacity;
+    gX_F32 refractiveIndex;
+    gX_F32 emissiveFactor;
+    gX_Color albedoTint;
+    gX_Color emissiveColor;
+} GfxMirrorSnapshot;
+static GfxMirrorSnapshot s_mirrorSnapshots[GX_GFX_MIRROR_SNAPSHOT_MAX];
 #endif
 static gX_I8 s_modelPath[256] = "resources/model/primitive/cube.glb";
 //ai: new normal-map selections start with the shipped project texture, not a quarantined file.
@@ -2528,6 +2553,10 @@ static gX_I0 gfx_preset_save(gX_RendererGFX *gfx) {
     gfx_preset_save_commit(gfx);
 }
 
+#if gX_ENABLE_RENDERER == 1
+static gX_I0 gfx_mirror_snapshots_clear(gX_I0);
+#endif
+
 //opencode: reset transient editor state after a preset replaces the live
 //   model/light heaps, including the Sky Lab's derived sun sliders.
 static gX_I0 gfx_preset_load(gX_RendererGFX *gfx) {
@@ -2552,6 +2581,7 @@ static gX_I0 gfx_preset_load(gX_RendererGFX *gfx) {
         s_modelRevertValid = 0;
         gfx_model_history_reset();
         gfx_model_snapshots_clear();
+        gfx_mirror_snapshots_clear();
         s_sunInit = 0;
         //opencode: PBR presets need the MEDIUM shader path (IBL/Fresnel/rim).
         //   Raise before the next shader reload instead of leaving the preset
@@ -5666,10 +5696,103 @@ static gX_I1 gfx_model_generate_reflection_plane(gX_RendererGFX_Model *model) {
 }
 
 //opencode: choose whether the selected model samples environment or generated planar reflection.
+static gX_I32 gfx_model_reflection_mode(const gX_RendererGFX_Model *model)
+{
+    if (!model) return 0;
+    if (model->params.planarReflection)
+        return model->params.nonPlanarReflection
+            ? (model->params.receiveSSR ? 4 : 5)
+            : (model->params.receiveSSR ? 2 : 3);
+    return model->params.enableReflections ? 1 : 0;
+}
+
+static GfxMirrorSnapshot *gfx_mirror_snapshot_find(gX_I32 model)
+{
+    for (gX_I32 i = 0; i < GX_GFX_MIRROR_SNAPSHOT_MAX; i++) {
+        if (s_mirrorSnapshots[i].valid && s_mirrorSnapshots[i].model == model)
+            return &s_mirrorSnapshots[i];
+    }
+    return NULL;
+}
+
+//ai: preserve the material fields the mirror preset replaces; transforms and
+//   unrelated authoring stay untouched.
+static gX_I0 gfx_mirror_snapshot_store(gX_RendererGFX_Model *model)
+{
+    if (!model || s_selModel < 0) return;
+    GfxMirrorSnapshot *slot = gfx_mirror_snapshot_find(s_selModel);
+    if (!slot) {
+        for (gX_I32 i = 0; i < GX_GFX_MIRROR_SNAPSHOT_MAX; i++) {
+            if (!s_mirrorSnapshots[i].valid) {
+                slot = &s_mirrorSnapshots[i];
+                break;
+            }
+        }
+    }
+    if (!slot) return;
+    slot->valid = 1;
+    slot->model = s_selModel;
+    snprintf((char *)slot->path, sizeof(slot->path), "%s", (const char *)model->path);
+    slot->usePBR = model->params.usePBR;
+    slot->enableReflections = model->params.enableReflections;
+    slot->receiveSSR = model->params.receiveSSR;
+    slot->planarReflection = model->params.planarReflection;
+    slot->nonPlanarReflection = model->params.nonPlanarReflection;
+    slot->enableBlending = model->params.enableBlending;
+    slot->enableRefraction = model->params.enableRefraction;
+    slot->hasNormalMap = model->params.hasNormalMap;
+    slot->injectedNormalMapID = model->params.injectedNormalMapID;
+    slot->metalness = model->params.metalness;
+    slot->roughness = model->params.roughness;
+    slot->blendOpacity = model->params.blendOpacity;
+    slot->refractiveIndex = model->params.refractiveIndex;
+    slot->emissiveFactor = model->params.emissiveFactor;
+    slot->albedoTint = model->params.albedoTint;
+    slot->emissiveColor = model->params.emissiveColor;
+}
+
+static gX_I0 gfx_mirror_snapshot_restore(gX_RendererGFX_Model *model)
+{
+    if (!model || s_selModel < 0) return;
+    GfxMirrorSnapshot *slot = gfx_mirror_snapshot_find(s_selModel);
+    if (!slot) return;
+    if (strcmp((const char *)slot->path, (const char *)model->path) != 0) {
+        slot->valid = 0;
+        return;
+    }
+    model->params.usePBR = slot->usePBR;
+    model->params.enableReflections = slot->enableReflections;
+    model->params.receiveSSR = slot->receiveSSR;
+    model->params.planarReflection = slot->planarReflection;
+    model->params.nonPlanarReflection = slot->nonPlanarReflection;
+    model->params.enableBlending = slot->enableBlending;
+    model->params.enableRefraction = slot->enableRefraction;
+    model->params.hasNormalMap = slot->hasNormalMap;
+    model->params.injectedNormalMapID = slot->injectedNormalMapID;
+    model->params.metalness = slot->metalness;
+    model->params.roughness = slot->roughness;
+    model->params.blendOpacity = slot->blendOpacity;
+    model->params.refractiveIndex = slot->refractiveIndex;
+    model->params.emissiveFactor = slot->emissiveFactor;
+    model->params.albedoTint = slot->albedoTint;
+    model->params.emissiveColor = slot->emissiveColor;
+    slot->valid = 0;
+}
+
+static gX_I0 gfx_mirror_snapshots_clear(gX_I0)
+{
+    for (gX_I32 i = 0; i < GX_GFX_MIRROR_SNAPSHOT_MAX; i++)
+        s_mirrorSnapshots[i].valid = 0;
+}
+
+//ai: reflection mode transition — enter planar modes fit the plane; leaving
+//   them pops the mirror material layer and clears the reflection flags.
 static gX_I0 gfx_model_reflection_mode_set(gX_RendererGFX *gfx,
     gX_RendererGFX_Model *model, gX_I32 mode) {
     if (!gfx || !model) return;
     if (mode < 0 || mode > 5) mode = 0;
+    gX_I32 previous = gfx_model_reflection_mode(model);
+    if (mode < 2) gfx_mirror_snapshot_restore(model);
     model->params.enableReflections = mode == 1 ? 1 : 0;
     model->params.planarReflection = mode >= 2 ? 1 : 0;
     model->params.nonPlanarReflection = mode == 4 || mode == 5 ? 1 : 0;
@@ -5679,6 +5802,8 @@ static gX_I0 gfx_model_reflection_mode_set(gX_RendererGFX *gfx,
     if (mode == 1) gfx->state.ENABLE_REFLECTIONS = 1;
     if (mode >= 2) gfx->state.ENABLE_PLANAR_REFLECTIONS = 1;
     if (mode >= 2) gfx_model_generate_reflection_plane(model);
+    gX_TraceLog(gX_LOG_INFO, "GFX_REFLECT_STATE: model=%d from=%d to=%d path=%s",
+        s_selModel, previous, mode, (const char *)model->path);
 }
 
 //opencode: flip a fitted plane's front-facing normal without moving its plane equation.
@@ -5695,6 +5820,7 @@ static gX_I0 gfx_model_reflection_normal_flip(gX_RendererGFX_Model *model) {
 static gX_I0 gfx_model_make_planar_mirror(gX_RendererGFX *gfx,
     gX_RendererGFX_Model *model) {
     if (!gfx || !model) return;
+    gfx_mirror_snapshot_store(model);
     gX_I1 environmentEnabled = gfx->state.ENABLE_REFLECTIONS;
     gfx_model_material_preset(gfx, model, 0);
     gfx->state.ENABLE_REFLECTIONS = environmentEnabled;
@@ -6189,11 +6315,7 @@ static gX_I0 gfx_model_surface_panel(gX_RendererGFX *gfx) {
     static const gX_I8 *reflectionModes[] = {
         "Off (plain object)", "Environment", "Planar + SSR", "Planar only",
         "Curved + SSR", "Curved only"};
-    int reflectionMode = model->params.planarReflection
-        ? (model->params.nonPlanarReflection
-            ? (model->params.receiveSSR ? 4 : 5)
-            : (model->params.receiveSSR ? 2 : 3))
-        : (model->params.enableReflections ? 1 : 0);
+    int reflectionMode = gfx_model_reflection_mode(model);
     if (reflectFocus && reflectFocus[0] && reflectFocus[0] != '0'
         && maindata.frameCount <= 30)
         ImGui::SetScrollHereY(0.0f);
@@ -6214,6 +6336,7 @@ static gX_I0 gfx_model_surface_panel(gX_RendererGFX *gfx) {
         ImGui::EndCombo();
     }
     ImGui::EndDisabled();
+    //ai: trace the combo before any following widget changes the last-item rect.
     if (reflectTrace && reflectTrace[0] && reflectTrace[0] != '0'
         && (ImGui::GetFrameCount() % 30u) == 0u) {
         ImVec2 tmin = ImGui::GetItemRectMin();
@@ -6221,6 +6344,12 @@ static gX_I0 gfx_model_surface_panel(gX_RendererGFX *gfx) {
         gX_TraceLog(gX_LOG_INFO,
             "GFX_REFLECT_MODE: rect=(%.0f,%.0f,%.0f,%.0f)",
             tmin.x, tmin.y, tmax.x, tmax.y);
+    }
+    if (model->params.planarReflection) {
+        ImGui::SliderFloat("planar strength",
+            &model->params.planarReflectionStrength, 0.0f, 1.0f, "%.2f");
+        gfx_text_disabled_wrapped(
+            "0 = the surface's own material, 1 = full planar mirror.");
     }
     if (!model->loaded) ImGui::TextDisabled("Reflection modes require a loaded model mesh.");
     gfx_text_disabled_wrapped(
@@ -11674,9 +11803,18 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
             gX_I8 title[64];
             snprintf((char *)title, sizeof(title), "GFX %s",
                 (const char *)kGfxLabs[i].label);
+            gX_I1 firstDraw = (s_labTracedMask & bit) == 0;
             bool labOpen = true;
             ImGuiWindowFlags labFlags = s_assetBrowserOpen
                 ? ImGuiWindowFlags_NoInputs : 0;
+            //ai: the reflection fixture clicks the Surface controls in a fresh
+            //   floating window; focus it once so the first click opens the
+            //   combo instead of only raising the window.
+            if (i == 0 && firstDraw) {
+                const gX_I8 *reflectFocus = getenv("GX_GFX_REFLECT_FOCUS");
+                if (reflectFocus && reflectFocus[0] && reflectFocus[0] != '0')
+                    ImGui::SetNextWindowFocus();
+            }
             if (ImGui::Begin((const char *)title, &labOpen, labFlags)) {
                 gX_Tools_ImGui_Aero_Panel();
                 if (!(s_labTracedMask & bit)) {
