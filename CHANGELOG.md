@@ -4,6 +4,19 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.32.1] - 2026-11-02
+
+Release-Class: patch
+
+### Changed
+- **Proof pin**: bump `gx-proofs` to `v0.19.0-proofs`
+  (`ff1a54676c87c3efd328e22491ceedc535492522`): 60 core / 125 total
+  modules and 1,347 / 3,071 declarations. The batch adds the cursor owner
+  stack, the editor-host state machines/tabs/workspaces, IBL double-buffer
+  ownership, the texture-unit budget and the bounded battle/input queues.
+  `proofs.lock.json`, `docs/proof_inventory.md`, `docs/lean_proofs.md` and
+  the pin unit test are updated. No engine behavior changes.
+
 ## [0.32.0] - 2026-11-02
 
 Release-Class: minor
