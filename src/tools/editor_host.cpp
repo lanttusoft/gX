@@ -25,10 +25,11 @@
 *
 **********************************************************************************************/
 
-//opencode: global editor host — menu-bar root and editor switcher. The
+//opencode: global editor host — menu-bar root and editor registry. The
 //   toolbar is always summonable (F9) from any scene, editor or non-editor.
-//   This slice hosts the existing tool windows; the workspace/panel migration
-//   is the next step (see private-docs/post-gfx-plan.md, H2).
+//   The registry drives the editor menus, the active-editor label and the
+//   panel toggles; the GFX editor stays disabled until the workspace
+//   migration lands (see private-docs/post-gfx-plan.md, H2).
 
 extern "C" {
 #include "../main.h"
@@ -39,6 +40,7 @@ extern "C" {
 #include "imgui/imgui.h"
 #include "tools.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -47,8 +49,52 @@ static gX_I1 s_inited = 0;
 static gX_I1 s_aboutOpen = 0;
 static gX_I1 s_shortcutsOpen = 0;
 
+typedef struct HostEditor {
+    const gX_I8 *label;
+    const gX_I8 *tier;
+    gX_I1 *(*flag)(gX_I0);
+    gX_I0 (*open)(gX_I0);
+    gX_I1 enabled;
+} HostEditor;
+
+static const HostEditor kEditors[] = {
+    { "GUI",        "alpha/WIP", gX_Tools_RuntimeEditorFlag,     gX_Tools_OpenEditor_Runtime,     1 },
+    { "Theme",      "alpha/WIP", gX_Tools_RuntimeThemeFlag,      gX_Tools_OpenTheme_Runtime,      1 },
+    { "Sky",        "alpha/WIP", gX_Tools_RuntimeSkyFlag,        gX_Tools_OpenSky_Runtime,        1 },
+    { "Background", "alpha/WIP", gX_Tools_RuntimeBackgroundFlag, gX_Tools_OpenBackground_Runtime, 1 },
+    { "Physics",    "alpha/WIP", gX_Tools_RuntimePhysicsFlag,    gX_Tools_OpenPhysics_Runtime,    1 },
+    { "Wavetable",  "alpha/WIP", gX_Tools_RuntimeWavetableFlag,  gX_Tools_OpenWavetable_Runtime,  1 },
+    { "Textwriter", "alpha/WIP", gX_Tools_RuntimeTextwriterFlag, gX_Tools_OpenTextwriter_Runtime, 1 },
+    { "Rail",       "alpha/WIP", gX_Tools_RuntimeRailFlag,       gX_Tools_OpenRail_Runtime,       1 },
+    { "GFX",        "beta",      gX_Tools_RuntimeGfxFlag,        gX_Tools_OpenGfx_Runtime,        0 },
+    { "Script",     "alpha/WIP", gX_Tools_RuntimeScriptFlag,     gX_Tools_OpenScript_Runtime,     1 },
+};
+
+static const gX_I32 kEditorCount = (gX_I32)(sizeof(kEditors) / sizeof(kEditors[0]));
+static const HostEditor *s_lastActive = NULL;
+
 static gX_I0 host_trace(gX_I1 open) {
     gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: open=%d", (gX_I32)open);
+}
+
+static gX_I32 host_active_index(gX_I0) {
+    for (gX_I32 i = 0; i < kEditorCount; i++) {
+        if (kEditors[i].flag && *kEditors[i].flag()) return i;
+    }
+    return -1;
+}
+
+static const HostEditor *host_active_editor(gX_I0) {
+    gX_I32 index = host_active_index();
+    return index >= 0 ? &kEditors[index] : NULL;
+}
+
+static gX_I0 host_trace_active(gX_I0) {
+    const HostEditor *active = host_active_editor();
+    if (active == s_lastActive) return;
+    s_lastActive = active;
+    gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: active=%s",
+        active ? (const char *)active->label : "none");
 }
 
 static gX_I0 host_init_env(gX_I0) {
@@ -79,27 +125,27 @@ extern "C" gX_I1 gX_EditorHost_IsOpen(gX_I0) {
     return s_hostOpen;
 }
 
-static const gX_I8 *host_active_editor(void) {
-    if (*gX_Tools_RuntimeSkyFlag()) return "Sky (alpha/WIP)";
-    if (*gX_Tools_RuntimeGfxFlag()) return "GFX (beta)";
-    if (*gX_Tools_RuntimeBackgroundFlag()) return "Background (alpha/WIP)";
-    if (*gX_Tools_RuntimePhysicsFlag()) return "Physics (alpha/WIP)";
-    if (*gX_Tools_RuntimeWavetableFlag()) return "Wavetable (alpha/WIP)";
-    if (*gX_Tools_RuntimeTextwriterFlag()) return "Textwriter (alpha/WIP)";
-    if (*gX_Tools_RuntimeEditorFlag()) return "GUI (alpha/WIP)";
-    if (*gX_Tools_RuntimeThemeFlag()) return "Theme (alpha/WIP)";
-    return "No editor";
-}
-
-static gX_I0 host_open_sky(void) {
-    extern gX_I0 gX_Tools_OpenSky_Runtime(gX_I0);
-    gX_Tools_OpenSky_Runtime();
+static gX_I0 host_open_editor(gX_I32 index) {
+    if (index < 0 || index >= kEditorCount) return;
+    const HostEditor *editor = &kEditors[index];
+    if (!editor->enabled || !editor->open) return;
+    editor->open();
     gX_EditorHost_SetOpen(1);
+    host_trace_active();
 }
 
 static gX_I0 host_close_editor(void) {
-    extern gX_I0 gX_Tools_Close_Runtime(gX_I0);
     gX_Tools_Close_Runtime();
+    host_trace_active();
+}
+
+static gX_I0 host_editor_menu(const HostEditor *editor) {
+    if (!ImGui::BeginMenu(editor->label)) return;
+    if (ImGui::MenuItem("Close")) {
+        *editor->flag() = 0;
+        host_trace_active();
+    }
+    ImGui::EndMenu();
 }
 
 static gX_I0 host_draw_menu_bar(void) {
@@ -107,15 +153,22 @@ static gX_I0 host_draw_menu_bar(void) {
 
     if (ImGui::BeginMenu("gX")) {
         if (ImGui::BeginMenu("Change Editor")) {
-            if (ImGui::MenuItem("Sky", "alpha/WIP")) host_open_sky();
-            ImGui::MenuItem("GFX", "beta - migration pending", false, false);
+            for (gX_I32 i = 0; i < kEditorCount; i++) {
+                const HostEditor *editor = &kEditors[i];
+                gX_I8 label[96];
+                snprintf(label, sizeof(label), "%s  (%s)%s",
+                    (const char *)editor->label, (const char *)editor->tier,
+                    editor->enabled ? "" : " - migration pending");
+                if (ImGui::MenuItem(label, NULL, false, editor->enabled))
+                    host_open_editor(i);
+            }
             ImGui::Separator();
             if (ImGui::MenuItem("Close Editor")) host_close_editor();
             ImGui::EndMenu();
         }
         if (ImGui::MenuItem("Console", "F10")) {
-            extern gX_I0 gX_Tools_OpenScript_Runtime(gX_I0);
             gX_Tools_OpenScript_Runtime();
+            host_trace_active();
         }
         ImGui::Separator();
         if (ImGui::MenuItem("About gX")) s_aboutOpen = 1;
@@ -143,28 +196,36 @@ static gX_I0 host_draw_menu_bar(void) {
         ImGui::MenuItem("Editor Bar", "F9", false, false);
         ImGui::MenuItem("Reset Layout", NULL, false, false);
         ImGui::Separator();
-        gX_I1 skyOpen = *gX_Tools_RuntimeSkyFlag() ? 1 : 0;
-        if (ImGui::MenuItem("Sky Panel", NULL, &skyOpen)) {
-            if (skyOpen) host_open_sky();
-            else {
-                *gX_Tools_RuntimeSkyFlag() = 0;
+        for (gX_I32 i = 0; i < kEditorCount; i++) {
+            const HostEditor *editor = &kEditors[i];
+            if (!editor->enabled) continue;
+            gX_I1 open = *editor->flag() ? 1 : 0;
+            if (ImGui::MenuItem(editor->label, NULL, &open)) {
+                if (open) host_open_editor(i);
+                else {
+                    *editor->flag() = 0;
+                    host_trace_active();
+                }
             }
         }
         ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu("Sky")) {
-        if (ImGui::MenuItem("Open Sky Editor")) host_open_sky();
-        if (ImGui::MenuItem("Close Sky Editor")) {
-            *gX_Tools_RuntimeSkyFlag() = 0;
-            gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: close editor=Sky");
-        }
-        ImGui::EndMenu();
+    {
+        const HostEditor *active = host_active_editor();
+        if (active) host_editor_menu(active);
     }
     if (ImGui::BeginMenu("Window")) {
-        gX_I1 skyOpen = *gX_Tools_RuntimeSkyFlag() ? 1 : 0;
-        if (ImGui::MenuItem("Sky", NULL, &skyOpen)) {
-            if (skyOpen) host_open_sky();
-            else *gX_Tools_RuntimeSkyFlag() = 0;
+        for (gX_I32 i = 0; i < kEditorCount; i++) {
+            const HostEditor *editor = &kEditors[i];
+            if (!editor->enabled) continue;
+            gX_I1 open = *editor->flag() ? 1 : 0;
+            if (ImGui::MenuItem(editor->label, NULL, &open)) {
+                if (open) host_open_editor(i);
+                else {
+                    *editor->flag() = 0;
+                    host_trace_active();
+                }
+            }
         }
         ImGui::Separator();
         if (ImGui::MenuItem("Close All")) host_close_editor();
@@ -176,8 +237,13 @@ static gX_I0 host_draw_menu_bar(void) {
         ImGui::EndMenu();
     }
 
-    ImGui::SameLine(ImGui::GetWindowWidth() - 300.0f);
-    ImGui::TextUnformatted(host_active_editor());
+    {
+        const HostEditor *active = host_active_editor();
+        ImGui::SameLine(ImGui::GetWindowWidth() - 340.0f);
+        if (active) ImGui::Text("%s  %s", (const char *)active->label,
+            (const char *)active->tier);
+        else ImGui::TextUnformatted("No editor");
+    }
     ImGui::SameLine(ImGui::GetWindowWidth() - 140.0f);
     ImGui::Text("%.0f fps", ImGui::GetIO().Framerate);
     ImGui::EndMainMenuBar();
@@ -212,6 +278,7 @@ static gX_I0 host_draw_windows(void) {
 extern "C" gX_I0 gX_EditorHost_Draw(gX_I0) {
     host_init_env();
     if (!s_hostOpen) return;
+    host_trace_active();
     host_draw_menu_bar();
     host_draw_windows();
 }

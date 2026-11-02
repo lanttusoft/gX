@@ -99,6 +99,8 @@ def main():
             raise RuntimeError("host missing in the sky run")
         if "SKY_EDITOR_UI: panel=1" not in sky_log:
             raise RuntimeError("sky panel did not open")
+        if "EDITOR_HOST: active=Sky" not in sky_log:
+            raise RuntimeError("editor registry did not report Sky as active")
         if sky is None:
             raise RuntimeError("sky capture missing")
         #opencode: the sky scene opens its own (wider) window; compare the
@@ -108,11 +110,21 @@ def main():
         sky_delta = float(np.abs(top_band(base) - sky[:TOP, :WIDTH, :]).mean())
         if sky_delta < 5.0:
             raise RuntimeError("toolbar bar missing in the sky capture")
+
+        bg_code, bg_log, _ = run("background", "--title",
+            {"GX_EDITOR_HOST": "1", "GX_TOOLS_OPEN": "background"},
+            frames=60, shot=40)
+        if bg_code != 0:
+            raise RuntimeError(f"background host run failed ({bg_code})")
+        if "EDITOR_HOST: active=Background" not in bg_log:
+            raise RuntimeError("editor registry did not report Background")
+        if "BG_EDITOR_UI: panel=1" not in bg_log:
+            raise RuntimeError("background panel did not open")
     except (OSError, RuntimeError, ValueError) as error:
         print(f"EDITOR_HOST_CHECK: FAIL — {error}", file=sys.stderr)
         return 1
     print("EDITOR_HOST_CHECK: PASS toolbar in title/gfx, F9 open+close, "
-          "sky panel hosted")
+          "sky + background panels via the editor registry")
     return 0
 
 
