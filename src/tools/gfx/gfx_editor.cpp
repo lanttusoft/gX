@@ -5721,12 +5721,13 @@ static gX_I0 gfx_mirror_snapshot_store(gX_RendererGFX_Model *model)
 {
     if (!model || s_selModel < 0) return;
     GfxMirrorSnapshot *slot = gfx_mirror_snapshot_find(s_selModel);
-    if (!slot) {
-        for (gX_I32 i = 0; i < GX_GFX_MIRROR_SNAPSHOT_MAX; i++) {
-            if (!s_mirrorSnapshots[i].valid) {
-                slot = &s_mirrorSnapshots[i];
-                break;
-            }
+    //ai: keep the first pre-mirror snapshot; pressing Make planar mirror again
+    //   must not replace it with the already-polished material.
+    if (slot) return;
+    for (gX_I32 i = 0; i < GX_GFX_MIRROR_SNAPSHOT_MAX; i++) {
+        if (!s_mirrorSnapshots[i].valid) {
+            slot = &s_mirrorSnapshots[i];
+            break;
         }
     }
     if (!slot) return;
