@@ -25,6 +25,12 @@ Release-Class: minor
   only duplicated the threading surface and is not part of the shader-cache
   path.
 
+### Changed
+- Full audit runs skip the three quick gates whose full-tier siblings run the
+  same script with a superset; the `cache` cache-self-test is now a
+  `tooling`-tier gate. The full selection drops from 88 to 84 gates without
+  reducing engine coverage.
+
 ### Fixed
 - DOF/motion-blur/particle-only scenes now load and update `bloom.scene`; the
   old hand-maintained update list omitted them even though the pass table

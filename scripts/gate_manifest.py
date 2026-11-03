@@ -20,7 +20,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python < 3.11 fallback
 
 ROOT = Path(__file__).resolve().parent.parent
 MANIFEST_PATH = ROOT / "gates.toml"
-TIERS = ("quick", "full", "compute", "all")
+TIERS = ("quick", "full", "compute", "tooling", "all")
 CACHE_POLICIES = ("content", "never", "ttl")
 
 
@@ -57,6 +57,7 @@ def load(path=None):
             "timeout": entry.get("timeout", defaults.get("timeout", 1200)),
             "retries": entry.get("retries", defaults.get("retries", 1)),
             "description": entry.get("description", ""),
+            "superseded_by": entry.get("superseded_by", ""),
             "inputs": list(entry.get("inputs", [])),
         })
     return {
@@ -80,8 +81,15 @@ def select_tier(manifest, tier):
     if tier == "all":
         return list(manifest["gates"])
     if tier == "full":
-        return [gate for gate in manifest["gates"]
-                if "quick" in gate["tiers"] or "full" in gate["tiers"]]
+        gates = [gate for gate in manifest["gates"]
+                 if "quick" in gate["tiers"] or "full" in gate["tiers"]]
+        #opencode: a quick gate whose full-tier sibling runs the same script
+        #   with a superset is not repeated in a full run. The quick gate
+        #   remains available to the quick tier and to --only.
+        names = {gate["name"] for gate in gates}
+        superseded = {gate["name"] for gate in gates
+                      if gate.get("superseded_by") in names}
+        return [gate for gate in gates if gate["name"] not in superseded]
     return [gate for gate in manifest["gates"] if tier in gate["tiers"]]
 
 

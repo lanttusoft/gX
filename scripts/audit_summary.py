@@ -117,11 +117,13 @@ FALLBACK_GATES = [
 ]
 
 GATES = []
+MANIFEST = None
 
 
 def load_gates():
-    global GATES
+    global GATES, MANIFEST
     manifest = gate_manifest.load()
+    MANIFEST = manifest
     if manifest:
         GATES = gate_manifest.as_tuples(manifest)
     else:
@@ -188,6 +190,10 @@ def main():
     else:
         selected = {gate[0] for gate in GATES
                     if "quick" in gate[3] or "full" in gate[3]}
+        if MANIFEST:
+            names = {gate[0] for gate in GATES}
+            selected -= {gate["name"] for gate in MANIFEST["gates"]
+                         if gate.get("superseded_by") in names}
     if not audit.BIN.is_file():
         print(f"AUDIT_SUMMARY: binary missing: {audit.BIN}", file=sys.stderr)
         return 1

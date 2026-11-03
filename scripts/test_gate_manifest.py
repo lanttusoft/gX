@@ -49,6 +49,22 @@ class ManifestTests(unittest.TestCase):
         self.assertTrue(all("compute" in gate["tiers"] for gate in compute))
         self.assertGreaterEqual(len(full), len(quick))
 
+    def test_full_skips_superseded_quick(self):
+        quick = {gate["name"] for gate in gate_manifest.select_tier(
+            self.manifest, "quick")}
+        full = {gate["name"] for gate in gate_manifest.select_tier(
+            self.manifest, "full")}
+        for name in ("matrix-quick", "gui-quick", "gui-layout-quick"):
+            self.assertIn(name, quick)
+            self.assertNotIn(name, full)
+        self.assertIn("matrix", full)
+        self.assertIn("gui-matrix", full)
+        self.assertIn("gui-layout", full)
+        tooling = {gate["name"] for gate in gate_manifest.select_tier(
+            self.manifest, "tooling")}
+        self.assertIn("cache", tooling)
+        self.assertNotIn("cache", full)
+
     def test_path_matching(self):
         self.assertTrue(gate_manifest.path_matches("src/renderer/water.c",
                                                    "src/renderer/"))

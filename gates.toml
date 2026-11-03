@@ -95,6 +95,7 @@ cache = "content"
 description = "scene-smoke audit gate."
 
 [gate.matrix-quick]
+superseded_by = "matrix"
 script = "gfx_feature_matrix.py"
 args = ["--quick"]
 tier = ["quick"]
@@ -103,6 +104,7 @@ cache = "content"
 description = "matrix-quick audit gate."
 
 [gate.gui-quick]
+superseded_by = "gui-matrix"
 script = "gui_audit.py"
 args = ["--quick"]
 tier = ["quick"]
@@ -111,6 +113,7 @@ cache = "content"
 description = "gui-quick audit gate."
 
 [gate.gui-layout-quick]
+superseded_by = "gui-layout"
 script = "gui_layout_check.py"
 args = ["--quick"]
 tier = ["quick"]
@@ -625,7 +628,7 @@ description = "decal-bake audit gate."
 [gate.cache]
 script = "audit_cache_check.py"
 args = []
-tier = ["full"]
+tier = ["tooling"]
 group = "tooling"
 cache = "never"
 description = "cache audit gate."

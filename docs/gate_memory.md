@@ -28,7 +28,10 @@ reuse or a re-run inspectable.
 - `--explain` and `make audit-cache-show` expose why a gate is fresh or stale.
 - `gates.toml` is now the source of truth for the audit gate list, tiers,
   groups, cache policy and shared harness files. `scripts/audit_summary.py`
-  loads it and keeps the old hardcoded list only as a fallback.
+  loads it and keeps the old hardcoded list only as a fallback. A full run
+  skips a quick gate whose `superseded_by` full sibling runs the same script
+  with a superset (`matrix-quick`, `gui-quick`, `gui-layout-quick`); the
+  `cache` self-test is a `tooling`-tier gate, not an engine gate.
 - `scripts/gates.py` adds `list`, `plan`, `run`, `explain` and `cache`;
   `make gates-list`, `gates-plan`, `gates-run` and `gates-check` wrap it.
 - `--changed REF` (or `--files a,b`) maps a Git diff to affected gates through
