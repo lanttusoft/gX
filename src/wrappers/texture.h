@@ -101,6 +101,11 @@ gX_I0       gX_Texture_Draw3D_Params(   gX_Texture texture, gX_Texture_Draw_Para
 
 gX_RenderTexture gX_RenderTexture_Load(     gX_U32 width, gX_U32 height);
 gX_RenderTexture gX_RenderTexture_Load_HDR( gX_U32 width, gX_U32 height);
+//ai: format-aware render target for the compression lab (R8/RG16F/R16F/
+//   R11G11B10F and friends). depth=0 omits the attachment entirely.
+gX_RenderTexture gX_RenderTexture_Load_Format(gX_U32 width, gX_U32 height,
+    gX_I32 internalFormat, gX_I32 format, gX_I32 type, gX_I1 depth,
+    const gX_I8 *name);
 gX_I0            gX_RenderTexture_Unload(   gX_RenderTexture rt);
 gX_I0            gX_RenderTexture_Draw(     gX_RenderTexture rt);
 

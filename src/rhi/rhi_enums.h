@@ -145,7 +145,10 @@
 #define gX_RHI_PROGRAM_POINT_SIZE                            0x8642   // GL_PROGRAM_POINT_SIZE
 #define gX_RHI_QUERY_RESULT                                0x8866   // GL_QUERY_RESULT
 #define gX_RHI_QUERY_RESULT_AVAILABLE                      0x8867   // GL_QUERY_RESULT_AVAILABLE
+#define gX_RHI_R11G11B10F                                  0x8C3A   // GL_R11F_G11F_B10F
+#define gX_RHI_R16F                                        0x822D   // GL_R16F
 #define gX_RHI_R32F                                        0x822E   // GL_R32F
+#define gX_RHI_R8                                          0x8229   // GL_R8
 #define gX_RHI_READ_FRAMEBUFFER                            0x8CA8   // GL_READ_FRAMEBUFFER
 #define gX_RHI_READ_FRAMEBUFFER_BINDING                    0x8CAA   // GL_READ_FRAMEBUFFER_BINDING
 #define gX_RHI_RED                                         0x1903   // GL_RED
@@ -156,6 +159,7 @@
 #define gX_RHI_RG16F                                       0x822F   // GL_RG16F
 #define gX_RHI_RGB                                         0x1907   // GL_RGB
 #define gX_RHI_RGB16F                                      0x881B   // GL_RGB16F
+#define gX_RHI_RGB10_A2                                    0x8059   // GL_RGB10_A2
 #define gX_RHI_RGB8                                        0x8051   // GL_RGB8
 #define gX_RHI_RGBA                                        0x1908   // GL_RGBA
 #define gX_RHI_RGBA16F                                     0x881A   // GL_RGBA16F

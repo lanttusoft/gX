@@ -37,6 +37,7 @@
 #include "../../rhi/rhi.h"
 #include "../../rhi/rhi_tex.h"
 #include "../../rhi/rhi_fbo.h"
+#include <stdlib.h>
 //opencode: hunt - implicit-decl sweep
 
 //opencode: GL for glTexParameterf (LOD bias)
@@ -196,12 +197,102 @@ gX_I32 gX_RendererGFX_RenderTexture_Init(gX_RendererGFX_RenderTexture *map) {
     map->wrapper.width = gX_GFX_SHADOW_CUBE_SIZE; //opencode: increased from 1024 for sharper shadows
     map->wrapper.height = gX_GFX_SHADOW_CUBE_SIZE;
     map->filter = gX_TEXTURE_FILTER_BILINEAR; //opencode: default, overridden by gfx->state.textureFilter
+    map->dietFormat = 0;
+    map->colorOnly = 0;
     return 0;
 }
 
+//ai: the render-target diet is a lab A/B hook until a winning slice is
+//   promoted to a preset/editor option. One env keeps the baseline and the
+//   variant on the same binary.
+static gX_I1 gX_RendererGFX_RT_DietEnabled(gX_I0) {
+    static gX_I32 cached = -1;
+    if (cached < 0) {
+        const gX_I8 *hook = getenv("GX_RT_DIET");
+        cached = (hook && hook[0] == '1') ? 1 : 0;
+    }
+    return cached ? 1 : 0;
+}
+
+//ai: upload layout for the sized internal formats the diet can request.
+static gX_I1 gX_RendererGFX_RT_FormatLayout(gX_I32 internalFormat,
+    gX_I32 *format, gX_I32 *type) {
+    switch (internalFormat) {
+        case gX_RHI_R8:         *format = gX_RHI_RED;  *type = gX_RHI_UNSIGNED_BYTE; return 1;
+        case gX_RHI_R16F:       *format = gX_RHI_RED;  *type = gX_RHI_FLOAT; return 1;
+        case gX_RHI_RG16F:      *format = gX_RHI_RG;   *type = gX_RHI_FLOAT; return 1;
+        case gX_RHI_R11G11B10F: *format = gX_RHI_RGB;  *type = gX_RHI_FLOAT; return 1;
+        case gX_RHI_RGB10_A2:   *format = gX_RHI_RGBA; *type = gX_RHI_UNSIGNED_INT; return 1;
+        case gX_RHI_RGBA8:      *format = gX_RHI_RGBA; *type = gX_RHI_UNSIGNED_BYTE; return 1;
+        case gX_RHI_RGBA16F:    *format = gX_RHI_RGBA; *type = gX_RHI_FLOAT; return 1;
+        default: return 0;
+    }
+}
+
+//ai: per-pixel storage estimate for the lab's VRAM row (depth counts as 4B).
+static gX_U32 gX_RendererGFX_RT_PixelBytes(gX_I32 internalFormat) {
+    switch (internalFormat) {
+        case gX_RHI_R8: return 1;
+        case gX_RHI_R16F: return 2;
+        case gX_RHI_RG16F: return 4;
+        case gX_RHI_R11G11B10F: return 4;
+        case gX_RHI_RGB10_A2: return 4;
+        case gX_RHI_RGBA8: return 4;
+        case gX_RHI_RGBA16F: return 8;
+        case gX_RHI_RGB16F: return 6;
+        default: return 4;
+    }
+}
+
+static gX_U64 gX_RendererGFX_RT_VramTotal = 0;
+static gX_I1 gX_RendererGFX_RT_VramTrace = -1;
+
+static gX_I0 gX_RendererGFX_RT_TrackVram(gX_RendererGFX_RenderTexture *map,
+    gX_I32 internalFormat) {
+    gX_U64 bytes = (gX_U64)map->wrapper.width * (gX_U64)map->wrapper.height
+        * (gX_U64)gX_RendererGFX_RT_PixelBytes(internalFormat);
+    if (map->wrapper.rt.depth.id > 0)
+        bytes += (gX_U64)map->wrapper.width * (gX_U64)map->wrapper.height * 4u;
+    map->vramBytes = bytes;
+    gX_RendererGFX_RT_VramTotal += bytes;
+    if (gX_RendererGFX_RT_VramTrace < 0) {
+        const gX_I8 *hook = getenv("GX_RT_MEMORY");
+        gX_RendererGFX_RT_VramTrace = (hook && hook[0] == '1') ? 1 : 0;
+    }
+    if (gX_RendererGFX_RT_VramTrace)
+        gX_TraceLog_GFX(gX_LOG_NOTICE,
+            "RT_MEMORY: +%.3f MB (%ux%u fmt=0x%x depth=%u) total %.3f MB",
+            (gX_F64)bytes / (1024.0 * 1024.0), map->wrapper.width,
+            map->wrapper.height, internalFormat,
+            map->wrapper.rt.depth.id > 0 ? 1u : 0u,
+            (gX_F64)gX_RendererGFX_RT_VramTotal / (1024.0 * 1024.0));
+}
+
 gX_I32 gX_RendererGFX_RenderTexture_Load(gX_RendererGFX_RenderTexture *map) {
-    if (map->hdr) map->wrapper.rt = gX_RenderTexture_Load_HDR(map->wrapper.width, map->wrapper.height);
-    else          map->wrapper.rt = gX_RenderTexture_Load(map->wrapper.width, map->wrapper.height);
+    gX_I1 diet = gX_RendererGFX_RT_DietEnabled();
+    gX_I1 colorOnly = (diet && map->colorOnly) ? 1 : 0;
+    gX_I32 requested = diet ? map->dietFormat : 0;
+    gX_I32 effectiveFormat = map->hdr ? gX_RHI_RGBA16F : gX_RHI_RGBA8;
+    if (diet && (requested || colorOnly)) {
+        gX_I32 internalFormat = requested ? requested : effectiveFormat;
+        gX_I32 format = 0;
+        gX_I32 type = 0;
+        if (gX_RendererGFX_RT_FormatLayout(internalFormat, &format, &type)) {
+            map->wrapper.rt = gX_RenderTexture_Load_Format(
+                map->wrapper.width, map->wrapper.height,
+                internalFormat, format, type, colorOnly ? 0 : 1, "gfx_rt_diet");
+            if (map->wrapper.rt.id != 0)
+                effectiveFormat = internalFormat;
+            else if (requested)
+                gX_TraceLog_GFX(gX_LOG_WARNING,
+                    "RT_DIET: format 0x%x unavailable; legacy fallback", requested);
+        }
+    }
+    if (map->wrapper.rt.id == 0) {
+        if (map->hdr) map->wrapper.rt = gX_RenderTexture_Load_HDR(map->wrapper.width, map->wrapper.height);
+        else          map->wrapper.rt = gX_RenderTexture_Load(map->wrapper.width, map->wrapper.height);
+        effectiveFormat = map->hdr ? gX_RHI_RGBA16F : gX_RHI_RGBA8;
+    }
     //opencode: wrap + filter setup.
     //   CRITICAL: depth texture MUST use GL_NEAREST filtering. Linear filtering
     //   of depth values interpolates between foreground and background depth at
@@ -209,16 +300,18 @@ gX_I32 gX_RendererGFX_RenderTexture_Load(gX_RendererGFX_RenderTexture *map) {
     //   SSAO (white occlusion at edges), SSR (stripey reflections), DOF CoC
     //   (wrong blur radius), and TAA (depth rejection fails).
     //   The color texture uses map->filter (from gfx->state.textureFilter).
-    gX_Texture_SetWrap(map->wrapper.rt.depth, gX_TEXTURE_WRAP_CLAMP);
-    gX_Texture_SetFilter(map->wrapper.rt.depth, gX_TEXTURE_FILTER_POINT);
-    //opencode: ensure depth texture returns raw depth, not shadow comparison result.
-    //   rlgl may set GL_TEXTURE_COMPARE_MODE = GL_COMPARE_R_TO_TEXTURE on depth
-    //   textures (for shadow map samplers), causing sampler2D reads to return 0/1.
     if (map->wrapper.rt.depth.id > 0) {
+        gX_Texture_SetWrap(map->wrapper.rt.depth, gX_TEXTURE_WRAP_CLAMP);
+        gX_Texture_SetFilter(map->wrapper.rt.depth, gX_TEXTURE_FILTER_POINT);
+        //opencode: ensure depth texture returns raw depth, not shadow comparison result.
+        //   rlgl may set GL_TEXTURE_COMPARE_MODE = GL_COMPARE_R_TO_TEXTURE on depth
+        //   textures (for shadow map samplers), causing sampler2D reads to return 0/1.
         gX_RHI_Tex_Param(map->wrapper.rt.depth.id, gX_RHI_TEXTURE_2D, gX_RHI_TEXTURE_COMPARE_MODE, gX_RHI_NONE);
     }
     gX_Texture_SetWrap(map->wrapper.rt.texture, gX_TEXTURE_WRAP_CLAMP);
     gX_Texture_SetFilter(map->wrapper.rt.texture, map->filter);
+    if (map->wrapper.rt.id != 0)
+        gX_RendererGFX_RT_TrackVram(map, effectiveFormat);
 
     //opencode: add stencil renderbuffer to HDR scene FBO (for stencil testing)
     //   Re-binds the FBO to attach a stencil renderbuffer alongside the depth texture.
@@ -240,6 +333,11 @@ gX_I32 gX_RendererGFX_RenderTexture_Unload(gX_RendererGFX_RenderTexture *map) {
     if (map->wrapper.loadingState.loaded) gX_RenderTexture_Unload(map->wrapper.rt);
     //opencode: delete stencil renderbuffer
     if (map->stencilRbo > 0) { gX_RHI_RBO_Delete(map->stencilRbo); map->stencilRbo = 0; }
+    if (map->vramBytes > 0) {
+        gX_RendererGFX_RT_VramTotal = gX_RendererGFX_RT_VramTotal >= map->vramBytes
+            ? gX_RendererGFX_RT_VramTotal - map->vramBytes : 0;
+        map->vramBytes = 0;
+    }
     map->wrapper.loadingState.loaded = false;
     return 0;
 }

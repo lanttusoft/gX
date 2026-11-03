@@ -43,6 +43,11 @@ typedef struct gX_RendererGFX_RenderTexture {
     gX_I1 hdr;      // use HDR float16 format
     gX_I32 filter;  // texture filter to apply
     gX_U32 stencilRbo; //opencode: stencil renderbuffer ID (0 = no stencil)
+    //ai: compression-lab diet request — 0 keeps the legacy hdr/LDR format;
+    //   colorOnly drops the unused depth attachment when the diet is on.
+    gX_I32 dietFormat;
+    gX_I1 colorOnly;
+    gX_U64 vramBytes;   // estimated color+depth storage for the lab report
 } gX_RendererGFX_RenderTexture;
 
 gX_I32 gX_RendererGFX_Texture_Init(     gX_RendererGFX_Texture *texture);

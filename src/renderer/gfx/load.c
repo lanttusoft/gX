@@ -581,6 +581,7 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
 
     //opencode: SSR — shaders and RTs loaded but disabled by default (opt-in via preset or --gfx-enable)
     GX_GFX_RT_INIT_HDR(gfx, ssr.map);
+    gfx->ssr.map.colorOnly = 1;
     //opencode: the shading-normal target is deliberately opt-in: the default
     //   GL33 path remains depth-only and pays no extra full-resolution pass.
     {
@@ -600,11 +601,13 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     GX_GFX_RT_INIT_HDR(gfx, ssr.skyLut);
     gfx->ssr.skyLut.wrapper.width = 128;
     gfx->ssr.skyLut.wrapper.height = 64;
+    gfx->ssr.skyLut.colorOnly = 1;
     //opencode: v0.3.8 - fog delta LUT: the gen program's sky branch run per
     //   equirect direction; the SSR escape path adds it to the env fallback
     GX_GFX_RT_INIT_HDR(gfx, ssr.fogLut);
     gfx->ssr.fogLut.wrapper.width = 128;
     gfx->ssr.fogLut.wrapper.height = 64;
+    gfx->ssr.fogLut.colorOnly = 1;
     GX_GFX_SHADER_INIT(gfx, ssr.hizShader, "gfx_hiz.frag");
     gfx->ssr.hizInited = false;
 
@@ -612,8 +615,17 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     GX_GFX_RT_INIT_HALF_HDR(gfx, ssao.ssgiMap); //opencode: v0.3-M4
     GX_GFX_RT_INIT_HALF(gfx, ssao.map);
     GX_GFX_RT_INIT_HALF(gfx, ssao.blurMap);
+    //ai: compression-lab diet — AO is scalar, SSGI is HDR RGB with no alpha
+    //   consumer, and none of these fullscreen targets reads a depth attachment.
+    gfx->ssao.map.dietFormat = gX_RHI_R8;
+    gfx->ssao.map.colorOnly = 1;
+    gfx->ssao.blurMap.dietFormat = gX_RHI_R8;
+    gfx->ssao.blurMap.colorOnly = 1;
+    gfx->ssao.ssgiMap.dietFormat = gX_RHI_R11G11B10F;
+    gfx->ssao.ssgiMap.colorOnly = 1;
     //opencode: contact shadows (spike 1) — half-res LDR occlusion map
     GX_GFX_RT_INIT_HALF(gfx, contact.map);
+    gfx->contact.map.colorOnly = 1;
     GX_GFX_SHADER_INIT(gfx, contact.genShader, "gfx_contact.frag");
     GX_GFX_SHADER_INIT(gfx, ssao.blurShader, "gfx_ssao_blur.frag");
     //opencode: v0.3-M2 — GTAO (default on; legacy kernel SSAO kept as fallback)
@@ -629,6 +641,10 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     GX_GFX_SHADER_INIT(gfx, ssao.gtaoAccumShader, "gfx_gtao_accum.frag");
     GX_GFX_RT_INIT_HALF_HDR(gfx, ssao.gtaoAccumA);
     GX_GFX_RT_INIT_HALF_HDR(gfx, ssao.gtaoAccumB);
+    gfx->ssao.gtaoAccumA.dietFormat = gX_RHI_RG16F;
+    gfx->ssao.gtaoAccumA.colorOnly = 1;
+    gfx->ssao.gtaoAccumB.dietFormat = gX_RHI_RG16F;
+    gfx->ssao.gtaoAccumB.colorOnly = 1;
     gX_RendererGFX_TemporalHistory_Init(&gfx->ssao.gtaoTemporal);
     gfx->ssao.gtaoFinalTex.id = 0;
     GX_GFX_SHADER_INIT(gfx, ssao.ssgiShader, "gfx_ssgi.frag"); //opencode: v0.3-M4
@@ -650,6 +666,12 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     GX_GFX_RT_INIT_HALF_HDR(gfx, ssao.ssgiBlurMap);
     GX_GFX_RT_INIT_HALF_HDR(gfx, ssao.ssgiAccumA);
     GX_GFX_RT_INIT_HALF_HDR(gfx, ssao.ssgiAccumB);
+    gfx->ssao.ssgiBlurMap.dietFormat = gX_RHI_R11G11B10F;
+    gfx->ssao.ssgiBlurMap.colorOnly = 1;
+    gfx->ssao.ssgiAccumA.dietFormat = gX_RHI_R11G11B10F;
+    gfx->ssao.ssgiAccumA.colorOnly = 1;
+    gfx->ssao.ssgiAccumB.dietFormat = gX_RHI_R11G11B10F;
+    gfx->ssao.ssgiAccumB.colorOnly = 1;
     gX_RendererGFX_TemporalHistory_Init(&gfx->ssao.ssgiTemporal);
     gfx->ssao.temporalModesInitialized = false;
     gfx->ssao.gtaoWasActive = false;
@@ -684,6 +706,7 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     gfx->state.envAmbientFactor = 0.3f;
 
     GX_GFX_RT_INIT_HDR(gfx, debugVis.refractionBg);
+    gfx->debugVis.refractionBg.colorOnly = 1;
 
     //opencode: motion blur
     gfx->motionBlur.enable = true;
@@ -692,6 +715,8 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     gfx->motionBlurPrevVP = gX_Matrix_Identity();
     gfx->taaPrevVP = gX_Matrix_Identity();   //opencode: TAA snapshot (own copy, see gfx.h)
     GX_GFX_RT_INIT_HDR(gfx, motionBlur.map);
+    gfx->motionBlur.map.dietFormat = gX_RHI_RGB10_A2;
+    gfx->motionBlur.map.colorOnly = 1;
     GX_GFX_SHADER_INIT(gfx, motionBlur.shader, "gfx_motionblur.frag");
 
     //opencode: depth of field
@@ -714,6 +739,15 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     if (dofDivisor > 1)
         gX_RendererGFX_RT_InitSized(&gfx->dof.compositeMap,
             (gX_U32)maindata.renderWidth, (gX_U32)maindata.renderHeight, true);
+    //ai: CoC is a scalar; the blur/composite targets are display-referred RGB.
+    gfx->dof.cocMap.dietFormat = gX_RHI_R16F;
+    gfx->dof.cocMap.colorOnly = 1;
+    gfx->dof.blurMap.dietFormat = gX_RHI_RGB10_A2;
+    gfx->dof.blurMap.colorOnly = 1;
+    gfx->dof.blurPing.dietFormat = gX_RHI_RGB10_A2;
+    gfx->dof.blurPing.colorOnly = 1;
+    gfx->dof.compositeMap.dietFormat = gX_RHI_RGB10_A2;
+    gfx->dof.compositeMap.colorOnly = 1;
     GX_GFX_SHADER_INIT(gfx, dof.cocShader, "gfx_dof_coc.frag");
     GX_GFX_SHADER_INIT(gfx, dof.blurShader, "gfx_dof_blur.frag");
     GX_GFX_SHADER_INIT(gfx, dof.compositeShader, "gfx_dof_composite.frag");
@@ -735,6 +769,9 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
         (gX_U32)maindata.renderWidth / 2, (gX_U32)maindata.renderHeight / 2, true);
     gX_RendererGFX_RT_InitSized(&gfx->mirror.histB,
         (gX_U32)maindata.renderWidth / 2, (gX_U32)maindata.renderHeight / 2, true);
+    gfx->mirror.freshB.colorOnly = 1;
+    gfx->mirror.histA.colorOnly = 1;
+    gfx->mirror.histB.colorOnly = 1;
     GX_GFX_SHADER_INIT(gfx, mirror.feedbackShader, "gfx_mirror_feedback.frag");
 
     //opencode: TAA
@@ -745,6 +782,9 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     gfx->taa.prevJitter = (gX_F32v2){0.0f, 0.0f};
     GX_GFX_RT_INIT_HDR(gfx, taa.historyMap);
     GX_GFX_RT_INIT_HDR(gfx, taa.resolveMap);
+    //ai: TAA carries depth in alpha; no depth attachment is sampled.
+    //ai: TAA history is temporally feedback-sampled; keep the legacy
+    //   allocation (no diet) until the loader difference is understood.
     GX_GFX_SHADER_INIT(gfx, taa.resolveShader, "gfx_taa_resolve.frag");
 
     //opencode: RT inspector (GX_RT_VIEW) — frag-only viewer shader
@@ -763,6 +803,7 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
 
     //opencode: god rays — half-res gen map
     GX_GFX_RT_INIT_HALF_HDR(gfx, godray.genMap);
+    gfx->godray.genMap.colorOnly = 1;
     //opencode: Paper 2 spike — terrain depth shader (no RT owned).
     GX_GFX_SHADER_INIT(gfx, godray.genShader, "gfx_godray_gen.frag");
     GX_GFX_SHADER_INIT(gfx, terrain.depthShader, "gfx_terrain_depth.frag");
@@ -778,6 +819,7 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     //   extinction (scene*(T-1)) which LDR clamped to zero; NaNs are scrubbed
     //   in-shader now, which was LDR's original purpose here
     GX_GFX_RT_INIT_HALF_HDR(gfx, fogVolume.genMap);
+    gfx->fogVolume.genMap.colorOnly = 1;
     GX_GFX_SHADER_INIT(gfx, fogVolume.genShader, "gfx_fog_vol_gen.frag");
     GX_GFX_SHADER_INIT(gfx, fogVolume.blendShader, "gfx_fog_vol_blend.frag");
     //opencode: v0.3-M3 — god rays: falloff lowered so density reaches eye
@@ -824,6 +866,7 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     gfx->bloom.luminanceRT.wrapper.height = 64;
     gfx->bloom.luminanceRT.hdr = true;
     gfx->bloom.luminanceRT.wrapper.loadingState.loadAsap = true;
+    gfx->bloom.luminanceRT.colorOnly = 1;
     gfx->bloom.autoExposure = true;
     gfx->bloom.exposureCompensation = 1.0f;
     gfx->bloom.exposureMin = 0.25f;
@@ -854,16 +897,22 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     gfx->bloom.extract.wrapper.width = maindata.renderWidth / 2;
     gfx->bloom.extract.wrapper.height = maindata.renderHeight / 2;
     gfx->bloom.extract.hdr = true;
+    gfx->bloom.extract.dietFormat = gX_RHI_R11G11B10F;
+    gfx->bloom.extract.colorOnly = 1;
 
     gX_RendererGFX_RenderTexture_Init(&gfx->bloom.ping);
     gfx->bloom.ping.wrapper.width = maindata.renderWidth / 2;
     gfx->bloom.ping.wrapper.height = maindata.renderHeight / 2;
     gfx->bloom.ping.hdr = true;
+    gfx->bloom.ping.dietFormat = gX_RHI_R11G11B10F;
+    gfx->bloom.ping.colorOnly = 1;
 
     gX_RendererGFX_RenderTexture_Init(&gfx->bloom.pong);
     gfx->bloom.pong.wrapper.width = maindata.renderWidth / 2;
     gfx->bloom.pong.wrapper.height = maindata.renderHeight / 2;
     gfx->bloom.pong.hdr = true;
+    gfx->bloom.pong.dietFormat = gX_RHI_R11G11B10F;
+    gfx->bloom.pong.colorOnly = 1;
 
     //opencode: full-res scene buffer for composite pass
     gX_RendererGFX_RenderTexture_Init(&gfx->bloom.scene);
@@ -872,6 +921,7 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     gfx->bloom.scene.wrapper.width = maindata.renderWidth;
     gfx->bloom.scene.wrapper.height = maindata.renderHeight;
     gfx->bloom.scene.hdr = true;
+    gfx->bloom.scene.colorOnly = 1;
     gfx->bloom.scene.wrapper.loadingState.loadAsap = true;
 
     //opencode: sync global texture filter to all RT structs after init

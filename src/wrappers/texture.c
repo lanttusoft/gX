@@ -28,6 +28,7 @@
 #include "texture.h"
 #include "../common/config.h"
 #include "../main.h"
+#include <stdlib.h>
 
 #include "../rhi/rhi_tex.h"
 #include "../rhi/rhi_fbo.h"
@@ -204,6 +205,60 @@ gX_RenderTexture gX_RenderTexture_Load_HDR(gX_U32 width, gX_U32 height) {
     gX_RHI_BufferAudit_RegisterTarget(gxrt.id, gxrt.texture.id, gxrt.depth.id,
         gxrt.texture.width, gxrt.texture.height, NULL);
     return gxrt;
+}
+
+//ai: format-aware render-target creation. Used by the compression lab's
+//   auxiliary-buffer diet: immutable sized storage, an optional depth
+//   attachment (most fullscreen targets never read one), and an empty
+//   struct on an incomplete FBO so the caller can fall back to the legacy
+//   loader instead of rendering into an unusable target.
+gX_RenderTexture gX_RenderTexture_Load_Format(gX_U32 width, gX_U32 height,
+    gX_I32 internalFormat, gX_I32 format, gX_I32 type, gX_I1 depth,
+    const gX_I8 *name) {
+    gX_RenderTexture rt = {0};
+    gX_U32 color = gX_RHI_Tex_Create2D_Immutable(width, height,
+        internalFormat, format, type, NULL, name);
+    if (!color) return rt;
+    gX_U32 depthTex = 0;
+    if (depth) {
+        depthTex = gX_RHI_Tex_Create2D_Immutable(width, height,
+            gX_RHI_DEPTH_COMPONENT24, gX_RHI_DEPTH_COMPONENT,
+            gX_RHI_UNSIGNED_INT, NULL, name);
+        if (!depthTex) {
+            gX_RHI_Tex_Delete(color);
+            return rt;
+        }
+    }
+    gX_RHI_FBO fbo = gX_RHI_FBO_Create(color, depthTex, name);
+    if (!fbo) {
+        gX_RHI_Tex_Delete(color);
+        if (depthTex) gX_RHI_Tex_Delete(depthTex);
+        return rt;
+    }
+    //ai: match the legacy loader's opaque-black initialization. Some targets
+    //   (TAA history) are sampled before their first authored clear, so
+    //   undefined storage would leak into temporal accumulation.
+    gX_RHI_ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    gX_RHI_Clear(gX_RHI_COLOR_BUFFER_BIT);
+    gX_RHI_UnbindFBO();
+    rt.id = fbo;
+    rt.texture.id = color;
+    rt.texture.width = (gX_I32)width;
+    rt.texture.height = (gX_I32)height;
+    rt.texture.mipmaps = 1;
+    rt.texture.format = (internalFormat == gX_RHI_RGBA8 || internalFormat == gX_RHI_R8)
+        ? PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
+        : PIXELFORMAT_UNCOMPRESSED_R16G16B16A16;
+    if (depthTex) {
+        rt.depth.id = depthTex;
+        rt.depth.width = (gX_I32)width;
+        rt.depth.height = (gX_I32)height;
+        rt.depth.mipmaps = 1;
+        rt.depth.format = 19;
+    }
+    gX_Texture_RT_Track(color);
+    gX_RHI_BufferAudit_RegisterTarget(rt.id, color, depthTex, width, height, name);
+    return rt;
 }
 
 gX_I0 gX_RenderTexture_Unload(gX_RenderTexture rt) {
