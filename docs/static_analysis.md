@@ -84,6 +84,23 @@ make lint-check                 # gate
 python3 scripts/lint_check.py --all --advisory
 ```
 
+## Runtime instrumentation (opt-in)
+
+The compiler probes also gate two separate build configurations:
+
+```bash
+make sanitize-check   # build/sanitize: ASan + UBSan, then --test-only
+make coverage-check   # build/coverage: gcov, then --test-only + line summary
+```
+
+`GX_SANITIZE=ON` requires the probed ASan/UBSan support and adds
+`-fsanitize=address,undefined -fno-sanitize-recover=all
+-fno-omit-frame-pointer` to gX targets. `GX_COVERAGE=ON` adds `--coverage`.
+Both keep the default `build/` configuration untouched. The sanitizer run
+disables leak detection (`detect_leaks=0`) because the test harness keeps
+process-lifetime allocations; UBSan halts on the first error. Coverage writes
+`build/coverage/coverage.json` and prints the lowest-covered sources.
+
 ## Why this split
 
 A `gX_I1` assignment from `-1` compiles silently (`bool` becomes `true`);

@@ -5,6 +5,17 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(CompilerFlags)
 
+#ai: opt-in compiler runtimes. The capability probes above decide support;
+#   these flags stay off the default build.
+option(GX_SANITIZE "Build gX targets with ASan + UBSan" OFF)
+option(GX_COVERAGE "Build gX targets with gcov coverage instrumentation" OFF)
+if(GX_SANITIZE AND (NOT GX_HAVE_SANITIZE_ADDRESS OR NOT GX_HAVE_SANITIZE_UNDEFINED))
+    message(FATAL_ERROR "GX_SANITIZE requested but ASan/UBSan support was not detected")
+endif()
+if(GX_COVERAGE AND NOT GX_HAVE_COVERAGE)
+    message(FATAL_ERROR "GX_COVERAGE requested but coverage support was not detected")
+endif()
+
 #ai: winpthreads provides the POSIX threads API on MinGW; CMake resolves the
 #   right target on every platform.
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -576,6 +587,26 @@ foreach(gx_target ITEMS ${PROJECT_NAME} gx_engine_core gx_shell gx_devcube)
         target_compile_options(${gx_target} PRIVATE
             $<$<COMPILE_LANGUAGE:C>:${GX_FEATURE_FLAGS_C}>
             $<$<COMPILE_LANGUAGE:CXX>:${GX_FEATURE_FLAGS_CXX}>)
+        if(GX_SANITIZE)
+            target_compile_options(${gx_target} PRIVATE
+                -fsanitize=address,undefined -fno-sanitize-recover=all
+                -fno-omit-frame-pointer -g)
+            if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
+                target_link_options(${gx_target} PRIVATE -fsanitize=address,undefined)
+            else()
+                set_property(TARGET ${gx_target} APPEND_STRING PROPERTY
+                    LINK_FLAGS " -fsanitize=address,undefined")
+            endif()
+        endif()
+        if(GX_COVERAGE)
+            target_compile_options(${gx_target} PRIVATE --coverage -g)
+            if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
+                target_link_options(${gx_target} PRIVATE --coverage)
+            else()
+                set_property(TARGET ${gx_target} APPEND_STRING PROPERTY
+                    LINK_FLAGS " --coverage")
+            endif()
+        endif()
     endif()
 endforeach()
 

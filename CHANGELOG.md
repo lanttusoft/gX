@@ -15,12 +15,21 @@ Release-Class: minor
   byte-identical to the previous path.
 - **Per-pass GPU profiling**: 20 profiler stages (shadow through overlays)
   written to the benchmark CSV, HUD and per-stage p95 report.
+- **Runtime instrumentation targets**: `make sanitize-check` (ASan + UBSan)
+  and `make coverage-check` (gcov line summary) use separate build trees and
+  the compiler capability probes; the default build is unchanged.
 - **Static analysis gates**: compiler capability probes with hard errors for
   bool/pointer type misuse and the clean quality-warning set
   (`-Wimplicit-fallthrough`, `-Wformat=2`, `-Wundef`, `-Wvla`, ...), alias
   size/`gX_I1` identity static asserts, attribute/builtin and
   sanitizer/coverage/LTO capability reporting, a libclang AST type audit and
   a clang-tidy diff gate (`docs/static_analysis.md`).
+
+### Fixed
+- Postprocess `injectCanvasTint` preset fields were declared as `U32` at
+  byte offsets inside `gX_Color`: saving/loading performed a misaligned
+  4-byte read that spanned the next component. They are `U8` schema fields
+  now (ASan/UBSan probe).
 
 ### Removed
 - The unused `gX_MaterialMap_ConvertFromBackend`/`ToBackend` and
