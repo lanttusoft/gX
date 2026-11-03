@@ -28,7 +28,7 @@ items. Until all three gates and the operations contract hold, gX stays a
 | Version | v0.39.0 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 89 quick/full gates (95 manifest entries; 86 unique in a full run); last full run **86/86** on the v0.39.0 release commit (`AUDIT_CACHE=0`) |
+| Audit baseline | 91 quick/full gates (99 manifest entries; 88 unique in a full run); last full run **86/86** on the v0.39.0 release commit (`AUDIT_CACHE=0`); hardening branch rerun pending |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
 | Lean gate | payload 4,135,387 B (58,917 B headroom), BSS 2,699,136 B (5,864 B headroom) — v0.39.0 `make check` |
 | Release class | MINOR (v0.39.0: render-target VRAM diet, SSR resolution option, per-pass profiler, static analysis/tooling, correctness fixes) |
@@ -41,7 +41,8 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Area | Requirement | Status | Evidence |
 | --- | --- | --- | --- |
 | Source | clean clone builds with `./build.sh`; no private files | holds | clean-extract smoke per release |
-| Source | archive reproduces from the release tag | holds | `git archive` + checksum sidecar |
+| Source | archive reproduces from the release tag | holds | `release_archive.py` deterministic double-build + checksum sidecar |
+| Source | Release builds reproduce across extraction paths | holds | `make reproducible-check` (two clean trees, fixed epoch) |
 | Admission | `make check` (build, tests, scene smoke, audits, proofs, lean gate) | holds | release CI logs |
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
 | Admission | full audit matrix green (`make audit-summary-full`) | holds | **86/86** on `ceabb04` (2026-11-02, `AUDIT_CACHE=0`, 1,290.8 s wall / 2,545.7 s gate time) |
@@ -55,7 +56,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Hardware | reference-class matrix (NVIDIA/AMD/Intel + llvmpipe) attached | open | hardware walk not yet run |
 | Dogfooding | 5 public-tree sessions recorded | open | gate 1 |
 | Demand | 3 clear signals recorded | open | gate 3 |
-| Security | no credentials; secret-scan/alert review | partial | no known findings; a fresh scan is an RC item |
+| Security | no credentials; secret-scan/alert review | holds | `secret-scan` quick gate over tracked files + hosted secret scanning |
 | Operations | `publish_readiness.md` executed with no open items | open | gate checklist |
 | Scope | known limitations documented and accepted | holds | release notes + this ledger |
 

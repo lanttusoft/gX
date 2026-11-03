@@ -43,6 +43,11 @@ make version-check               # version format/consistency
   it. `make type-audit-check` and `make lint-check` are tooling-tier static
   analysis (libclang AST audit / clang-tidy diff); see
   `docs/static_analysis.md`.
+- Release hardening: `make secret-scan` and `make sbom-check` run inside
+  `make check`/`check-fast`; `make reproducible-check` rebuilds the Release
+  from two clean archives and compares bytes, and `make release-archive-check`
+  verifies the deterministic source archive. See
+  `docs/release_hardening.md`.
 - If a gate fails, fix the cause. A known cold-start flake may be retried once
   and recorded as a retry, never hidden.
 

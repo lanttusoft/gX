@@ -108,9 +108,10 @@ def main():
         if left != right:
             differences.append("%s: %s != %s" % (relative, left, right))
 
-    (work / "reproducible-check.log").write_text("\n".join(log),
-                                                 encoding="utf-8")
-    print("REPRODUCIBLE_BUILD: commit=%s epoch=%d" % (args.commit, epoch))
+    log_path = work.parent / (work.name + ".log")
+    log_path.write_text("\n".join(log), encoding="utf-8")
+    print("REPRODUCIBLE_BUILD: commit=%s epoch=%d log=%s"
+          % (args.commit, epoch, log_path))
     print("  archive: %s" % ("identical" if archive_ok
                              else "DIFFERENT bytes"))
     for relative in sorted(artifacts[0]):

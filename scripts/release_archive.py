@@ -105,7 +105,9 @@ def check(commit, out):
     if first != second:
         raise RuntimeError("two git archive runs produced different bytes")
     names = members(first)
-    if not names or not all(name.startswith(prefix) for name in names):
+    root = prefix.rstrip("/")
+    if not names or not all(name == root or name.startswith(prefix)
+                            for name in names):
         raise RuntimeError("archive root prefix is inconsistent")
     if any("/.git/" in name or name.endswith("/.git") for name in names):
         raise RuntimeError("archive contains Git metadata")
