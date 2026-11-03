@@ -46,6 +46,8 @@ destination.
 | Lean gate | part of `make check` | all |
 | Clean extraction | build + `--test-only` + `check-fast` + `gates-check` + key gates from the archive | all |
 | Resources | resource, provenance, attribution, copyright, script-license audits | all |
+| Reproducibility | `make reproducible-check` (two clean Release builds) | MINOR+ / RC |
+| Archive | `make release-archive-check` (deterministic bytes + extraction) | all |
 | Hardware spot check | `make hw-report-check` + one showcase boot | RC |
 
 PATCH releases may use the fast tier; MINOR and RC releases require the full
@@ -54,13 +56,17 @@ tier. A red admission gate stops the release.
 ## Packaging
 
 1. Package from the release commit, never from a dirty worktree:
-   `git archive --format=tar --prefix=gX-vX.Y.Z/ <commit> | gzip -n -9`.
-2. Write a `.sha256` sidecar.
-3. Scan the member list for private paths, screenshots, settings, `.lake`
+   `python3 scripts/release_archive.py --out build/release`. The helper wraps
+   `git archive`, writes the `.sha256` sidecar and refuses tracked changes.
+2. Optionally add detached signatures:
+   `GPG_TTY=$(tty) python3 scripts/release_archive.py --out build/release
+   --sign <keyid>`.
+3. `make release-archive-check` builds the archive twice, requires identical
+   bytes, extracts a copy and verifies the SBOM inside it.
+4. Scan the member list for private paths, screenshots, settings, `.lake`
    proof caches and anything outside the public contract.
-4. Extract the archive into a scratch directory and run the clean-extraction
-   smoke from it.
-5. Record the archive size, member count and SHA-256 in the release notes.
+5. Run the clean-extraction smoke from the extracted archive.
+6. Record the archive size, member count and SHA-256 in the release notes.
 
 ## Tag and publish
 

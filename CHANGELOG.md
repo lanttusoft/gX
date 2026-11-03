@@ -4,6 +4,22 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: patch
+
+### Added
+- **Release hardening**: reproducible Release builds across extraction paths
+  (`-ffile-prefix-map`, commit-date build stamp), a committed SPDX 2.3 SBOM
+  (`sbom/gX.spdx.json`), a tracked-file credential/private-path scan, and a
+  deterministic archive helper with sha256 sidecars and optional GPG
+  signatures. New gates: `secret-scan` and `sbom` (quick),
+  `reproducible-build` and `release-archive` (tooling).
+
+### Changed
+- The teletext build stamp shows the commit date instead of the compile
+  date, so Release binaries are reproducible.
+
 ## [0.39.0] - 2026-11-03
 
 Release-Class: minor

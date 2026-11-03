@@ -112,6 +112,11 @@ check: all
 	@echo "== [gX CI] resource + copyright audit =="
 	bash scripts/audit_resources.sh
 	python3 scripts/script_license_audit.py --strict
+	@echo "== [gX CI] secret scan + SBOM =="
+	python3 -m unittest discover -s scripts -p test_secret_scan.py
+	python3 -m unittest discover -s scripts -p test_sbom.py
+	python3 scripts/secret_scan.py
+	python3 scripts/sbom.py --check
 	$(MAKE) -s asset-clearance-check
 	$(MAKE) -s compiler-check
 	@echo "== [gX CI] hardware report =="
@@ -208,6 +213,11 @@ check-fast: all
 	@echo "== [gX fast] attribution =="
 	python3 scripts/attribution_audit.py --strict
 	python3 scripts/script_license_audit.py --strict
+	@echo "== [gX fast] secret scan + SBOM =="
+	python3 -m unittest discover -s scripts -p test_secret_scan.py
+	python3 -m unittest discover -s scripts -p test_sbom.py
+	python3 scripts/secret_scan.py
+	python3 scripts/sbom.py --check
 	@echo "== [gX fast] static-lightmap contract =="
 	python3 scripts/lightmap_check.py
 	@echo "== [gX fast] short scene smoke (title + gfx + y2k, 24 frames each) =="
@@ -1372,6 +1382,28 @@ fuzz-json:
 .PHONY: cppcheck-check
 cppcheck-check:
 	python3 scripts/cppcheck_check.py --strict
+
+#ai: tracked-file credential/private-path scan (quick, no external tool).
+.PHONY: secret-scan
+secret-scan:
+	python3 scripts/secret_scan.py
+
+#ai: SPDX 2.3 SBOM — write or check the committed document.
+.PHONY: sbom sbom-check
+sbom:
+	python3 scripts/sbom.py --write
+sbom-check:
+	python3 scripts/sbom.py --check
+
+#ai: two clean Release builds from the same commit must match byte-for-byte.
+.PHONY: reproducible-check
+reproducible-check:
+	python3 scripts/reproducible_build_check.py
+
+#ai: deterministic source archive + sha256 sidecar; owner adds --sign.
+.PHONY: release-archive-check
+release-archive-check:
+	python3 scripts/release_archive.py --check --allow-dirty
 
 #ai: Release payload attribution (bloaty sections; run make lean first).
 .PHONY: size-report

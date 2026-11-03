@@ -650,6 +650,8 @@ add_custom_target(gx_build_info ALL
     COMMENT "Recording gX source revision"
     VERBATIM)
 add_dependencies(${PROJECT_NAME} gx_build_info)
+#ai: the engine-core archive includes the same generated revision/date header.
+add_dependencies(gx_engine_core gx_build_info)
 
 #opencode: the exe exports the curated module-facing symbol set (Route A); the
 #   list is generated from the module undefined symbols (make module-exports)
@@ -821,7 +823,8 @@ target_include_directories(gx_engine_core PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/backend/raylib
     ${GX_RAYLIB_DIR}/src
     ${GX_RAYLIB_DIR}/src/external
-    ${CMAKE_CURRENT_SOURCE_DIR}/external)
+    ${CMAKE_CURRENT_SOURCE_DIR}/external
+    ${GX_BUILD_INFO_DIR})
 target_compile_definitions(gx_engine_core PRIVATE
     GAME_BACKEND_RAYLIB
     GAME_BACKEND_GX

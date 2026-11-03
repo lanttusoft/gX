@@ -26,6 +26,8 @@
 
 //opencode: teletext renderer — page system, demo content, keyboard navigation, diagnostic
 #include "teletext.h"
+//ai: show the commit date so __DATE__/__TIME__ never break reproducibility.
+#include "gx_build_info.h"
 
 #include <string.h>
 #include <time.h>
@@ -154,7 +156,7 @@ static gX_I0 gX_teletext_populate_101(gX_RendererTeletext *ttx, gX_U32 pageIdx) 
     gX_teletext_hr(ttx, pageIdx, 4, 45, cyan, bg);  // '-'
 
     gX_teletext_fill_span(ttx, pageIdx, 6,  2, "BUILD:", yellow, bg);
-    gX_teletext_fill_span(ttx, pageIdx, 6, 10, __DATE__ " " __TIME__, white, bg);
+    gX_teletext_fill_span(ttx, pageIdx, 6, 10, GX_BUILD_DATE, white, bg);
 
     gX_teletext_fill_span(ttx, pageIdx, 8,  2, "RESOLUTION:", yellow, bg);
     // Dynamic content updated in Update

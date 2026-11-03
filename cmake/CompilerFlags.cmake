@@ -15,4 +15,11 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
     if(NOT CMAKE_EXE_LINKER_FLAGS MATCHES "gc-sections")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
     endif()
+    #ai: release builds are reproducible across extraction paths: source
+    #   prefixes in __FILE__/debug data become relative. Debug keeps real
+    #   paths for breakpoints.
+    if(CMAKE_BUILD_TYPE MATCHES "Release")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffile-prefix-map=${CMAKE_SOURCE_DIR}=.")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffile-prefix-map=${CMAKE_SOURCE_DIR}=.")
+    endif()
 endif()

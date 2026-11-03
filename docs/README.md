@@ -41,6 +41,8 @@ Start here:
 - [Engine-core archive boundary](engine_library.md)
 - [Static analysis and type gates](static_analysis.md) — compiler probes,
   libclang type audit and the clang-tidy diff gate.
+- [Release hardening](release_hardening.md) — reproducible Release builds,
+  SPDX SBOM, tracked-file secret scan and deterministic signed archives.
 - [gX Kernel](kernel.md)
 - [Lean size gate](lean_gate.md)
 - [Lean 4 proof audit](lean_proofs.md)

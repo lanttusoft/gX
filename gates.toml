@@ -841,3 +841,37 @@ tier = ["quick"]
 group = "render"
 cache = "content"
 description = "render-target diet image + VRAM gate."
+
+[gate.secret-scan]
+script = "secret_scan.py"
+args = []
+tier = ["quick"]
+group = "tooling"
+cache = "content"
+inputs = ["scripts/secret_scan.py", "scripts/test_secret_scan.py", "scripts/sbom.py", "sbom/"]
+description = "tracked-file credential and private-path scan."
+
+[gate.sbom]
+script = "sbom.py"
+args = ["--check"]
+tier = ["quick"]
+group = "tooling"
+cache = "content"
+inputs = ["scripts/sbom.py", "scripts/test_sbom.py", "sbom/", "license/", "external/raylib/src/raylib.h", "src/tools/imgui/imgui.h"]
+description = "SPDX 2.3 SBOM freshness and license inventory."
+
+[gate.reproducible-build]
+script = "reproducible_build_check.py"
+args = []
+tier = ["tooling"]
+group = "tooling"
+cache = "never"
+description = "two clean Release builds from one commit are byte-identical."
+
+[gate.release-archive]
+script = "release_archive.py"
+args = ["--check", "--allow-dirty"]
+tier = ["tooling"]
+group = "tooling"
+cache = "content"
+description = "deterministic source archive, sidecar and clean extraction."

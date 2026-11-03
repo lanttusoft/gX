@@ -1,0 +1,575 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "creationInfo": {
+    "created": "2026-11-03T00:00:00Z",
+    "creators": [
+      "Tool: gX-sbom-1.0",
+      "Organization: gX project"
+    ]
+  },
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "https://github.com/lanttusoft/gX/sbom/v0.39.0",
+  "name": "gX-0.39.0",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-gX",
+      "copyrightText": "Copyright (c) 2025-2026 lanttu, opencode",
+      "downloadLocation": "https://github.com/lanttusoft/gX",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/lanttusoft/gX@v0.39.0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "GPL-3.0-or-later",
+      "licenseDeclared": "GPL-3.0-or-later",
+      "name": "gX",
+      "primaryPackagePurpose": "APPLICATION",
+      "supplier": "Organization: gX project",
+      "versionInfo": "0.39.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-raylib",
+      "comment": "vendored window/render backend",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/raysan5/raylib@6.1-dev",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "Zlib",
+      "licenseDeclared": "Zlib",
+      "name": "raylib",
+      "sourceInfo": "external/raylib",
+      "supplier": "NOASSERTION",
+      "versionInfo": "6.1-dev"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-Dear-ImGui",
+      "comment": "vendored editor UI",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/ocornut/imgui@v1.92.8",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "name": "Dear ImGui",
+      "sourceInfo": "src/tools/imgui",
+      "supplier": "NOASSERTION",
+      "versionInfo": "1.92.8 WIP"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-rlImGui",
+      "comment": "raylib backend for Dear ImGui",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Zlib",
+      "licenseDeclared": "Zlib",
+      "name": "rlImGui",
+      "sourceInfo": "src/tools/imgui/rlImGui.h",
+      "supplier": "NOASSERTION",
+      "versionInfo": "vendored"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-AngelScript",
+      "comment": "vendored scripting subset",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Zlib",
+      "licenseDeclared": "Zlib",
+      "name": "AngelScript",
+      "sourceInfo": "external/angelscript",
+      "supplier": "NOASSERTION",
+      "versionInfo": "2.38.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-raymath",
+      "comment": "gX math is based on/uses raymath v1.5",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Zlib",
+      "licenseDeclared": "Zlib",
+      "name": "raymath",
+      "sourceInfo": "src/gxmath",
+      "supplier": "NOASSERTION",
+      "versionInfo": "1.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-stb-image",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT OR Unlicense",
+      "licenseDeclared": "MIT OR Unlicense",
+      "name": "stb_image",
+      "sourceInfo": "external/raylib/src/external/stb_image.h",
+      "supplier": "NOASSERTION",
+      "versionInfo": "raylib-bundled"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-cgltf",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "name": "cgltf",
+      "sourceInfo": "external/raylib/src/external/cgltf.h",
+      "supplier": "NOASSERTION",
+      "versionInfo": "raylib-bundled"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-tinyobj-loader-c",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "name": "tinyobj_loader_c",
+      "sourceInfo": "external/raylib/src/external/tinyobj_loader_c.h",
+      "supplier": "NOASSERTION",
+      "versionInfo": "raylib-bundled"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-miniaudio",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT OR Unlicense",
+      "licenseDeclared": "MIT OR Unlicense",
+      "name": "miniaudio",
+      "sourceInfo": "external/raylib/src/external/miniaudio.h",
+      "supplier": "NOASSERTION",
+      "versionInfo": "raylib-bundled"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-par-shapes",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "name": "par_shapes",
+      "sourceInfo": "external/raylib/src/external/par_shapes.h",
+      "supplier": "NOASSERTION",
+      "versionInfo": "raylib-bundled"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-glad",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "name": "glad",
+      "sourceInfo": "external/raylib/src/external/glad.h",
+      "supplier": "NOASSERTION",
+      "versionInfo": "raylib-bundled"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-dr-flac",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Unlicense",
+      "licenseDeclared": "Unlicense",
+      "name": "dr_flac",
+      "sourceInfo": "external/raylib/src/external/dr_flac.h",
+      "supplier": "NOASSERTION",
+      "versionInfo": "raylib-bundled"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-dr-mp3",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Unlicense",
+      "licenseDeclared": "Unlicense",
+      "name": "dr_mp3",
+      "sourceInfo": "external/raylib/src/external/dr_mp3.h",
+      "supplier": "NOASSERTION",
+      "versionInfo": "raylib-bundled"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-dr-wav",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Unlicense",
+      "licenseDeclared": "Unlicense",
+      "name": "dr_wav",
+      "sourceInfo": "external/raylib/src/external/dr_wav.h",
+      "supplier": "NOASSERTION",
+      "versionInfo": "raylib-bundled"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-jar-mod",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Unlicense",
+      "licenseDeclared": "Unlicense",
+      "name": "jar_mod",
+      "sourceInfo": "external/raylib/src/external/jar_mod.h",
+      "supplier": "NOASSERTION",
+      "versionInfo": "raylib-bundled"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-jar-xm",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Unlicense",
+      "licenseDeclared": "Unlicense",
+      "name": "jar_xm",
+      "sourceInfo": "external/raylib/src/external/jar_xm.h",
+      "supplier": "NOASSERTION",
+      "versionInfo": "raylib-bundled"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-GLFW",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Zlib",
+      "licenseDeclared": "Zlib",
+      "name": "GLFW",
+      "sourceInfo": "external/raylib/src/external/glfw",
+      "supplier": "NOASSERTION",
+      "versionInfo": "raylib-bundled"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-three.js-GTAOPass",
+      "comment": "GTAO reference implementation (Jimenez et al. 2016)",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:npm/three",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "name": "three.js GTAOPass",
+      "sourceInfo": "resources/shader/gfx_gtao.frag",
+      "supplier": "NOASSERTION",
+      "versionInfo": "adapted"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-NVIDIA-FXAA-3.11",
+      "comment": "Timothy Lottes formulation",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "name": "NVIDIA FXAA 3.11",
+      "sourceInfo": "resources/shader/gfx_fxaa.frag",
+      "supplier": "NOASSERTION",
+      "versionInfo": "3.11"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-Inigo-Quilez-SDF",
+      "comment": "SDF/smooth-min/normal formulations",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "name": "Inigo Quilez SDF",
+      "sourceInfo": "resources/shader/common",
+      "supplier": "NOASSERTION",
+      "versionInfo": "adapted"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-Ashima-simplex-noise",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "name": "Ashima simplex noise",
+      "sourceInfo": "resources/shader/common/noise.glsl",
+      "supplier": "NOASSERTION",
+      "versionInfo": "adapted"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-ACES-filmic-fit",
+      "comment": "Krzysztof Narkowicz tone-mapping fit; see NOTICE",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": "ACES filmic fit",
+      "sourceInfo": "resources/shader/gfx_bloom_composite.frag",
+      "supplier": "NOASSERTION",
+      "versionInfo": "adapted"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-AgX-display-transform",
+      "comment": "Troy Sobotka reference lineage; see NOTICE",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": "AgX display transform",
+      "sourceInfo": "resources/shader/gfx_bloom_composite.frag",
+      "supplier": "NOASSERTION",
+      "versionInfo": "adapted"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-NTSC-CRT",
+      "comment": "EMMIR permissive upstream terms; see license/ntsc-crt/LICENSE",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": "NTSC/CRT",
+      "sourceInfo": "src/external/crt_core.c",
+      "supplier": "NOASSERTION",
+      "versionInfo": "adapted"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-Open-Dynamics-Engine",
+      "comment": "optional system dependency, not vendored",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:generic/ode",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "LGPL-2.1-only",
+      "licenseDeclared": "LGPL-2.1-only",
+      "name": "Open Dynamics Engine",
+      "supplier": "NOASSERTION",
+      "versionInfo": "system"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-Lean-4-Mathlib4",
+      "comment": "separate gx-proofs build dependency; not linked into the executable",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "name": "Lean 4 / Mathlib4",
+      "supplier": "NOASSERTION",
+      "versionInfo": "proof-pin"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-Kenney-Mini-Square-Mono",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "CC0-1.0",
+      "licenseDeclared": "CC0-1.0",
+      "name": "Kenney Mini Square Mono",
+      "sourceInfo": "resources/font/KenneyMiniSquareMono.ttf",
+      "supplier": "NOASSERTION",
+      "versionInfo": "1.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-European-Teletext",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "CC0-1.0",
+      "licenseDeclared": "CC0-1.0",
+      "name": "European Teletext",
+      "sourceInfo": "resources/font/EuropeanTeletext.ttf",
+      "supplier": "NOASSERTION",
+      "versionInfo": "1.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-Skybox1",
+      "comment": "learnopengl.com (Joey de Vries)",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "CC-BY-4.0",
+      "licenseDeclared": "CC-BY-4.0",
+      "name": "Skybox1",
+      "sourceInfo": "resources/texture/skybox/skybox1.png",
+      "supplier": "NOASSERTION",
+      "versionInfo": "1.0"
+    }
+  ],
+  "relationships": [
+    {
+      "relatedSpdxElement": "SPDXRef-Package-gX",
+      "relationshipType": "DESCRIBES",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-raylib",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Dear-ImGui",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-rlImGui",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-AngelScript",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-raymath",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-stb-image",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-cgltf",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-tinyobj-loader-c",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-miniaudio",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-par-shapes",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-glad",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-dr-flac",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-dr-mp3",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-dr-wav",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-jar-mod",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-jar-xm",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-GLFW",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-three.js-GTAOPass",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-NVIDIA-FXAA-3.11",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Inigo-Quilez-SDF",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Ashima-simplex-noise",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-ACES-filmic-fit",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-AgX-display-transform",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-NTSC-CRT",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Open-Dynamics-Engine",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Lean-4-Mathlib4",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Kenney-Mini-Square-Mono",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-European-Teletext",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-Skybox1",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-gX"
+    }
+  ],
+  "spdxVersion": "SPDX-2.3"
+}
