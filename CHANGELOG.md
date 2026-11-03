@@ -27,7 +27,8 @@ Release-Class: minor
 - Full audit runs skip the three quick gates whose full-tier siblings run the
   same script with a superset; the `cache` cache-self-test is now a
   `tooling`-tier gate. The full selection drops from 88 to 84 gates without
-  reducing engine coverage.
+  reducing engine coverage. Parallel failures are retried sequentially after
+  the batch, with the first parallel verdict retained for visibility.
 
 ### Fixed
 - DOF/motion-blur/particle-only scenes now load and update `bloom.scene`; the

@@ -17,8 +17,10 @@ reuse or a re-run inspectable.
 - `audit_summary.py` caches **passing** gate results in
   `build/.audit_cache.json`, keyed by a source-input digest plus the gate
   script. A failed gate is never stored.
-- Quick matrix: 15 gates, **240.7 s** first run, **1 s** cached repeat
-  (`AUDIT_JOBS=4`).
+- Quick matrix: 20 gates, **236 s** first run at `AUDIT_JOBS=2`; the
+  deduplicated full matrix is 84 gates (**1,207 s**). `AUDIT_JOBS=4` is not
+  reliably faster on the GTX 1060 (capture contention; 267 s with a
+  sequential retry), so 2 remains the default.
 - `make check` repeat: **61 s**. It does not use the gate cache; only its
   sub-tools (CMake, Lake/Lean) have their own incremental state.
 - `make cache-check` pins the contract: clean run executes, repeat is cached,
@@ -38,7 +40,9 @@ reuse or a re-run inspectable.
   declared group inputs and shared harness files. `docs/` changes select no
   audit gates; an unmapped build input conservatively selects all gates.
 - Per-gate cache policy is honored: `cache = "never"` bypasses the cache for
-  `profile` and `cache`; the rest use content-addressed passes.
+  `profile` and `cache`; the rest use content-addressed passes. A failure in
+  a parallel batch is retried sequentially after the batch; the first
+  parallel verdict stays attached so contention remains visible.
 - `AUDIT_CACHE_DIR=/path` opts into a shared cache directory. Entries are
   stored per gate and per content key, merged under a file lock and written
   atomically, so parallel worktrees do not lose passes. The directory is not

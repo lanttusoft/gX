@@ -283,6 +283,25 @@ def main():
                       flush=True)
         order = {gate[0]: index for index, gate in enumerate(ordered)}
         results.sort(key=lambda record: order[record["gate"]])
+        #opencode: a parallel-only failure can be capture/context contention,
+        #   not a product failure. Re-run it alone after the batch; a genuine
+        #   failure still fails, but a shared-GPU flake does not poison the
+        #   matrix. The first parallel verdict stays attached for visibility.
+        gate_by_name = {gate[0]: gate for gate in ordered}
+        for index, record in enumerate(results):
+            if record["ok"]:
+                continue
+            print(f"{record['gate']:20s} retry-sequential "
+                  f"({record['verdict']})", flush=True)
+            retry = run_gate(gate_by_name[record["gate"]])
+            retry["seconds"] += record["seconds"]
+            retry["parallel_verdict"] = record["verdict"]
+            retry["verdict"] += " (sequential retry)"
+            results[index] = retry
+            print(f"{retry['gate']:20s} "
+                  f"{'ok' if retry['ok'] else 'FAIL':4s} "
+                  f"{retry['seconds']:6.1f}s  {retry['verdict']}",
+                  flush=True)
     else:
         for gate in ordered:
             record = run_gate(gate)
