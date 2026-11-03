@@ -4,6 +4,22 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: minor
+
+### Added
+- **Threading primitives**: `gX_AtomicI32_*` acquire/release flags and
+  add-fetch counters, plus a headless pool/work-queue stress suite covering
+  completion, FIFO order and repeated create/destroy.
+
+### Fixed
+- `gX_ThreadPool_Wait` now waits for **in-flight** items as well as an empty
+  queue; the old queue-count-only check could return while the last worker
+  was still processing. `Destroy` is defined after `Wait` and discards
+  unstarted queued work. The large-OBJ and shader-preprocess completion flags
+  now use atomics.
+
 ## [0.37.0] - 2026-11-02
 
 Release-Class: minor

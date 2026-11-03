@@ -281,7 +281,7 @@ typedef struct gX_Shader_PreprocessTask {
     gX_I8  *processedFrag;    // preprocessed fragment source (allocated)
     gX_U64  fragLen;
     gX_I32  result;           // 0 = success, -1 = error
-    gX_I1   done;
+    gX_AtomicI32 done;
     // For binary cache: store the original file path for keying
     gX_I8   cacheKey[512];
 } gX_Shader_PreprocessTask;
@@ -314,7 +314,7 @@ static gX_I0 gX_Shader_WorkerFunc(gX_I0 *arg)
         }
     }
 
-    task->done = 1;
+    gX_AtomicI32_Store(&task->done, 1);
     task->result = 0;
 }
 
@@ -368,6 +368,7 @@ static gX_Shader_PreprocessTask *gX_Shader_SubmitPreprocess(
     gX_Shader_PreprocessTask *task = (gX_Shader_PreprocessTask*)
         calloc(1, sizeof(gX_Shader_PreprocessTask));
     if (!task) return 0;
+    gX_AtomicI32_Init(&task->done, 0);
 
     if (vertPath) { task->vertPath = strdup(vertPath); task->vertLabel = vertLabel ? vertLabel : vertPath; }
     if (fragPath) { task->fragPath = strdup(fragPath); task->fragLabel = fragLabel ? fragLabel : fragPath; }
@@ -389,7 +390,7 @@ static gX_I0 gX_Shader_WaitForPreprocess(gX_Shader_PreprocessTask *task,
 {
     if (!task) return;
     // Spin until done (task is being processed by a worker)
-    while (!task->done) gX_Thread_Sleep(1);
+    while (gX_AtomicI32_Load(&task->done) == 0) gX_Thread_Sleep(1);
 
     if (outVert)    *outVert = task->processedVert;
     if (outVertLen) *outVertLen = task->vertLen;

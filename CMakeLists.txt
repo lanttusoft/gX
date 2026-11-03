@@ -128,6 +128,7 @@ set(GX_SOURCES
     src/common/color_code_detect.c
     src/common/color_code_tests.c
     src/common/threading.c
+    src/common/threading_tests.c
     src/common/utils/billboard.c
     src/common/utils/shader.c
     src/common/utils/pointercast.c

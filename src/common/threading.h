@@ -54,6 +54,17 @@ gX_I32 gX_Mutex_Lock(  gX_Mutex *mutex);
 gX_I32 gX_Mutex_Unlock(gX_Mutex *mutex);
 gX_I32 gX_Mutex_Destroy(gX_Mutex *mutex);
 
+// ─── Atomics ───
+// Plain 32-bit atomic word for cross-thread completion flags and counters.
+// Implemented with GCC/Clang __atomic builtins (GCC and winpthreads builds);
+// the fallback is a plain word for compilers without them.
+typedef gX_I32 gX_AtomicI32;
+
+gX_I0  gX_AtomicI32_Init(gX_AtomicI32 *value, gX_I32 initial);
+gX_I32 gX_AtomicI32_Load(const gX_AtomicI32 *value);
+gX_I0  gX_AtomicI32_Store(gX_AtomicI32 *value, gX_I32 next);
+gX_I32 gX_AtomicI32_Add(gX_AtomicI32 *value, gX_I32 delta);
+
 // ─── Work Queue (thread-safe producer-consumer queue) ───
 // Items are pushed by producers, popped by consumers (workers).
 // The queue blocks on pop when empty.
@@ -69,6 +80,8 @@ gX_I32       gX_WorkQueue_Count(gX_WorkQueue *q);      // number of items pendin
 // ─── Thread Pool ───
 // A set of N worker threads that process items from a work queue.
 // Each worker calls a user-provided function for each item.
+// Wait() blocks until every submitted item has completed (queue empty AND
+// no worker still processing); Destroy() must be called after Wait().
 
 typedef gX_I0 (*gX_ThreadPool_WorkerFunc)(gX_I0 *item);
 
@@ -76,7 +89,8 @@ typedef struct gX_ThreadPool {
     gX_Thread     *threads;
     gX_WorkQueue  *queue;
     gX_U32         numThreads;
-    gX_I1          running;
+    gX_AtomicI32   running;
+    gX_AtomicI32   pending;   // submitted but not yet completed
     gX_ThreadPool_WorkerFunc workerFunc;
     gX_I0         *userData;
 } gX_ThreadPool;
@@ -85,7 +99,7 @@ gX_I32  gX_ThreadPool_Create(gX_ThreadPool *pool, gX_U32 numThreads,
                              gX_ThreadPool_WorkerFunc func, gX_I0 *userData);
 gX_I0   gX_ThreadPool_Destroy(gX_ThreadPool *pool);
 gX_I32  gX_ThreadPool_Submit(gX_ThreadPool *pool, gX_I0 *item);
-gX_I0   gX_ThreadPool_Wait(gX_ThreadPool *pool);  // blocks until queue empty
+gX_I0   gX_ThreadPool_Wait(gX_ThreadPool *pool);  // blocks until all submitted items complete
 
 #ifdef __cplusplus
 }

@@ -127,8 +127,8 @@ this source beta.
   `--hw-report` capability report; see `docs/hardware.md`
 - `gX_Heap (alloc)` / `gX_Random_*` / `gX_HashMap_*` / `gX_Pool_*` /
   `gX_Alloc_*` — allocation helpers
-- `gX_Thread_*` / `gX_Mutex_*` / `gX_WorkQueue_*` / `gX_ThreadPool_*` —
-  threading
+- `gX_Thread_*` / `gX_Mutex_*` / `gX_AtomicI32_*` / `gX_WorkQueue_*` /
+  `gX_ThreadPool_*` — threading and atomic completion flags
 - `gX_Msg_*` — message/notification queue; `gX_Schema_*` — schema helpers
 - `gX_SchemaField` / `GX_SCHEMA_*` — offset-based JSON descriptors. Partial
   objects retain initialized values; missing keys warn by default, required

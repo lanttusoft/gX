@@ -101,6 +101,8 @@ gX_I32 gX_Tests_OPX(gX_I0);
 gX_I32 gX_Tests_Pad(gX_I0);
 //ai: shared filter core + master filter suite (src/audio/filter_tests.c)
 gX_I32 gX_Tests_AudioFilter(gX_I0);
+//ai: threading primitives + worker-pool wait contract (src/common/threading_tests.c)
+gX_I32 gX_Tests_Threading(gX_I0);
 
 //opencode: background renderer CPU tests (param oscillators, transitions, imgpro)
 //   Cluster-gated: renderer/background/tests.c compiles only in full builds.
@@ -3761,6 +3763,7 @@ gX_I32 gX_Tests(gX_I0) {
     errors += gX_Tests_Input_Transitions();
     errors += gX_Tests_JSON();
     errors += gX_Tests_ShaderCompiler();
+    errors += gX_Tests_Threading();
     errors += gX_Tests_SkinUploadClamp();
     errors += gX_Tests_DevCubePhase();
     //ai: screen-color-code round trip (no display, GPU or camera device).

@@ -63,7 +63,7 @@
 typedef struct gX_Model_AsyncSlot {
     gX_I8  path[512];
     gX_I1  busy;
-    gX_I1  done;
+    gX_AtomicI32 done;
     gX_Thread thread;
     // Parsed data (filled by worker thread, consumed by main thread)
     gX_F32 *positions;
@@ -81,12 +81,12 @@ static gX_I0 *gX_Model_AsyncThreadFunc(gX_I0 *arg)
     gX_Model_AsyncSlot *slot = (gX_Model_AsyncSlot*)arg;
     // Read the file into memory
     FILE *f = fopen(slot->path, "rb");
-    if (!f) { snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Cannot open %.200s", slot->path); slot->done = true; return NULL; }
+    if (!f) { snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Cannot open %.200s", slot->path); gX_AtomicI32_Store(&slot->done, 1); return NULL; }
     fseek(f, 0, SEEK_END);
     long fileLen = ftell(f);
     fseek(f, 0, SEEK_SET);
     char *fileText = (char*)malloc((gX_U64)fileLen + 1);
-    if (!fileText) { fclose(f); snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Out of memory"); slot->done = true; return NULL; }
+    if (!fileText) { fclose(f); snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Out of memory"); gX_AtomicI32_Store(&slot->done, 1); return NULL; }
     fread(fileText, 1, (gX_U64)fileLen, f);
     fclose(f);
     fileText[fileLen] = '\0';
@@ -102,7 +102,7 @@ static gX_I0 *gX_Model_AsyncThreadFunc(gX_I0 *arg)
     if (ret != 0) {
         snprintf(slot->errorMsg, sizeof(slot->errorMsg), "tinyobj parse error");
         free(shapes); free(materials);
-        slot->done = true; return NULL;
+        gX_AtomicI32_Store(&slot->done, 1); return NULL;
     }
     free(shapes);
     if (materials) { for (unsigned int mi = 0; mi < materialCount; mi++) free(materials[mi].name); free(materials); }
@@ -122,7 +122,7 @@ static gX_I0 *gX_Model_AsyncThreadFunc(gX_I0 *arg)
         }
     }
     tinyobj_attrib_free(&attrib);
-    slot->done = true;
+    gX_AtomicI32_Store(&slot->done, 1);
     return NULL;
 }
 
@@ -140,8 +140,13 @@ gX_I0 gX_Model_AsyncLoadStart(const gX_I8 *path)
     memset(slot, 0, sizeof(*slot));
     strncpy(slot->path, path, sizeof(slot->path) - 1);
     slot->busy = true;
-    slot->done = false;
-    gX_Thread_Create(&slot->thread, gX_Model_AsyncThreadFunc, slot);
+    gX_AtomicI32_Init(&slot->done, 0);
+    if (gX_Thread_Create(&slot->thread, gX_Model_AsyncThreadFunc, slot) != 0) {
+        snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Cannot create async thread");
+        gX_AtomicI32_Store(&slot->done, 1);
+        gX_TraceLog(gX_LOG_ERROR, "MODEL: async thread create failed for '%s'", path);
+        return;
+    }
     gX_TraceLog(gX_LOG_INFO, "MODEL: async parse started for '%s'", path);
 }
 
@@ -150,7 +155,7 @@ gX_I1 gX_Model_AsyncLoadIsDone(const gX_I8 *path)
 {
     for (gX_I32 i = 0; i < GX_MODEL_ASYNC_MAX; i++) {
         gX_Model_AsyncSlot *slot = &gX_modelAsyncQueue[i];
-        if (slot->busy && strcmp(slot->path, path) == 0) return slot->done;
+        if (slot->busy && strcmp(slot->path, path) == 0) return gX_AtomicI32_Load(&slot->done) != 0;
     }
     return false;
 }

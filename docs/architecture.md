@@ -125,6 +125,23 @@ be registered at runtime and injected into the showcase for perf testing:
 `--guest-model subpath[:count]` / `GX_GUEST_MODEL` (additive ring).
 See `docs/guest_assets.md`.
 
+## Threading model (2026-11-03)
+
+- The **main thread** owns the GL context, scene graph, UI/input, audio
+  control and every GPU upload. Workers never call GL.
+- CPU workers are used for the large-OBJ parser (up to four slots, >5 MB
+  `.obj`), while the audio callback (miniaudio) and ODE's optional threaded
+  solver keep their own threads. Shader preprocessing is currently
+  synchronous on the main thread; the shader cache covers warm starts.
+- `gX_ThreadPool_Wait` blocks until every submitted item has completed
+  (queued + in-flight), not merely until the queue is empty. `Destroy` is
+  defined after `Wait`; queued-but-unstarted work is discarded. `Submit`
+  returns `-2` when the bounded queue is full, so callers apply backpressure.
+- `gX_AtomicI32_*` provides acquire/release loads and add-fetch counters for
+  cross-thread completion flags (GCC/Clang `__atomic`; MinGW uses the same).
+- The planned master-worker lane adds asset decode and measured CPU culling/
+  terrain jobs; render passes and GL state stay on the master thread.
+
 ## Verification
 
 The GFX feature matrix supports focused validation with

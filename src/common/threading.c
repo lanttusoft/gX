@@ -28,6 +28,7 @@
 #include "threading.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include <pthread.h>
 #include <unistd.h>
 
@@ -126,6 +127,34 @@ gX_I32 gX_Mutex_Destroy(gX_Mutex *mutex) {
     return (r == 0) ? 0 : -1;
 }
 
+// ─── Atomics ───
+
+#if defined(__GNUC__) || defined(__clang__)
+gX_I0 gX_AtomicI32_Init(gX_AtomicI32 *value, gX_I32 initial) {
+    __atomic_store_n(value, initial, __ATOMIC_RELAXED);
+}
+
+gX_I32 gX_AtomicI32_Load(const gX_AtomicI32 *value) {
+    return __atomic_load_n(value, __ATOMIC_ACQUIRE);
+}
+
+gX_I0 gX_AtomicI32_Store(gX_AtomicI32 *value, gX_I32 next) {
+    __atomic_store_n(value, next, __ATOMIC_RELEASE);
+}
+
+gX_I32 gX_AtomicI32_Add(gX_AtomicI32 *value, gX_I32 delta) {
+    return __atomic_add_fetch(value, delta, __ATOMIC_ACQ_REL);
+}
+#else
+//opencode: fallback for compilers without GCC atomics (single-threaded
+//   correctness only; the supported GCC/winpthreads builds use the branch
+//   above). Kept so the abstraction still compiles in minimal ports.
+gX_I0 gX_AtomicI32_Init(gX_AtomicI32 *value, gX_I32 initial) { *value = initial; }
+gX_I32 gX_AtomicI32_Load(const gX_AtomicI32 *value) { return *value; }
+gX_I0 gX_AtomicI32_Store(gX_AtomicI32 *value, gX_I32 next) { *value = next; }
+gX_I32 gX_AtomicI32_Add(gX_AtomicI32 *value, gX_I32 delta) { *value += delta; return *value; }
+#endif
+
 // ─── Work Queue ───
 
 struct gX_WorkQueue {
@@ -201,11 +230,12 @@ gX_I32 gX_WorkQueue_Count(gX_WorkQueue *q)
 static gX_I0 *gX_ThreadPool_Worker(gX_I0 *arg)
 {
     gX_ThreadPool *pool = (gX_ThreadPool*)arg;
-    while (pool->running)
+    while (gX_AtomicI32_Load(&pool->running))
     {
         gX_I0 *item = gX_WorkQueue_Pop(pool->queue);
         if (!item) continue;
         pool->workerFunc(item);
+        gX_AtomicI32_Add(&pool->pending, -1);
     }
     return 0;
 }
@@ -213,15 +243,17 @@ static gX_I0 *gX_ThreadPool_Worker(gX_I0 *arg)
 gX_I32 gX_ThreadPool_Create(gX_ThreadPool *pool, gX_U32 numThreads,
                              gX_ThreadPool_WorkerFunc func, gX_I0 *userData)
 {
-    if (!pool || !func) return -1;
+    if (!pool || !func || numThreads == 0) return -1;
+    memset(pool, 0, sizeof(*pool));
     pool->queue = gX_WorkQueue_Create(256);
     if (!pool->queue) return -1;
     pool->numThreads = numThreads;
-    pool->running = 1;
+    gX_AtomicI32_Init(&pool->running, 1);
+    gX_AtomicI32_Init(&pool->pending, 0);
     pool->workerFunc = func;
     pool->userData = userData;
     pool->threads = (gX_Thread*)calloc(numThreads, sizeof(gX_Thread));
-    if (!pool->threads) { gX_WorkQueue_Destroy(pool->queue); return -1; }
+    if (!pool->threads) { gX_WorkQueue_Destroy(pool->queue); pool->queue = 0; return -1; }
     for (gX_U32 i = 0; i < numThreads; i++)
     {
         if (gX_Thread_Create(&pool->threads[i], gX_ThreadPool_Worker, pool) != 0)
@@ -236,9 +268,10 @@ gX_I32 gX_ThreadPool_Create(gX_ThreadPool *pool, gX_U32 numThreads,
 
 gX_I0 gX_ThreadPool_Destroy(gX_ThreadPool *pool)
 {
-    if (!pool) return;
-    pool->running = 0;
-    // Wake all workers so they see running=0 and exit
+    if (!pool || !pool->queue) return;
+    gX_AtomicI32_Store(&pool->running, 0);
+    // Wake all workers so they see running=0 and exit. Destroy is defined
+    // after Wait; queued-but-unstarted work is discarded.
     for (gX_U32 i = 0; i < pool->numThreads; i++)
         gX_WorkQueue_Push(pool->queue, 0);
     for (gX_U32 i = 0; i < pool->numThreads; i++)
@@ -248,18 +281,23 @@ gX_I0 gX_ThreadPool_Destroy(gX_ThreadPool *pool)
     pool->queue = 0;
     pool->threads = 0;
     pool->numThreads = 0;
+    gX_AtomicI32_Store(&pool->pending, 0);
 }
 
 gX_I32 gX_ThreadPool_Submit(gX_ThreadPool *pool, gX_I0 *item)
 {
     if (!pool || !pool->queue) return -1;
-    return gX_WorkQueue_Push(pool->queue, item);
+    gX_AtomicI32_Add(&pool->pending, 1);
+    gX_I32 result = gX_WorkQueue_Push(pool->queue, item);
+    if (result != 0) gX_AtomicI32_Add(&pool->pending, -1);
+    return result;
 }
 
 gX_I0 gX_ThreadPool_Wait(gX_ThreadPool *pool)
 {
     if (!pool) return;
-    // Spin until queue is empty and all work is done
-    while (gX_WorkQueue_Count(pool->queue) > 0)
+    // pending counts queued + in-flight items; queue-empty alone is not
+    // enough (a worker may still be processing the last item).
+    while (gX_AtomicI32_Load(&pool->pending) > 0)
         gX_Thread_Sleep(1);
 }
