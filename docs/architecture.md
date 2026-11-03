@@ -138,8 +138,10 @@ See `docs/guest_assets.md`.
 - Water, labels, transparent and decals now resolve the scene target through
   `Feature_SceneColorTarget` (HDR when allocated, LDR otherwise).
 - SSAO is no longer toggled by the shader-quality cascade; a PBR-driven
-  quality raise cannot silently re-enable it. Lazy HDR allocation can
-  therefore trust `NeedHdr`. The display transform still depends on bloom.
+  quality raise cannot silently re-enable it. HDR, luminance and MSAA targets
+  allocate from `NeedHdr`; an all-off scene starts on the LDR path. Still
+  pending: freeing HDR targets when features turn off and decoupling the
+  display transform from bloom.
 
 ## Threading model (2026-11-03)
 

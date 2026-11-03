@@ -15,7 +15,8 @@ Release-Class: minor
   state, and `feature-plan` gates the all-off / DOF-only closures.
   Water/labels/transparent/decals resolve the scene target through
   `Feature_SceneColorTarget`, so they work on the LDR path when HDR is not
-  allocated.
+  allocated. HDR, luminance and MSAA targets allocate from `NeedHdr`; an
+  all-off scene starts on LDR.
 - **Threading primitives**: `gX_AtomicI32_*` acquire/release flags and
   add-fetch counters, plus a headless pool/work-queue stress suite covering
   completion, FIFO order and repeated create/destroy.

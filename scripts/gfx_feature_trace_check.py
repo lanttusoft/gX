@@ -62,10 +62,10 @@ def main():
         dof = run({"GX_T_DOF": "1"})
         # hasEffects, needHdr, ssgi, bloom, ssr, fog, dof, motion, particles,
         # hdrLoaded, bloomSceneLoaded
-        if off[0] != 0 or off[10] != 0:
+        if off[0] != 0 or off[9] != 0 or off[10] != 0:
             raise RuntimeError(f"all-off closure is not empty: {off}")
-        if dof[0] != 1 or dof[6] != 1 or dof[10] != 1:
-            raise RuntimeError(f"DOF-only closure did not load composite: {dof}")
+        if dof[0] != 1 or dof[6] != 1 or dof[9] != 1 or dof[10] != 1:
+            raise RuntimeError(f"DOF-only closure did not load HDR/composite: {dof}")
     except (OSError, RuntimeError, ValueError, subprocess.TimeoutExpired) as error:
         print(f"GFX_FEATURE_TRACE_CHECK: FAIL — {error}", file=sys.stderr)
         return 1
