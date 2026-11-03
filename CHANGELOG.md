@@ -4,7 +4,7 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
-## [Unreleased]
+## [0.39.1] - 2026-11-03
 
 Release-Class: patch
 
