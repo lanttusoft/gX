@@ -135,10 +135,8 @@ See `docs/guest_assets.md`.
   in the canvas after present or read an unloaded target.
 - `GX_GFX_FEATURE_TRACE=1` logs the one-shot closure and whether the HDR and
   composite targets are loaded, so allocation drift is observable.
-- HDR, luminance and MSAA targets are allocated from the closure; an all-off
-  scene starts on the LDR path without them and loads them when a feature is
-  enabled. Still pending: freeing HDR targets when features turn off and
-  decoupling the display transform from bloom.
+- Still pending: lazy allocation for features that are off (HDR in
+  particular) and decoupling the display transform from bloom.
 
 ## Threading model (2026-11-03)
 
