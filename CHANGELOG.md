@@ -18,7 +18,8 @@ Release-Class: minor
   queue; the old queue-count-only check could return while the last worker
   was still processing. `Destroy` is defined after `Wait` and discards
   unstarted queued work. The large-OBJ and shader-preprocess completion flags
-  now use atomics.
+  now use atomics. The large-OBJ async finish transfers vertex buffers to the
+  model instead of freeing them twice at unload.
 
 ## [0.37.0] - 2026-11-02
 

@@ -129,9 +129,9 @@ See `docs/guest_assets.md`.
 
 - The **main thread** owns the GL context, scene graph, UI/input, audio
   control and every GPU upload. Workers never call GL.
-- CPU workers are used for the large-OBJ parser (up to four slots, >5 MB
-  `.obj`), while the audio callback (miniaudio) and ODE's optional threaded
-  solver keep their own threads. Shader preprocessing is currently
+- CPU workers are used for the large-OBJ parser (shared two-worker pool, up
+  to four slots, >5 MB `.obj`), while the audio callback (miniaudio) and ODE's
+  optional threaded solver keep their own threads. Shader preprocessing is currently
   synchronous on the main thread; the shader cache covers warm starts.
 - `gX_ThreadPool_Wait` blocks until every submitted item has completed
   (queued + in-flight), not merely until the queue is empty. `Destroy` is

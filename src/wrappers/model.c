@@ -51,9 +51,9 @@
 
 //opencode: PS2 stub — model rendering deferred
 
-//opencode: threaded OBJ loader — moves CPU-bound tinyobj parse off the main thread.
-//   Worker thread reads + parses the OBJ, stores vertex data in a buffer.
-//   Main thread creates raylib Meshes from the buffer and uploads to GPU.
+//opencode: threaded OBJ loader — moves CPU-bound tinyobj parse off the main
+//   thread. A shared, lazily-created worker pool parses into per-slot buffers;
+//   the main thread creates raylib Meshes from the buffer and uploads to GPU.
 //   Only active for .obj files over GX_GFX_MODEL_SIZE_WARN (5MB).
 #include "../common/threading.h"
 #include "../rhi/rhi_buf.h"
@@ -64,7 +64,6 @@ typedef struct gX_Model_AsyncSlot {
     gX_I8  path[512];
     gX_I1  busy;
     gX_AtomicI32 done;
-    gX_Thread thread;
     // Parsed data (filled by worker thread, consumed by main thread)
     gX_F32 *positions;
     gX_F32 *normals;
@@ -75,6 +74,24 @@ typedef struct gX_Model_AsyncSlot {
 } gX_Model_AsyncSlot;
 
 static gX_Model_AsyncSlot gX_modelAsyncQueue[GX_MODEL_ASYNC_MAX];
+
+//opencode: shared master-worker pool — lazily created on the first async
+//   parse, two CPU workers, never touches GL.
+static gX_ThreadPool gX_modelAsyncPool;
+static gX_I1 gX_modelAsyncPoolReady = 0;
+
+static gX_I0 gX_Model_AsyncPoolWork(gX_I0 *arg);
+
+static gX_I1 gX_Model_EnsurePool(gX_I0)
+{
+    if (gX_modelAsyncPoolReady) return 1;
+    if (gX_ThreadPool_Create(&gX_modelAsyncPool, 2, gX_Model_AsyncPoolWork, 0) != 0) {
+        gX_TraceLog(gX_LOG_ERROR, "MODEL: async pool create failed");
+        return 0;
+    }
+    gX_modelAsyncPoolReady = 1;
+    return 1;
+}
 
 static gX_I0 *gX_Model_AsyncThreadFunc(gX_I0 *arg)
 {
@@ -126,7 +143,12 @@ static gX_I0 *gX_Model_AsyncThreadFunc(gX_I0 *arg)
     return NULL;
 }
 
-//opencode: start async OBJ load — spawns worker thread for CPU-bound parsing
+static gX_I0 gX_Model_AsyncPoolWork(gX_I0 *arg)
+{
+    gX_Model_AsyncThreadFunc(arg);
+}
+
+//opencode: queue CPU-bound parsing on the shared pool
 gX_I0 gX_Model_AsyncLoadStart(const gX_I8 *path)
 {
     if (!path || !path[0]) return;
@@ -141,13 +163,18 @@ gX_I0 gX_Model_AsyncLoadStart(const gX_I8 *path)
     strncpy(slot->path, path, sizeof(slot->path) - 1);
     slot->busy = true;
     gX_AtomicI32_Init(&slot->done, 0);
-    if (gX_Thread_Create(&slot->thread, gX_Model_AsyncThreadFunc, slot) != 0) {
-        snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Cannot create async thread");
+    if (!gX_Model_EnsurePool()) {
+        snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Cannot create async pool");
         gX_AtomicI32_Store(&slot->done, 1);
-        gX_TraceLog(gX_LOG_ERROR, "MODEL: async thread create failed for '%s'", path);
         return;
     }
-    gX_TraceLog(gX_LOG_INFO, "MODEL: async parse started for '%s'", path);
+    if (gX_ThreadPool_Submit(&gX_modelAsyncPool, slot) != 0) {
+        snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Cannot queue async parse");
+        gX_AtomicI32_Store(&slot->done, 1);
+        gX_TraceLog(gX_LOG_ERROR, "MODEL: async queue full for '%s'", path);
+        return;
+    }
+    gX_TraceLog(gX_LOG_INFO, "MODEL: async parse queued for '%s'", path);
 }
 
 //opencode: check if an async OBJ load has completed
@@ -174,7 +201,6 @@ gX_Model gX_Model_AsyncLoadFinish(const gX_I8 *path)
         }
     }
     if (!slot) return result;
-    gX_Thread_Join(slot->thread);
 
     if (slot->errorMsg[0]) {
         gX_TraceLog(gX_LOG_ERROR, "MODEL: async load failed for '%s': %s", path, slot->errorMsg);
@@ -200,6 +226,13 @@ gX_Model gX_Model_AsyncLoadFinish(const gX_I8 *path)
         rlModel.meshes[0] = rlMesh; // replace with our uploaded mesh
     }
     result = gX_Model_ConvertFromBackend(rlModel);
+    if (result.meshCount > 0) {
+        //opencode: the model now owns the uploaded mesh vertex arrays; do
+        //   not free them again at cleanup (UnloadModel would double-free).
+        slot->positions = NULL;
+        slot->normals = NULL;
+        slot->texcoords = NULL;
+    }
 
 cleanup:
     free(slot->positions);
