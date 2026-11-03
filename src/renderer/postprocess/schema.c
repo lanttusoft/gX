@@ -574,10 +574,10 @@ static gX_SchemaField pp_state_fields[] = {
 
     //opencode: injectCanvas blend + tint
     GX_SCHEMA_I32("injectCanvasBlendMode", gX_RendererPostProcess_State, injectCanvasBlendMode),
-    GX_SCHEMA_U32("injectCanvasTintR",     gX_RendererPostProcess_State, injectCanvasTint.r),
-    GX_SCHEMA_U32("injectCanvasTintG",     gX_RendererPostProcess_State, injectCanvasTint.g),
-    GX_SCHEMA_U32("injectCanvasTintB",     gX_RendererPostProcess_State, injectCanvasTint.b),
-    GX_SCHEMA_U32("injectCanvasTintA",     gX_RendererPostProcess_State, injectCanvasTint.a),
+    GX_SCHEMA_U8("injectCanvasTintR",     gX_RendererPostProcess_State, injectCanvasTint.r),
+    GX_SCHEMA_U8("injectCanvasTintG",     gX_RendererPostProcess_State, injectCanvasTint.g),
+    GX_SCHEMA_U8("injectCanvasTintB",     gX_RendererPostProcess_State, injectCanvasTint.b),
+    GX_SCHEMA_U8("injectCanvasTintA",     gX_RendererPostProcess_State, injectCanvasTint.a),
 };
 
 // Root schema — state via offset-based schema, everything else via bridge

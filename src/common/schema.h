@@ -218,6 +218,11 @@ typedef struct gX_SchemaField {
 #define GX_SCHEMA_U32(key, structType, field) \
     GX_SCHEMA_SCALAR(key, structType, field, gX_DATATYPE_U32)
 
+//ai: byte-sized schema scalars (gX_Color.r/g/b/a); U32 at a byte offset was a
+//   misaligned 4-byte read and could span into the next field.
+#define GX_SCHEMA_U8(key, structType, field) \
+    GX_SCHEMA_SCALAR(key, structType, field, gX_DATATYPE_U8)
+
 #define GX_SCHEMA_F32(key, structType, field) \
     GX_SCHEMA_SCALAR(key, structType, field, gX_DATATYPE_F32)
 
