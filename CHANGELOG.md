@@ -19,6 +19,9 @@ Release-Class: minor
   `make tsan-check` (ThreadSanitizer) and `make coverage-check` (gcov line
   summary) use separate build trees and the compiler capability probes; the
   default build is unchanged.
+- **External analysis tools**: `make cppcheck-check` (0 errors, warnings
+  advisory), `make size-report` (bloaty sections), `make perf-stat` and gcovr
+  HTML in `make coverage-check`.
 - **Developer presets and fuzzing**: `CMakePresets.json` standardizes
   debug/release/lint/sanitize/tsan/coverage/kernel/gl43 builds and exports
   `compile_commands.json` for clangd; `make fuzz-json` runs the libFuzzer +

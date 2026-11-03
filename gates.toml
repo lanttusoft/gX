@@ -825,3 +825,11 @@ tier = ["quick"]
 group = "render"
 cache = "content"
 description = "SSR full/half/quarter resolution visual budget gate."
+
+[gate.cppcheck]
+script = "cppcheck_check.py"
+args = ["--strict"]
+tier = ["tooling"]
+group = "tooling"
+cache = "never"
+description = "cppcheck project audit (errors block)."

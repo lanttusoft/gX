@@ -127,6 +127,24 @@ It compiles `fuzz/fuzz_json.c` with `-fsanitize=fuzzer,address`, seeds from
 `resources/tools/*.json`, and writes crash artifacts under
 `build/fuzz-artifacts/`. It is a manual/tooling target, not a gate.
 
+## External tool checks
+
+The installed host tools are wired as manual/tooling targets:
+
+```bash
+make cppcheck-check   # cppcheck project audit; errors block, warnings advisory
+make size-report      # bloaty section attribution of build/release/gX_build
+make perf-stat        # perf software counters for --test-only
+make coverage-check   # gcov report + gcovr HTML when installed
+```
+
+Current cppcheck baseline: **0 errors**, 199 advisory warnings (mostly
+`nullPointerOutOfMemory` and intentional pointer casts). `bloaty` on the
+Release payload reports 3.26 MiB `.text`, 2.57 MiB `.bss`, 547 KiB `.rodata`.
+`perf record` is blocked by the host's `perf_event_paranoid`; `perf stat`
+works. `semgrep` is installed but currently fails to start (missing
+`opentelemetry.exporter` Python dependency), so it is not wired in.
+
 ## Why this split
 
 A `gX_I1` assignment from `-1` compiles silently (`bool` becomes `true`);

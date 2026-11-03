@@ -92,17 +92,56 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "GX_COMPUTE": "ON"
       }
+    },
+    {
+      "name": "relwithdebinfo",
+      "displayName": "RelWithDebInfo (size attribution)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
     }
   ],
   "buildPresets": [
-    { "name": "default", "configurePreset": "default" },
-    { "name": "debug", "configurePreset": "debug" },
-    { "name": "release", "configurePreset": "release" },
-    { "name": "lint", "configurePreset": "lint" },
-    { "name": "sanitize", "configurePreset": "sanitize" },
-    { "name": "tsan", "configurePreset": "tsan" },
-    { "name": "coverage", "configurePreset": "coverage" },
-    { "name": "kernel", "configurePreset": "kernel" },
-    { "name": "gl43", "configurePreset": "gl43" }
+    {
+      "name": "default",
+      "configurePreset": "default"
+    },
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "lint",
+      "configurePreset": "lint"
+    },
+    {
+      "name": "sanitize",
+      "configurePreset": "sanitize"
+    },
+    {
+      "name": "tsan",
+      "configurePreset": "tsan"
+    },
+    {
+      "name": "coverage",
+      "configurePreset": "coverage"
+    },
+    {
+      "name": "kernel",
+      "configurePreset": "kernel"
+    },
+    {
+      "name": "gl43",
+      "configurePreset": "gl43"
+    },
+    {
+      "name": "relwithdebinfo",
+      "configurePreset": "relwithdebinfo"
+    }
   ]
 }

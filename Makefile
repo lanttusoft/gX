@@ -45,7 +45,7 @@ MATH_SOAK_PROBES ?= 1024
 export GX_AUDIT_WINDOW ?= hidden
 
 .PHONY: reflection-lab-check shader-cache-check
-.PHONY: all check check-fast check-kernel release clean lean reflect-check reflect-check-fast ssr-normal-check dither-check palette-check interlace-check dof-resolution-check snow-check snowfall-check rain-check fogsprite-check probe-check splat-check mirror-check materials-check gfx-check gfx-check-fast gfx-scene-smoke gui-check gui-check-fast gui-scoreboard gui-visual-review gui-interaction-check gui-theme-check gui-layout-check gui-shadow-check gui-depth-check gui-glass-check gui-cursor-light-check gui-pause-blur-check gui-effect-contrast-check gui-benchmark gui-benchmark-check gfx-benchmark gfx-benchmark-check gfx-benchmark-release gfx-benchmark-reference-check raymarch-benchmark raymarch-benchmark-check gfx-visual-review gfx-patchwork-check gfx-quick gfx-grid-check gfx-snapshot-check gfx-picker-check gfx-light-picker-check gfx-motion-path-check dock-layout-check gfx-label-font-check gfx-animation-check bloom-audit bloom-audit-quick audit-summary audit-summary-full gfx-preset-overwrite-check gfx-art-picker-check gfx-art-blending-check gfx-mirror-alignment-check gfx-reflection-ui-check gfx-material-asset-check gfx-asset-roots-check gfx-bijection-check gfx-skin-bones-check gfx-camera-render-check ssr-resolution-check provenance-check gfx-gl-level-ui-check gfx-prefab-check gfx-aero-check gfx-primitive-check gfx-texture-check wavetable-editor-check textwriter-editor-check textwriter-render-check sky-render-check analog-reduced-check colour-independence-check physics-editor-check gfx-export-check gfx-battle-check gfx-background-check gfx-pp-check gfx-raymarch-check gfx-raymarch-features-check error-handling-check error-check gfx-profile-check debug-check cache-check gfx-decal-bake-check version-check version-gate gfx-planar-material-check gfx-light-check gfx-art-light-check gfx-art-reflection-check gfx-shadow-check gfx-light-shadow-check material-maps-check lightmap-check lightmap-visual-review temporal-check temporal-check-fast warmup-check water-check horizon-check scoreboard fog-light-check wireframe-check particle-velocity-check compute-feature-check gl-level-check glsl130-check gl-legacy-native-check oracle-path-check oracle-bounce-check oracle-hdr-check oracle-gpu-check oracle-gpu-multibounce-check oracle-gpu-reflection-check compiler-check type-audit-check lint-check sanitize-check tsan-check coverage-check fuzz-json gl-audit math-check proofs proofs-full hw-report-check sense-check editor-host-check cursor-check
+.PHONY: all check check-fast check-kernel release clean lean reflect-check reflect-check-fast ssr-normal-check dither-check palette-check interlace-check dof-resolution-check snow-check snowfall-check rain-check fogsprite-check probe-check splat-check mirror-check materials-check gfx-check gfx-check-fast gfx-scene-smoke gui-check gui-check-fast gui-scoreboard gui-visual-review gui-interaction-check gui-theme-check gui-layout-check gui-shadow-check gui-depth-check gui-glass-check gui-cursor-light-check gui-pause-blur-check gui-effect-contrast-check gui-benchmark gui-benchmark-check gfx-benchmark gfx-benchmark-check gfx-benchmark-release gfx-benchmark-reference-check raymarch-benchmark raymarch-benchmark-check gfx-visual-review gfx-patchwork-check gfx-quick gfx-grid-check gfx-snapshot-check gfx-picker-check gfx-light-picker-check gfx-motion-path-check dock-layout-check gfx-label-font-check gfx-animation-check bloom-audit bloom-audit-quick audit-summary audit-summary-full gfx-preset-overwrite-check gfx-art-picker-check gfx-art-blending-check gfx-mirror-alignment-check gfx-reflection-ui-check gfx-material-asset-check gfx-asset-roots-check gfx-bijection-check gfx-skin-bones-check gfx-camera-render-check ssr-resolution-check provenance-check gfx-gl-level-ui-check gfx-prefab-check gfx-aero-check gfx-primitive-check gfx-texture-check wavetable-editor-check textwriter-editor-check textwriter-render-check sky-render-check analog-reduced-check colour-independence-check physics-editor-check gfx-export-check gfx-battle-check gfx-background-check gfx-pp-check gfx-raymarch-check gfx-raymarch-features-check error-handling-check error-check gfx-profile-check debug-check cache-check gfx-decal-bake-check version-check version-gate gfx-planar-material-check gfx-light-check gfx-art-light-check gfx-art-reflection-check gfx-shadow-check gfx-light-shadow-check material-maps-check lightmap-check lightmap-visual-review temporal-check temporal-check-fast warmup-check water-check horizon-check scoreboard fog-light-check wireframe-check particle-velocity-check compute-feature-check gl-level-check glsl130-check gl-legacy-native-check oracle-path-check oracle-bounce-check oracle-hdr-check oracle-gpu-check oracle-gpu-multibounce-check oracle-gpu-reflection-check compiler-check type-audit-check lint-check cppcheck-check sanitize-check tsan-check coverage-check fuzz-json size-report perf-stat gl-audit math-check proofs proofs-full hw-report-check sense-check editor-host-check cursor-check
 
 all:
 	bash build.sh $(BUILD_TYPE)
@@ -1363,6 +1363,22 @@ tsan-check:
 fuzz-json:
 	python3 scripts/fuzz_json.py --seconds 60
 
+#ai: cppcheck project audit (errors block; 0-error baseline).
+.PHONY: cppcheck-check
+cppcheck-check:
+	python3 scripts/cppcheck_check.py --strict
+
+#ai: Release payload attribution (bloaty sections; run make lean first).
+.PHONY: size-report
+size-report:
+	@test -x build/release/gX_build || (echo "size-report: run 'make lean' first"; exit 1)
+	bloaty -d sections build/release/gX_build
+
+#ai: CPU counter snapshot for the headless suite (perf stat; advisory).
+.PHONY: perf-stat
+perf-stat:
+	perf stat -e task-clock,cycles,instructions,branches,branch-misses,cache-misses ./build/gX_build --test-only
+
 #ai: gcov coverage suite + line summary; separate build tree.
 .PHONY: coverage-check
 coverage-check:
@@ -1370,6 +1386,10 @@ coverage-check:
 	cmake --build build/coverage -j$$(nproc)
 	./build/coverage/gX_build --test-only
 	python3 scripts/coverage_report.py build/coverage
+	@if command -v gcovr >/dev/null 2>&1; then \
+	  gcovr --root . --filter 'src/' --exclude 'src/tools/imgui/' --exclude 'src/external/' \
+	    --html-details build/coverage/coverage.html build/coverage; \
+	fi
 
 #ai: advisory GFX audit for texture, uniform, and skinning integration contracts.
 .PHONY: gfx-obvious-audit
