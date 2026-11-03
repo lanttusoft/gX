@@ -9,6 +9,11 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **Render-target diet (VRAM option)**: `ENABLE_RT_DIET` in presets and the
+  Quality editor panel. Aux targets use R8/RG16F/R16F/R11G11B10F/RGB10_A2,
+  unused depth attachments are dropped, and preset/editor changes reload
+  targets live. Measured -23.8% RT VRAM with a 51.27 dB image budget; default
+  stays off and the legacy path is byte-identical.
 - **SSR march resolution option**: `ssr.resolutionDivisor` (Full/Half/Quarter)
   in presets and the Refl editor panel. Half cuts the SSR pass by ~61% and
   gives 31.3 dB on the deterministic fixture; the default stays Full and is
@@ -34,6 +39,10 @@ Release-Class: minor
   a clang-tidy diff gate (`docs/static_analysis.md`).
 
 ### Fixed
+- Cppcheck error findings: terrain height-hash signed overflow (now unsigned),
+  water mesh OOM pointer arithmetic, shader-compiler NULL increment, GUI
+  schema unsigned index formatting, and the color-code test payload
+  initialization.
 - Postprocess `injectCanvasTint` preset fields were declared as `U32` at
   byte offsets inside `gX_Color`: saving/loading performed a misaligned
   4-byte read that spanned the next component. They are `U8` schema fields

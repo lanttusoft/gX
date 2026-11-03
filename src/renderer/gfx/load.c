@@ -541,6 +541,9 @@ gX_I0 gX_RendererGFX_ApplyQualityPreset(gX_RendererGFX *gfx)
 gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
 {
 
+    //ai: honor GX_RT_DIET (audit override) or the preset's request before any
+    //   target is allocated.
+    gX_RendererGFX_RT_DietSet(gfx->state.ENABLE_RT_DIET);
     gX_RendererGFX_RenderTexture *map0 = gX_Heap_SeekPtr_Index(&gfx->maps, 0);
     //opencode: map0 should never be NULL here (maps heap pre-allocated with
     // amount=1, max=8). Guarding defensively in case of heap init failure.
@@ -700,6 +703,7 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     //   (radius 0.5, bias 0.025, strength 1.0, kernel 32) match the reference SSAO
     //   example. Stricter bias would be needed at very large scenes.
     gfx->state.ENABLE_SSAO = false;
+    gfx->state.ENABLE_RT_DIET = false;
     gfx->ssao.radius = 0.5f;
     gfx->ssao.bias = 0.025f;
     gfx->ssao.strength = 2.5f;    // increased from 1.0 for more visible darkening

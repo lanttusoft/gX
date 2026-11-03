@@ -105,6 +105,8 @@ typedef struct gX_RendererGFX_State {
 
     //opencode: SSAO toggle — tuning moved into ssao struct
     gX_I1   ENABLE_SSAO;
+    //ai: optional render-target diet (aux formats + unused depth removal).
+    gX_I1   ENABLE_RT_DIET;
     //opencode: M1 - transparent roughness-alpha repair pass active (pass 2
     //   rewrites hdrScene alpha with roughness; standard.frag emits
     //   ssrRoughness while keeping pass-1 coverage).

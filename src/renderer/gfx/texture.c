@@ -199,19 +199,35 @@ gX_I32 gX_RendererGFX_RenderTexture_Init(gX_RendererGFX_RenderTexture *map) {
     map->filter = gX_TEXTURE_FILTER_BILINEAR; //opencode: default, overridden by gfx->state.textureFilter
     map->dietFormat = 0;
     map->colorOnly = 0;
+    map->dietEpoch = gX_RendererGFX_RT_DietEpoch();
     return 0;
 }
 
-//ai: the render-target diet is a lab A/B hook until a winning slice is
-//   promoted to a preset/editor option. One env keeps the baseline and the
-//   variant on the same binary.
-static gX_I1 gX_RendererGFX_RT_DietEnabled(gX_I0) {
-    static gX_I32 cached = -1;
-    if (cached < 0) {
+//ai: render-target diet switch. The preset/editor field drives it; the
+//   `GX_RT_DIET` audit env overrides both sides of an A/B. Every change bumps
+//   the generation so all allocated targets reload on the next update.
+static gX_I1 gX_RendererGFX_RT_DietValue = 0;
+static gX_U64 gX_RendererGFX_RT_DietGeneration = 1;
+static gX_I32 gX_RendererGFX_RT_DietEnv = -1;
+
+gX_I1 gX_RendererGFX_RT_DietEnabled(gX_I0) {
+    return gX_RendererGFX_RT_DietValue;
+}
+
+gX_I0 gX_RendererGFX_RT_DietSet(gX_I1 enabled) {
+    if (gX_RendererGFX_RT_DietEnv < 0) {
         const gX_I8 *hook = getenv("GX_RT_DIET");
-        cached = (hook && hook[0] == '1') ? 1 : 0;
+        gX_RendererGFX_RT_DietEnv = (hook && hook[0] == '1') ? 1 : 0;
     }
-    return cached ? 1 : 0;
+    if (gX_RendererGFX_RT_DietEnv) enabled = 1;
+    enabled = enabled ? 1 : 0;
+    if (enabled != gX_RendererGFX_RT_DietValue)
+        gX_RendererGFX_RT_DietGeneration++;
+    gX_RendererGFX_RT_DietValue = enabled;
+}
+
+gX_U64 gX_RendererGFX_RT_DietEpoch(gX_I0) {
+    return gX_RendererGFX_RT_DietGeneration;
 }
 
 //ai: upload layout for the sized internal formats the diet can request.
@@ -369,6 +385,17 @@ gX_I0 gX_RendererGFX_Texture_Update(gX_RendererGFX_Texture *texture) {
 }
 
 gX_I0 gX_RendererGFX_RenderTexture_Update(gX_RendererGFX_RenderTexture *map) {
+    //ai: a preset/editor diet toggle invalidates every allocated target; the
+    //   reload happens lazily here with the new format requests.
+    gX_U64 epoch = gX_RendererGFX_RT_DietEpoch();
+    if (map->dietEpoch != epoch) {
+        if (map->wrapper.loadingState.loaded)
+            gX_RendererGFX_RenderTexture_Unload(map);
+        map->wrapper.loadingState.loaded = false;
+        map->wrapper.loadingState.loadAsap = true;
+        map->wrapper.loadingState.reload = false;
+        map->dietEpoch = epoch;
+    }
     if (map->wrapper.loadingState.loadAsap && maindata.backendLoaded && !(map->wrapper.loadingState.loaded)) {
         gX_RendererGFX_RenderTexture_Load(map);
     }

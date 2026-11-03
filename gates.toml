@@ -833,3 +833,11 @@ tier = ["tooling"]
 group = "tooling"
 cache = "never"
 description = "cppcheck project audit (errors block)."
+
+[gate.gfx-rt-diet]
+script = "gfx_rt_diet_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "render-target diet image + VRAM gate."

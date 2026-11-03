@@ -8085,6 +8085,13 @@ static gX_I0 gfx_quality_panel(gX_RendererGFX *gfx) {
     if (ImGui::Combo("MSAA", &msaaIndex, msaaLevels, 4))
         gfx->state.msaaLevel = msaaIndex == 1 ? 2 : (msaaIndex == 2 ? 4 : (msaaIndex == 3 ? 8 : 0));
     ImGui::TextDisabled("MSAA rebuilds the render target when changed; unsupported GL levels keep single-sample rendering.");
+    //ai: optional aux-target diet — smaller formats and unused depth removal.
+    gX_I1 rtDiet = gfx->state.ENABLE_RT_DIET ? 1 : 0;
+    if (ImGui::Checkbox("compressed aux targets (VRAM)", (bool *)&rtDiet)) {
+        gfx->state.ENABLE_RT_DIET = rtDiet ? 1 : 0;
+        gX_RendererGFX_RT_DietSet(gfx->state.ENABLE_RT_DIET);
+    }
+    ImGui::TextDisabled("Aux targets reload next frame; reflections/AO lose a little precision.");
 }
 
 //opencode: expose an optional persisted fog-to-void color link.

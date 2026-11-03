@@ -48,6 +48,7 @@ typedef struct gX_RendererGFX_RenderTexture {
     gX_I32 dietFormat;
     gX_I1 colorOnly;
     gX_U64 vramBytes;   // estimated color+depth storage for the lab report
+    gX_U64 dietEpoch;   // reload generation for the preset/editor diet toggle
 } gX_RendererGFX_RenderTexture;
 
 gX_I32 gX_RendererGFX_Texture_Init(     gX_RendererGFX_Texture *texture);
@@ -55,6 +56,12 @@ gX_I32 gX_RendererGFX_Texture_Load(     gX_RendererGFX_Texture *texture);
 gX_I32 gX_RendererGFX_Texture_Unload(   gX_RendererGFX_Texture *texture);
 
 gX_I32 gX_RendererGFX_RenderTexture_Init(  gX_RendererGFX_RenderTexture *map);
+//ai: global render-target diet switch. Presets/editor set it; the audit
+//   `GX_RT_DIET` env overrides it. Changing the value bumps a generation that
+//   makes every render target reload on its next update.
+gX_I1  gX_RendererGFX_RT_DietEnabled(gX_I0);
+gX_I0  gX_RendererGFX_RT_DietSet(gX_I1 enabled);
+gX_U64 gX_RendererGFX_RT_DietEpoch(gX_I0);
 gX_I32 gX_RendererGFX_RenderTexture_Load(  gX_RendererGFX_RenderTexture *map);
 gX_I32 gX_RendererGFX_RenderTexture_Unload(gX_RendererGFX_RenderTexture *map);
 

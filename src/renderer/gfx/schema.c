@@ -751,6 +751,7 @@ static gX_SchemaField gfx_state_fields[] = {
     GX_SCHEMA_BOOL("ENABLE_TAA",               gX_RendererGFX_State, ENABLE_TAA),
     //opencode: SSAO toggle (tuning lives in the ssao sub-object)
     GX_SCHEMA_BOOL("ENABLE_SSAO",              gX_RendererGFX_State, ENABLE_SSAO),
+    GX_SCHEMA_BOOL("ENABLE_RT_DIET",           gX_RendererGFX_State, ENABLE_RT_DIET),
     //opencode: v0.3.3-audit — schema gaps closed (env-only flags were not
     //   JSON-tunable; see docs/gfx_audit_2026-08.md finding #12)
     GX_SCHEMA_BOOL("ENABLE_FXAA",              gX_RendererGFX_State, ENABLE_FXAA),
@@ -1299,6 +1300,9 @@ gX_I32 gX_RendererGFX_Preset_Load_New(gX_RendererGFX *gfx, const gX_I8 *path)
         gfx->ssao.gtaoFinalTex.id = 0;
         gfx->ssao.ssgiFinalTex.id = 0;
         gfx->ssao.temporalModesInitialized = false;
+        //ai: apply the preset's render-target diet request after the state is
+        //   loaded; allocated targets reload lazily on the next update.
+        gX_RendererGFX_RT_DietSet(gfx->state.ENABLE_RT_DIET);
         gX_TraceLog_GFX(gX_LOG_INFO, "Load done");
     }
     if (root) json_object_put(root);
