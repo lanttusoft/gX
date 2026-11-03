@@ -43,7 +43,6 @@
 #include "load.h"
 #include "boilerplate.h"
 #include "bloom.h"
-#include "features.h"
 #include "gl_level.h"
 #include "dof.h"
 #include "taa.h"
@@ -429,7 +428,6 @@ gX_I0 gX_RendererGFX_MSAA_Create(gX_RendererGFX *gfx)
         gfx->bloom.hdrMSAA.wrapper.rt.depth.id = 0;
     }
     gfx->bloom.hdrMSAA.wrapper.loadingState.loaded = false;
-    if (!gX_RendererGFX_Feature_NeedHdr(gfx)) return;
 
     gX_I32 msaa = gfx->state.msaaLevel;
     if (msaa < 2) return; //opencode: MSAA disabled (or invalid level)
@@ -575,8 +573,6 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     gX_RendererGFX_ViewportGrid_Init(gfx);
 
     GX_GFX_RT_INIT_HDR(gfx, bloom.hdrScene);
-    gfx->bloom.hdrScene.wrapper.loadingState.loadAsap =
-        gX_RendererGFX_Feature_NeedHdr(gfx);
     GX_GFX_RT_INIT_HDR(gfx, bloom.hdrMSAA);   // MSAA_Create-owned: custom multisample assembly, never generic-loaded
     gfx->bloom.hdrMSAA.wrapper.loadingState.loadAsap = false;
     GX_GFX_RT_INIT_LDR(gfx, sceneColorLDR);
@@ -827,6 +823,7 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     gfx->bloom.luminanceRT.wrapper.width = 64;
     gfx->bloom.luminanceRT.wrapper.height = 64;
     gfx->bloom.luminanceRT.hdr = true;
+    gfx->bloom.luminanceRT.wrapper.loadingState.loadAsap = true;
     gfx->bloom.autoExposure = true;
     gfx->bloom.exposureCompensation = 1.0f;
     gfx->bloom.exposureMin = 0.25f;
@@ -834,8 +831,6 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     gfx->bloom.adaptedExposure = 1.0f;
     gfx->bloom.exposure = 1.0f;
     gfx->bloom.luminanceFrame = 0;
-    gfx->bloom.luminanceRT.wrapper.loadingState.loadAsap =
-        (gfx->state.ENABLE_BLOOM && gfx->bloom.autoExposure) ? 1 : 0;
     gX_RendererGFX_Shader_Init(&gfx->fxaaShader, 0, GX_PATH("shader", "gfx_fxaa.frag")); //opencode: v0.1.18
     //opencode: palette quantization is opt-in; keep its shader out of the
     //   production load path and startup shader set.
@@ -894,10 +889,8 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
         if (!(rt).wrapper.loadingState.loadAsap) \
             gX_TraceLog_GFX(gX_LOG_WARNING, "AUDIT: RT '%s' missing loadAsap=true", name);
     // Core pipeline RTs
-    if (gX_RendererGFX_Feature_NeedHdr(gfx))
-        CHECK_RT_LOADASAP(gfx->bloom.hdrScene, "hdrScene");
-    if (gfx->state.ENABLE_BLOOM && gfx->bloom.autoExposure)
-        CHECK_RT_LOADASAP(gfx->bloom.luminanceRT, "luminanceRT");
+    CHECK_RT_LOADASAP(gfx->bloom.hdrScene, "hdrScene");
+    CHECK_RT_LOADASAP(gfx->bloom.luminanceRT, "luminanceRT");
     CHECK_RT_LOADASAP(gfx->sceneColorLDR, "sceneColorLDR");
     CHECK_RT_LOADASAP(gfx->bloom.scene, "bloom.scene");
     // Effects RTs (loaded when feature enabled)

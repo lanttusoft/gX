@@ -62,7 +62,7 @@ gX_I1 gX_RendererGFX_Feature_NeedHdr(gX_RendererGFX *gfx)
         gfx->state.ENABLE_LENS_FLARE || gfx->state.ENABLE_SSR ||
         gfx->state.ENABLE_DOF || gfx->state.ENABLE_MOTION_BLUR ||
         gfx->state.ENABLE_TAA || gfx->state.ENABLE_SSAO ||
-        gfx->state.ENABLE_VOLUME_FOG || gfx->state.ENABLE_WATER) ? 1 : 0;
+        gfx->state.ENABLE_VOLUME_FOG) ? 1 : 0;
 }
 
 gX_I0 gX_RendererGFX_Feature_Trace(gX_RendererGFX *gfx)
