@@ -61,6 +61,7 @@
 
 #if gX_ENABLE_RENDERER == 1
     #include "../renderer/renderer.h"
+    #include "../renderer/gfx/profile.h"
 #endif
 
 //opencode: RHI for FBO blit operations (RT-to-RT copy, no Y-flip issues)
@@ -1621,7 +1622,10 @@ gX_I0 gX_GUI_Draw(gX_I0) {    //opencode: full-frame GL state diff gated behind 
 #if gX_ENABLE_RENDERER == 1
         if (renderer.gfx.data) {
             gX_RendererGFX *g = (gX_RendererGFX *)renderer.gfx.data;
-            if (g->timersInited && g->timerTotal.available) {
+            gX_F64 profileTotal = 0.0;
+            gX_I1 profileReady = gX_RendererGFX_Profile_GetLatest(
+                g->profile, GX_GFX_PROFILE_TOTAL, &profileTotal);
+            if (profileReady || (g->timersInited && g->timerTotal.available)) {
                 gX_F32 gpuX = 60.0f;
                 //opencode: draw "GPU:" label
                 gX_RawString_Draw_Lesser("GPU:", (gX_F32v2){16.0f, 52.0f}, 10, (gX_Color){200, 200, 200, 200});
@@ -1636,12 +1640,32 @@ gX_I0 gX_GUI_Draw(gX_I0) {    //opencode: full-frame GL state diff gated behind 
                     gX_RawString_Draw_Lesser(tb, (gX_F32v2){gpuX, 52.0f}, 10, tc); \
                     gpuX += (gX_F32)(strlen(name) + 1) * 7.0f + 22.0f; \
                 } while(0)
-                DRAW_TIMER_MS("shad", g->timerShadow.elapsedMs);
-                DRAW_TIMER_MS("refl", g->timerReflections.elapsedMs);
-                DRAW_TIMER_MS("opaq", g->timerOpaque.elapsedMs);
-                DRAW_TIMER_MS("bloom", g->timerBloom.elapsedMs);
-                DRAW_TIMER_MS("ssr", g->timerSSR.elapsedMs);
-                DRAW_TIMER_MS("total", g->timerTotal.elapsedMs);
+                if (profileReady) {
+                    //ai: lab HUD mirrors the CSV partitions (abbreviated to
+                    //   keep one line at 1024 px).
+                    gX_F64 stageMs = 0.0;
+                    #define DRAW_PROFILE_MS(name, stage) \
+                        if (gX_RendererGFX_Profile_GetLatest(g->profile, (stage), &stageMs)) \
+                            DRAW_TIMER_MS((name), stageMs)
+                    DRAW_PROFILE_MS("shad", GX_GFX_PROFILE_SHADOW);
+                    DRAW_PROFILE_MS("opaq", GX_GFX_PROFILE_OPAQUE);
+                    DRAW_PROFILE_MS("trns", GX_GFX_PROFILE_TRANSPARENT);
+                    DRAW_PROFILE_MS("ssr", GX_GFX_PROFILE_SSR);
+                    DRAW_PROFILE_MS("ssgi", GX_GFX_PROFILE_SSGI);
+                    DRAW_PROFILE_MS("blm", GX_GFX_PROFILE_BLOOM);
+                    DRAW_PROFILE_MS("dof", GX_GFX_PROFILE_DOF);
+                    DRAW_PROFILE_MS("taa", GX_GFX_PROFILE_TAA);
+                    DRAW_PROFILE_MS("ssao", GX_GFX_PROFILE_SSAO);
+                    DRAW_PROFILE_MS("tot", GX_GFX_PROFILE_TOTAL);
+                    #undef DRAW_PROFILE_MS
+                } else {
+                    DRAW_TIMER_MS("shad", g->timerShadow.elapsedMs);
+                    DRAW_TIMER_MS("refl", g->timerReflections.elapsedMs);
+                    DRAW_TIMER_MS("opaq", g->timerOpaque.elapsedMs);
+                    DRAW_TIMER_MS("bloom", g->timerBloom.elapsedMs);
+                    DRAW_TIMER_MS("ssr", g->timerSSR.elapsedMs);
+                    DRAW_TIMER_MS("total", g->timerTotal.elapsedMs);
+                }
                 #undef DRAW_TIMER_MS
             }
         }

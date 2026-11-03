@@ -55,12 +55,16 @@ struct gX_RendererGFX_Profile
     gX_I32 current;
     gX_I1 noFlush;
     gX_I1 fileFailed;
+    gX_F64 latest[GX_GFX_PROFILE_STAGES];
+    gX_I1 hasLatest;
 };
 
 static const gX_I8 *gX_GFX_ProfileNames[GX_GFX_PROFILE_STAGES] =
 {
-    "shadow", "reflections", "opaque", "pre_ssr", "ssr_inputs", "ssr",
-    "pre_bloom", "bloom", "post", "total"
+    "shadow", "reflections", "opaque", "labels", "transparent",
+    "ssr_inputs", "ssr", "ssr_vis", "clusters", "scene_copy", "ssgi",
+    "bloom", "post", "composite", "postfx", "motionblur", "dof", "taa",
+    "ssao", "overlays", "total"
 };
 
 //ai: nonblocking collection never publishes a partial set or re-labels cached results as another frame.
@@ -92,6 +96,9 @@ static gX_I0 gX_RendererGFX_Profile_Collect(gX_RendererGFX_Profile *Profile, gX_
             gX_TraceLog_GFX(gX_LOG_ERROR, "GFX_PROFILE: CSV write failed");
             return;
         }
+        for (gX_U32 Stage = 0; Stage < GX_GFX_PROFILE_STAGES; Stage++)
+            Profile->latest[Stage] = Slot->timers[Stage].elapsedMs;
+        Profile->hasLatest = 1;
         Slot->pending = 0;
     }
 }
@@ -132,7 +139,11 @@ gX_RendererGFX_Profile *gX_RendererGFX_Profile_Init(const gX_I8 *Path)
             Profile->initialized++;
         }
     }
-    if (fprintf(Profile->file, "frame,draw,readback_frame,shadow_ms,reflections_ms,opaque_ms,pre_ssr_ms,ssr_inputs_ms,ssr_ms,pre_bloom_ms,bloom_ms,post_ms,total_ms\n") < 0)
+    gX_I1 headerOk = fprintf(Profile->file, "frame,draw,readback_frame") >= 0;
+    for (gX_U32 Stage = 0; headerOk && Stage < GX_GFX_PROFILE_STAGES; Stage++)
+        headerOk = fprintf(Profile->file, ",%s_ms", gX_GFX_ProfileNames[Stage]) >= 0;
+    if (headerOk) headerOk = fputc('\n', Profile->file) != EOF;
+    if (!headerOk)
     {
         gX_TraceLog_GFX(gX_LOG_ERROR, "GFX_PROFILE: CSV header write failed");
         gX_RendererGFX_Profile_Deinit(Profile, 0);
@@ -201,4 +212,14 @@ gX_I0 gX_RendererGFX_Profile_Deinit(gX_RendererGFX_Profile *Profile, gX_U64 Read
         gX_TraceLog_GFX(gX_LOG_WARNING, "GFX_PROFILE: missing draws=%llu pending tail=%u",
             (unsigned long long)Profile->dropped, Pending);
     gX_Free(Profile);
+}
+
+//ai: HUD reads the last completed row instead of maintaining a second timer set.
+gX_I1 gX_RendererGFX_Profile_GetLatest(const gX_RendererGFX_Profile *Profile,
+    gX_U32 Stage, gX_F64 *Ms)
+{
+    if (!Profile || !Profile->hasLatest || !Ms || Stage >= GX_GFX_PROFILE_STAGES)
+        return 0;
+    *Ms = Profile->latest[Stage];
+    return 1;
 }

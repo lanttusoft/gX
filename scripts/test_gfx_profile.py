@@ -63,8 +63,8 @@ class ProfilePassContract(unittest.TestCase):
         begin = re.findall(r"Profile_StageBegin\(gfx->profile, (GX_GFX_PROFILE_[A-Z_]+)\)", self.source)
         end = re.findall(r"Profile_StageEnd\(gfx->profile, (GX_GFX_PROFILE_[A-Z_]+)\)", self.source)
         self.assertEqual(begin, end)
-        self.assertEqual(len(begin), 9)
-        self.assertEqual(len(set(begin)), 9)
+        self.assertEqual(len(begin), 20)
+        self.assertEqual(len(set(begin)), 20)
 
 
 class ProfileFrameWindow(unittest.TestCase):
@@ -90,6 +90,24 @@ class ProfileFrameWindow(unittest.TestCase):
         values, metadata = self.read(list(reversed(self.rows())))
         self.assertEqual(metadata["frame_ids"], [3, 4, 5])
         self.assertEqual(len(values), 3)
+
+    def test_stage_columns_are_parsed_per_source_frame(self):
+        rows = self.rows()
+        for row in rows:
+            row["opaque_ms"] = float(row["frame"])
+            row["ssao_ms"] = float(row["frame"]) * 0.5
+        with tempfile.TemporaryDirectory(prefix="gfx_profile_csv_", dir=SCRATCH) as directory:
+            path = Path(directory) / "gpu.csv"
+            with path.open("w", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+                writer.writeheader()
+                writer.writerows(rows)
+            totals, stages, metadata = benchmark.read_gpu_profile(path, 2, 3)
+        self.assertEqual(totals, [10.0] * 3)
+        self.assertEqual(metadata["frame_ids"], [3, 4, 5])
+        self.assertEqual(stages["opaque_ms"], [3.0, 4.0, 5.0])
+        self.assertEqual(stages["ssao_ms"], [1.5, 2.0, 2.5])
+        self.assertEqual(stages["total_ms"], [10.0] * 3)
 
     def test_missing_source_frame_fails(self):
         with self.assertRaisesRegex(RuntimeError, "missing"):

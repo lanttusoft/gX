@@ -88,7 +88,8 @@ FEATURE_ENV_KEYS.update({"GX_CAM_SPIN", "GX_DIAG_CUBE", "GX_EXTRA_SHADOW_LIGHTS"
 
 
 #ai: source-frame windows reject legacy/stale rows, missing data and unsupported multi-draw aggregation.
-def read_gpu_window(path, warmup, frames):
+#ai: one validated parse feeds both the total stream and the per-stage pass table.
+def read_gpu_profile(path, warmup, frames):
     expected = set(range(warmup + 1, warmup + frames + 1))
     selected = {}
     draws = set()
@@ -120,18 +121,29 @@ def read_gpu_window(path, warmup, frames):
                 raise RuntimeError("invalid GPU timing value") from error
             if any(not math.isfinite(value) or value < 0 for value in timings.values()):
                 raise RuntimeError("invalid GPU timing value")
-            selected[frame] = (draw, readback, timings["total_ms"])
+            selected[frame] = (draw, readback, timings)
             draws.add(draw)
     missing = expected - selected.keys()
     if missing:
         raise RuntimeError("GPU profile missing measured source frames: %s" % sorted(missing))
     ordered = sorted(selected)
-    return [selected[frame][2] for frame in ordered], {
+    stage_names = sorted({name for _, _, timings in selected.values() for name in timings})
+    stages = {
+        name: [selected[frame][2][name] for frame in ordered]
+        for name in stage_names
+    }
+    return [selected[frame][2]["total_ms"] for frame in ordered], stages, {
         "frame_ids": ordered,
         "draw_ids": [selected[frame][0] for frame in ordered],
         "readback_frame_ids": [selected[frame][1] for frame in ordered],
         "samples": len(ordered),
     }
+
+
+def read_gpu_window(path, warmup, frames):
+    totals, stages, metadata = read_gpu_profile(path, warmup, frames)
+    del stages
+    return totals, metadata
 
 
 #ai: CPU and GPU use the same measured simulation frames, excluding asynchronous query drain frames.
@@ -249,13 +261,18 @@ def run_capture(args, output, row_name, row_environment, repeat, common_environm
     wall_seconds = time.perf_counter() - started
 
     cpu_values = read_cpu_window(cpu_path, args.warmup, args.frames)
-    gpu_values, gpu_identity = read_gpu_window(gpu_path, args.warmup, args.frames)
+    gpu_values, gpu_stage_values, gpu_identity = read_gpu_profile(
+        gpu_path, args.warmup, args.frames)
     report = {
         "row": row_name,
         "repeat": repeat,
         "features": feature_metadata(environment),
         "cpu": statistics(cpu_values),
         "gpu": statistics(gpu_values) if gpu_values else None,
+        "gpu_stages": {
+            stage: statistics(values) if values else None
+            for stage, values in gpu_stage_values.items()
+        },
         "gpu_identity": gpu_identity,
         "unmeasured_query_drain_frames": GPU_DRAIN_FRAMES,
         "wall_seconds": wall_seconds,
@@ -268,7 +285,7 @@ def run_capture(args, output, row_name, row_environment, repeat, common_environm
     with open(os.path.join(repeat_output, "report.json"), "w", encoding="utf-8") as stream:
         json.dump(report, stream, indent=2)
         stream.write("\n")
-    return report, cpu_values, gpu_values
+    return report, cpu_values, gpu_values, gpu_stage_values
 
 
 def run_row(args, output, row_name, common_environment):
@@ -276,17 +293,26 @@ def run_row(args, output, row_name, common_environment):
     runs = []
     cpu_values = []
     gpu_values = []
+    gpu_stage_values = {}
     for repeat in range(1, args.repeats + 1):
-        report, cpu, gpu = run_capture(
+        report, cpu, gpu, stages = run_capture(
             args, output, row_name, row_environment, repeat, common_environment)
         runs.append(report)
         cpu_values.extend(cpu)
         gpu_values.extend(gpu)
+        for stage, values in stages.items():
+            gpu_stage_values.setdefault(stage, []).extend(values)
+    measured = args.frames * args.repeats
     return {
         "features": feature_metadata({**common_environment, **row_environment}),
         "repeats": runs,
         "cpu": statistics(cpu_values),
-        "gpu": statistics(gpu_values) if len(gpu_values) == args.frames * args.repeats else None,
+        "gpu": statistics(gpu_values) if len(gpu_values) == measured else None,
+        "gpu_stages": {
+            stage: statistics(values)
+            for stage, values in gpu_stage_values.items()
+            if len(values) == measured
+        },
     }
 
 
@@ -457,6 +483,15 @@ def run(args, parser):
         print("  %-9s CPU p95 %.3f ms (%+.3f vs %s), GPU p95 %s" % (
             row_name, cpu["p95_ms"], comparison["cpu_p95_delta_ms"],
             args.compare_to, gpu_text))
+        stages = {
+            name: stats for name, stats in (row.get("gpu_stages") or {}).items()
+            if name != "total_ms" and stats
+        }
+        if stages:
+            ranked = sorted(stages.items(), key=lambda item: item[1]["p95_ms"], reverse=True)
+            print("             passes p95: " + ", ".join(
+                "%s %.3f" % (name.removesuffix("_ms"), stats["p95_ms"])
+                for name, stats in ranked[:6]))
         if comparison.get("palette_advisory"):
             print("             palette overhead advisory: %s" % (
                 "PASS" if comparison["palette_advisory"]["pass"] else "OVER"))

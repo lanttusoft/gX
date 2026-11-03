@@ -1785,14 +1785,17 @@ gX_I0 gX_RendererGFX_DrawTo(gX_RendererGFX *gfx, gX_RenderTexture *outputRT) {
     gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_OPAQUE);
     GX_GL_CHECK();
 
-    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_PRE_SSR);
-    Pass_RunRange(gfx, outputRT, PASS_LABELS, PASS_SSR_INPUTS);
-    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_PRE_SSR);
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_LABELS);
+    Pass_RunRange(gfx, outputRT, PASS_LABELS, PASS_TRANSPARENT);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_LABELS);
+
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_TRANSPARENT);
+    Pass_RunRange(gfx, outputRT, PASS_TRANSPARENT, PASS_SSR_INPUTS);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_TRANSPARENT);
 
     gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_SSR_INPUTS);
     Pass_RunRange(gfx, outputRT, PASS_SSR_INPUTS, PASS_SSR);
     gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_SSR_INPUTS);
-
 
     gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_SSR);
     if (gfx->timersInited) gX_RHI_Query_Timer_Begin(&gfx->timerSSR);
@@ -1803,10 +1806,21 @@ gX_I0 gX_RendererGFX_DrawTo(gX_RendererGFX *gfx, gX_RenderTexture *outputRT) {
     if (gfx->timersInited) gX_RHI_Query_Timer_End(&gfx->timerSSR);
     gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_SSR);
 
-    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_PRE_BLOOM);
-    Pass_RunRange(gfx, outputRT, PASS_SSR_VIS, PASS_BLOOM);
-    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_PRE_BLOOM);
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_SSR_VIS);
+    Pass_RunRange(gfx, outputRT, PASS_SSR_VIS, PASS_CLUSTERS);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_SSR_VIS);
 
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_CLUSTERS);
+    Pass_RunRange(gfx, outputRT, PASS_CLUSTERS, PASS_SCENE_COPY);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_CLUSTERS);
+
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_SCENE_COPY);
+    Pass_RunRange(gfx, outputRT, PASS_SCENE_COPY, PASS_SSGI);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_SCENE_COPY);
+
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_SSGI);
+    Pass_RunRange(gfx, outputRT, PASS_SSGI, PASS_BLOOM);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_SSGI);
 
     gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_BLOOM);
     if (gfx->timersInited) gX_RHI_Query_Timer_Begin(&gfx->timerBloom);
@@ -1815,8 +1829,36 @@ gX_I0 gX_RendererGFX_DrawTo(gX_RendererGFX *gfx, gX_RenderTexture *outputRT) {
     gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_BLOOM);
 
     gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_POST);
-    Pass_RunRange(gfx, outputRT, PASS_GODRAY, PASS_COUNT);
+    Pass_RunRange(gfx, outputRT, PASS_GODRAY, PASS_PRESENT);
     gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_POST);
+
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_COMPOSITE);
+    Pass_RunRange(gfx, outputRT, PASS_PRESENT, PASS_SCENE_MASK);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_COMPOSITE);
+
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_POSTFX);
+    Pass_RunRange(gfx, outputRT, PASS_SCENE_MASK, PASS_MOTIONBLUR);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_POSTFX);
+
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_MOTIONBLUR);
+    Pass_RunRange(gfx, outputRT, PASS_MOTIONBLUR, PASS_DOF);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_MOTIONBLUR);
+
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_DOF);
+    Pass_RunRange(gfx, outputRT, PASS_DOF, PASS_TAA);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_DOF);
+
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_TAA);
+    Pass_RunRange(gfx, outputRT, PASS_TAA, PASS_SSAO);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_TAA);
+
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_SSAO);
+    Pass_RunRange(gfx, outputRT, PASS_SSAO, PASS_CONTACT);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_SSAO);
+
+    gX_RendererGFX_Profile_StageBegin(gfx->profile, GX_GFX_PROFILE_OVERLAYS);
+    Pass_RunRange(gfx, outputRT, PASS_CONTACT, PASS_COUNT);
+    gX_RendererGFX_Profile_StageEnd(gfx->profile, GX_GFX_PROFILE_OVERLAYS);
 
     gX_RHI_BufferAudit_EndFrame();
 
