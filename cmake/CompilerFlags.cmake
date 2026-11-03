@@ -1,3 +1,5 @@
+include(CompilerFeatures)
+
 # Minimal CompilerFlags for gX
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-missing-field-initializers -Werror=implicit-function-declaration")

@@ -39,6 +39,8 @@ Start here:
 - [Engine frontend contract — module-owned scene](engine_frontend_contract.md)
 - [Engine/game split and the no-assets terminal frontend](engine_game_split.md)
 - [Engine-core archive boundary](engine_library.md)
+- [Static analysis and type gates](static_analysis.md) — compiler probes,
+  libclang type audit and the clang-tidy diff gate.
 - [gX Kernel](kernel.md)
 - [Lean size gate](lean_gate.md)
 - [Lean 4 proof audit](lean_proofs.md)

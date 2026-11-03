@@ -1,0 +1,19 @@
+# gX lint profile — mirror of scripts/lint_check.py. Only changed lines are
+# graded by the gate; this file serves editors and manual clang-tidy runs.
+Checks: >
+  -*,
+  clang-analyzer-core.*,
+  clang-analyzer-deadcode.*,
+  clang-analyzer-unix.*,
+  bugprone-signed-char-misuse,
+  bugprone-misplaced-widening-cast,
+  bugprone-sizeof-expression,
+  bugprone-suspicious-memset-usage,
+  bugprone-incorrect-roundings,
+  bugprone-too-small-loop-variable,
+  bugprone-narrowing-conversions,
+  misc-redundant-expression,
+  misc-static-assert,
+  portability-*
+HeaderFilterRegex: '^.*/src/.*'
+WarningsAsErrors: ''

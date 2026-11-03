@@ -45,7 +45,7 @@ MATH_SOAK_PROBES ?= 1024
 export GX_AUDIT_WINDOW ?= hidden
 
 .PHONY: reflection-lab-check shader-cache-check
-.PHONY: all check check-fast check-kernel release clean lean reflect-check reflect-check-fast ssr-normal-check dither-check palette-check interlace-check dof-resolution-check snow-check snowfall-check rain-check fogsprite-check probe-check splat-check mirror-check materials-check gfx-check gfx-check-fast gfx-scene-smoke gui-check gui-check-fast gui-scoreboard gui-visual-review gui-interaction-check gui-theme-check gui-layout-check gui-shadow-check gui-depth-check gui-glass-check gui-cursor-light-check gui-pause-blur-check gui-effect-contrast-check gui-benchmark gui-benchmark-check gfx-benchmark gfx-benchmark-check gfx-benchmark-release gfx-benchmark-reference-check raymarch-benchmark raymarch-benchmark-check gfx-visual-review gfx-patchwork-check gfx-quick gfx-grid-check gfx-snapshot-check gfx-picker-check gfx-light-picker-check gfx-motion-path-check dock-layout-check gfx-label-font-check gfx-animation-check bloom-audit bloom-audit-quick audit-summary audit-summary-full gfx-preset-overwrite-check gfx-art-picker-check gfx-art-blending-check gfx-mirror-alignment-check gfx-reflection-ui-check gfx-material-asset-check gfx-asset-roots-check gfx-bijection-check gfx-skin-bones-check gfx-camera-render-check provenance-check gfx-gl-level-ui-check gfx-prefab-check gfx-aero-check gfx-primitive-check gfx-texture-check wavetable-editor-check textwriter-editor-check textwriter-render-check sky-render-check analog-reduced-check colour-independence-check physics-editor-check gfx-export-check gfx-battle-check gfx-background-check gfx-pp-check gfx-raymarch-check gfx-raymarch-features-check error-handling-check error-check gfx-profile-check debug-check cache-check gfx-decal-bake-check version-check version-gate gfx-planar-material-check gfx-light-check gfx-art-light-check gfx-art-reflection-check gfx-shadow-check gfx-light-shadow-check material-maps-check lightmap-check lightmap-visual-review temporal-check temporal-check-fast warmup-check water-check horizon-check scoreboard fog-light-check wireframe-check particle-velocity-check compute-feature-check gl-level-check glsl130-check gl-legacy-native-check oracle-path-check oracle-bounce-check oracle-hdr-check oracle-gpu-check oracle-gpu-multibounce-check oracle-gpu-reflection-check gl-audit math-check proofs proofs-full hw-report-check sense-check editor-host-check cursor-check
+.PHONY: all check check-fast check-kernel release clean lean reflect-check reflect-check-fast ssr-normal-check dither-check palette-check interlace-check dof-resolution-check snow-check snowfall-check rain-check fogsprite-check probe-check splat-check mirror-check materials-check gfx-check gfx-check-fast gfx-scene-smoke gui-check gui-check-fast gui-scoreboard gui-visual-review gui-interaction-check gui-theme-check gui-layout-check gui-shadow-check gui-depth-check gui-glass-check gui-cursor-light-check gui-pause-blur-check gui-effect-contrast-check gui-benchmark gui-benchmark-check gfx-benchmark gfx-benchmark-check gfx-benchmark-release gfx-benchmark-reference-check raymarch-benchmark raymarch-benchmark-check gfx-visual-review gfx-patchwork-check gfx-quick gfx-grid-check gfx-snapshot-check gfx-picker-check gfx-light-picker-check gfx-motion-path-check dock-layout-check gfx-label-font-check gfx-animation-check bloom-audit bloom-audit-quick audit-summary audit-summary-full gfx-preset-overwrite-check gfx-art-picker-check gfx-art-blending-check gfx-mirror-alignment-check gfx-reflection-ui-check gfx-material-asset-check gfx-asset-roots-check gfx-bijection-check gfx-skin-bones-check gfx-camera-render-check provenance-check gfx-gl-level-ui-check gfx-prefab-check gfx-aero-check gfx-primitive-check gfx-texture-check wavetable-editor-check textwriter-editor-check textwriter-render-check sky-render-check analog-reduced-check colour-independence-check physics-editor-check gfx-export-check gfx-battle-check gfx-background-check gfx-pp-check gfx-raymarch-check gfx-raymarch-features-check error-handling-check error-check gfx-profile-check debug-check cache-check gfx-decal-bake-check version-check version-gate gfx-planar-material-check gfx-light-check gfx-art-light-check gfx-art-reflection-check gfx-shadow-check gfx-light-shadow-check material-maps-check lightmap-check lightmap-visual-review temporal-check temporal-check-fast warmup-check water-check horizon-check scoreboard fog-light-check wireframe-check particle-velocity-check compute-feature-check gl-level-check glsl130-check gl-legacy-native-check oracle-path-check oracle-bounce-check oracle-hdr-check oracle-gpu-check oracle-gpu-multibounce-check oracle-gpu-reflection-check compiler-check type-audit-check lint-check gl-audit math-check proofs proofs-full hw-report-check sense-check editor-host-check cursor-check
 
 all:
 	bash build.sh $(BUILD_TYPE)
@@ -65,6 +65,8 @@ check: all
 	python3 scripts/test_gfx_cookie_upload.py
 	#ai: pass identities, unchanged draw order, complete GPU query sets and strict source-frame windows.
 	python3 scripts/test_gfx_profile.py
+	#ai: gX_I1 is bool: AST fixtures pin sentinel/counter/return/compare detection.
+	python3 scripts/test_type_audit.py
 	#ai: startup save-guard probes must preserve the exact inherited environment, including allocation-failure controls.
 	python3 scripts/test_harness_guard_lifetime.py
 	#ai: heap textures must receive initial and deferred sampler policy.
@@ -111,6 +113,7 @@ check: all
 	bash scripts/audit_resources.sh
 	python3 scripts/script_license_audit.py --strict
 	$(MAKE) -s asset-clearance-check
+	$(MAKE) -s compiler-check
 	@echo "== [gX CI] hardware report =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/hw_report_check.py
 	@echo "== [gX CI] error-handling audit =="
@@ -1318,6 +1321,22 @@ oracle-gpu-reflection-check: all
 #   legacy terrain raw-state paths are migrated to the RHI.
 gl-audit:
 	python3 scripts/gl_state_audit.py
+
+#ai: compiler capability probes + the alias type contract (see docs/static_analysis.md).
+.PHONY: compiler-check
+compiler-check: all
+	python3 scripts/compiler_feature_check.py
+
+#ai: libclang AST type audit; tooling tier (clang bindings required).
+.PHONY: type-audit-check
+type-audit-check:
+	cmake -B build/lint -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON . >/dev/null
+	python3 scripts/type_audit.py --strict
+
+#ai: clang-tidy diff gate; tooling tier (clang-tidy + clang-tidy-diff required).
+.PHONY: lint-check
+lint-check:
+	python3 scripts/lint_check.py
 
 #ai: advisory GFX audit for texture, uniform, and skinning integration contracts.
 .PHONY: gfx-obvious-audit

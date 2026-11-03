@@ -38,6 +38,11 @@ make version-check               # version format/consistency
   own contract; the matrix is `gates.toml`).
 - Local gates are authoritative. GitHub Actions is intentionally disabled;
   do not enable it or add workflows as part of a change.
+- `make compiler-check` probes compiler warning flags and C11 features and
+  asserts the alias sizes plus the `gX_I1` bool identity; `make check` runs
+  it. `make type-audit-check` and `make lint-check` are tooling-tier static
+  analysis (libclang AST audit / clang-tidy diff); see
+  `docs/static_analysis.md`.
 - If a gate fails, fix the cause. A known cold-start flake may be retried once
   and recorded as a retry, never hidden.
 

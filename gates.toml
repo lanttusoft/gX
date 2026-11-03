@@ -793,3 +793,27 @@ group = "render"
 cache = "content"
 description = "reflection-ui audit gate."
 
+
+[gate.compiler]
+script = "compiler_feature_check.py"
+args = []
+tier = ["tooling"]
+group = "tooling"
+cache = "never"
+description = "compiler capability and alias type-contract gate."
+
+[gate.type-audit]
+script = "type_audit.py"
+args = ["--strict"]
+tier = ["tooling"]
+group = "tooling"
+cache = "never"
+description = "libclang type audit (bool sentinels, raw-type ratchet)."
+
+[gate.lint]
+script = "lint_check.py"
+args = []
+tier = ["tooling"]
+group = "tooling"
+cache = "never"
+description = "clang-tidy diff gate."
