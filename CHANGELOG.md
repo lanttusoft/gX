@@ -15,9 +15,14 @@ Release-Class: minor
   byte-identical to the previous path.
 - **Per-pass GPU profiling**: 20 profiler stages (shadow through overlays)
   written to the benchmark CSV, HUD and per-stage p95 report.
-- **Runtime instrumentation targets**: `make sanitize-check` (ASan + UBSan)
-  and `make coverage-check` (gcov line summary) use separate build trees and
-  the compiler capability probes; the default build is unchanged.
+- **Runtime instrumentation targets**: `make sanitize-check` (ASan + UBSan),
+  `make tsan-check` (ThreadSanitizer) and `make coverage-check` (gcov line
+  summary) use separate build trees and the compiler capability probes; the
+  default build is unchanged.
+- **Developer presets and fuzzing**: `CMakePresets.json` standardizes
+  debug/release/lint/sanitize/tsan/coverage/kernel/gl43 builds and exports
+  `compile_commands.json` for clangd; `make fuzz-json` runs the libFuzzer +
+  ASan JSON parser harness.
 - **Static analysis gates**: compiler capability probes with hard errors for
   bool/pointer type misuse and the clean quality-warning set
   (`-Wimplicit-fallthrough`, `-Wformat=2`, `-Wundef`, `-Wvla`, ...), alias

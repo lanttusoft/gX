@@ -90,16 +90,42 @@ The compiler probes also gate two separate build configurations:
 
 ```bash
 make sanitize-check   # build/sanitize: ASan + UBSan, then --test-only
+make tsan-check       # build/tsan: ThreadSanitizer, then --test-only
 make coverage-check   # build/coverage: gcov, then --test-only + line summary
 ```
 
 `GX_SANITIZE=ON` requires the probed ASan/UBSan support and adds
 `-fsanitize=address,undefined -fno-sanitize-recover=all
--fno-omit-frame-pointer` to gX targets. `GX_COVERAGE=ON` adds `--coverage`.
+-fno-omit-frame-pointer` to gX targets. `GX_TSAN=ON` adds
+`-fsanitize=thread` and halts on the first race. `GX_COVERAGE=ON` adds
+`--coverage`.
 Both keep the default `build/` configuration untouched. The sanitizer run
 disables leak detection (`detect_leaks=0`) because the test harness keeps
 process-lifetime allocations; UBSan halts on the first error. Coverage writes
 `build/coverage/coverage.json` and prints the lowest-covered sources.
+
+## Presets, clangd and fuzzing
+
+`CMakePresets.json` standardizes the build trees: `default` (build/), `debug`,
+`release`, `lint` (compile database for clang-tidy/clangd), `sanitize`, `tsan`,
+`coverage`, `kernel` and `gl43`. Every preset exports
+`compile_commands.json`; `.clangd` points at `build/lint`:
+
+```bash
+cmake --preset lint
+cmake --build --preset lint
+```
+
+The JSON parser has a libFuzzer + ASan harness:
+
+```bash
+make fuzz-json                 # 60 s default
+python3 scripts/fuzz_json.py --seconds 120 --runs 0
+```
+
+It compiles `fuzz/fuzz_json.c` with `-fsanitize=fuzzer,address`, seeds from
+`resources/tools/*.json`, and writes crash artifacts under
+`build/fuzz-artifacts/`. It is a manual/tooling target, not a gate.
 
 ## Why this split
 

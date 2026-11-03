@@ -112,7 +112,8 @@ foreach(feature IN ITEMS
         GX_HAVE_BUILTIN_RETURN_ADDRESS GX_HAVE_NORETURN GX_HAVE_ALIGNAS
         GX_HAVE_HAS_INCLUDE GX_HAVE_SANITIZE_ADDRESS
         GX_HAVE_SANITIZE_UNDEFINED GX_HAVE_FNO_COMMON GX_HAVE_LTO
-        GX_HAVE_COVERAGE GX_HAVE_STACK_PROTECTOR GX_C_FLAG_TAUTOLOGICAL)
+        GX_HAVE_COVERAGE GX_HAVE_STACK_PROTECTOR GX_C_FLAG_TAUTOLOGICAL
+        GX_HAVE_SANITIZE_THREAD)
     unset(${feature} CACHE)
 endforeach()
 
@@ -166,7 +167,7 @@ check_c_source_compiles(
 # Sanitizer/coverage runtimes link through the driver; check both phases.
 set(GX_SAVED_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
 set(GX_SAVED_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-foreach(pair IN ITEMS "address:-fsanitize=address" "undefined:-fsanitize=undefined")
+foreach(pair IN ITEMS "address:-fsanitize=address" "undefined:-fsanitize=undefined" "thread:-fsanitize=thread")
     string(REPLACE ":" ";" parts "${pair}")
     list(GET parts 0 name)
     list(GET parts 1 flag)
@@ -252,6 +253,7 @@ foreach(pair IN ITEMS
         "has_include=${GX_HAVE_HAS_INCLUDE}"
         "sanitize_address=${GX_HAVE_SANITIZE_ADDRESS}"
         "sanitize_undefined=${GX_HAVE_SANITIZE_UNDEFINED}"
+        "sanitize_thread=${GX_HAVE_SANITIZE_THREAD}"
         "fno_common=${GX_HAVE_FNO_COMMON}"
         "lto=${GX_HAVE_LTO}"
         "coverage=${GX_HAVE_COVERAGE}"

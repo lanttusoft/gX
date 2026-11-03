@@ -1,0 +1,3 @@
+# gX clangd profile. Generate the database with: cmake --preset lint
+CompileFlags:
+  CompilationDatabase: build/lint
