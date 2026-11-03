@@ -72,7 +72,8 @@ static gX_I1 s_heightOn = 0;
 
 static gX_U32 Terrain_Hash2(gX_I32 x, gX_I32 y)
 {
-    gX_U32 h = (gX_U32)((x * 374761393 + y * 668265263) & 0x7fffffff);
+    //ai: unsigned wrap is defined; signed overflow in the hash was UB.
+    gX_U32 h = ((gX_U32)x * 374761393u + (gX_U32)y * 668265263u) & 0x7fffffffu;
     h = (h ^ (h >> 13)) * 1274126177u;
     h = h ^ (h >> 16);
     return h & 0xffffu;

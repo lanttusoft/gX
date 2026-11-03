@@ -1954,7 +1954,7 @@ static gX_I32 test_diagnostic_record(gX_I0)
     source.buildHash = 0xDEADBEEFu;
     source.errorCode = 0x42;
     source.frameCounter = 7;
-    gX_U8 payload[GX_COLOR_CODE_DIAGNOSTIC_SIZE];
+    gX_U8 payload[GX_COLOR_CODE_DIAGNOSTIC_SIZE] = {0};
     gX_U32 length = 0;
     if (gX_ColorCode_Diagnostic_Pack(&source, payload, sizeof(payload),
             &length) != GX_COLOR_CODE_OK

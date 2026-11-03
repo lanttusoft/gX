@@ -361,7 +361,7 @@ static gX_I0 gX_GUI_Element_Layout_SchemaJSON_Create(gX_GUI_Element_Layout *layo
     GX_SCHEMAJSON_ADDOBJECT_PUSHCONTEXT(children)
         for (gX_U32 i = 0; i < layout->childCount; i++) {
             gX_TextLine bfr;
-            snprintf(bfr,sizeof(bfr),"child[%i]",i);
+            snprintf(bfr,sizeof(bfr),"child[%u]",i);
             GX_SCHEMAJSON_ADDOBJECT_PUSHCONTEXT_STRING(bfr)
                 GX_SCHEMAJSON_ADDOBJECT_TERM(id,(layout->children[i]),I32)
             GX_SCHEMAJSON_POPCONTEXT
@@ -476,7 +476,7 @@ static gX_I0 gX_GUI_Element_Timer_SchemaJSON_Create(gX_GUI_Element_Timer *timer)
 //opencode: snprintf for buffer overflow safety
 #define SCHEMAJSON_INDEX_ELEMENT(ind) \
     gX_TextLine bfr; \
-    snprintf(bfr,sizeof(bfr),"element[%i]",ind); \
+    snprintf(bfr,sizeof(bfr),"element[%u]",ind); \
     GX_SCHEMAJSON_ADDOBJECT_PUSHCONTEXT_STRING(bfr) \
         gX_GUI_Element *element = &elements[ind]; \
         gX_GUI_Element_SchemaJSON_Create(element); \
@@ -484,7 +484,7 @@ static gX_I0 gX_GUI_Element_Timer_SchemaJSON_Create(gX_GUI_Element_Timer *timer)
 
 #define SCHEMAJSON_INDEX_MODULE(ind,namelc,nameuc) \
     gX_TextLine bfr; \
-    snprintf(bfr,sizeof(bfr),#namelc"[%i]",ind); \
+    snprintf(bfr,sizeof(bfr),#namelc"[%u]",ind); \
     GX_SCHEMAJSON_ADDOBJECT_PUSHCONTEXT_STRING(bfr) \
         gX_GUI_Element_##nameuc *namelc = &namelc##s[ind]; \
         gX_GUI_Element_##nameuc##_SchemaJSON_Create(namelc); \
@@ -631,7 +631,7 @@ gX_I0 gX_GUI_SchemaJSON_Create(gX_I32 id) {
         for (gX_U32 i = 0; i < canvas->elements.amount; i++) {
             if (!canvas->elements.meta || !canvas->elements.meta[i].USED) continue;
             gX_TextLine bfr;
-            snprintf(bfr,sizeof(bfr),"element[%i]",savedIndex);
+            snprintf(bfr,sizeof(bfr),"element[%u]",savedIndex);
             GX_SCHEMAJSON_ADDOBJECT_PUSHCONTEXT_STRING(bfr)
                 gX_GUI_Element *element = &elements[i];
                 gX_GUI_Element_SchemaJSON_Create(element);

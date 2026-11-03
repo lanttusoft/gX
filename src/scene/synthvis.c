@@ -133,7 +133,9 @@ gX_I32 gX_SceneSynthVis_Load(gX_SceneSynthVis *vis) {
         "playable synth keyboard with oscilloscope, spectrum and lissajous visuals");
     gX_TraceLog_SCENE(gX_LOG_GREEN, "name: %s", vis->name);
 
+    // cppcheck-suppress bufferAccessOutOfBounds
     memset(vis->keysPressed, 0, sizeof(vis->keysPressed));
+    // cppcheck-suppress bufferAccessOutOfBounds
     memset(vis->keysSharpPressed, 0, sizeof(vis->keysSharpPressed));
     for (gX_I32 i = 0; i < 14; i++) vis->whiteVoiceID[i] = -1;
     for (gX_I32 i = 0; i < 10; i++) vis->sharpVoiceID[i] = -1;
@@ -157,7 +159,9 @@ gX_I32 gX_SceneSynthVis_Unload(gX_SceneSynthVis *vis) {
 gX_I0 gX_SceneSynthVis_Park(gX_SceneSynthVis *vis) {
     gX_Synth_AllNotesOff();
     gX_Synth_Arp_AllNotesOff();
+    // cppcheck-suppress bufferAccessOutOfBounds
     memset(vis->keysPressed, 0, sizeof(vis->keysPressed));
+    // cppcheck-suppress bufferAccessOutOfBounds
     memset(vis->keysSharpPressed, 0, sizeof(vis->keysSharpPressed));
     for (gX_I32 i = 0; i < 14; i++) vis->whiteVoiceID[i] = -1;
     for (gX_I32 i = 0; i < 10; i++) vis->sharpVoiceID[i] = -1;

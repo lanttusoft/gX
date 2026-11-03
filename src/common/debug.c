@@ -412,6 +412,7 @@ gX_I0 gX_Debug_Update(gX_I0) {
 #pragma GCC diagnostic ignored "-Wnull-dereference"
 #endif
         volatile gX_I32 *nullPointer = NULL;
+        // cppcheck-suppress nullPointer
         *nullPointer = 1;
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop

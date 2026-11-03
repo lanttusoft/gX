@@ -305,6 +305,11 @@ static gX_I0 water_gpu_load(gX_I0 *arg)
         gX_I32 vertSize = vertCount * 3; // positions only, interleaved with nothing
         gX_I32 totalVerts = vertSize + vertCount * 2 + vertCount * 3; // pos + uv + normal
         gX_F32 *all = (gX_F32*)malloc(totalVerts * sizeof(gX_F32));
+        if (!all)
+        {
+            gX_TraceLog(gX_LOG_ERROR, "water mesh allocation failed");
+            return;
+        }
         memcpy(all, verts, vertSize * sizeof(gX_F32));
         memcpy(all + vertSize, texcoords, vertCount * 2 * sizeof(gX_F32));
         memcpy(all + vertSize + vertCount * 2, normals, vertCount * 3 * sizeof(gX_F32));

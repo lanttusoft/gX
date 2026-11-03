@@ -2001,7 +2001,7 @@ static gX_U32 vkCountBlockLocations(const gX_I8 *body) {
                         }
                     }
                 }
-                walk++;
+                if (walk) walk++;
             }
             total += count;
         }
