@@ -136,9 +136,10 @@ See `docs/guest_assets.md`.
 - `GX_GFX_FEATURE_TRACE=1` logs the one-shot closure and whether the HDR and
   composite targets are loaded, so allocation drift is observable.
 - Water, labels, transparent and decals now resolve the scene target through
-  `Feature_SceneColorTarget` (HDR when allocated, LDR otherwise). Lazy HDR
-  allocation is still pending because the shader-quality cascade silently
-  re-enables SSAO; the display transform also still depends on bloom.
+  `Feature_SceneColorTarget` (HDR when allocated, LDR otherwise).
+- SSAO is no longer toggled by the shader-quality cascade; a PBR-driven
+  quality raise cannot silently re-enable it. Lazy HDR allocation can
+  therefore trust `NeedHdr`. The display transform still depends on bloom.
 
 ## Threading model (2026-11-03)
 

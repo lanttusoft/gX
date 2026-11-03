@@ -322,7 +322,9 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
                 gfx->state.ENABLE_MAP_PARALLAX = 0;
                 gfx->state.ENABLE_RIM = 0;
                 gfx->state.ENABLE_DETAIL = 0;
-                gfx->state.ENABLE_SSAO = 0;
+                //opencode: SSAO is a scene feature, not a shader-quality
+                //   detail level; the cascade must not silently turn it off
+                //   (or back on for the PBR auto-raise) and change HDR needs.
                 GX_HEAP_FOREACH(gfx->models, gX_RendererGFX_Model, m) {
                     if (m->loaded) {
                         if (!m->qualitySaved) {
@@ -338,7 +340,7 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
                 gfx->state.ENABLE_MAP_PARALLAX = 1;
                 gfx->state.ENABLE_RIM = 1;
                 gfx->state.ENABLE_DETAIL = 1;
-                gfx->state.ENABLE_SSAO = 1;
+                //opencode: SSAO is scene-authored; quality never enables it.
                 // MEDIUM/HIGH does NOT force usePBR=1 — per-model usePBR is set by the
                 // scene and should be preserved. The shader's #if QUALITY >= 1 gates
                 // handle Fresnel, rim, detail, and refraction. PBR-only models already

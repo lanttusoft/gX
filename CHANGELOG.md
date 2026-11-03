@@ -34,6 +34,9 @@ Release-Class: minor
   the batch, with the first parallel verdict retained for visibility.
 
 ### Fixed
+- The shader-quality cascade no longer toggles SSAO. SSAO is a scene feature;
+  a PBR-driven quality raise used to silently re-enable it and change the
+  scene's HDR requirements.
 - DOF/motion-blur/particle-only scenes now load and update `bloom.scene`; the
   old hand-maintained update list omitted them even though the pass table
   routed their output through the composite target.
