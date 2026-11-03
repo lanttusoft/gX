@@ -260,77 +260,6 @@ static gX_U32 gX_Shader_TryLoadBinary(const gX_I8 *vertSrc, const gX_I8 *fragSrc
     return prog;
 }
 
-// ─── Async Shader Preprocess Farm ───
-// Preprocesses shader source files on worker threads (off the GL thread).
-// The main thread then compiles the preprocessed source via GL.
-// Thread pool is lazily created on first use, shared across all shader loads.
-
-#include "../common/threading.h"
-
-typedef struct gX_Shader_PreprocessTask {
-    // Input
-    const gX_I8 *vertLabel;   // path label for logging
-    gX_I8 *vertPath;          // actual file path (copied)
-    const gX_I8 *fragLabel;
-    gX_I8 *fragPath;
-    gX_I8 *defines;           // shader defines (copied)
-    gX_U32 maxUniforms;
-    // Output (filled by worker)
-    gX_I8  *processedVert;    // preprocessed vertex source (allocated)
-    gX_U64  vertLen;
-    gX_I8  *processedFrag;    // preprocessed fragment source (allocated)
-    gX_U64  fragLen;
-    gX_I32  result;           // 0 = success, -1 = error
-    gX_AtomicI32 done;
-    // For binary cache: store the original file path for keying
-    gX_I8   cacheKey[512];
-} gX_Shader_PreprocessTask;
-
-// Worker thread function: reads + preprocesses shader files
-static gX_I0 gX_Shader_WorkerFunc(gX_I0 *arg)
-{
-    gX_Shader_PreprocessTask *task = (gX_Shader_PreprocessTask*)arg;
-    task->result = -1;
-
-    // Preprocess vertex shader
-    if (task->vertPath && task->vertPath[0])
-    {
-        task->processedVert = gX_Shader_Compiler_Preprocess(task->vertPath, NULL, &task->vertLen);
-        if (!task->processedVert)
-        {
-            // Fallback: will use LoadShader directly on main thread
-            task->processedVert = 0;
-        }
-    }
-
-    // Preprocess fragment shader
-    if (task->fragPath && task->fragPath[0])
-    {
-        task->processedFrag = gX_Shader_Compiler_Preprocess(task->fragPath, task->defines, &task->fragLen);
-        if (!task->processedFrag)
-        {
-            free(task->processedVert);
-            task->processedVert = 0;
-        }
-    }
-
-    gX_AtomicI32_Store(&task->done, 1);
-    task->result = 0;
-}
-
-// Global thread pool for shader preprocessing (lazily created)
-static gX_ThreadPool s_shaderPool;
-static gX_I1        s_shaderPoolCreated = 0;
-
-static gX_I32 gX_Shader_EnsurePool(gX_I0)
-{
-    if (s_shaderPoolCreated) return 0;
-    // Use 2 worker threads for preprocessing (file I/O bound)
-    gX_I32 r = gX_ThreadPool_Create(&s_shaderPool, 2, gX_Shader_WorkerFunc, 0);
-    if (r == 0) s_shaderPoolCreated = 1;
-    return r;
-}
-
 //opencode: raw GLSL 1.30 program loading bypasses raylib's source loader so
 // the RHI can bind legacy fragment outputs before link. Recreate raylib's
 // standard location table for the wrapper-facing shader contract.
@@ -355,61 +284,6 @@ static gX_I0 gX_Shader_PopulateDefaultLocs(Shader *shader)
     shader->locs[gX_RHI_SHADER_LOC_MAP_ALBEDO]        = gX_RHI_GetUniformLocation(shader->id, "texture0");
     shader->locs[gX_RHI_SHADER_LOC_MAP_METALNESS]     = gX_RHI_GetUniformLocation(shader->id, "texture1");
     shader->locs[gX_RHI_SHADER_LOC_MAP_NORMAL]        = gX_RHI_GetUniformLocation(shader->id, "texture2");
-}
-
-// Submit a shader for async preprocessing. Returns a task handle.
-// Call gX_Shader_WaitForPreprocess before GL compilation.
-static gX_Shader_PreprocessTask *gX_Shader_SubmitPreprocess(
-    const gX_I8 *vertPath, const gX_I8 *vertLabel,
-    const gX_I8 *fragPath, const gX_I8 *fragLabel,
-    const gX_I8 *defines)
-{
-    if (gX_Shader_EnsurePool() != 0) return 0;
-    gX_Shader_PreprocessTask *task = (gX_Shader_PreprocessTask*)
-        calloc(1, sizeof(gX_Shader_PreprocessTask));
-    if (!task) return 0;
-    gX_AtomicI32_Init(&task->done, 0);
-
-    if (vertPath) { task->vertPath = strdup(vertPath); task->vertLabel = vertLabel ? vertLabel : vertPath; }
-    if (fragPath) { task->fragPath = strdup(fragPath); task->fragLabel = fragLabel ? fragLabel : fragPath; }
-    if (defines)  { task->defines  = strdup(defines); }
-
-    // Build cache key from frag path (most unique)
-    if (fragPath) snprintf(task->cacheKey, sizeof(task->cacheKey), "%s", fragPath);
-    else if (vertPath) snprintf(task->cacheKey, sizeof(task->cacheKey), "%s", vertPath);
-
-    gX_ThreadPool_Submit(&s_shaderPool, task);
-    return task;
-}
-
-// Wait for a preprocess task to complete. Frees the task.
-// Returns the preprocessed source (caller must free) or 0 on failure.
-static gX_I0 gX_Shader_WaitForPreprocess(gX_Shader_PreprocessTask *task,
-    gX_I8 **outVert, gX_U64 *outVertLen,
-    gX_I8 **outFrag, gX_U64 *outFragLen)
-{
-    if (!task) return;
-    // Spin until done (task is being processed by a worker)
-    while (gX_AtomicI32_Load(&task->done) == 0) gX_Thread_Sleep(1);
-
-    if (outVert)    *outVert = task->processedVert;
-    if (outVertLen) *outVertLen = task->vertLen;
-    if (outFrag)    *outFrag = task->processedFrag;
-    if (outFragLen) *outFragLen = task->fragLen;
-
-    // Don't free the task yet — caller will free it after GL compilation
-}
-
-// Free a preprocess task and its data
-static gX_I0 gX_Shader_FreePreprocess(gX_Shader_PreprocessTask *task)
-{
-    if (!task) return;
-    free(task->vertPath);
-    free(task->fragPath);
-    free(task->defines);
-    free(task->processedVert);
-    free(task->processedFrag);
-    free(task);
 }
 
 //opencode: internal compile via shader compiler pipeline

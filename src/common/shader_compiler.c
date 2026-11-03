@@ -1136,9 +1136,10 @@ static gX_I8 *Preprocess_Internal(
 }
 
 //opencode: v0.3.2 HOTFIX — thread-safe entry point. Preprocess touches shared
-//   statics (search paths, marker) and the async preprocess pool races the
+//   statics (search paths, marker); the old async preprocess pool raced the
 //   main thread, corrupting output (stray NULs / swallowed braces -> moving
-//   "unexpected {" compile failures).
+//   "unexpected {" compile failures). The pool was removed, but the lock stays
+//   as a guard for any future worker caller.
 gX_I8 *gX_Shader_Compiler_Preprocess(
     const gX_I8 *path,
     const gX_I8 *defines,

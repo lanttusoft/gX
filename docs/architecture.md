@@ -131,8 +131,9 @@ See `docs/guest_assets.md`.
   control and every GPU upload. Workers never call GL.
 - CPU workers are used for the large-OBJ parser (shared two-worker pool, up
   to four slots, >5 MB `.obj`), while the audio callback (miniaudio) and ODE's
-  optional threaded solver keep their own threads. Shader preprocessing is currently
-  synchronous on the main thread; the shader cache covers warm starts.
+  optional threaded solver keep their own threads. Shader preprocessing is
+  synchronous on the main thread (the old async preprocess farm was removed);
+  the shader cache covers warm starts.
 - `gX_ThreadPool_Wait` blocks until every submitted item has completed
   (queued + in-flight), not merely until the queue is empty. `Destroy` is
   defined after `Wait`; queued-but-unstarted work is discarded. `Submit`

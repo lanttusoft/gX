@@ -13,6 +13,12 @@ Release-Class: minor
   add-fetch counters, plus a headless pool/work-queue stress suite covering
   completion, FIFO order and repeated create/destroy.
 
+### Removed
+- The unused async shader-preprocess worker farm in `wrappers/shader.c`. All
+  current preprocessing runs synchronously on the main thread; the dead pool
+  only duplicated the threading surface and is not part of the shader-cache
+  path.
+
 ### Fixed
 - `gX_ThreadPool_Wait` now waits for **in-flight** items as well as an empty
   queue; the old queue-count-only check could return while the last worker
