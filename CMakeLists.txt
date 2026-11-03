@@ -356,6 +356,7 @@ if(GX_ENABLE_RENDERER)
         src/renderer/gfx/draw.c
         src/renderer/gfx/fog_volume.c
         src/renderer/gfx/clusters.c
+        src/renderer/gfx/features.c
         src/renderer/gfx/contact.c
         src/renderer/gfx/fullscreen_pass.c
         src/renderer/gfx/gfx_pipeline.c

@@ -125,6 +125,19 @@ be registered at runtime and injected into the showcase for perf testing:
 `--guest-model subpath[:count]` / `GX_GUEST_MODEL` (additive ring).
 See `docs/guest_assets.md`.
 
+## Feature closure (2026-11-03)
+
+- `renderer/gfx/features.c` owns the scene-feature predicates
+  (`HasEffects`, `NeedHdr`, `HasSsgi`). The pass table, the composite-target
+  lifecycle and the final blit share them instead of hand-maintained lists.
+- First fix: DOF/motion-blur/particle-only scenes now allocate and update
+  `bloom.scene`; the old update list missed them, so their writes could land
+  in the canvas after present or read an unloaded target.
+- `GX_GFX_FEATURE_TRACE=1` logs the one-shot closure and whether the HDR and
+  composite targets are loaded, so allocation drift is observable.
+- Still pending: lazy allocation for features that are off (HDR in
+  particular) and decoupling the display transform from bloom.
+
 ## Threading model (2026-11-03)
 
 - The **main thread** owns the GL context, scene graph, UI/input, audio

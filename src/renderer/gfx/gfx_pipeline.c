@@ -36,6 +36,7 @@
 #include "../gfx.h"
 #include "../renderer.h"
 #include "gl_level.h"
+#include "features.h"
 #include "fullscreen_pass.h"
 //ai: opt-in complete query sets retain native source frame/draw identity.
 #include "profile.h"
@@ -150,33 +151,6 @@ typedef enum gX_GFX_PassId {
     PASS_COUNT
 } gX_GFX_PassId;
 
-//opencode: SSGI is a post-lighting producer whose result must enter the
-//   composite chain even when bloom itself is disabled.
-static gX_I1 Pass_HasSsgi(gX_RendererGFX *gfx)
-{
-    return (gfx->state.ENABLE_SSAO && gfx->ssao.useSSGI);
-}
-
-//opencode: composite-chain membership (scene copy + final-blit source).
-//   NOTE: deliberately different from Pass_NeedHdr below — the chain feeds
-//   any effect reading compositeTarget (FOG/PARTICLES included), while HDR
-//   depth is needed by a different subset (TAA/SSAO included). Do not merge.
-static gX_I1 Pass_HasEffects(gX_RendererGFX *gfx)
-{
-    return (gfx->state.ENABLE_BLOOM || gfx->state.ENABLE_GODRAYS ||
-        gfx->state.ENABLE_FOG || gfx->state.ENABLE_LENS_FLARE ||
-        gfx->state.ENABLE_SSR || gfx->state.ENABLE_VOLUME_FOG ||
-        gfx->state.ENABLE_MOTION_BLUR || gfx->state.ENABLE_DOF ||
-        gfx->state.ENABLE_PARTICLES || Pass_HasSsgi(gfx));
-}
-static gX_I1 Pass_NeedHdr(gX_RendererGFX *gfx)
-{
-    return (gfx->state.ENABLE_BLOOM || gfx->state.ENABLE_GODRAYS ||
-        gfx->state.ENABLE_LENS_FLARE || gfx->state.ENABLE_SSR ||
-        gfx->state.ENABLE_DOF || gfx->state.ENABLE_MOTION_BLUR ||
-        gfx->state.ENABLE_TAA || gfx->state.ENABLE_SSAO ||
-        gfx->state.ENABLE_VOLUME_FOG);
-}
 static gX_I1 Pass_On_SsrVis(gX_RendererGFX *gfx)
 {
     return (!gfx->viewportGrid.rendering && gfx->state.SHOW_SSR_VISUALIZER
@@ -184,13 +158,13 @@ static gX_I1 Pass_On_SsrVis(gX_RendererGFX *gfx)
 }
 static gX_I1 Pass_On_SceneCopy(gX_RendererGFX *gfx)
 {
-    return Pass_HasEffects(gfx);
+    return gX_RendererGFX_Feature_HasEffects(gfx);
 }
 //opencode: TAA runs after present; keep compositor-layer resolves on the
 //   caller's output RT even when no earlier effect engaged the chain.
 static gX_I1 Pass_On_PostTarget(gX_RendererGFX *gfx)
 {
-    return (Pass_HasEffects(gfx) || gfx->state.ENABLE_TAA);
+    return (gX_RendererGFX_Feature_HasEffects(gfx) || gfx->state.ENABLE_TAA);
 }
 static gX_I1 Pass_On_SsrComp(gX_RendererGFX *gfx)
 {
@@ -242,7 +216,7 @@ static gX_I1 Pass_On_Contact(gX_RendererGFX *gfx)
 }
 static gX_I1 Pass_On_Ssgi(gX_RendererGFX *gfx)
 {
-    return Pass_HasSsgi(gfx);
+    return gX_RendererGFX_Feature_HasSsgi(gfx);
 }
 
 //opencode: Step 2 — pass run bodies, moved verbatim from the DrawTo inline
@@ -355,7 +329,7 @@ static gX_I0 Pass_Run_SceneSetup(gX_RendererGFX *gfx, gX_RenderTexture *)
     gX_RendererGFX_Draw_Sky(gfx);
     gX_I1 pairedSkyDraw = Pass_DumpSkyPrecisionPair(gfx);
 
-    gX_I1 needHdrSceneDepth = Pass_NeedHdr(gfx);
+    gX_I1 needHdrSceneDepth = gX_RendererGFX_Feature_NeedHdr(gfx);
     if (needHdrSceneDepth && !gfx->bloom.hdrScene.wrapper.loadingState.loaded) {
         gX_TraceLog_GFX(gX_LOG_WARNING, "DrawTo: needHdrSceneDepth but hdrScene not loaded — falling back to sceneColorLDR");
         needHdrSceneDepth = false;
@@ -611,7 +585,7 @@ static gX_I0 Pass_Run_SceneCopy(gX_RendererGFX *gfx, gX_RenderTexture *)
     }
     GX_PROFILE_ZONE_BEGIN("gfx:scene_copy");
     gX_Texture srcTex;
-    if (Pass_NeedHdr(gfx) && gfx->bloom.hdrScene.wrapper.loadingState.loaded) {
+    if (gX_RendererGFX_Feature_NeedHdr(gfx) && gfx->bloom.hdrScene.wrapper.loadingState.loaded) {
         srcTex = gfx->bloom.hdrScene.wrapper.rt.texture;
     } else if (gfx->sceneColorLDR.wrapper.loadingState.loaded) {
         srcTex = gfx->sceneColorLDR.wrapper.rt.texture;
@@ -870,7 +844,7 @@ static gX_I0 Pass_Run_Present(gX_RendererGFX *gfx, gX_RenderTexture *outputRT)
     //   then hdrScene (sky+opaque+water+transparent+labels+decals+particles),
     //   then sceneColorLDR fallback. hdrScene must win when effects are off
     //   or water/transparent/text content is dropped from the output.
-    if (Pass_HasEffects(gfx) && gfx->bloom.scene.wrapper.loadingState.loaded) {
+    if (gX_RendererGFX_Feature_HasEffects(gfx) && gfx->bloom.scene.wrapper.loadingState.loaded) {
         srcId = gfx->bloom.scene.wrapper.rt.id;
         srcTexId = gfx->bloom.scene.wrapper.rt.texture.id;
     } else if (gfx->bloom.hdrScene.wrapper.loadingState.loaded) {

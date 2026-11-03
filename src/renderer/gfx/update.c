@@ -45,6 +45,7 @@
 #include "../../wrappers/wrappers.h"
 #include "boilerplate.h"
 #include "gl_level.h"
+#include "features.h"
 #include "layout.h"
 #include "animation.h"
 #include "bloom.h"
@@ -1439,20 +1440,16 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
 
     gX_RendererGFX_RenderTexture_Update(&gfx->bloom.hdrScene);
     gX_RendererGFX_RenderTexture_Update(&gfx->bloom.luminanceRT); //opencode: v0.3-M1 — auto-exposure target
-    //opencode: bloom.scene is the composite target for all effects (godrays, lensflare,
-    //   fog, SSR, bloom). Update it whenever any effect is active.
-    //   (ENABLE_VOLUME_FOG was missing: volume-fog-only configs never loaded
-    //   bloom.scene, so scene_copy + the fog composite wrote nowhere and the
-    //   present fell back to pristine hdrScene - fog silently invisible
-    //   unless SSR/BLOOM loaded the RT as a side effect.)
-    if (gfx->state.ENABLE_BLOOM || gfx->state.ENABLE_GODRAYS || gfx->state.ENABLE_LENS_FLARE ||
-        gfx->state.ENABLE_FOG || gfx->state.ENABLE_SSR || gfx->state.ENABLE_VOLUME_FOG ||
-        (gfx->state.ENABLE_SSAO && gfx->ssao.useSSGI)) {
+    //opencode: one closure predicate now owns the composite-chain lifecycle.
+    //   The old hand list missed DOF, motion blur and particles, so those
+    //   effects could run with bloom.scene never allocated and write nowhere.
+    if (gX_RendererGFX_Feature_HasEffects(gfx)) {
         gX_RendererGFX_RenderTexture_Update(&gfx->bloom.extract);
         gX_RendererGFX_RenderTexture_Update(&gfx->bloom.ping);
         gX_RendererGFX_RenderTexture_Update(&gfx->bloom.pong);
         gX_RendererGFX_RenderTexture_Update(&gfx->bloom.scene);
     }
+    gX_RendererGFX_Feature_Trace(gfx);
     if (gfx->state.ENABLE_PLANAR_REFLECTIONS
         || (gfx->state.ENABLE_SSR && gfx->state.ENABLE_SSR_AUXVIEW))
         gX_RendererGFX_RenderTexture_Update(&gfx->reflection.planar);

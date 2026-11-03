@@ -9,6 +9,10 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **Shared GFX feature closure**: `gX_RendererGFX_Feature_*` predicates now
+  drive the pass table and composite-target lifecycle,
+  `GX_GFX_FEATURE_TRACE=1` logs the resolved closure plus HDR/bloom target
+  state, and `feature-plan` gates the all-off / DOF-only closures.
 - **Threading primitives**: `gX_AtomicI32_*` acquire/release flags and
   add-fetch counters, plus a headless pool/work-queue stress suite covering
   completion, FIFO order and repeated create/destroy.
@@ -20,6 +24,9 @@ Release-Class: minor
   path.
 
 ### Fixed
+- DOF/motion-blur/particle-only scenes now load and update `bloom.scene`; the
+  old hand-maintained update list omitted them even though the pass table
+  routed their output through the composite target.
 - `gX_ThreadPool_Wait` now waits for **in-flight** items as well as an empty
   queue; the old queue-count-only check could return while the last worker
   was still processing. `Destroy` is defined after `Wait` and discards

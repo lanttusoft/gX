@@ -246,6 +246,14 @@ group = "render"
 cache = "content"
 description = "reflective-sphere/checker-floor reflection strength + culling gate."
 
+[gate.feature-plan]
+script = "gfx_feature_trace_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "scene feature closure + composite-target lifecycle gate."
+
 [gate.shader-cache]
 script = "shader_cache_check.py"
 args = []
