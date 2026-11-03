@@ -252,7 +252,7 @@ args = []
 tier = ["quick"]
 group = "render"
 cache = "content"
-description = "scene feature closure + composite-target lifecycle gate."
+description = "scene feature closure, lazy HDR and composite-target lifecycle gate."
 
 [gate.shader-cache]
 script = "shader_cache_check.py"

@@ -12,7 +12,9 @@ Release-Class: minor
 - **Shared GFX feature closure**: `gX_RendererGFX_Feature_*` predicates now
   drive the pass table and composite-target lifecycle,
   `GX_GFX_FEATURE_TRACE=1` logs the resolved closure plus HDR/bloom target
-  state, and `feature-plan` gates the all-off / DOF-only closures.
+  state, and `feature-plan` gates the all-off / DOF-only closures. HDR,
+  luminance and MSAA targets are feature-owned: an all-off scene starts on
+  the LDR path without allocating them.
 - **Threading primitives**: `gX_AtomicI32_*` acquire/release flags and
   add-fetch counters, plus a headless pool/work-queue stress suite covering
   completion, FIFO order and repeated create/destroy.
