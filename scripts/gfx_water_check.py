@@ -40,9 +40,16 @@ SKY_MEAN_MAX = 5.0
 def capture(ssr):
     os.makedirs(OUT, exist_ok=True)
     before = set(os.listdir(OUT))
-    env = audit.scene_env({"GX_NO_AE": "1", "GX_T_SSR": str(ssr)}, clean=True)
+    env = audit.scene_env({
+        "GX_NO_AE": "1",
+        "GX_T_SSR": str(ssr),
+        "GX_FIXED_DT": "0.0166666667",
+        "GX_SHOT_FRAME": "300",
+    }, clean=True)
     env["GX_SCREENSHOT_DIR"] = OUT
-    subprocess.run([BIN, "--showcase-water", "--ai-screenshot-final"],
+    subprocess.run([BIN, "--showcase-water",
+                    "--screenWidth", "1536", "--screenHeight", "1152",
+                    "--ai-screenshot-final"],
                    cwd=ROOT, env=env, check=True, timeout=120,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     fresh = [p for p in os.listdir(OUT)
