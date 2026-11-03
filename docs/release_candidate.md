@@ -25,13 +25,13 @@ items. Until all three gates and the operations contract hold, gX stays a
 
 | Item | Value |
 | --- | --- |
-| Version | v0.38.0 (beta) |
+| Version | v0.39.0 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 87 quick/full gates (89 manifest entries; 84 unique in a full run); last full run **84/84** on `abb5bc3` (2026-11-03, `AUDIT_CACHE=0`, 1,028.5 s wall) |
+| Audit baseline | 89 quick/full gates (95 manifest entries; 86 unique in a full run); last full run **86/86** on the v0.39.0 release commit (`AUDIT_CACHE=0`) |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 4,127,675 B (66,629 B headroom), BSS 2,699,136 B (5,864 B headroom) — v0.38.0 `make check` |
-| Release class | MINOR (v0.38.0: scene feature closure, SSAO cleanup, threading atomics/OBJ pool, gate dedup) |
+| Lean gate | payload 4,135,387 B (58,917 B headroom), BSS 2,699,136 B (5,864 B headroom) — v0.39.0 `make check` |
+| Release class | MINOR (v0.39.0: render-target VRAM diet, SSR resolution option, per-pass profiler, static analysis/tooling, correctness fixes) |
 
 ## Completeness ledger
 
@@ -96,6 +96,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-02 | v0.36.0: Windows AngelScript shell DLL + `mingw-scripting-check`; Linux matrix unchanged. | owner/agent |
 | 2026-11-02 | v0.37.0: all 11 renderer labs are panels, preset directories/guest presets, planar reflection strength + mode transitions, reflection lab, large-bell OPX demo. Matrix 87/87 on `a8a524a`. | owner/agent |
 | 2026-11-03 | v0.38.0: shared GFX feature closure, LDR-safe scene targets, SSAO off-transition cleanup, threading atomics/OBJ pool, full-matrix dedup. Matrix 84/84 on `abb5bc3`. | owner/agent |
+| 2026-11-03 | v0.39.0: optional RT VRAM diet (-23.8%), SSR Full/Half/Quarter, per-pass profiler, compiler/type/lint/sanitizer/TSan/fuzz tooling, cppcheck fixes. Matrix 86/86 on the release commit. | owner/agent |
 
 ## Change rule
 
