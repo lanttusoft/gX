@@ -448,9 +448,12 @@ static gX_I0 Pass_Run_Labels(gX_RendererGFX *gfx, gX_RenderTexture *)
 {
     gX_RHI_Debug_PushGroup("GFX_TextLabels");
     {
-        gX_Drawing_BeginTexture(gfx->bloom.hdrScene.wrapper.rt);
-            gX_RendererGFX_Draw_TextLabels(gfx);
-        gX_Drawing_EndTexture();
+        gX_RenderTexture *target = gX_RendererGFX_Feature_SceneColorTarget(gfx);
+        if (target) {
+            gX_Drawing_BeginTexture(*target);
+                gX_RendererGFX_Draw_TextLabels(gfx);
+            gX_Drawing_EndTexture();
+        }
     }
     gX_RHI_Debug_PopGroup();
     return;
@@ -510,12 +513,15 @@ static gX_I0 Pass_Run_Transparent(gX_RendererGFX *gfx, gX_RenderTexture *)
     gX_RendererGFX_Draw_Transparent(gfx);
     //opencode: decals render into hdrScene (with its depth) — previously the
     //   default framebuffer, which never reached the presented canvas
-    if (gfx->state.ENABLE_DECALS && gfx->decals.amount > 0 && gfx->bloom.hdrScene.wrapper.loadingState.loaded) {
-        gX_Drawing_BeginTexture(gfx->bloom.hdrScene.wrapper.rt);
+    {
+        gX_RenderTexture *decalTarget = gX_RendererGFX_Feature_SceneColorTarget(gfx);
+        if (gfx->state.ENABLE_DECALS && gfx->decals.amount > 0 && decalTarget) {
+            gX_Drawing_BeginTexture(*decalTarget);
+                gX_RendererGFX_Draw_Decals(gfx);
+            gX_Drawing_EndTexture();
+        } else if (gfx->state.ENABLE_DECALS && gfx->decals.amount > 0) {
             gX_RendererGFX_Draw_Decals(gfx);
-        gX_Drawing_EndTexture();
-    } else {
-        gX_RendererGFX_Draw_Decals(gfx);
+        }
     }
     GX_PROFILE_ZONE_END("gfx:transparent");
     gX_RHI_Debug_PopGroup();

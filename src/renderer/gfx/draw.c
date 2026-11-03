@@ -52,6 +52,7 @@
 #include "boilerplate.h"
 #include "motion_path.h"
 #include "bloom.h"
+#include "features.h"
 #include "dof.h"
 #include "taa.h"
 #include "motionblur.h"
@@ -2317,7 +2318,12 @@ gX_I0 gX_RendererGFX_Draw_Water(gX_RendererGFX *gfx)
     gX_Matrix projMat = gX_Matrix_Perspective(camera.camera3D.fovy * gX_DEG2RAD, aspect,
         camera.frustum.near, camera.frustum.far);
 
-    gX_RendererWater_DrawTo(&gfx->water, &gfx->bloom.hdrScene.wrapper.rt,
+    gX_RenderTexture *waterTarget = gX_RendererGFX_Feature_SceneColorTarget(gfx);
+    if (!waterTarget) {
+        GX_PROFILE_ZONE_END("gfx:water");
+        return;
+    }
+    gX_RendererWater_DrawTo(&gfx->water, waterTarget,
                              &camera.camera3D, &viewMat, &projMat);
 
     GX_PROFILE_ZONE_END("gfx:water");
@@ -2849,6 +2855,8 @@ gX_I0 gX_RendererGFX_Draw_SSR(gX_RendererGFX *gfx)
 gX_I0 gX_RendererGFX_Draw_Transparent(gX_RendererGFX *gfx)
 {
     gfx->debugVis.refractionReady = false;
+    gX_RenderTexture *transparentTarget = gX_RendererGFX_Feature_SceneColorTarget(gfx);
+    if (!transparentTarget) return;
 
     //opencode: refractive/transparent pass — depth-sorted back-to-front
     {
@@ -2971,7 +2979,7 @@ gX_I0 gX_RendererGFX_Draw_Transparent(gX_RendererGFX *gfx)
             gX_RHI_Depth_Write(0);
 
             gX_RHI_Enable(gX_RHI_DEPTH_TEST);
-            gX_Drawing_BeginTexture(gfx->bloom.hdrScene.wrapper.rt);
+            gX_Drawing_BeginTexture(*transparentTarget);
             gX_Drawing_Begin3D(camera.camera3D);
 
             for (gX_U32 ti = 0; ti < transparentCount; ti++)
@@ -2996,7 +3004,7 @@ gX_I0 gX_RendererGFX_Draw_Transparent(gX_RendererGFX *gfx)
             {
                 gX_RHI_Blend_Func_Separate(gX_RHI_ZERO, gX_RHI_ONE,
                     gX_RHI_ONE, gX_RHI_ZERO);
-                gX_Drawing_BeginTexture(gfx->bloom.hdrScene.wrapper.rt);
+                gX_Drawing_BeginTexture(*transparentTarget);
                 gX_Drawing_Begin3D(camera.camera3D);
                 for (gX_U32 ti = 0; ti < transparentCount; ti++) {
                     gX_U32 mi = transparentIndices[ti];

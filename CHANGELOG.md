@@ -13,6 +13,9 @@ Release-Class: minor
   drive the pass table and composite-target lifecycle,
   `GX_GFX_FEATURE_TRACE=1` logs the resolved closure plus HDR/bloom target
   state, and `feature-plan` gates the all-off / DOF-only closures.
+  Water/labels/transparent/decals resolve the scene target through
+  `Feature_SceneColorTarget`, so they work on the LDR path when HDR is not
+  allocated.
 - **Threading primitives**: `gX_AtomicI32_*` acquire/release flags and
   add-fetch counters, plus a headless pool/work-queue stress suite covering
   completion, FIFO order and repeated create/destroy.

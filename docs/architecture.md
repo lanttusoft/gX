@@ -135,8 +135,10 @@ See `docs/guest_assets.md`.
   in the canvas after present or read an unloaded target.
 - `GX_GFX_FEATURE_TRACE=1` logs the one-shot closure and whether the HDR and
   composite targets are loaded, so allocation drift is observable.
-- Still pending: lazy allocation for features that are off (HDR in
-  particular) and decoupling the display transform from bloom.
+- Water, labels, transparent and decals now resolve the scene target through
+  `Feature_SceneColorTarget` (HDR when allocated, LDR otherwise). Lazy HDR
+  allocation is still pending because the shader-quality cascade silently
+  re-enables SSAO; the display transform also still depends on bloom.
 
 ## Threading model (2026-11-03)
 

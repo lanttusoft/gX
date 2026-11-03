@@ -36,6 +36,7 @@ extern "C" {
 #endif
 
 #include "../../common/types.h"
+#include "../../wrappers/texture.h"
 
 typedef struct gX_RendererGFX gX_RendererGFX;
 
@@ -45,6 +46,8 @@ gX_I1 gX_RendererGFX_Feature_HasEffects(gX_RendererGFX *gfx);
 gX_I1 gX_RendererGFX_Feature_NeedHdr(gX_RendererGFX *gfx);
 //opencode: SSGI is enabled inside the SSAO group.
 gX_I1 gX_RendererGFX_Feature_HasSsgi(gX_RendererGFX *gfx);
+//opencode: current scene color target — HDR when allocated, LDR otherwise.
+gX_RenderTexture *gX_RendererGFX_Feature_SceneColorTarget(gX_RendererGFX *gfx);
 //opencode: GX_GFX_FEATURE_TRACE=1 one-shot closure readout.
 gX_I0 gX_RendererGFX_Feature_Trace(gX_RendererGFX *gfx);
 

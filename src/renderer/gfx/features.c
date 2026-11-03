@@ -44,6 +44,18 @@ gX_I1 gX_RendererGFX_Feature_HasEffects(gX_RendererGFX *gfx)
         gfx->state.ENABLE_PARTICLES || gX_RendererGFX_Feature_HasSsgi(gfx)) ? 1 : 0;
 }
 
+gX_RenderTexture *gX_RendererGFX_Feature_SceneColorTarget(gX_RendererGFX *gfx)
+{
+    if (!gfx) return NULL;
+    if (gfx->bloom.hdrScene.wrapper.loadingState.loaded
+        && gfx->bloom.hdrScene.wrapper.rt.texture.id > 0)
+        return &gfx->bloom.hdrScene.wrapper.rt;
+    if (gfx->sceneColorLDR.wrapper.loadingState.loaded
+        && gfx->sceneColorLDR.wrapper.rt.texture.id > 0)
+        return &gfx->sceneColorLDR.wrapper.rt;
+    return NULL;
+}
+
 gX_I1 gX_RendererGFX_Feature_NeedHdr(gX_RendererGFX *gfx)
 {
     return (gfx->state.ENABLE_BLOOM || gfx->state.ENABLE_GODRAYS ||
