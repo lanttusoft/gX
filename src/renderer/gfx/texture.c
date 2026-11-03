@@ -245,7 +245,7 @@ static gX_U32 gX_RendererGFX_RT_PixelBytes(gX_I32 internalFormat) {
 }
 
 static gX_U64 gX_RendererGFX_RT_VramTotal = 0;
-static gX_I1 gX_RendererGFX_RT_VramTrace = -1;
+static gX_I32 gX_RendererGFX_RT_VramTrace = -1;
 
 static gX_I0 gX_RendererGFX_RT_TrackVram(gX_RendererGFX_RenderTexture *map,
     gX_I32 internalFormat) {
@@ -271,6 +271,7 @@ static gX_I0 gX_RendererGFX_RT_TrackVram(gX_RendererGFX_RenderTexture *map,
 gX_I32 gX_RendererGFX_RenderTexture_Load(gX_RendererGFX_RenderTexture *map) {
     gX_I1 diet = gX_RendererGFX_RT_DietEnabled();
     gX_I1 colorOnly = (diet && map->colorOnly) ? 1 : 0;
+    gX_I1 customLoaded = 0;
     gX_I32 requested = diet ? map->dietFormat : 0;
     gX_I32 effectiveFormat = map->hdr ? gX_RHI_RGBA16F : gX_RHI_RGBA8;
     if (diet && (requested || colorOnly)) {
@@ -281,14 +282,18 @@ gX_I32 gX_RendererGFX_RenderTexture_Load(gX_RendererGFX_RenderTexture *map) {
             map->wrapper.rt = gX_RenderTexture_Load_Format(
                 map->wrapper.width, map->wrapper.height,
                 internalFormat, format, type, colorOnly ? 0 : 1, "gfx_rt_diet");
-            if (map->wrapper.rt.id != 0)
+            if (map->wrapper.rt.id != 0) {
+                customLoaded = 1;
                 effectiveFormat = internalFormat;
-            else if (requested)
+            } else if (requested) {
                 gX_TraceLog_GFX(gX_LOG_WARNING,
                     "RT_DIET: format 0x%x unavailable; legacy fallback", requested);
+            }
         }
     }
-    if (map->wrapper.rt.id == 0) {
+    //ai: a reload leaves a stale non-zero rt.id behind Unload, so success is
+    //   tracked explicitly instead of probing the old handle.
+    if (!customLoaded) {
         if (map->hdr) map->wrapper.rt = gX_RenderTexture_Load_HDR(map->wrapper.width, map->wrapper.height);
         else          map->wrapper.rt = gX_RenderTexture_Load(map->wrapper.width, map->wrapper.height);
         effectiveFormat = map->hdr ? gX_RHI_RGBA16F : gX_RHI_RGBA8;
