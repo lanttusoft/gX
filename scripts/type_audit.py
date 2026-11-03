@@ -86,7 +86,19 @@ def is_bool_expr(c):
         child = expr_child(c)
         return is_bool_expr(child) if child is not None else False
     if c.kind == ci.CursorKind.DECL_REF_EXPR:
+        if c.referenced is None:
+            return False
         return is_bool(c.referenced.type)
+    return False
+
+
+def is_bool_lvalue(c):
+    if c is None:
+        return False
+    if c.kind in (ci.CursorKind.DECL_REF_EXPR, ci.CursorKind.MEMBER_REF_EXPR):
+        return is_bool_expr(c)
+    if c.kind in (ci.CursorKind.UNEXPOSED_EXPR, ci.CursorKind.PAREN_EXPR):
+        return is_bool_lvalue(expr_child(c))
     return False
 
 
@@ -165,9 +177,11 @@ def collect(tu, findings):
                             "gX_I1 is bool; the comparison is constant.")
         elif kind == ci.CursorKind.UNARY_OPERATOR:
             tokens = [token.spelling for token in c.get_tokens()]
-            if any(token in ("++", "--") for token in tokens):
+            #ai: only the operator's own edge token counts; a nested Text++
+            #   inside *Text++ must not read as a bool counter.
+            if tokens and tokens[0] in ("++", "--") or tokens and tokens[-1] in ("++", "--"):
                 child = expr_child(c)
-                if child is not None and is_bool_expr(child):
+                if is_bool_lvalue(child):
                     add(findings, c, "gX_I1 counter: %s" % c.spelling,
                         "gX_I1 is a flag, not a counter.")
         elif kind == ci.CursorKind.COMPOUND_ASSIGNMENT_OPERATOR:
@@ -354,7 +368,10 @@ def main():
         parsed += 1
 
     unique = {}
+    source_root = str((ROOT / "src").resolve()) + os.sep
     for item in findings:
+        if not item["file"].startswith(source_root):
+            continue
         relative = os.path.relpath(item["file"], ROOT)
         if relative.startswith(("external/", "src/external/", "src/tools/imgui/")):
             continue

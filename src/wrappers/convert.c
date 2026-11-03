@@ -120,29 +120,6 @@ gX_Shader gX_Shader_ConvertFromBackend(Shader shader) {
     return result; 
 }
 
-gX_MaterialMap gX_MaterialMap_ConvertFromBackend(MaterialMap materialmap) {
-    gX_MaterialMap result = (gX_MaterialMap){0};
-    result.texture = gX_Texture_ConvertFromBackend(materialmap.texture);
-    result.color = gX_Color_ConvertFromBackend(materialmap.color);
-    result.value = materialmap.value;
-    return result; 
-}
-
-gX_Material gX_Material_ConvertFromBackend(Material material) {
-    gX_Material result = (gX_Material){0};
-    result.shader = gX_Shader_ConvertFromBackend(material.shader);
-    result.maps[0] =   gX_MaterialMap_ConvertFromBackend(material.maps[0]);
-    result.maps[1] =   gX_MaterialMap_ConvertFromBackend(material.maps[1]);
-    result.maps[2] =   gX_MaterialMap_ConvertFromBackend(material.maps[2]);
-    result.maps[3] =   gX_MaterialMap_ConvertFromBackend(material.maps[3]);
-    //result.maps =      (gX_MaterialMap*)material.maps;
-    result.params[0] = material.params[0];
-    result.params[1] = material.params[1];
-    result.params[2] = material.params[2];
-    result.params[3] = material.params[3];
-    return result; 
-}
-
 gX_Mesh gX_Mesh_ConvertFromBackend(Mesh mesh) {
     gX_Mesh result = (gX_Mesh){ 0 };
     result.vertexCount      = (gX_I32)(mesh.vertexCount);
@@ -373,31 +350,6 @@ Shader gX_Shader_ConvertToBackend(gX_Shader shader) {
     result.id = (unsigned int)shader.id;
     result.locs = (int*)shader.locs;
     return result;
-}
-
-MaterialMap gX_MaterialMap_ConvertToBackend(gX_MaterialMap materialmap) {
-    MaterialMap result = (MaterialMap){0};
-    result.texture = gX_Texture_ConvertToBackend(materialmap.texture);
-    result.color = gX_Color_ConvertToBackend(materialmap.color);
-    result.value = materialmap.value;
-    return result;
-}
-
-Material gX_Material_ConvertToBackend(gX_Material material) {
-    Material result = (Material){ 0 };
-    //result.shader =    gX_Shader_ConvertToBackend(material.shader);
-    result.shader.id = material.shader.id;
-    result.shader.locs = material.shader.locs;
-    result.maps[0] =   gX_MaterialMap_ConvertToBackend(material.maps[0]);
-    result.maps[1] =   gX_MaterialMap_ConvertToBackend(material.maps[1]);
-    result.maps[2] =   gX_MaterialMap_ConvertToBackend(material.maps[2]);
-    result.maps[3] =   gX_MaterialMap_ConvertToBackend(material.maps[3]);
-    //result.maps =      (MaterialMap*)material.maps;
-    result.params[0] = (float)material.params[0];
-    result.params[1] = (float)material.params[1];
-    result.params[2] = (float)material.params[2];
-    result.params[3] = (float)material.params[3];
-    return result; 
 }
 
 Mesh gX_Mesh_ConvertToBackend(gX_Mesh mesh) {

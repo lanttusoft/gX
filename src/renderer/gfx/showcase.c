@@ -687,7 +687,7 @@ gX_I0 gX_Showcase_DrawHUD(gX_RendererGFX *gfx, gX_RenderTexture *overlayTgt) {
     gX_RawString_Draw(line, font, (gX_F32v2){x, y}, (gX_F32v2){0,0}, 0.0f, fsize, 1.0f, white);
     y += fsize + 4.0f;
 
-    gX_I8 *togg[16];
+    const gX_I8 *togg[16];
     gX_I32 tn = 0;
     #define TOGGLE_ENTRY(key, flag) do { if (flag) togg[tn++] = (key); } while (0)
     TOGGLE_ENTRY("B:bloom", gfx->state.ENABLE_BLOOM);

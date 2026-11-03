@@ -436,10 +436,12 @@ gX_I32 gX_RendererGFX_Shader_Load(gX_RendererGFX_Shader *shader) {
     //   single static buffer (GLFW), causing the SECOND call to overwrite the
     //   first, making both vert and frag point to the same string.
     gX_I8 vert[gX_GFX_PATH_BUFFER] = {0}, frag[gX_GFX_PATH_BUFFER] = {0};
+    //ai: paths are data, never format strings; a '%' in a resource name must
+    //   not turn into a format-string read (format-security).
     if (shader->vertPath[0] != '\0')
-        snprintf(vert, sizeof(vert), shader->vertPath, shader->version);
+        snprintf(vert, sizeof(vert), "%s", shader->vertPath);
     if (shader->fragPath[0] != '\0')
-        snprintf(frag, sizeof(frag), shader->fragPath, shader->version);
+        snprintf(frag, sizeof(frag), "%s", shader->fragPath);
     //opencode: use Compile_Level when shaderType is set (feature level system)
     gX_I8 *definesPtr = shader->defines[0] ? shader->defines : NULL;
     if (shader->shaderType >= 0 && shader->shaderType < GX_SHADER_TYPE_COUNT) {

@@ -569,6 +569,16 @@ endif()
 add_executable(${PROJECT_NAME} ${GX_APP_SOURCES})
 target_link_libraries(${PROJECT_NAME} gx_engine_core)
 
+#ai: compiler capability flags apply to gX targets only; vendored code keeps
+#   its own warning budget. Generator expressions select the C/C++ list.
+foreach(gx_target ITEMS ${PROJECT_NAME} gx_engine_core gx_shell gx_devcube)
+    if(TARGET ${gx_target})
+        target_compile_options(${gx_target} PRIVATE
+            $<$<COMPILE_LANGUAGE:C>:${GX_FEATURE_FLAGS_C}>
+            $<$<COMPILE_LANGUAGE:CXX>:${GX_FEATURE_FLAGS_CXX}>)
+    endif()
+endforeach()
+
 #ai: the Win32 exe link writes the module import library; declare the output
 #   so Ninja can order the module link after it.
 if(WIN32)

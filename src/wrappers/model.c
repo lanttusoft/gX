@@ -257,8 +257,6 @@ gX_I1 gX_DIAG_GFX_SHADER_STATE_GET(void) { return s_gX_DIAG; }
 gX_I1 gX_DIAG_GFX_SHADER_STATE_SET(gX_I1 v) { s_gX_DIAG = v; return v; }
 
 gX_Material gX_Material_LoadDefault(gX_I0) {
-    //Material material = LoadMaterialDefault();
-    //return gX_Material_ConvertFromBackend(material);
     return raylib_Material_LoadDefault();
 }
 

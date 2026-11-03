@@ -17,6 +17,17 @@ can see it:
   `-Werror=bool-compare`, `-Werror=bool-operation`,
   `-Werror=pointer-to-int-cast`, `-Werror=int-to-pointer-cast`, and
   Clang's `-Werror=tautological-constant-out-of-range-compare`;
+- quality warnings are probed and enabled on gX targets only (vendored code
+  keeps its own warning budget): `-Wimplicit-fallthrough`, `-Wformat=2`,
+  `-Wundef`, `-Wvla`, `-Wpointer-arith`, `-Wwrite-strings`,
+  `-Wold-style-definition`, plus GCC's `-Wduplicated-cond` and
+  `-Wlogical-op`, with matching `-Werror=` forms; null-deref coverage stays
+  in the clang-analyzer lint gate (GCC's optimizer oracle is too noisy here);
+- attribute/builtin support is probed (`format`, `visibility`, `noinline`,
+  `aligned`, `popcount`, `return_address`), as are `_Noreturn`, `_Alignas`
+  and `__has_include`;
+- sanitizer (`address`, `undefined`), coverage, LTO, stack-protector and
+  `-fno-common` support are recorded; `-fno-common` is enabled by default;
 - C11 features are probed (`_Static_assert`, `_Thread_local`, `_Generic`,
   `<stdatomic.h>`, `__atomic`, `__builtin_expect`);
 - the results are written to `build/generated/compiler_features.txt`;
@@ -24,9 +35,11 @@ can see it:
   `_Bool`, so an ABI or typedef change fails to compile.
 
 `make compiler-check` fails when the compiler is unsupported, a required
-capability is missing, or the alias probe fails. It also compiles a small
+capability or quality warning is missing, the gX target flags do not carry the
+required errors, or the alias probe fails. It also compiles a small
 `primary.h` probe with `CC` so the check is independent of the configured
-build.
+build. Optional capabilities (sanitizers, LTO, coverage, stack protector) are
+printed but not required; they are available for opt-in build configurations.
 
 ## AST type audit
 

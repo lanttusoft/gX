@@ -16,9 +16,17 @@ Release-Class: minor
 - **Per-pass GPU profiling**: 20 profiler stages (shadow through overlays)
   written to the benchmark CSV, HUD and per-stage p95 report.
 - **Static analysis gates**: compiler capability probes with hard errors for
-  bool/pointer type misuse, alias size/`gX_I1` identity static asserts, a
-  libclang AST type audit and a clang-tidy diff gate
-  (`docs/static_analysis.md`).
+  bool/pointer type misuse and the clean quality-warning set
+  (`-Wimplicit-fallthrough`, `-Wformat=2`, `-Wundef`, `-Wvla`, ...), alias
+  size/`gX_I1` identity static asserts, attribute/builtin and
+  sanitizer/coverage/LTO capability reporting, a libclang AST type audit and
+  a clang-tidy diff gate (`docs/static_analysis.md`).
+
+### Removed
+- The unused `gX_MaterialMap_ConvertFromBackend`/`ToBackend` and
+  `gX_Material_ConvertFromBackend`/`ToBackend` wrappers. They dereferenced
+  zero-initialized `maps` pointers and had no callers; the new
+  null-dereference probe exposed the path.
 
 ## [0.38.0] - 2026-11-03
 

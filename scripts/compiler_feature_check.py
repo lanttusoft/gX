@@ -35,10 +35,24 @@ REQUIRED = (
     "gnuc_atomic",
     "stdatomic",
     "builtin_expect",
-    "werror_bool_compare",
     "werror_bool_operation",
     "werror_pointer_to_int",
     "werror_int_to_pointer",
+    "quality_common",
+    "attr_format",
+    "attr_visibility",
+    "builtin_popcount",
+    "builtin_return_address",
+    "noreturn",
+)
+REQUIRED_FLAGS = (
+    "-Werror=bool-operation",
+    "-Werror=pointer-to-int-cast",
+    "-Werror=int-to-pointer-cast",
+    "-Wformat=2",
+    "-Wundef",
+    "-Werror=format",
+    "-fno-common",
 )
 
 PROBE = r"""
@@ -95,6 +109,25 @@ def main():
     for feature in REQUIRED:
         if values.get(feature) != "1":
             failures.append("missing compiler feature: %s" % feature)
+    if compiler == "GNU":
+        if values.get("werror_bool_compare") != "1":
+            failures.append("missing GNU bool-compare error")
+        if values.get("quality_gnu") != "1":
+            failures.append("missing GNU quality warnings")
+    elif values.get("tautological") != "1":
+        failures.append("missing Clang tautological comparison error")
+    enabled_flags = set(values.get("c_flags", "").split(";"))
+    if ("-Wimplicit-fallthrough=5" not in enabled_flags
+            and "-Wimplicit-fallthrough" not in enabled_flags):
+        failures.append("gX target is missing implicit-fallthrough warnings")
+    required_flags = list(REQUIRED_FLAGS)
+    if compiler == "GNU":
+        required_flags.append("-Werror=bool-compare")
+    else:
+        required_flags.append("-Werror=tautological-constant-out-of-range-compare")
+    for flag in required_flags:
+        if flag not in enabled_flags:
+            failures.append("gX target is missing flag: %s" % flag)
     probe_ok, probe_error = run_probe(os.environ.get("CC", "cc"))
     if not probe_ok:
         failures.append("type probe failed: %s" % probe_error)
@@ -106,8 +139,15 @@ def main():
             print("  FAIL %s" % failure)
         print("COMPILER_CHECK: FAIL")
         return 1
+    optional = [
+        name for name in ("sanitize_address", "sanitize_undefined", "fno_common",
+                          "lto", "coverage", "stack_protector", "has_include",
+                          "alignas")
+        if values.get(name) == "1"
+    ]
     print("COMPILER_CHECK: PASS — C11 atomics/thread-local/_Generic, GNU atomics, "
-          "and bool/pointer warning errors are enabled")
+          "quality warning errors and target flags are enabled")
+    print("  optional capabilities: %s" % (", ".join(optional) or "none"))
     return 0
 
 

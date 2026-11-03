@@ -405,8 +405,17 @@ gX_I0 gX_Debug_Update(gX_I0) {
     }
     if (gX_Debug_CrashFrame >= 0
         && (gX_I64)maindata.frameCount >= gX_Debug_CrashFrame) {
+        //ai: deliberate crash injector for GX_DEBUG_CRASH_FRAME; keep the
+        //   Release null-dereference warning quiet for this one line.
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+#endif
         volatile gX_I32 *nullPointer = NULL;
         *nullPointer = 1;
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
     }
     //opencode: GX_LOG_TEST_REPEAT=<N> emits N identical lines once (log
     //   dedup gate coverage; never set it in normal runs)

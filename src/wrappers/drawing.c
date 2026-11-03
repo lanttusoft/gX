@@ -375,7 +375,7 @@ gX_I0 gX_Drawing_EnableCulling(gX_I0) {
     gX_RHI_Cull_Mode(gX_RHI_BACK);
 }
 
-gX_I0 gX_Drawing_End3D() {
+gX_I0 gX_Drawing_End3D(void) {
     gX_Batch_Flush();
     gX_RHI_Matrix_Mode(GX_RHI_MATRIX_PROJECTION);
     gX_RHI_Matrix_Pop();
