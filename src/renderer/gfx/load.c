@@ -178,6 +178,7 @@ gX_I0 gX_RendererGFX_Load_SetDefaults(gX_RendererGFX *gfx)
     gfx->ssr.vpLoc = -1;
     gfx->ssr.invVPLoc = -1;
     gfx->ssr.camPosLoc = -1;
+    gfx->ssr.reducedLoc = -1;
     gfx->ssr.maxStepsLoc = -1;
     gfx->ssr.stepSizeLoc = -1;
     gfx->ssr.maxDistanceLoc = -1;
@@ -581,6 +582,11 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
 
     //opencode: SSR — shaders and RTs loaded but disabled by default (opt-in via preset or --gfx-enable)
     GX_GFX_RT_INIT_HDR(gfx, ssr.map);
+    //ai: preset/editor quality option (1 full, 2 half, 4 quarter) and the
+    //   GX_T_SSR_RES audit override, reconciled before the lazy RT load.
+    gfx->ssr.resolutionDivisor = 1;
+    gfx->ssr.map.wrapper.width = maindata.renderWidth;
+    gfx->ssr.map.wrapper.height = maindata.renderHeight;
     gfx->ssr.map.colorOnly = 1;
     //opencode: the shading-normal target is deliberately opt-in: the default
     //   GL33 path remains depth-only and pays no extra full-resolution pass.

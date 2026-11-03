@@ -530,8 +530,12 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         gfx->reflection.planar.wrapper.width = maindata.renderWidth;
         gfx->reflection.planar.wrapper.height = maindata.renderHeight;
         GX_GFX_RT_RELOAD(gfx, ssr.map);
-        gfx->ssr.map.wrapper.width = maindata.renderWidth;
-        gfx->ssr.map.wrapper.height = maindata.renderHeight;
+        {
+            gX_I32 ssrDivisor = gfx->ssr.resolutionDivisor;
+            if (ssrDivisor != 2 && ssrDivisor != 4) ssrDivisor = 1;
+            gfx->ssr.map.wrapper.width = maindata.renderWidth / (gX_U32)ssrDivisor;
+            gfx->ssr.map.wrapper.height = maindata.renderHeight / (gX_U32)ssrDivisor;
+        }
         if (gfx->ssr.normalBufferEnabled) {
             GX_GFX_RT_RELOAD(gfx, ssr.normalMap);
             gfx->ssr.normalMap.wrapper.width = maindata.renderWidth;
@@ -1612,6 +1616,30 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
     }
 
     if (gfx->state.ENABLE_SSR) {
+        //ai: preset/editor divisor changes (and the lab env override) resize
+        //   the march target before the lazy RT load.
+        {
+            static gX_I32 envDivisor = -1;
+            if (envDivisor < 0) {
+                const gX_I8 *hook = getenv("GX_T_SSR_RES");
+                envDivisor = (hook && hook[0]) ? atoi((const char *)hook) : 0;
+            }
+            gX_I32 divisor = gfx->ssr.resolutionDivisor;
+            if (envDivisor == 2 || envDivisor == 4) divisor = envDivisor;
+            if (divisor != 2 && divisor != 4) divisor = 1;
+            gX_U32 wantW = maindata.renderWidth / (gX_U32)divisor;
+            gX_U32 wantH = maindata.renderHeight / (gX_U32)divisor;
+            if (gfx->ssr.map.wrapper.width != wantW
+                || gfx->ssr.map.wrapper.height != wantH) {
+                if (gfx->ssr.map.wrapper.loadingState.loaded)
+                    gX_RendererGFX_RenderTexture_Unload(&gfx->ssr.map);
+                gfx->ssr.map.wrapper.width = wantW;
+                gfx->ssr.map.wrapper.height = wantH;
+                gfx->ssr.map.wrapper.loadingState.loaded = false;
+                gfx->ssr.map.wrapper.loadingState.loadAsap = true;
+                gfx->ssr.map.wrapper.loadingState.reload = false;
+            }
+        }
         gX_RendererGFX_RenderTexture_Update(&gfx->ssr.map);
         if (gfx->ssr.normalBufferEnabled)
             gX_RendererGFX_RenderTexture_Update(&gfx->ssr.normalMap);
@@ -1725,6 +1753,7 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             gfx->ssr.invVPLoc = gX_Shader_GetLocation(sh, "invVP");
             gfx->ssr.camPosLoc = gX_Shader_GetLocation(sh, "cameraPos");
             //opencode: SSR tuning parameter locations
+            gfx->ssr.reducedLoc = gX_Shader_GetLocation(sh, "ssrReduced");
             gfx->ssr.maxStepsLoc = gX_Shader_GetLocation(sh, "maxSteps");
             gfx->ssr.stepSizeLoc = gX_Shader_GetLocation(sh, "stepSize");
             gfx->ssr.maxDistanceLoc = gX_Shader_GetLocation(sh, "maxDistance");

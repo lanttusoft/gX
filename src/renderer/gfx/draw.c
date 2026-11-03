@@ -2729,6 +2729,9 @@ gX_I0 gX_RendererGFX_Draw_SSR(gX_RendererGFX *gfx)
             gX_Shader_SetValue_Matrix(sha, gfx->ssr.vpLoc, vp);
             gX_Shader_SetValue_Matrix(sha, gfx->ssr.invVPLoc, invVP);
             gX_Shader_SetValue_V3(sha, gfx->ssr.camPosLoc, camera.camera3D.position);
+            if (gfx->ssr.reducedLoc >= 0)
+                gX_Shader_SetValue_Int(sha, gfx->ssr.reducedLoc,
+                    gfx->ssr.map.wrapper.width < maindata.renderWidth ? 1 : 0);
             if (gfx->ssr.maxStepsLoc >= 0)
                 gX_Shader_SetValue_Int(sha, gfx->ssr.maxStepsLoc, gfx->ssr.maxSteps);
             if (gfx->ssr.stepSizeLoc >= 0)
@@ -2831,7 +2834,8 @@ gX_I0 gX_RendererGFX_Draw_SSR(gX_RendererGFX *gfx)
                 gX_Shader_SetValue_Int(sha, gfx->ssr.debugModeLoc, dbgMode);
             //opencode: GLFW — use direct GL quad instead of rlgl batch
             gX_Drawing_DrawScreenQuad(0, 0,
-                (gX_F32)maindata.renderWidth, (gX_F32)maindata.renderHeight);
+                (gX_F32)gfx->ssr.map.wrapper.width,
+                (gX_F32)gfx->ssr.map.wrapper.height);
             gX_Drawing_EndShader();
         gX_Drawing_EndTexture();
         gX_RHI_Blend_Equation((gX_U32)ssrPB_Eq);

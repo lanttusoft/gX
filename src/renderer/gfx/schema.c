@@ -849,6 +849,7 @@ static gX_SchemaField gfx_csm_fields[] = {
 static gX_SchemaField gfx_ssr_fields[] = {
     //opencode: the raster-normal path is opt-in and survives editor presets.
     GX_SCHEMA_BOOL("normalBufferEnabled", gX_RendererGFX_SSR, normalBufferEnabled),
+    GX_SCHEMA_I32("resolutionDivisor", gX_RendererGFX_SSR, resolutionDivisor),
     GX_SCHEMA_I32("maxSteps",    gX_RendererGFX_SSR, maxSteps),
     GX_SCHEMA_F32("stepSize",    gX_RendererGFX_SSR, stepSize),
     GX_SCHEMA_F32("maxDistance", gX_RendererGFX_SSR, maxDistance),

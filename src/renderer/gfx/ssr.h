@@ -110,6 +110,7 @@ typedef struct gX_RendererGFX_SSR {
     gX_I32  bounceAttenLoc;
 
     //opencode: SSR tuning uniform locations
+    gX_I32  reducedLoc;         //ai: 1 when the march target is reduced
     gX_I32  maxStepsLoc;
     gX_I32  stepSizeLoc;
     gX_I32  maxDistanceLoc;
@@ -151,6 +152,9 @@ typedef struct gX_RendererGFX_SSR {
     gX_F32  roughness;
     gX_F32  maxLod;
     gX_F32  edgeFade;        //opencode: screen-edge dissolve band (v0.1.11)
+    //ai: screen-space reflection march scale (1 full, 2 half, 4 quarter);
+    //   the composite upscales the map, so hits stay geometrically correct.
+    gX_I32  resolutionDivisor;
     gX_I32  maxBounces;      //opencode: extra ray bounces after the first hit
     gX_F32  bounceAtten;     //opencode: per-bounce energy attenuation
     gX_F32  maxDepthDelta;       //opencode: silhouette crossing threshold

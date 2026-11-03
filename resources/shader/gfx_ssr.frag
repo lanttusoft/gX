@@ -48,6 +48,7 @@ vec3 camFwd = vec3(0.0, 0.0, -1.0);
 float viewZ(vec3 p) { return dot(p - cameraPos, camFwd); }
 uniform float near = 0.1;
 uniform float far = 1000.0;
+uniform int ssrReduced = 0; //ai: 1 when the march target is below scene resolution
 uniform float roughness = 0.0;
 uniform int maxSteps = 64;
 uniform float stepSize = 0.5;
@@ -787,6 +788,12 @@ void main() {
     //   built per-pixel from true depths, so its content is y-up-addressed
     //   like the depth texture it reduces).
     vec2 uv = vec2(fragTexCoord.x, 1.0 - fragTexCoord.y);
+    //ai: a reduced march scale lands output pixel centers on full-res texel
+    //    boundaries; NEAREST depth would pick alternating sides per row.
+    //    Bias to the full-res texel center so the reconstructed surface is
+    //    row-stable (no-op at native resolution).
+    if (ssrReduced == 1)
+        uv += 0.5 / vec2(textureSize(depthMap, 0));
 
     float rawDepth = texture(depthMap, uv).r;
     if (rawDepth > 0.999) {
