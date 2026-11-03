@@ -8202,6 +8202,16 @@ static gX_I0 gfx_reflect_panel(gX_RendererGFX *gfx) {
     if (ImGui::Checkbox("raster normal buffer (experimental)", (bool *)&normalBuffer))
         gfx_ssr_normal_buffer_set(gfx, normalBuffer);
     ImGui::TextDisabled("normal target: %s", gfx->ssr.normalMap.wrapper.loadingState.loaded ? "loaded" : "not loaded");
+    //ai: SSR march scale — half/quarter trade reflection sharpness for GPU.
+    const char *ssrResolutionLabels[] = {"Full", "Half", "Quarter"};
+    int ssrResolution = gfx->ssr.resolutionDivisor == 4 ? 2
+        : (gfx->ssr.resolutionDivisor == 2 ? 1 : 0);
+    if (ImGui::Combo("march resolution", &ssrResolution,
+            ssrResolutionLabels, 3)) {
+        gfx->ssr.resolutionDivisor = ssrResolution == 2 ? 4
+            : (ssrResolution == 1 ? 2 : 1);
+    }
+    ImGui::TextDisabled("Half/quarter soften reflections; the target resizes next frame.");
     int ms = gfx->ssr.maxSteps;
     if (ms < 4) ms = 4;
     if (ms > 256) ms = 256;

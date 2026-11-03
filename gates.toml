@@ -817,3 +817,11 @@ tier = ["tooling"]
 group = "tooling"
 cache = "never"
 description = "clang-tidy diff gate."
+
+[gate.ssr-resolution]
+script = "ssr_resolution_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "SSR full/half/quarter resolution visual budget gate."

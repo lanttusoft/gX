@@ -55,6 +55,8 @@ Start here:
 ## Rendering
 
 - [Bloom pipeline audit](bloom_audit.md)
+- [SSR march resolution](ssr_resolution.md) — Full/Half/Quarter quality option
+  and its visual/performance budget.
 - [gfx shader inventory](gfx_shader_inventory.md)
 - [Shader program cache](shader_cache.md)
 - [GFX visual review](gfx_visual_review.md)

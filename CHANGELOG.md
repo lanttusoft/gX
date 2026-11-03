@@ -4,6 +4,22 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: minor
+
+### Added
+- **SSR march resolution option**: `ssr.resolutionDivisor` (Full/Half/Quarter)
+  in presets and the Refl editor panel. Half cuts the SSR pass by ~61% and
+  gives 31.3 dB on the deterministic fixture; the default stays Full and is
+  byte-identical to the previous path.
+- **Per-pass GPU profiling**: 20 profiler stages (shadow through overlays)
+  written to the benchmark CSV, HUD and per-stage p95 report.
+- **Static analysis gates**: compiler capability probes with hard errors for
+  bool/pointer type misuse, alias size/`gX_I1` identity static asserts, a
+  libclang AST type audit and a clang-tidy diff gate
+  (`docs/static_analysis.md`).
+
 ## [0.38.0] - 2026-11-03
 
 Release-Class: minor
