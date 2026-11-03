@@ -137,6 +137,8 @@ See `docs/guest_assets.md`.
   composite targets are loaded, so allocation drift is observable.
 - Water, labels, transparent and decals now resolve the scene target through
   `Feature_SceneColorTarget` (HDR when allocated, LDR otherwise).
+- Disabling SSAO neutral-clears `ssao.map`/`blurMap`, drops the GTAO/SSGI
+  final-texture aliases and resets both temporal histories.
 - SSAO is no longer toggled by the shader-quality cascade; a PBR-driven
   quality raise cannot silently re-enable it. Lazy HDR allocation can
   therefore trust `NeedHdr`. The display transform still depends on bloom.

@@ -34,6 +34,9 @@ Release-Class: minor
   the batch, with the first parallel verdict retained for visibility.
 
 ### Fixed
+- Disabling SSAO now neutral-clears the AO maps, drops the GTAO/SSGI final
+  texture aliases and resets their temporal histories. Off->on->off is
+  bit-identical again (bijection residue 8.2 -> 0.000).
 - The shader-quality cascade no longer toggles SSAO. SSAO is a scene feature;
   a PBR-driven quality raise used to silently re-enable it and change the
   scene's HDR requirements.

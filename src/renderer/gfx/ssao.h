@@ -141,6 +141,7 @@ typedef struct gX_RendererGFX_SSAO {
 
     //ai: per-instance effect modes detect enable/algorithm transitions without global state.
     gX_I1   temporalModesInitialized;
+    gX_I1   wasEnabled;
     gX_I1   gtaoWasActive;
     gX_I1   ssgiWasActive;
 

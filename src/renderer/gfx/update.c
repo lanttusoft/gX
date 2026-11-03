@@ -1080,6 +1080,26 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         gfx->ssao.gtaoWasActive = GtaoActive;
         gfx->ssao.ssgiWasActive = SsgiActive;
     }
+    //opencode: SSAO is a scene feature; when it turns off, neutral-clear its
+    //   maps and drop the accumulated-final texture aliases so a later frame
+    //   cannot sample the last enabled frame's AO/SSGI.
+    if (gfx->ssao.wasEnabled && !gfx->state.ENABLE_SSAO) {
+        if (gfx->ssao.map.wrapper.loadingState.loaded) {
+            gX_Drawing_BeginTexture(gfx->ssao.map.wrapper.rt);
+                gX_Drawing_ClearBG((gX_Color){255, 255, 255, 255});
+            gX_Drawing_EndTexture();
+        }
+        if (gfx->ssao.blurMap.wrapper.loadingState.loaded) {
+            gX_Drawing_BeginTexture(gfx->ssao.blurMap.wrapper.rt);
+                gX_Drawing_ClearBG((gX_Color){255, 255, 255, 255});
+            gX_Drawing_EndTexture();
+        }
+        gfx->ssao.gtaoFinalTex = (gX_Texture){0};
+        gfx->ssao.ssgiFinalTex = (gX_Texture){0};
+        gX_RendererGFX_TemporalHistory_Reset(&gfx->ssao.gtaoTemporal);
+        gX_RendererGFX_TemporalHistory_Reset(&gfx->ssao.ssgiTemporal);
+    }
+    gfx->ssao.wasEnabled = gfx->state.ENABLE_SSAO;
     //opencode: clear both temporal targets before their first use; the shader's
     //   black-history test cannot safely reject arbitrary GPU memory contents.
     if (gX_RendererGFX_TemporalHistory_NeedsClear(&gfx->taa.temporal)
