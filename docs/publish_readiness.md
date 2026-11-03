@@ -56,10 +56,10 @@ tier. A red admission gate stops the release.
 ## Packaging
 
 1. Package from the release commit, never from a dirty worktree:
-   `python3 scripts/release_archive.py --out build/release`. The helper wraps
+   `python3 scripts/release_archive.py --out build/artifacts`. The helper wraps
    `git archive`, writes the `.sha256` sidecar and refuses tracked changes.
 2. Optionally add detached signatures:
-   `GPG_TTY=$(tty) python3 scripts/release_archive.py --out build/release
+   `GPG_TTY=$(tty) python3 scripts/release_archive.py --out build/artifacts
    --sign <keyid>`.
 3. `make release-archive-check` builds the archive twice, requires identical
    bytes, extracts a copy and verifies the SBOM inside it.

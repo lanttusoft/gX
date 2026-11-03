@@ -142,7 +142,7 @@ def check(commit, out):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--commit", default="HEAD")
-    parser.add_argument("--out", type=Path, default=ROOT / "build" / "release")
+    parser.add_argument("--out", type=Path, default=ROOT / "build" / "artifacts")
     parser.add_argument("--check", action="store_true",
                         help="build twice, compare and verify one extraction")
     parser.add_argument("--allow-dirty", action="store_true")

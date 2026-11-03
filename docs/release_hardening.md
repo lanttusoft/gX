@@ -85,11 +85,11 @@ are in `scripts/test_secret_scan.py` and run in both admission tiers.
 
 ```bash
 # release candidate (clean worktree required)
-python3 scripts/release_archive.py --out build/release
+python3 scripts/release_archive.py --out build/artifacts
 
 # owner signing (GPG_TTY keeps the pinentry on the terminal)
 GPG_TTY=$(tty) python3 scripts/release_archive.py \
-  --out build/release --sign F7C08EEFF255A7D815456256DF847784DE0123EF
+  --out build/artifacts --sign F7C08EEFF255A7D815456256DF847784DE0123EF
 ```
 
 Outputs:
