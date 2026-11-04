@@ -94,6 +94,9 @@ typedef struct gX_MainArguments {
     gX_I1   hasScreenWidth;
     gX_I1   hasScreenHeight;
     gX_I1   hasScreenRes;
+    gX_I1   hasVirtualWidth;
+    gX_I1   hasVirtualHeight;
+    gX_I1   hasPresentFilter;
     gX_I1   hasRenderScale;
     gX_I1   hasTargetFPS;
     gX_I1   hasMasterIndex;
@@ -126,6 +129,9 @@ typedef struct gX_MainArguments {
     gX_U32  windowHeight;
     gX_U32  screenWidth;
     gX_U32  screenHeight;
+    gX_U32  virtualWidth;
+    gX_U32  virtualHeight;
+    gX_I32  presentFilter;
     gX_F32v2 screenRes;
     gX_F32  renderScale;
     gX_F32  targetFPS;
@@ -444,6 +450,10 @@ typedef struct gX_MainData {
     //screen: relative window resolution (gui resolution [2D])
     gX_U16      screenWidth;
     gX_U16      screenHeight;
+    //ai: virtual-screen presentation — the GUI/render space can be smaller
+    //   than the window; presentFilter 0 = sharp/nearest, 1 = soft/linear.
+    gX_I1       virtualScreen;
+    gX_I32      presentFilter;
     //render: rendering resolution for a framebuffer (renderer resolution [2D/3D])
     gX_F32      renderScale;
     gX_U16      renderWidth;

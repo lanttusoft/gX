@@ -70,6 +70,7 @@ static const gX_Settings_FieldInfo gX_Settings_Fields[] = {
     GX_FIELD_F32("sfxVolume", "SFX volume", sfxVolume, GX_SETTINGS_UI_ADVANCED, 0.0f, 2.0f, 1.0f, ""),
     GX_FIELD_F32("synthVolume", "Synth volume", synthVolume, GX_SETTINGS_UI_ADVANCED, 0.0f, 2.0f, 1.0f, ""),
     GX_FIELD_F32("renderScale", "Render scale", renderScale, GX_SETTINGS_UI_EXPERT, 0.25f, 1.0f, 1.0f, "x"),
+    GX_FIELD_I32("presentFilter", "Present filter", presentFilter, GX_SETTINGS_UI_BASIC, 0.0f, 1.0f, 0.0f),
     GX_FIELD_I32("toolGlLevel", "GL level request", toolGlLevel, GX_SETTINGS_UI_EXPERT, 0.0f, 430.0f, 0.0f),
     GX_FIELD_I32("uiLevel", "UI level", uiLevel, GX_SETTINGS_UI_EXPERT, 0.0f, 2.0f, 1.0f),
     GX_FIELD_U32("screenWidth", "Screen width", screenWidth, GX_SETTINGS_UI_EXPERT, 320.0f, 3840.0f, 1024.0f, "px"),
@@ -329,6 +330,7 @@ static gX_I32 gX_Settings_Schema_Init(gX_I0) {
     GX_SCHEMAJSON_ADDOBJECT_TERM(windowHeight,(settings.windowHeight),U32)
     
     GX_SCHEMAJSON_ADDOBJECT_TERM(renderScale,(settings.renderScale),F32)
+    GX_SCHEMAJSON_ADDOBJECT_TERM(presentFilter,(settings.presentFilter),I32)
     //opencode: persist the tool accessibility preferences with ordinary settings.
     GX_SCHEMAJSON_ADDOBJECT_TERM(toolUiScale,(settings.toolUiScale),F32)
     //opencode: persisted GL feature-level request (0 = auto).
@@ -371,6 +373,7 @@ gX_I32 gX_Settings_Init(gX_I0) {
     settings.windowWidth = maindata.windowWidth;
     settings.windowHeight = maindata.windowHeight;
     settings.renderScale = maindata.renderScale;
+    settings.presentFilter = maindata.presentFilter;
     //opencode: initialize accessible defaults for the editor tools.
     //  125% keeps the 13px base readable at 1024x768 and 1920x1080.
     settings.toolUiScale = 1.25f;
@@ -419,6 +422,7 @@ gX_I32 gX_Settings_Reset(gX_I0) {
     settings.windowWidth  = maindata.windowWidth;
     settings.windowHeight = maindata.windowHeight;
     settings.renderScale  = maindata.renderScale;
+    settings.presentFilter = 0;
     //opencode: reset tool readability and navigation preferences with settings.
     settings.toolUiScale  = 1.25f;
     settings.toolAssetRoots[0] = 0;
@@ -456,6 +460,21 @@ gX_I32 gX_Settings_Load(gX_I0) {
     if (settings.uiLevel < GX_SETTINGS_UI_BASIC
         || settings.uiLevel >= GX_SETTINGS_UI_LEVEL_COUNT)
         settings.uiLevel = GX_SETTINGS_UI_ADVANCED;
+    settings.presentFilter = settings.presentFilter != 0 ? 1 : 0;
+    //ai: a CLI/env filter wins over the persisted value; otherwise the saved
+    //   preference applies to the blit immediately. The virtual screen stays
+    //   a per-session override unless the console shell owns the layout.
+    {
+        const gX_I8 *filterHook = getenv("GX_PRESENT_FILTER");
+        gX_I1 filterOverride = (arguments.hasPresentFilter
+            || (filterHook && filterHook[0])) ? 1 : 0;
+        if (filterOverride) settings.presentFilter = maindata.presentFilter;
+        else maindata.presentFilter = settings.presentFilter;
+        if (maindata.virtualScreen) {
+            settings.screenWidth = maindata.screenWidth;
+            settings.screenHeight = maindata.screenHeight;
+        }
+    }
     settings.uiThemePreset = gX_Settings_UITheme_Clamp(settings.uiThemePreset);
     gX_GUI_Style_SetThemePath(gX_Settings_UITheme_Path(settings.uiThemePreset));
     s_appliedUiThemePreset = settings.uiThemePreset;
@@ -487,6 +506,23 @@ gX_I32 gX_Settings_Save(gX_I0) {
     return 0;
 }
 
+gX_I0 gX_Settings_Apply_VirtualScreen(gX_I0) {
+    settings.presentFilter = settings.presentFilter != 0 ? 1 : 0;
+    maindata.presentFilter = settings.presentFilter;
+    //ai: the persisted screen size is the virtual console surface; applying
+    //   it must not resize the window. Callers set maindata.refresh.
+    gX_U32 applyW = settings.screenWidth;
+    gX_U32 applyH = settings.screenHeight;
+    if (applyW >= 64 && applyW <= 4096
+        && applyH >= 64 && applyH <= 4096) {
+        maindata.screenWidth = (gX_U16)applyW;
+        maindata.screenHeight = (gX_U16)applyH;
+        maindata.virtualScreen = (applyW != maindata.windowWidth
+            || applyH != maindata.windowHeight) ? 1 : 0;
+        gX_MainData_Refresh();
+    }
+}
+
 gX_I32 gX_Settings_Apply(gX_I0) {
     
     //ai: the mixer buses are the audio half of an Apply (live push; the
@@ -503,6 +539,7 @@ gX_I32 gX_Settings_Apply(gX_I0) {
     if (maindata.renderScale < 0.25f) maindata.renderScale = 0.25f;
     if (maindata.renderScale > 1.0f) maindata.renderScale = 1.0f;
     settings.renderScale = maindata.renderScale;
+    gX_Settings_Apply_VirtualScreen();
     
     maindata.targetFPS = settings.targetFPS;
     gX_TargetFPS_Set(maindata.targetFPS);

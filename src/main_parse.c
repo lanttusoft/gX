@@ -46,7 +46,10 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
         "Options:\n"
         "  -w, --screenWidth <px>     Window width\n"
         "  -h, --screenHeight <px>    Window height\n"
+        "      --virtualWidth <px>    Virtual screen width (window stays native)\n"
+        "      --virtualHeight <px>   Virtual screen height\n"
         "      --renderScale <0-1>    Render resolution scale\n"
+        "      --presentFilter <s>    Virtual-screen upscale: sharp (nearest) or soft (linear)\n"
         "      --targetFPS <n>        Target framerate\n"
         "      --seed <n>             Fixed random seed\n"
         "      --masterIndex <n>      Startup scene index\n"
@@ -196,7 +199,10 @@ gX_I32 gX_Parse(int argc, char **argv) {
     static struct option long_options[] = {
         {"screenWidth", required_argument,  NULL, 0},
         {"screenHeight",required_argument,  NULL, 0},
+        {"virtualWidth", required_argument, NULL, 0},
+        {"virtualHeight",required_argument, NULL, 0},
         {"renderScale", required_argument,  NULL, 0},
+        {"presentFilter", required_argument, NULL, 0},
         {"targetFPS",   required_argument,  NULL, 0},
         {"seed",        required_argument,  NULL, 0},
         {"masterIndex", required_argument,  NULL, 0},
@@ -305,6 +311,12 @@ gX_I32 gX_Parse(int argc, char **argv) {
                     arguments.renderScale = (gX_F32)atof(optarg);
                     arguments.hasRenderScale = true;
                 }
+                if (!strcmp(long_options[option_index].name,"presentFilter")) {
+                    arguments.presentFilter = (strcmp(optarg, "soft") == 0
+                        || strcmp(optarg, "linear") == 0
+                        || strcmp(optarg, "1") == 0) ? 1 : 0;
+                    arguments.hasPresentFilter = true;
+                }
                 if (!strcmp(long_options[option_index].name,"screenWidth")) {
                     arguments.screenWidth = (gX_U16)atoi(optarg);
                     arguments.hasScreenWidth = true;
@@ -314,6 +326,14 @@ gX_I32 gX_Parse(int argc, char **argv) {
                     arguments.screenHeight = (gX_U16)atoi(optarg);
                     arguments.hasScreenHeight = true;
                     printf("screenHeight: %u \n", (unsigned)arguments.screenHeight);
+                }
+                if (!strcmp(long_options[option_index].name,"virtualWidth")) {
+                    arguments.virtualWidth = (gX_U32)atoi(optarg);
+                    arguments.hasVirtualWidth = true;
+                }
+                if (!strcmp(long_options[option_index].name,"virtualHeight")) {
+                    arguments.virtualHeight = (gX_U32)atoi(optarg);
+                    arguments.hasVirtualHeight = true;
                 }
                 if (!strcmp(long_options[option_index].name,"masterIndex")) {
                     arguments.masterIndex = (gX_I32)atoi(optarg);

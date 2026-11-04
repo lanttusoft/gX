@@ -3819,6 +3819,45 @@ static gX_I32 gX_Tests_SettingsUI(void) {
         }
         settings.uiLevel = savedLevel;
     }
+    //ai: virtual-screen apply must keep the window size out of the path and
+    //   recompute the render target from the virtual surface.
+    {
+        gX_U16 savedScreenW = maindata.screenWidth;
+        gX_U16 savedScreenH = maindata.screenHeight;
+        gX_U16 savedRenderW = maindata.renderWidth;
+        gX_U16 savedRenderH = maindata.renderHeight;
+        gX_I1 savedVirtual = maindata.virtualScreen;
+        gX_I32 savedFilter = maindata.presentFilter;
+        gX_F32 savedRenderScale = maindata.renderScale;
+        gX_U32 savedSetW = settings.screenWidth;
+        gX_U32 savedSetH = settings.screenHeight;
+        gX_I32 savedSetFilter = settings.presentFilter;
+        gX_F32 savedSetScale = settings.renderScale;
+        settings.screenWidth = 320;
+        settings.screenHeight = 240;
+        settings.presentFilter = 1;
+        settings.renderScale = 1.0f;
+        maindata.renderScale = 1.0f;
+        gX_Settings_Apply_VirtualScreen();
+        if (maindata.screenWidth != 320 || maindata.screenHeight != 240
+            || maindata.renderWidth != 320 || maindata.renderHeight != 240
+            || !maindata.virtualScreen || maindata.presentFilter != 1) {
+            gX_TraceLog(gX_LOG_ERROR,
+                "SETTINGS_UI_TEST FAIL: virtual screen apply");
+            errors++;
+        }
+        settings.screenWidth = savedSetW;
+        settings.screenHeight = savedSetH;
+        settings.presentFilter = savedSetFilter;
+        settings.renderScale = savedSetScale;
+        maindata.screenWidth = savedScreenW;
+        maindata.screenHeight = savedScreenH;
+        maindata.renderWidth = savedRenderW;
+        maindata.renderHeight = savedRenderH;
+        maindata.virtualScreen = savedVirtual;
+        maindata.presentFilter = savedFilter;
+        maindata.renderScale = savedRenderScale;
+    }
     return errors;
 }
 

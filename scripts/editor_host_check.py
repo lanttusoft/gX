@@ -121,6 +121,41 @@ def check_ui_level(tag, level, overrides):
     return len(rows)
 
 
+#ai: virtual-screen presentation — the scene renders at 320x240 while the
+#   window stays 1024x768; Soft (linear) must reduce pixel-level blockiness
+#   against Sharp (nearest), and the trace must report the split.
+CONSOLE_RE = re.compile(
+    r"MAIN: virtual=(\d+)x(\d+) window=(\d+)x(\d+) "
+    r"render=(\d+)x(\d+) filter=(\d)")
+
+
+def check_console_240p(tag, mode):
+    code, log, image = run(tag, "--gfx", {
+        "GX_VIRTUAL_WIDTH": "320",
+        "GX_VIRTUAL_HEIGHT": "240",
+        "GX_PRESENT_FILTER": mode,
+        "GX_WINDOW_TRACE": "1",
+    }, frames=30, shot=20)
+    if code != 0:
+        raise RuntimeError(f"console {mode} run failed ({code})")
+    match = CONSOLE_RE.search(log)
+    if not match:
+        raise RuntimeError(f"console {mode}: virtual-screen trace missing")
+    values = tuple(int(value) for value in match.groups())
+    expected = (320, 240, WIDTH, HEIGHT, 320, 240, 1 if mode == "soft" else 0)
+    if values != expected:
+        raise RuntimeError(
+            f"console {mode}: trace {values}, expected {expected}")
+    if image is None or image.shape[:2] != (HEIGHT, WIDTH):
+        raise RuntimeError(
+            f"console {mode}: capture {None if image is None else image.shape}")
+    gray = image.mean(axis=2)
+    crop = gray[100:-100, 100:-100]
+    laplacian = np.abs(4.0 * crop[1:-1, 1:-1] - crop[:-2, 1:-1]
+        - crop[2:, 1:-1] - crop[1:-1, :-2] - crop[1:-1, 2:])
+    return float(laplacian.mean())
+
+
 def run(tag, scene, extra, frames=30, shot=20):
     directory = OUT / tag
     directory.mkdir(parents=True, exist_ok=True)
@@ -354,6 +389,15 @@ def main():
             uiRows[level] = check_ui_level(
                 f"ui-{level.lower()}", level, {"GX_TOOLS_OPEN": "gfx"})
 
+        #ai: virtual-screen/present-filter contract — 320x240 render into a
+        #   1024x768 window, with a measurable Soft/Sharp blockiness split.
+        consoleSoft = check_console_240p("console-soft", "soft")
+        consoleSharp = check_console_240p("console-sharp", "sharp")
+        if consoleSharp <= 0.5 or consoleSoft >= consoleSharp * 0.6:
+            raise RuntimeError(
+                f"console 240p filter split weak "
+                f"(soft {consoleSoft:.3f}, sharp {consoleSharp:.3f})")
+
         #ai: the preset browser root is env-overridable for authoring outside
         #   the shipped resource tree.
         with tempfile.TemporaryDirectory(prefix="gx_presets_",
@@ -419,6 +463,7 @@ def main():
           "GFX/GFX Focus suite masks, aux asset/footer panels, "
           "renderer lab panels summonable without moving the dock, "
           "Basic/Advanced/Expert lab and section coverage, "
+          "320x240 virtual screen Soft/Sharp split, "
           "preset-dir override")
     return 0
 

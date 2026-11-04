@@ -583,7 +583,10 @@ gX_I0 gX_GUI_Viewport_Refresh(gX_I0) {
     gX_F32 heightScale = availH / gh;
     if (s > heightScale) s = heightScale;
     if (s < GX_DOCK_SCALE_MIN) s = GX_DOCK_SCALE_MIN;
-    if (s > 1.0f) s = 1.0f;
+    //ai: a virtual screen may be smaller than the dock; allow integer-ish
+    //   upscaling so a 320x240 console surface still fills the viewport.
+    gX_F32 maxScale = maindata.virtualScreen ? 8.0f : 1.0f;
+    if (s > maxScale) s = maxScale;
     gX_F32 vw = gw * s, vh = gh * s;
     gX_F32 left = gX_GUI_Dock_LeftMargin();
     //opencode: focus mode hides both panels; center the scene instead of
@@ -1410,7 +1413,8 @@ gX_I0 gX_GUI_Draw(gX_I0) {    //opencode: full-frame GL state diff gated behind 
                 (gX_U32)maindata.renderWidth, (gX_U32)maindata.renderHeight,
                 (gX_U32)viewport.x, viewportY,
                 (gX_U32)viewport.width, (gX_U32)viewport.height,
-                gX_RHI_COLOR_BUFFER_BIT, gX_RHI_NEAREST);
+                gX_RHI_COLOR_BUFFER_BIT,
+                maindata.presentFilter == 1 ? gX_RHI_LINEAR : gX_RHI_NEAREST);
         }
         gX_RHI_BindReadFBO(prevReadFbo);
         gX_RHI_BindDrawFBO(prevDrawFbo);

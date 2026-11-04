@@ -50,6 +50,8 @@ Start here:
 - [UI maturity levels](ui_maturity.md) — Basic/Advanced/Expert settings and
   editor surfaces, the shared metadata table, `GX_UI_LEVEL` and the coverage
   gate.
+- [gX-240 console profile](console_240p.md) — the fictional “fewer, better
+  pixels” console, virtual-screen/present-filter mapping and CRT presets.
 - [Compressed texture sidecars](texture_compression.md) — BC7/BC5/BC4 DDS
   sidecars, encoder tooling and the loader fallback policy.
 - [Source-lineage audit](source_lineage_audit.md) — citation/self-reuse review

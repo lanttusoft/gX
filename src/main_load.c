@@ -93,12 +93,59 @@ gX_I32 gX_MainData_Reset(gX_I0) {
         maindata.windowHeight = MAINDATA_DEFAULT_WINDOWHEIGHT;
         maindata.screenHeight = MAINDATA_DEFAULT_SCREENHEIGHT;
     }
-    
+
+    //ai: virtual-screen presentation — the GUI/render space can differ from
+    //   the window. CLI wins, then the GX_VIRTUAL_* audit hook, then the
+    //   window-sized default above.
+    maindata.virtualScreen = 0;
+    maindata.presentFilter = 0;
+    {
+        const gX_I8 *vwEnv = getenv("GX_VIRTUAL_WIDTH");
+        const gX_I8 *vhEnv = getenv("GX_VIRTUAL_HEIGHT");
+        gX_I1 hasVirtual = (arguments.hasVirtualWidth
+            || arguments.hasVirtualHeight
+            || (vwEnv && vwEnv[0]) || (vhEnv && vhEnv[0])) ? 1 : 0;
+        if (hasVirtual) {
+            gX_U32 vw = arguments.hasVirtualWidth ? arguments.virtualWidth
+                : ((vwEnv && vwEnv[0]) ? (gX_U32)atoi((const char *)vwEnv)
+                   : maindata.screenWidth);
+            gX_U32 vh = arguments.hasVirtualHeight ? arguments.virtualHeight
+                : ((vhEnv && vhEnv[0]) ? (gX_U32)atoi((const char *)vhEnv)
+                   : maindata.screenHeight);
+            if (vw < 64) vw = 64;
+            if (vw > 4096) vw = 4096;
+            if (vh < 64) vh = 64;
+            if (vh > 4096) vh = 4096;
+            maindata.screenWidth = (gX_U16)vw;
+            maindata.screenHeight = (gX_U16)vh;
+            maindata.virtualScreen = 1;
+        }
+    }
+    {
+        const gX_I8 *pfEnv = getenv("GX_PRESENT_FILTER");
+        if (arguments.hasPresentFilter)
+            maindata.presentFilter = arguments.presentFilter != 0 ? 1 : 0;
+        else if (pfEnv && pfEnv[0])
+            maindata.presentFilter = (strcmp((const char *)pfEnv, "soft") == 0
+                || strcmp((const char *)pfEnv, "linear") == 0
+                || strcmp((const char *)pfEnv, "1") == 0) ? 1 : 0;
+    }
+
     if (arguments.hasRenderScale) maindata.renderScale = arguments.renderScale;
     else maindata.renderScale = 1.0f; //opencode: full-res default — 0.25 made the demo a 384x288 blocky upscale
-    
+
     gX_MainData_Refresh();
-    
+    {
+        const gX_I8 *windowTrace = getenv("GX_WINDOW_TRACE");
+        if (windowTrace && windowTrace[0] && windowTrace[0] != '0')
+            gX_TraceLog(gX_LOG_INFO,
+                "MAIN: virtual=%ux%u window=%ux%u render=%ux%u filter=%d",
+                maindata.screenWidth, maindata.screenHeight,
+                maindata.windowWidth, maindata.windowHeight,
+                maindata.renderWidth, maindata.renderHeight,
+                maindata.presentFilter);
+    }
+
     return 0;
 }
 
@@ -221,8 +268,12 @@ static gX_I32 gX_Backend_Init(gX_I0) {
                 gX_Window_SetPosition((monW - (gX_I32)fitW) / 2, (monH - (gX_I32)fitH) / 2);
                 maindata.windowWidth = fitW;
                 maindata.windowHeight = fitH;
-                maindata.screenWidth = fitW;
-                maindata.screenHeight = fitH;
+                //ai: a virtual screen keeps its size when the window is
+                //   clamped to the monitor; only the window shrinks.
+                if (!maindata.virtualScreen) {
+                    maindata.screenWidth = fitW;
+                    maindata.screenHeight = fitH;
+                }
                 gX_MainData_Refresh();
                 settings.dirtyFlag = true;
                 gX_TraceLog(gX_LOG_INFO, "MAIN: window %ux%u exceeds monitor %dx%d — fitted to %ux%u",

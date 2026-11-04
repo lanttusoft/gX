@@ -106,6 +106,8 @@ typedef struct gX_Settings {
     gX_U32 windowWidth;
     gX_U32 windowHeight;
     gX_F32 renderScale;
+    //ai: virtual-screen upscale filter — 0 = sharp/nearest, 1 = soft/linear.
+    gX_I32 presentFilter;
     //opencode: user scale for ImGui tool text, spacing, and hit targets.
     gX_F32 toolUiScale;
     //opencode: full Tab/arrow/Enter navigation in ImGui tools.
@@ -158,6 +160,9 @@ gX_I1 gX_Settings_UILevelOverrideActive(gX_I0);
 gX_I1 gX_Settings_UILevelAllows(gX_Settings_UILevel level);
 gX_I32 gX_Settings_Save(gX_I0);
 gX_I32 gX_Settings_Apply(gX_I0);
+//ai: apply the persisted virtual screen / present filter without touching
+//   window, audio or camera state (unit-tested; Apply calls it).
+gX_I0 gX_Settings_Apply_VirtualScreen(gX_I0);
 //ai: audio-only apply — push the volume fields to the mixer buses
 //   (gX_Settings_Update calls it every frame so slider edits are live; the
 //   mixer tests pin it without touching theme/window state).
