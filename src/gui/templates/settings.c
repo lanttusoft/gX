@@ -179,6 +179,14 @@ gX_I0 gX_GUI_Template_Settings(gX_I32 canvasindex) {
         return;
     }
 
+    //ai: Basic / Advanced / Expert presentation level.
+    gX_GUI_Builder_Widget_Radio(&b, 0.8f, 1.38f, 1.2f, 0.22f,
+        "Basic", GX_SETTINGS_UI_BASIC, &settings.uiLevel);
+    gX_GUI_Builder_Widget_Radio(&b, 2.0f, 1.38f, 1.4f, 0.22f,
+        "Advanced", GX_SETTINGS_UI_ADVANCED, &settings.uiLevel);
+    gX_GUI_Builder_Widget_Radio(&b, 3.4f, 1.38f, 1.2f, 0.22f,
+        "Expert", GX_SETTINGS_UI_EXPERT, &settings.uiLevel);
+
     //opencode: two-column reflow keeps the compact panel usable without
     //   shrinking the control text or pushing actions below the frame.
     gX_GUI_Builder_Widget_Section(&b, 0.8f, 1.65f, 3.0f, "Display", 16);
@@ -206,12 +214,14 @@ gX_I0 gX_GUI_Template_Settings(gX_I32 canvasindex) {
     //   exist in gX, so the old dead toggles are gone.
     gX_GUI_Builder_Widget_ToggleSwitch(&b, 4.1f, 2.25f, 3.0f, 0.45f,
         "Reduce Motion", &settings.reduceMotion);
-    gX_GUI_Builder_Widget_ToggleSwitch(&b, 4.1f, 2.8f, 3.0f, 0.45f,
-        "Tool Nav", &settings.toolKeyboardNav);
-    //ai: UX pass — "Tool scale: 1.000" truncated to "1..." in the slider box
-    //   (the Sens precedent: the label shares the box with the value).
-    gX_GUI_Builder_Widget_Slider(&b, 4.1f, 3.35f, 3.0f, 0.45f,
-        "Scale", &settings.toolUiScale, 1.0f, 1.75f);
+    if (settings.uiLevel >= GX_SETTINGS_UI_ADVANCED) {
+        gX_GUI_Builder_Widget_ToggleSwitch(&b, 4.1f, 2.8f, 3.0f, 0.45f,
+            "Tool Nav", &settings.toolKeyboardNav);
+        //ai: UX pass — "Tool scale: 1.000" truncated to "1..." in the slider box
+        //   (the Sens precedent: the label shares the box with the value).
+        gX_GUI_Builder_Widget_Slider(&b, 4.1f, 3.35f, 3.0f, 0.45f,
+            "Scale", &settings.toolUiScale, 1.0f, 1.75f);
+    }
 
     gX_GUI_Builder_Widget_Section(&b, 0.8f, 3.9f, 3.0f, "Audio", 16);
     gX_GUI_Builder_Widget_Slider(&b, 0.8f, 4.5f, 3.0f, 0.5f,
@@ -235,8 +245,10 @@ gX_I0 gX_GUI_Template_Settings(gX_I32 canvasindex) {
         "Sens", &settings.cameraSens, 0.5f, 10.0f);
     gX_GUI_Builder_Widget_ToggleSwitch(&b, 4.1f, 5.55f, 3.0f, 0.45f,
         "Invert Y", &settings.invertY);
-    gX_GUI_Builder_Widget_Slider(&b, 4.1f, 6.0f, 3.0f, 0.5f,
-        "FOV", &settings.cameraFov, 60.0f, 120.0f);
+    if (settings.uiLevel >= GX_SETTINGS_UI_ADVANCED) {
+        gX_GUI_Builder_Widget_Slider(&b, 4.1f, 6.0f, 3.0f, 0.5f,
+            "FOV", &settings.cameraFov, 60.0f, 120.0f);
+    }
 
     //opencode: action row combines settings actions and the keyboard-bindings view.
     gX_GUI_Builder_Widget_Button(&b, 0.55f, 6.57f, 1.55f, 0.45f,

@@ -3759,12 +3759,48 @@ static gX_I32 gX_Tests_DevCubePhase(gX_I0)
     return errors;
 }
 
+//ai: the settings metadata must cover the persisted scalar surface and stay
+//   inside valid levels/ranges before the expert list trusts it.
+static gX_I32 gX_Tests_SettingsUI(void) {
+    gX_I32 errors = 0;
+    gX_U32 count = gX_Settings_FieldCount();
+    if (count < 20) {
+        gX_TraceLog(gX_LOG_ERROR, "SETTINGS_UI_TEST FAIL: manifest too small");
+        errors++;
+    }
+    for (gX_U32 i = 0; i < count; i++) {
+        const gX_Settings_FieldInfo *field = gX_Settings_FieldAt(i);
+        if (!field || !field->key || !field->label) {
+            gX_TraceLog(gX_LOG_ERROR, "SETTINGS_UI_TEST FAIL: null row %u", i);
+            errors++;
+            continue;
+        }
+        if (field->offset >= sizeof(gX_Settings)
+            || field->level < GX_SETTINGS_UI_BASIC
+            || field->level >= GX_SETTINGS_UI_LEVEL_COUNT
+            || field->minimum > field->maximum
+            || field->recommended < field->minimum
+            || field->recommended > field->maximum) {
+            gX_TraceLog(gX_LOG_ERROR, "SETTINGS_UI_TEST FAIL: bad row %s",
+                field->key);
+            errors++;
+        }
+    }
+    if (strcmp((const char *)gX_Settings_UILevelName(GX_SETTINGS_UI_BASIC), "Basic") != 0
+        || strcmp((const char *)gX_Settings_UILevelName(GX_SETTINGS_UI_EXPERT), "Expert") != 0) {
+        gX_TraceLog(gX_LOG_ERROR, "SETTINGS_UI_TEST FAIL: level names");
+        errors++;
+    }
+    return errors;
+}
+
 gX_I32 gX_Tests(gX_I0);
 //ai: allocator regression failures participate in the test-only admission verdict.
 gX_I32 gX_Tests(gX_I0) {
     gX_I32 errors = 0;
     
     errors += gX_Alloc_Tests();
+    errors += gX_Tests_SettingsUI();
     errors += gX_Tests_Hardware();
     errors += gX_Tests_Polisher();
     errors += gX_Tests_Math();

@@ -26,7 +26,8 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <math.h> //opencode: reject non-finite persisted tool UI scale values.
+#include <math.h>
+#include <stddef.h> //opencode: reject non-finite persisted tool UI scale values.
 
 #include "settings.h"
 #include "audio.h"
@@ -37,6 +38,74 @@
 #include "wrappers/window.h"
 
 gX_Settings settings;
+
+//ai: the settings manifest. Basic rows are the console surface; Advanced adds
+//   the practical PC controls; Expert exposes the remaining persisted values.
+#define GX_FIELD_BOOL(key_, label_, field_, lvl_) \
+    { key_, label_, GX_SETTINGS_FIELD_BOOL, offsetof(gX_Settings, field_), \
+      lvl_, 0.0f, 1.0f, 0.0f, "" }
+#define GX_FIELD_I32(key_, label_, field_, lvl_, lo_, hi_, rec_) \
+    { key_, label_, GX_SETTINGS_FIELD_I32, offsetof(gX_Settings, field_), \
+      lvl_, lo_, hi_, rec_, "" }
+#define GX_FIELD_U32(key_, label_, field_, lvl_, lo_, hi_, rec_, unit_) \
+    { key_, label_, GX_SETTINGS_FIELD_U32, offsetof(gX_Settings, field_), \
+      lvl_, lo_, hi_, rec_, unit_ }
+#define GX_FIELD_F32(key_, label_, field_, lvl_, lo_, hi_, rec_, unit_) \
+    { key_, label_, GX_SETTINGS_FIELD_F32, offsetof(gX_Settings, field_), \
+      lvl_, lo_, hi_, rec_, unit_ }
+
+static const gX_Settings_FieldInfo gX_Settings_Fields[] = {
+    GX_FIELD_BOOL("fullScreen", "Fullscreen", fullScreen, GX_SETTINGS_UI_BASIC),
+    GX_FIELD_F32("masterVolume", "Master volume", masterVolume, GX_SETTINGS_UI_BASIC, 0.0f, 2.0f, 1.0f, ""),
+    GX_FIELD_F32("targetFPS", "Target FPS", targetFPS, GX_SETTINGS_UI_BASIC, 15.0f, 240.0f, 60.0f, "fps"),
+    GX_FIELD_I32("uiThemePreset", "UI theme", uiThemePreset, GX_SETTINGS_UI_BASIC, 0.0f, 3.0f, 0.0f),
+    GX_FIELD_BOOL("reduceMotion", "Reduce motion", reduceMotion, GX_SETTINGS_UI_BASIC),
+    GX_FIELD_F32("cameraSens", "Camera sensitivity", cameraSens, GX_SETTINGS_UI_BASIC, 0.5f, 10.0f, 3.0f, ""),
+    GX_FIELD_BOOL("invertY", "Invert Y", invertY, GX_SETTINGS_UI_BASIC),
+    GX_FIELD_F32("cameraFov", "Camera FOV", cameraFov, GX_SETTINGS_UI_ADVANCED, 60.0f, 120.0f, 90.0f, "deg"),
+    GX_FIELD_F32("toolUiScale", "Tool UI scale", toolUiScale, GX_SETTINGS_UI_ADVANCED, 1.0f, 1.75f, 1.25f, "x"),
+    GX_FIELD_BOOL("toolKeyboardNav", "Tool keyboard navigation", toolKeyboardNav, GX_SETTINGS_UI_ADVANCED),
+    GX_FIELD_F32("musicVolume", "Music volume", musicVolume, GX_SETTINGS_UI_ADVANCED, 0.0f, 2.0f, 1.0f, ""),
+    GX_FIELD_F32("sfxVolume", "SFX volume", sfxVolume, GX_SETTINGS_UI_ADVANCED, 0.0f, 2.0f, 1.0f, ""),
+    GX_FIELD_F32("synthVolume", "Synth volume", synthVolume, GX_SETTINGS_UI_ADVANCED, 0.0f, 2.0f, 1.0f, ""),
+    GX_FIELD_F32("renderScale", "Render scale", renderScale, GX_SETTINGS_UI_EXPERT, 0.25f, 1.0f, 1.0f, "x"),
+    GX_FIELD_I32("toolGlLevel", "GL level request", toolGlLevel, GX_SETTINGS_UI_EXPERT, 0.0f, 430.0f, 0.0f),
+    GX_FIELD_I32("uiLevel", "UI level", uiLevel, GX_SETTINGS_UI_EXPERT, 0.0f, 2.0f, 1.0f),
+    GX_FIELD_U32("screenWidth", "Screen width", screenWidth, GX_SETTINGS_UI_EXPERT, 320.0f, 3840.0f, 1024.0f, "px"),
+    GX_FIELD_U32("screenHeight", "Screen height", screenHeight, GX_SETTINGS_UI_EXPERT, 240.0f, 2160.0f, 768.0f, "px"),
+    GX_FIELD_U32("windowWidth", "Window width", windowWidth, GX_SETTINGS_UI_EXPERT, 320.0f, 3840.0f, 1024.0f, "px"),
+    GX_FIELD_U32("windowHeight", "Window height", windowHeight, GX_SETTINGS_UI_EXPERT, 240.0f, 2160.0f, 768.0f, "px"),
+    GX_FIELD_BOOL("masterFilterEnabled", "Master filter", masterFilterEnabled, GX_SETTINGS_UI_EXPERT),
+    GX_FIELD_I32("masterFilterMode", "Filter mode", masterFilterMode, GX_SETTINGS_UI_EXPERT, 0.0f, 2.0f, 0.0f),
+    GX_FIELD_F32("masterFilterCutoff", "Filter cutoff", masterFilterCutoff, GX_SETTINGS_UI_EXPERT, 0.0f, 1.0f, 0.8f, ""),
+    GX_FIELD_F32("masterFilterResonance", "Filter resonance", masterFilterResonance, GX_SETTINGS_UI_EXPERT, 0.0f, 1.0f, 0.0f, ""),
+    GX_FIELD_BOOL("edTourSeen", "Tour seen", edTourSeen, GX_SETTINGS_UI_EXPERT),
+};
+#undef GX_FIELD_BOOL
+#undef GX_FIELD_I32
+#undef GX_FIELD_U32
+#undef GX_FIELD_F32
+
+gX_U32 gX_Settings_FieldCount(gX_I0)
+{
+    return (gX_U32)(sizeof(gX_Settings_Fields) / sizeof(gX_Settings_Fields[0]));
+}
+
+const gX_Settings_FieldInfo *gX_Settings_FieldAt(gX_U32 index)
+{
+    if (index >= gX_Settings_FieldCount()) return NULL;
+    return &gX_Settings_Fields[index];
+}
+
+const gX_I8 *gX_Settings_UILevelName(gX_I32 level)
+{
+    switch (level) {
+        case GX_SETTINGS_UI_BASIC: return "Basic";
+        case GX_SETTINGS_UI_ADVANCED: return "Advanced";
+        case GX_SETTINGS_UI_EXPERT: return "Expert";
+        default: return "Advanced";
+    }
+}
 
 static gX_I32 s_appliedUiThemePreset = -1;
 
@@ -223,6 +292,7 @@ static gX_I32 gX_Settings_Schema_Init(gX_I0) {
     GX_SCHEMAJSON_ADDOBJECT_TERM(toolUiScale,(settings.toolUiScale),F32)
     //opencode: persisted GL feature-level request (0 = auto).
     GX_SCHEMAJSON_ADDOBJECT_TERM(toolGlLevel,(settings.toolGlLevel),I32)
+    GX_SCHEMAJSON_ADDOBJECT_TERM(uiLevel,(settings.uiLevel),I32)
     GX_SCHEMAJSON_ADDOBJECT_TERM(toolKeyboardNav,(settings.toolKeyboardNav),I1)
     //opencode: browse-only asset roots survive restarts without touching presets.
     GX_SCHEMAJSON_ADDOBJECT_STRING(toolAssetRoots,(settings.toolAssetRoots))
@@ -265,6 +335,7 @@ gX_I32 gX_Settings_Init(gX_I0) {
     settings.toolUiScale = 1.25f;
     settings.toolAssetRoots[0] = 0;
     settings.toolGlLevel = 0;
+    settings.uiLevel = GX_SETTINGS_UI_ADVANCED;
     settings.toolKeyboardNav = 1;
     settings.uiThemePreset = GX_SETTINGS_UI_THEME_DEFAULT;
     s_appliedUiThemePreset = -1;
@@ -311,6 +382,7 @@ gX_I32 gX_Settings_Reset(gX_I0) {
     settings.toolUiScale  = 1.25f;
     settings.toolAssetRoots[0] = 0;
     settings.toolGlLevel = 0;
+    settings.uiLevel = GX_SETTINGS_UI_ADVANCED;
     settings.toolKeyboardNav = 1;
     settings.uiThemePreset = GX_SETTINGS_UI_THEME_DEFAULT;
     settings.targetFPS    = maindata.targetFPS;
@@ -340,6 +412,9 @@ gX_I32 gX_Settings_Load(gX_I0) {
     }
     //opencode: sanitize saved scale before any ImGui context reads it.
     settings.toolUiScale = gX_Settings_ToolUIScale_Clamp(settings.toolUiScale);
+    if (settings.uiLevel < GX_SETTINGS_UI_BASIC
+        || settings.uiLevel >= GX_SETTINGS_UI_LEVEL_COUNT)
+        settings.uiLevel = GX_SETTINGS_UI_ADVANCED;
     settings.uiThemePreset = gX_Settings_UITheme_Clamp(settings.uiThemePreset);
     gX_GUI_Style_SetThemePath(gX_Settings_UITheme_Path(settings.uiThemePreset));
     s_appliedUiThemePreset = settings.uiThemePreset;

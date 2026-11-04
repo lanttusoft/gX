@@ -9,6 +9,11 @@ SemVer.
 Release-Class: patch
 
 ### Added
+- **UI maturity levels**: `settings.uiLevel` (Basic/Advanced/Expert) with a
+  shared settings metadata manifest. The native Settings panel filters
+  advanced controls and the Accessibility menu exposes the typed Expert value
+  list with ranges and recommended values. `--test-only` pins metadata
+  coverage/range integrity.
 - **Scene feature manifest**: one table for feature dependencies, HDR/effect
   closure, pass/resource ownership and cost class; `GX_GFX_PLAN=1` prints the
   resolved plan (including missing dependencies). The existing predicates now

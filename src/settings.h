@@ -35,13 +35,41 @@ extern "C" {
 //basic - basic controls, for "consoles"
 //advanced - for "pcs"
 //expert - fine tuning with whatever values, exposes everything
-    
 #include "common/types.h"
 #include "common/config.h"
 #include "common/marshal/json.h"
 #include "input.h"
     
 #include "main.h"
+
+typedef enum gX_Settings_UILevel {
+    GX_SETTINGS_UI_BASIC = 0,
+    GX_SETTINGS_UI_ADVANCED,
+    GX_SETTINGS_UI_EXPERT,
+    GX_SETTINGS_UI_LEVEL_COUNT
+} gX_Settings_UILevel;
+
+typedef enum gX_Settings_FieldType {
+    GX_SETTINGS_FIELD_BOOL = 0,
+    GX_SETTINGS_FIELD_I32,
+    GX_SETTINGS_FIELD_U32,
+    GX_SETTINGS_FIELD_F32
+} gX_Settings_FieldType;
+
+//ai: metadata for the Basic/Advanced/Expert surfaces. The expert list reads
+//   values through the offset and shows the type/range/recommended value.
+typedef struct gX_Settings_FieldInfo {
+    const gX_I8 *key;
+    const gX_I8 *label;
+    gX_Settings_FieldType type;
+    gX_U32 offset;
+    gX_Settings_UILevel level;
+    gX_F32 minimum;
+    gX_F32 maximum;
+    gX_F32 recommended;
+    const gX_I8 *unit;
+} gX_Settings_FieldInfo;
+
 
 //opencode: stable persisted IDs shared by native and ImGui theme selectors.
 #define GX_SETTINGS_UI_THEME_DEFAULT 0
@@ -85,6 +113,8 @@ typedef struct gX_Settings {
     //opencode: requested GL feature level (0 = auto/detected); applied at
     //   load because shader variants compile per level.
     gX_I32 toolGlLevel;
+    //ai: Basic/Advanced/Expert presentation level (persisted).
+    gX_I32 uiLevel;
     //opencode: browse-only asset roots for the GFX asset browser (colon
     //   separated). Paths are used in place — nothing is copied into the repo.
     gX_I8 toolAssetRoots[1024];
@@ -116,6 +146,10 @@ extern gX_Settings settings;
 gX_I32 gX_Settings_Init(gX_I0);
 gX_I32 gX_Settings_Reset(gX_I0);
 gX_I32 gX_Settings_Load(gX_I0);
+//ai: settings manifest for the tiered UI and the expert value list.
+gX_U32 gX_Settings_FieldCount(gX_I0);
+const gX_Settings_FieldInfo *gX_Settings_FieldAt(gX_U32 index);
+const gX_I8 *gX_Settings_UILevelName(gX_I32 level);
 gX_I32 gX_Settings_Save(gX_I0);
 gX_I32 gX_Settings_Apply(gX_I0);
 //ai: audio-only apply — push the volume fields to the mixer buses

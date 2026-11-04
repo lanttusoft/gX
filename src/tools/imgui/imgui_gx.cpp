@@ -371,6 +371,67 @@ extern "C" gX_I0 gX_Tools_ImGui_AccessibilityMenu(gX_I0)
     }
     ImGui::TextDisabled("Snap transitions and pause fades instead of animating.");
     ImGui::Separator();
+    ImGui::TextDisabled("Settings level: %s",
+        gX_Settings_UILevelName(settings.uiLevel));
+    if (ImGui::BeginMenu("UI level")) {
+        for (gX_I32 level = GX_SETTINGS_UI_BASIC;
+             level < GX_SETTINGS_UI_LEVEL_COUNT; level++) {
+            if (ImGui::MenuItem(gX_Settings_UILevelName(level), NULL,
+                    settings.uiLevel == level)) {
+                settings.uiLevel = level;
+                settings.dirtyFlag = 1;
+            }
+        }
+        ImGui::EndMenu();
+    }
+    if (settings.uiLevel == GX_SETTINGS_UI_EXPERT) {
+        ImGui::Separator();
+        ImGui::TextUnformatted("Expert values");
+        ImGui::TextDisabled("Type, range and recommended value; edits are live.");
+        ImGui::BeginChild("##expert_settings", ImVec2(560.0f, 360.0f), true);
+        gX_U32 fieldCount = gX_Settings_FieldCount();
+        for (gX_U32 i = 0; i < fieldCount; i++) {
+            const gX_Settings_FieldInfo *field = gX_Settings_FieldAt(i);
+            if (!field) continue;
+            void *value = (char *)&settings + field->offset;
+            bool changed = false;
+            ImGui::TextUnformatted(field->label);
+            ImGui::SameLine(190.0f);
+            ImGui::SetNextItemWidth(140.0f);
+            switch (field->type) {
+                case GX_SETTINGS_FIELD_BOOL: {
+                    bool *flag = (bool *)value;
+                    changed = ImGui::Checkbox("##value", flag);
+                    break;
+                }
+                case GX_SETTINGS_FIELD_I32:
+                    changed = ImGui::DragInt("##value", (int *)value,
+                        0.5f, (int)field->minimum, (int)field->maximum);
+                    break;
+                case GX_SETTINGS_FIELD_U32: {
+                    gX_U32 lo = (gX_U32)field->minimum;
+                    gX_U32 hi = (gX_U32)field->maximum;
+                    changed = ImGui::DragScalar("##value", ImGuiDataType_U32,
+                        value, 1.0f, &lo, &hi);
+                    break;
+                }
+                case GX_SETTINGS_FIELD_F32:
+                    changed = ImGui::DragFloat("##value", (float *)value,
+                        0.01f, field->minimum, field->maximum);
+                    break;
+            }
+            if (changed) settings.dirtyFlag = 1;
+            ImGui::SameLine();
+            ImGui::TextDisabled("%s  [%.2f .. %.2f] rec %.2f %s",
+                field->type == GX_SETTINGS_FIELD_BOOL ? "bool"
+                    : (field->type == GX_SETTINGS_FIELD_I32 ? "i32"
+                    : (field->type == GX_SETTINGS_FIELD_U32 ? "u32" : "f32")),
+                field->minimum, field->maximum, field->recommended,
+                field->unit ? (const char *)field->unit : "");
+        }
+        ImGui::EndChild();
+    }
+    ImGui::Separator();
     ImGui::TextUnformatted("Theme preview");
     if (ImGui::MenuItem("Default", NULL,
             settings.uiThemePreset == GX_SETTINGS_UI_THEME_DEFAULT)) {
