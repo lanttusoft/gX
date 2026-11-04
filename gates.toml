@@ -892,3 +892,12 @@ group = "tooling"
 cache = "content"
 inputs = ["scripts/compress_textures.py", "scripts/texture_compression_check.py", "resources/texture/"]
 description = "BC7/BC5/BC4 DDS encoding, loading and sidecar preference."
+
+[gate.source-lineage]
+script = "source_lineage_audit.py"
+args = ["--compare", "external/raylib/src", "--strict"]
+tier = ["tooling"]
+group = "tooling"
+cache = "content"
+inputs = ["scripts/source_lineage_audit.py", "src/", "external/raylib/src/"]
+description = "high-similarity source files carry a lineage banner or credit."

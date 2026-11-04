@@ -47,6 +47,8 @@ Start here:
   layering, its exact-image guarantee and measured trade.
 - [Compressed texture sidecars](texture_compression.md) — BC7/BC5/BC4 DDS
   sidecars, encoder tooling and the loader fallback policy.
+- [Source-lineage audit](source_lineage_audit.md) — citation/self-reuse review
+  against a private archive or vendored corpus.
 - [gX Kernel](kernel.md)
 - [Lean size gate](lean_gate.md)
 - [Lean 4 proof audit](lean_proofs.md)

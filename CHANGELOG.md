@@ -19,6 +19,11 @@ Release-Class: minor
   prefers a sibling `.dds` and falls back to the source PNG when the GPU or
   file is missing. `make texture-compression-check` covers PSNR, VRAM and
   sidecar loading. Tooling tier; no sidecars are committed yet.
+- **Source-lineage audit**: `scripts/source_lineage_audit.py` compares source
+  shingles against an optional private archive or vendored corpus and requires
+  a `[gX:` banner or explicit credit on high-similarity files. The public
+  `make lineage-audit` checks raylib; the private archive comparison is
+  report-only.
 
 ## [0.39.1] - 2026-11-03
 

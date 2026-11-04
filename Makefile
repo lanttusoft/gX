@@ -1333,6 +1333,13 @@ ssr-resolution-check: all
 	#ai: the gate writes its capture evidence under the harness scratch dir.
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/ssr_resolution_check.py
 
+#ai: source lineage/citation audit; set GX_LINEAGE_ARCHIVE for the private tree.
+.PHONY: lineage-audit
+lineage-audit:
+	python3 scripts/source_lineage_audit.py \
+	  $${GX_LINEAGE_ARCHIVE:+--archive $$GX_LINEAGE_ARCHIVE} \
+	  --compare external/raylib/src --strict
+
 #ai: E6 compressed texture sidecars — encode, probe and PSNR/VRAM gate.
 .PHONY: texture-compression-check
 texture-compression-check: all
