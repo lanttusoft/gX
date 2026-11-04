@@ -25,8 +25,10 @@ OUT = Path("/tmp/opencode/title_flow_check")
 FRAMES = 340
 SHOT_FRAME = 300
 DELTA_MIN = 0.5   # a view switch changes a large part of the frame
-RETURN_MAX = 1.5  # a return matches the menu frame; title polish leaves a
-                    # small focus/transition delta (view switches are >20)
+RETURN_MAX = 2.5  # a return matches the menu frame; a stray focused-item
+                    # delta can reach ~1.8, while a stuck view is >20, so the
+                    # threshold leaves room for title polish without hiding a
+                    # failed back route.
 #opencode: tool-card labels end in " EDITOR" or " LAB"; every card must own a
 #   distinct EXTRAS grid cell — a duplicate col/row once stacked the background
 #   and sky cards on one slot, making the background editor unreachable and
@@ -45,7 +47,11 @@ DESC_RE = re.compile(r'desc="([^"]*)"')
 #   warm-up, then the visible menu navigation.
 LOAD_GAME = "2.0 key 264;2.4 key 264;2.8 key 264;3.2 key 257"
 DEMOS = "2.0 key 264;2.4 key 264;2.8 key 264;3.2 key 264;3.6 key 264;4.0 key 257"
-EXTRAS = "2.0 key 264;2.4 key 264;2.8 key 264;3.2 key 264;3.6 key 264;4.0 key 264;4.4 key 257"
+#ai: drive EXTRAS with a mouse click on its fixed 1024x768 card. The keyboard
+#   route depends on the title entrance focus lock and a fixed Down count;
+#   a slow first frame dropped the early Downs and landed on QUIT, so the
+#   "extras" view was really the quit dialog and extras_layout found no cards.
+EXTRAS = "2.0 move 511 615 200;2.5 click 511 615"
 VIEWS = (
     ("load_game", LOAD_GAME, "view"),
     ("demos", DEMOS, "view"),
@@ -54,7 +60,7 @@ VIEWS = (
     ("escape", "2.0 key 256", "view"),
     ("escape_back", "2.0 key 256;4.0 key 256", "return"),
     ("load_game_back", LOAD_GAME + ";4.2 key 256", "return"),
-    ("extras_back", EXTRAS + ";4.8 key 256", "return"),
+    ("extras_back", EXTRAS + ";4.5 key 256", "return"),
 )
 
 
