@@ -25,6 +25,7 @@
 
 
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stddef.h> //opencode: reject non-finite persisted tool UI scale values.
@@ -105,6 +106,46 @@ const gX_I8 *gX_Settings_UILevelName(gX_I32 level)
         case GX_SETTINGS_UI_EXPERT: return "Expert";
         default: return "Advanced";
     }
+}
+
+//ai: parse the persisted/env spelling once; -1 means "not a level".
+gX_I32 gX_Settings_UILevelParse(const gX_I8 *text)
+{
+    if (!text || !text[0]) return -1;
+    if (!strcasecmp((const char *)text, "basic") || !strcmp((const char *)text, "0"))
+        return GX_SETTINGS_UI_BASIC;
+    if (!strcasecmp((const char *)text, "advanced") || !strcmp((const char *)text, "1"))
+        return GX_SETTINGS_UI_ADVANCED;
+    if (!strcasecmp((const char *)text, "expert") || !strcmp((const char *)text, "2"))
+        return GX_SETTINGS_UI_EXPERT;
+    return -1;
+}
+
+//ai: effective level for every surface; a valid GX_UI_LEVEL wins over the
+//   persisted value, and an out-of-range stored value falls back to Advanced.
+gX_Settings_UILevel gX_Settings_UILevelEffective(gX_I0)
+{
+    gX_I32 override = gX_Settings_UILevelParse((const gX_I8 *)getenv("GX_UI_LEVEL"));
+    if (override >= GX_SETTINGS_UI_BASIC && override < GX_SETTINGS_UI_LEVEL_COUNT)
+        return (gX_Settings_UILevel)override;
+    if (settings.uiLevel < GX_SETTINGS_UI_BASIC
+        || settings.uiLevel >= GX_SETTINGS_UI_LEVEL_COUNT)
+        return GX_SETTINGS_UI_ADVANCED;
+    return (gX_Settings_UILevel)settings.uiLevel;
+}
+
+//ai: audits can pin a level without touching the persisted settings file.
+gX_I1 gX_Settings_UILevelOverrideActive(gX_I0)
+{
+    gX_I32 override = gX_Settings_UILevelParse((const gX_I8 *)getenv("GX_UI_LEVEL"));
+    return (override >= GX_SETTINGS_UI_BASIC
+        && override < GX_SETTINGS_UI_LEVEL_COUNT) ? 1 : 0;
+}
+
+//ai: one comparison for every editor gate (Basic <= Advanced <= Expert).
+gX_I1 gX_Settings_UILevelAllows(gX_Settings_UILevel level)
+{
+    return gX_Settings_UILevelEffective() >= level ? 1 : 0;
 }
 
 static gX_I32 s_appliedUiThemePreset = -1;

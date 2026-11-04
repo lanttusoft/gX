@@ -159,6 +159,7 @@ def check_ui(temp_root, inspect=False, matrix=False):
     overrides = {
         "GX_FIXED_DT": "0.0166666667",
         "GX_FRAMES": "30",
+        "GX_UI_LEVEL": "expert",
     }
     if inspect:
         overrides["GX_RAYMARCH_EDITOR_INSPECT"] = "1"

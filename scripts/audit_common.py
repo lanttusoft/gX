@@ -60,7 +60,8 @@ DEFAULT_SHOT_FRAME = 120
 #opencode: ambient test hooks a probe must be able to override authoritatively.
 HOOK_PREFIXES = ("GX_T_", "GX_CAM_", "GX_FOG_", "GX_SNOW_", "GX_SNOWFALL_",
                  "GX_RAIN_", "GX_FOGSPRITE_", "GX_SPLAT_", "GX_MIRROR_",
-                 "GX_PROBE_", "GX_EXTRA_", "GX_LAYOUT_", "GX_RAYMARCH_")
+                 "GX_PROBE_", "GX_EXTRA_", "GX_LAYOUT_", "GX_RAYMARCH_",
+                 "GX_UI_")
 HOOK_KEYS = ("GX_SCREENSHOT_DIR", "GX_SHOT_FRAME", "GX_SHOT_FORCE", "GX_FRAMES",
               "GX_FIXED_DT", "GX_SKY_CHECK", "GX_GFX_RAYMARCH_DEPTH",
               "GX_REDUCE_MOTION")

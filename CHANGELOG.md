@@ -4,6 +4,20 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: minor
+
+### Added
+- **UI maturity in the GFX editor**: Basic/Advanced/Expert now gate whole
+  renderer labs and the fine-tuning sections (shader tuning, GL level, raw
+  toggles, texture tools, map tuning, SSGI, aux targets, CSM, decals, volumes,
+  godrays, lens flare, bloom shape, auto exposure, watches, raymarch tracing).
+  The inspector carries a level selector, `GX_UI_LEVEL` pins the effective
+  level for headless runs, and `GX_UI_TRACE=1` logs the resolved lab/section
+  surface. `editor-host-check` verifies every traced row against its declared
+  minimum at all three levels.
+
 ## [0.41.0] - 2026-11-04
 
 Release-Class: minor

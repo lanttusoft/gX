@@ -150,6 +150,12 @@ gX_I32 gX_Settings_Load(gX_I0);
 gX_U32 gX_Settings_FieldCount(gX_I0);
 const gX_Settings_FieldInfo *gX_Settings_FieldAt(gX_U32 index);
 const gX_I8 *gX_Settings_UILevelName(gX_I32 level);
+//ai: effective presentation level — GX_UI_LEVEL (basic|advanced|expert|0..2)
+//   overrides the persisted setting for headless surfaces without rewriting it.
+gX_I32 gX_Settings_UILevelParse(const gX_I8 *text);
+gX_Settings_UILevel gX_Settings_UILevelEffective(gX_I0);
+gX_I1 gX_Settings_UILevelOverrideActive(gX_I0);
+gX_I1 gX_Settings_UILevelAllows(gX_Settings_UILevel level);
 gX_I32 gX_Settings_Save(gX_I0);
 gX_I32 gX_Settings_Apply(gX_I0);
 //ai: audio-only apply — push the volume fields to the mixer buses

@@ -214,7 +214,7 @@ gX_I0 gX_GUI_Template_Settings(gX_I32 canvasindex) {
     //   exist in gX, so the old dead toggles are gone.
     gX_GUI_Builder_Widget_ToggleSwitch(&b, 4.1f, 2.25f, 3.0f, 0.45f,
         "Reduce Motion", &settings.reduceMotion);
-    if (settings.uiLevel >= GX_SETTINGS_UI_ADVANCED) {
+    if (gX_Settings_UILevelAllows(GX_SETTINGS_UI_ADVANCED)) {
         gX_GUI_Builder_Widget_ToggleSwitch(&b, 4.1f, 2.8f, 3.0f, 0.45f,
             "Tool Nav", &settings.toolKeyboardNav);
         //ai: UX pass — "Tool scale: 1.000" truncated to "1..." in the slider box
@@ -245,7 +245,7 @@ gX_I0 gX_GUI_Template_Settings(gX_I32 canvasindex) {
         "Sens", &settings.cameraSens, 0.5f, 10.0f);
     gX_GUI_Builder_Widget_ToggleSwitch(&b, 4.1f, 5.55f, 3.0f, 0.45f,
         "Invert Y", &settings.invertY);
-    if (settings.uiLevel >= GX_SETTINGS_UI_ADVANCED) {
+    if (gX_Settings_UILevelAllows(GX_SETTINGS_UI_ADVANCED)) {
         gX_GUI_Builder_Widget_Slider(&b, 4.1f, 6.0f, 3.0f, 0.5f,
             "FOV", &settings.cameraFov, 60.0f, 120.0f);
     }

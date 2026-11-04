@@ -371,9 +371,11 @@ extern "C" gX_I0 gX_Tools_ImGui_AccessibilityMenu(gX_I0)
     }
     ImGui::TextDisabled("Snap transitions and pause fades instead of animating.");
     ImGui::Separator();
-    ImGui::TextDisabled("Settings level: %s",
-        gX_Settings_UILevelName(settings.uiLevel));
-    if (ImGui::BeginMenu("UI level")) {
+    gX_Settings_UILevel effectiveLevel = gX_Settings_UILevelEffective();
+    ImGui::TextDisabled("Settings level: %s%s",
+        gX_Settings_UILevelName(effectiveLevel),
+        gX_Settings_UILevelOverrideActive() ? " (GX_UI_LEVEL)" : "");
+    if (!gX_Settings_UILevelOverrideActive() && ImGui::BeginMenu("UI level")) {
         for (gX_I32 level = GX_SETTINGS_UI_BASIC;
              level < GX_SETTINGS_UI_LEVEL_COUNT; level++) {
             if (ImGui::MenuItem(gX_Settings_UILevelName(level), NULL,
@@ -384,7 +386,7 @@ extern "C" gX_I0 gX_Tools_ImGui_AccessibilityMenu(gX_I0)
         }
         ImGui::EndMenu();
     }
-    if (settings.uiLevel == GX_SETTINGS_UI_EXPERT) {
+    if (effectiveLevel == GX_SETTINGS_UI_EXPERT) {
         ImGui::Separator();
         ImGui::TextUnformatted("Expert values");
         ImGui::TextDisabled("Type, range and recommended value; edits are live.");

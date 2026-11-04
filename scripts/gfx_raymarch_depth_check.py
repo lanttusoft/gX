@@ -195,7 +195,8 @@ def main():
             ui.mkdir()
             environment = audit.scene_env({"GX_GFX_RAYMARCH_DEPTH":str(mode),
                 "GX_RAYMARCH_EDITOR_INSPECT":"3","GX_FIXED_DT":"0.0166666667",
-                "GX_RAYMARCH_DEPTH_TEST":"front","GX_FRAMES":"30"},clean=True)
+                "GX_RAYMARCH_DEPTH_TEST":"front","GX_FRAMES":"30",
+                "GX_UI_LEVEL":"expert"},clean=True)
             result = artifacts.capture_scene("--showcase-minimal",environment,
                 width=1024,height=768,fps=60,frames=30,shot_frame=20,
                 screenshot_dir=ui,timeout=120,check=True,extra_args=("--gfx-editor",))

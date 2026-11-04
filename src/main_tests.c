@@ -3791,6 +3791,34 @@ static gX_I32 gX_Tests_SettingsUI(void) {
         gX_TraceLog(gX_LOG_ERROR, "SETTINGS_UI_TEST FAIL: level names");
         errors++;
     }
+    //ai: the editor gates parse the env override with the same helper as the
+    //   persisted setting; pin both spellings and the invalid fallback.
+    if (gX_Settings_UILevelParse((const gX_I8 *)"basic") != GX_SETTINGS_UI_BASIC
+        || gX_Settings_UILevelParse((const gX_I8 *)"ADVANCED") != GX_SETTINGS_UI_ADVANCED
+        || gX_Settings_UILevelParse((const gX_I8 *)"Expert") != GX_SETTINGS_UI_EXPERT
+        || gX_Settings_UILevelParse((const gX_I8 *)"2") != GX_SETTINGS_UI_EXPERT
+        || gX_Settings_UILevelParse((const gX_I8 *)"nope") != -1
+        || gX_Settings_UILevelParse(NULL) != -1) {
+        gX_TraceLog(gX_LOG_ERROR, "SETTINGS_UI_TEST FAIL: level parse");
+        errors++;
+    }
+    if (!gX_Settings_UILevelOverrideActive()) {
+        gX_I32 savedLevel = settings.uiLevel;
+        settings.uiLevel = GX_SETTINGS_UI_BASIC;
+        if (!gX_Settings_UILevelAllows(GX_SETTINGS_UI_BASIC)
+            || gX_Settings_UILevelAllows(GX_SETTINGS_UI_ADVANCED)
+            || gX_Settings_UILevelAllows(GX_SETTINGS_UI_EXPERT)) {
+            gX_TraceLog(gX_LOG_ERROR, "SETTINGS_UI_TEST FAIL: basic gate");
+            errors++;
+        }
+        settings.uiLevel = GX_SETTINGS_UI_EXPERT;
+        if (!gX_Settings_UILevelAllows(GX_SETTINGS_UI_EXPERT)
+            || gX_Settings_UILevelAllows(GX_SETTINGS_UI_LEVEL_COUNT)) {
+            gX_TraceLog(gX_LOG_ERROR, "SETTINGS_UI_TEST FAIL: expert gate");
+            errors++;
+        }
+        settings.uiLevel = savedLevel;
+    }
     return errors;
 }
 

@@ -322,6 +322,93 @@ static gX_RendererGFX *gfx_state(gX_I0) {
     if (!renderer.gfx.data) return 0;
     return (gX_RendererGFX *)renderer.gfx.data;
 }
+
+//ai: one Basic/Advanced/Expert gate for every editor surface. GX_UI_TRACE
+//   logs each distinct (surface, level) verdict once, so the editor-host gate
+//   can pin what a level hides without reading pixels. Keep this table small:
+//   it lives in BSS on the lean-gated Release payload.
+typedef struct GfxUiTraceRow {
+    const gX_I8 *name;
+    gX_I32 level;
+    gX_I1 isLab;
+    gX_I1 visible;
+} GfxUiTraceRow;
+
+//ai: trace rows are stable string literals so the first-seen cache can key
+//   on pointers without owning any strings.
+static gX_I0 gfx_ui_trace(gX_I1 isLab, const gX_I8 *name,
+    gX_Settings_UILevel minimum, gX_I1 visible)
+{
+    const gX_I8 *trace = getenv("GX_UI_TRACE");
+    if (!trace || !trace[0] || trace[0] == '0') return;
+    static GfxUiTraceRow rows[64];
+    static gX_U32 rowCount = 0;
+    gX_I32 level = (gX_I32)gX_Settings_UILevelEffective();
+    for (gX_U32 i = 0; i < rowCount; i++) {
+        if (rows[i].isLab != isLab || rows[i].name != name
+            || rows[i].level != level) continue;
+        if (rows[i].visible == visible) return;
+        rows[i].visible = visible;
+        gX_TraceLog(gX_LOG_INFO,
+            "GFX_UI_%s: level=%s name=%s min=%s visible=%d",
+            isLab ? "LAB" : "SECTION",
+            (const char *)gX_Settings_UILevelName(level),
+            (const char *)name,
+            (const char *)gX_Settings_UILevelName((gX_I32)minimum),
+            (gX_I32)visible);
+        return;
+    }
+    if (rowCount >= sizeof(rows) / sizeof(rows[0])) return;
+    rows[rowCount].isLab = isLab;
+    rows[rowCount].name = name;
+    rows[rowCount].level = level;
+    rows[rowCount].visible = visible;
+    rowCount++;
+    gX_TraceLog(gX_LOG_INFO,
+        "GFX_UI_%s: level=%s name=%s min=%s visible=%d",
+        isLab ? "LAB" : "SECTION",
+        (const char *)gX_Settings_UILevelName(level),
+        (const char *)name,
+        (const char *)gX_Settings_UILevelName((gX_I32)minimum),
+        (gX_I32)visible);
+}
+
+static gX_I1 gfx_ui_section(const gX_I8 *name, gX_Settings_UILevel minimum)
+{
+    gX_I1 visible = gX_Settings_UILevelAllows(minimum);
+    gfx_ui_trace(0, name, minimum, visible);
+    return visible;
+}
+
+static gX_I1 gfx_ui_lab(const gX_I8 *label, gX_Settings_UILevel minimum)
+{
+    gX_I1 visible = gX_Settings_UILevelAllows(minimum);
+    gfx_ui_trace(1, label, minimum, visible);
+    return visible;
+}
+
+//ai: visible level switch in the inspector; the Accessibility menu keeps the
+//   global one. GX_UI_LEVEL wins while set, so audits can pin a surface.
+static gX_I0 gfx_ui_level_selector(gX_I0)
+{
+    gX_Settings_UILevel effective = gX_Settings_UILevelEffective();
+    if (gX_Settings_UILevelOverrideActive()) {
+        ImGui::TextDisabled("UI level: %s (GX_UI_LEVEL)",
+            (const char *)gX_Settings_UILevelName(effective));
+        return;
+    }
+    ImGui::TextDisabled("UI level");
+    for (gX_I32 level = GX_SETTINGS_UI_BASIC;
+         level < GX_SETTINGS_UI_LEVEL_COUNT; level++) {
+        if (level != GX_SETTINGS_UI_BASIC) ImGui::SameLine();
+        if (ImGui::RadioButton((const char *)gX_Settings_UILevelName(level),
+                settings.uiLevel == level)) {
+            settings.uiLevel = level;
+            settings.dirtyFlag = 1;
+        }
+    }
+    ImGui::Separator();
+}
 #include "bug_report.h"
 
 //opencode: the browser is intentionally scoped to audited resource roots.
@@ -5976,6 +6063,8 @@ static gX_I0 gfx_model_texture_slots_panel(gX_RendererGFX *gfx,
 //   in Model_Parameters and therefore round-trip with the scene preset.
 static gX_I0 gfx_model_map_tuning_panel(gX_RendererGFX *gfx,
     gX_RendererGFX_Model *model) {
+    if (!gfx_ui_section((const gX_I8 *)"map_tuning",
+            GX_SETTINGS_UI_EXPERT)) return;
     if (!ImGui::CollapsingHeader("Map tuning")) return;
     gX_I1 albedo = model->params.hasAlbedoMap ? 1 : 0;
     if (ImGui::Checkbox("albedo map", (bool *)&albedo)) model->params.hasAlbedoMap = albedo;
@@ -6147,6 +6236,8 @@ static gX_I0 gfx_item_rect4(gX_F32 *out) {
 //   editor; reload the model to rebuild its per-mesh resolved materials.
 static gX_I0 gfx_model_overrides_panel(gX_RendererGFX *gfx,
     gX_RendererGFX_Model *model) {
+    if (!gfx_ui_section((const gX_I8 *)"material_overrides",
+            GX_SETTINGS_UI_ADVANCED)) return;
     //opencode: harness hook — expand the section and scroll it into view so
     //   virtual-input gates can reach the map Browse buttons.
     const gX_I8 *focusHook = getenv("GX_GFX_MATMAP_FOCUS");
@@ -7930,6 +8021,8 @@ static gX_I0 gfx_shadow_panel(gX_RendererGFX *gfx) {
 
 //opencode: controls for configurable standard-shader material and shadow constants.
 static gX_I0 gfx_shader_tuning_panel(gX_RendererGFX *gfx) {
+    if (!gfx_ui_section((const gX_I8 *)"shader_tuning",
+            GX_SETTINGS_UI_EXPERT)) return;
     if (!ImGui::CollapsingHeader("Advanced shader tuning")) return;
     ImGui::DragFloat("parallax min layers", &gfx->state.parallaxMinLayers, 1.0f, 1.0f, 128.0f);
     ImGui::DragFloat("parallax max layers", &gfx->state.parallaxMaxLayers, 1.0f, 1.0f, 128.0f);
@@ -7943,29 +8036,47 @@ static gX_I0 gfx_shader_tuning_panel(gX_RendererGFX *gfx) {
 
 //ai: collapsing headers do not create ID scopes; disambiguate the FX intensity controls.
 static gX_I0 gfx_bloom_panel(gX_RendererGFX *gfx) {
-    if (!ImGui::CollapsingHeader("Bloom")) return;
+    gX_I1 basicVisible = gfx_ui_section((const gX_I8 *)"bloom",
+        GX_SETTINGS_UI_BASIC);
+    gX_I1 shapeVisible = gfx_ui_section((const gX_I8 *)"bloom_shape",
+        GX_SETTINGS_UI_ADVANCED);
+    gX_I1 autoVisible = gfx_ui_section((const gX_I8 *)"bloom_auto_exposure",
+        GX_SETTINGS_UI_EXPERT);
+    if (!basicVisible || !ImGui::CollapsingHeader("Bloom")) return;
     gX_I1 bloom = gfx->state.ENABLE_BLOOM ? 1 : 0;
     if (ImGui::Checkbox("enable HDR composite + bloom", (bool *)&bloom))
         gfx->state.ENABLE_BLOOM = bloom;
     ImGui::DragFloat("threshold", &gfx->bloom.threshold, 0.01f, 0.0f, 4.0f);
     ImGui::DragFloat("knee", &gfx->bloom.knee, 0.01f, 0.0f, 1.0f);
     ImGui::DragFloat("intensity##bloom", &gfx->bloom.intensity, 0.01f, 0.0f, 4.0f);
-    ImGui::DragFloat("blur amount", &gfx->bloom.blurAmount, 0.01f, 0.0f, 4.0f);
     ImGui::DragFloat("composite exposure", &gfx->bloom.exposure, 0.01f, 0.0f, 4.0f);
-    ImGui::DragFloat("vignette", &gfx->bloom.vignette, 0.01f, 0.0f, 2.0f);
-    ImGui::DragFloat("saturation", &gfx->bloom.saturation, 0.01f, 0.0f, 2.0f);
-    ImGui::DragFloat("contrast", &gfx->bloom.contrast, 0.01f, 0.0f, 2.0f);
-    gX_I1 autoExposure = gfx->bloom.autoExposure ? 1 : 0;
-    if (ImGui::Checkbox("auto exposure", (bool *)&autoExposure))
-        gfx->bloom.autoExposure = autoExposure;
-    ImGui::DragFloat("exposure compensation", &gfx->bloom.exposureCompensation, 0.01f, -8.0f, 8.0f);
-    ImGui::DragFloat("auto exposure min", &gfx->bloom.exposureMin, 0.01f, 0.01f, 8.0f);
-    ImGui::DragFloat("auto exposure max", &gfx->bloom.exposureMax, 0.01f, 0.01f, 16.0f);
+    if (shapeVisible) {
+        ImGui::DragFloat("blur amount", &gfx->bloom.blurAmount, 0.01f, 0.0f, 4.0f);
+        ImGui::DragFloat("vignette", &gfx->bloom.vignette, 0.01f, 0.0f, 2.0f);
+        ImGui::DragFloat("saturation", &gfx->bloom.saturation, 0.01f, 0.0f, 2.0f);
+        ImGui::DragFloat("contrast", &gfx->bloom.contrast, 0.01f, 0.0f, 2.0f);
+    }
+    if (autoVisible) {
+        gX_I1 autoExposure = gfx->bloom.autoExposure ? 1 : 0;
+        if (ImGui::Checkbox("auto exposure", (bool *)&autoExposure))
+            gfx->bloom.autoExposure = autoExposure;
+        ImGui::DragFloat("exposure compensation", &gfx->bloom.exposureCompensation, 0.01f, -8.0f, 8.0f);
+        ImGui::DragFloat("auto exposure min", &gfx->bloom.exposureMin, 0.01f, 0.01f, 8.0f);
+        ImGui::DragFloat("auto exposure max", &gfx->bloom.exposureMax, 0.01f, 0.01f, 16.0f);
+    }
 }
 
 //ai: make the composite-only tone controls visibly inactive on the raw-blit path.
 static gX_I0 gfx_look_panel(gX_RendererGFX *gfx) {
-    if (!ImGui::CollapsingHeader("Look")) return;
+    gX_I1 basicVisible = gfx_ui_section((const gX_I8 *)"look",
+        GX_SETTINGS_UI_BASIC);
+    gX_I1 detailVisible = gfx_ui_section((const gX_I8 *)"look_detail",
+        GX_SETTINGS_UI_ADVANCED);
+    gX_I1 extrasVisible = gfx_ui_section((const gX_I8 *)"look_extras",
+        GX_SETTINGS_UI_ADVANCED);
+    gX_I1 gpuVisible = gfx_ui_section((const gX_I8 *)"look_gpu",
+        GX_SETTINGS_UI_ADVANCED);
+    if (!basicVisible || !ImGui::CollapsingHeader("Look")) return;
     ImGui::DragFloat("exposure", &gfx->state.exposure, 0.01f, 0.0f, 4.0f);
     int lightingModel = gfx->state.ENABLE_FLAT ? 2
         : (gfx->state.ENABLE_GOURAUD ? 1 : (gfx->state.ENABLE_PHONG ? 0 : 3));
@@ -7991,48 +8102,52 @@ static gX_I0 gfx_look_panel(gX_RendererGFX *gfx) {
     if (ImGui::Checkbox("normal maps", (bool *)&normalMap)) gfx->state.ENABLE_MAP_NORMAL = normalMap;
     gX_I1 parallaxMap = gfx->state.ENABLE_MAP_PARALLAX ? 1 : 0;
     if (ImGui::Checkbox("parallax mapping", (bool *)&parallaxMap)) gfx->state.ENABLE_MAP_PARALLAX = parallaxMap;
-    gX_I1 detail = gfx->state.ENABLE_DETAIL ? 1 : 0;
-    if (ImGui::Checkbox("detail texture", (bool *)&detail)) gfx->state.ENABLE_DETAIL = detail;
-    ImGui::DragFloat("detail UV scale", &gfx->detail.uvScale, 0.05f, 0.01f, 100.0f);
-    ImGui::DragFloat("detail strength", &gfx->detail.strength, 0.01f, 0.0f, 2.0f);
-    ImGui::DragFloat("detail distance fade", &gfx->detail.distFade, 0.1f, 0.0f, 1000.0f);
-    ImGui::InputText("detail texture path", s_normalTexturePath, sizeof(s_normalTexturePath));
-    ImGui::SameLine();
-    if (ImGui::SmallButton("Browse##detail"))
-        gfx_asset_browser_open(gfx, gX_GFX_ASSET_TEXTURES,
-            gX_GFX_ASSET_TARGET_DETAIL, -1, -1, -1, -1);
-    if (ImGui::Button("Load detail texture")
-        && gfx_preset_file_exists(s_normalTexturePath)
-        && strlen(s_normalTexturePath) < sizeof(gfx->detail.mapPath)) {
-        if (gfx->detail.map.id > 0) gX_Texture_Unload(gfx->detail.map);
-        gfx->detail.map = gX_Texture_Load(s_normalTexturePath);
-        strncpy(gfx->detail.mapPath, s_normalTexturePath, sizeof(gfx->detail.mapPath) - 1);
-        gfx->detail.mapPath[sizeof(gfx->detail.mapPath) - 1] = 0;
+    if (detailVisible) {
+        gX_I1 detail = gfx->state.ENABLE_DETAIL ? 1 : 0;
+        if (ImGui::Checkbox("detail texture", (bool *)&detail)) gfx->state.ENABLE_DETAIL = detail;
+        ImGui::DragFloat("detail UV scale", &gfx->detail.uvScale, 0.05f, 0.01f, 100.0f);
+        ImGui::DragFloat("detail strength", &gfx->detail.strength, 0.01f, 0.0f, 2.0f);
+        ImGui::DragFloat("detail distance fade", &gfx->detail.distFade, 0.1f, 0.0f, 1000.0f);
+        ImGui::InputText("detail texture path", s_normalTexturePath, sizeof(s_normalTexturePath));
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Browse##detail"))
+            gfx_asset_browser_open(gfx, gX_GFX_ASSET_TEXTURES,
+                gX_GFX_ASSET_TARGET_DETAIL, -1, -1, -1, -1);
+        if (ImGui::Button("Load detail texture")
+            && gfx_preset_file_exists(s_normalTexturePath)
+            && strlen(s_normalTexturePath) < sizeof(gfx->detail.mapPath)) {
+            if (gfx->detail.map.id > 0) gX_Texture_Unload(gfx->detail.map);
+            gfx->detail.map = gX_Texture_Load(s_normalTexturePath);
+            strncpy(gfx->detail.mapPath, s_normalTexturePath, sizeof(gfx->detail.mapPath) - 1);
+            gfx->detail.mapPath[sizeof(gfx->detail.mapPath) - 1] = 0;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Clear detail texture")) {
+            if (gfx->detail.map.id > 0) gX_Texture_Unload(gfx->detail.map);
+            gfx->detail.map = (gX_Texture){0};
+            gfx->detail.mapPath[0] = 0;
+        }
+        ImGui::TextDisabled("detail map: %s", gfx->detail.mapPath[0]
+            ? gfx_model_basename(gfx->detail.mapPath) : "none");
     }
-    ImGui::SameLine();
-    if (ImGui::Button("Clear detail texture")) {
-        if (gfx->detail.map.id > 0) gX_Texture_Unload(gfx->detail.map);
-        gfx->detail.map = (gX_Texture){0};
-        gfx->detail.mapPath[0] = 0;
-    }
-    ImGui::TextDisabled("detail map: %s", gfx->detail.mapPath[0]
-        ? gfx_model_basename(gfx->detail.mapPath) : "none");
     gX_I1 frustum = gfx->state.ENABLE_FRUSTUM_CULLING ? 1 : 0;
     if (ImGui::Checkbox("frustum culling", (bool *)&frustum)) gfx->state.ENABLE_FRUSTUM_CULLING = frustum;
-    gX_I1 occlusion = gfx->state.ENABLE_OCCLUSION_CULLING ? 1 : 0;
-    if (ImGui::Checkbox("occlusion culling", (bool *)&occlusion)) gfx->state.ENABLE_OCCLUSION_CULLING = occlusion;
-    gX_I1 ea = gfx->state.ENABLE_ENV_AMBIENT ? 1 : 0;
-    if (ImGui::Checkbox("env ambient", (bool *)&ea))
-        gfx->state.ENABLE_ENV_AMBIENT = ea ? 1 : 0;
-    ImGui::DragFloat("env ambient mix", &gfx->state.envAmbientFactor, 0.01f, 0.0f, 1.0f);
-    gX_I1 ck = gfx->state.ENABLE_COOKIES ? 1 : 0;
-    if (ImGui::Checkbox("cookies", (bool *)&ck))
-        gfx->state.ENABLE_COOKIES = ck ? 1 : 0;
-    gX_I1 rim = gfx->state.ENABLE_RIM ? 1 : 0;
-    if (ImGui::Checkbox("rim lighting", (bool *)&rim)) gfx->state.ENABLE_RIM = rim;
-    ImGui::DragFloat("rim intensity", &gfx->state.rimIntensity, 0.01f, 0.0f, 4.0f);
-    ImGui::DragFloat("rim power", &gfx->state.rimPower, 0.01f, 0.1f, 8.0f);
-    gfx_color_edit("rim color", &gfx->state.rimColor);
+    if (extrasVisible) {
+        gX_I1 occlusion = gfx->state.ENABLE_OCCLUSION_CULLING ? 1 : 0;
+        if (ImGui::Checkbox("occlusion culling", (bool *)&occlusion)) gfx->state.ENABLE_OCCLUSION_CULLING = occlusion;
+        gX_I1 ea = gfx->state.ENABLE_ENV_AMBIENT ? 1 : 0;
+        if (ImGui::Checkbox("env ambient", (bool *)&ea))
+            gfx->state.ENABLE_ENV_AMBIENT = ea ? 1 : 0;
+        ImGui::DragFloat("env ambient mix", &gfx->state.envAmbientFactor, 0.01f, 0.0f, 1.0f);
+        gX_I1 ck = gfx->state.ENABLE_COOKIES ? 1 : 0;
+        if (ImGui::Checkbox("cookies", (bool *)&ck))
+            gfx->state.ENABLE_COOKIES = ck ? 1 : 0;
+        gX_I1 rim = gfx->state.ENABLE_RIM ? 1 : 0;
+        if (ImGui::Checkbox("rim lighting", (bool *)&rim)) gfx->state.ENABLE_RIM = rim;
+        ImGui::DragFloat("rim intensity", &gfx->state.rimIntensity, 0.01f, 0.0f, 4.0f);
+        ImGui::DragFloat("rim power", &gfx->state.rimPower, 0.01f, 0.1f, 8.0f);
+        gfx_color_edit("rim color", &gfx->state.rimColor);
+    }
     const gX_I8 *tonemappers[] = { "None", "ACES", "AgX" };
     int tonemapper = gfx->state.ENABLE_AGX_TONEMAP ? 2
         : (gfx->state.ENABLE_ACES_TONEMAP ? 1 : 0);
@@ -8047,13 +8162,15 @@ static gX_I0 gfx_look_panel(gX_RendererGFX *gfx) {
     ImGui::EndDisabled();
     if (!gfx->state.ENABLE_BLOOM)
         ImGui::TextDisabled("Tone mapping and gamma require the HDR composite; enable it in Bloom.");
-    gX_I1 clustered = gfx->state.ENABLE_CLUSTERED ? 1 : 0;
-    if (ImGui::Checkbox("CPU light clustering", (bool *)&clustered))
-        gfx->state.ENABLE_CLUSTERED = clustered;
-    gX_I1 instancing = gfx->state.ENABLE_INSTANCING ? 1 : 0;
-    if (ImGui::Checkbox("hardware instancing (experimental, GL 4.3)", (bool *)&instancing))
-        gfx->state.ENABLE_INSTANCING = instancing;
-    ImGui::TextDisabled("Instancing is available only when the selected GL level supports SSBOs.");
+    if (gpuVisible) {
+        gX_I1 clustered = gfx->state.ENABLE_CLUSTERED ? 1 : 0;
+        if (ImGui::Checkbox("CPU light clustering", (bool *)&clustered))
+            gfx->state.ENABLE_CLUSTERED = clustered;
+        gX_I1 instancing = gfx->state.ENABLE_INSTANCING ? 1 : 0;
+        if (ImGui::Checkbox("hardware instancing (experimental, GL 4.3)", (bool *)&instancing))
+            gfx->state.ENABLE_INSTANCING = instancing;
+        ImGui::TextDisabled("Instancing is available only when the selected GL level supports SSBOs.");
+    }
 }
 
 //ai: manifest-driven feature checklist with dependency hints and scene
@@ -8099,7 +8216,13 @@ static gX_I0 gfx_features_panel(gX_RendererGFX *gfx) {
 }
 
 static gX_I0 gfx_quality_panel(gX_RendererGFX *gfx) {
-    if (!ImGui::CollapsingHeader("Quality")) return;
+    gX_I1 basicVisible = gfx_ui_section((const gX_I8 *)"quality",
+        GX_SETTINGS_UI_BASIC);
+    gX_I1 shaderVisible = gfx_ui_section((const gX_I8 *)"quality_shader",
+        GX_SETTINGS_UI_ADVANCED);
+    gX_I1 auxVisible = gfx_ui_section((const gX_I8 *)"quality_aux",
+        GX_SETTINGS_UI_EXPERT);
+    if (!basicVisible || !ImGui::CollapsingHeader("Quality")) return;
     //opencode: ApplyQualityPreset is runtime-safe (showcase.c cycles it
     //   live); the slider stages, Apply commits.
     int qp = gfx->state.qualityPreset;
@@ -8117,36 +8240,40 @@ static gX_I0 gfx_quality_panel(gX_RendererGFX *gfx) {
         gfx->state.textureFilter = filter;
         gX_RendererGFX_Textures_ApplyFilter(gfx);
     }
-    const gX_I8 *shaderQualities[] = { "Low", "Medium", "High" };
-    int shaderQuality = gfx->state.shaderQuality;
-    if (shaderQuality < 0 || shaderQuality > 2) shaderQuality = 0;
-    if (ImGui::Combo("shader quality", &shaderQuality, shaderQualities, 3))
-        gfx->state.shaderQuality = shaderQuality;
-    ImGui::DragFloat("mipmap bias", &gfx->state.mipmapBias, 0.01f, -4.0f, 4.0f);
+    if (shaderVisible) {
+        const gX_I8 *shaderQualities[] = { "Low", "Medium", "High" };
+        int shaderQuality = gfx->state.shaderQuality;
+        if (shaderQuality < 0 || shaderQuality > 2) shaderQuality = 0;
+        if (ImGui::Combo("shader quality", &shaderQuality, shaderQualities, 3))
+            gfx->state.shaderQuality = shaderQuality;
+        ImGui::DragFloat("mipmap bias", &gfx->state.mipmapBias, 0.01f, -4.0f, 4.0f);
+    }
     const gX_I8 *msaaLevels[] = { "Off", "2x", "4x", "8x" };
     int msaaIndex = gfx->state.msaaLevel == 2 ? 1 : (gfx->state.msaaLevel == 4 ? 2 : (gfx->state.msaaLevel == 8 ? 3 : 0));
     if (ImGui::Combo("MSAA", &msaaIndex, msaaLevels, 4))
         gfx->state.msaaLevel = msaaIndex == 1 ? 2 : (msaaIndex == 2 ? 4 : (msaaIndex == 3 ? 8 : 0));
     ImGui::TextDisabled("MSAA rebuilds the render target when changed; unsupported GL levels keep single-sample rendering.");
-    //ai: optional aux-target diet — smaller formats and unused depth removal.
-    gX_I1 rtDiet = gfx->state.ENABLE_RT_DIET ? 1 : 0;
-    if (ImGui::Checkbox("compressed aux targets (VRAM)", (bool *)&rtDiet)) {
-        gfx->state.ENABLE_RT_DIET = rtDiet ? 1 : 0;
-        gX_RendererGFX_RT_DietSet(gfx->state.ENABLE_RT_DIET);
+    if (auxVisible) {
+        //ai: optional aux-target diet — smaller formats and unused depth removal.
+        gX_I1 rtDiet = gfx->state.ENABLE_RT_DIET ? 1 : 0;
+        if (ImGui::Checkbox("compressed aux targets (VRAM)", (bool *)&rtDiet)) {
+            gfx->state.ENABLE_RT_DIET = rtDiet ? 1 : 0;
+            gX_RendererGFX_RT_DietSet(gfx->state.ENABLE_RT_DIET);
+        }
+        ImGui::TextDisabled("Aux targets reload next frame; reflections/AO lose a little precision.");
+        //ai: opt-in 4.3 point-shadow layering; the 3.3 path ignores the request.
+        gX_I1 layered = gfx->state.ENABLE_LAYERED_SHADOWS ? 1 : 0;
+        gX_I1 layeredSupported = (gX_GL.hasLayeredShadows && gX_GL.hasInstancing) ? 1 : 0;
+        ImGui::BeginDisabled(!layeredSupported);
+        if (ImGui::Checkbox("layered point shadows (4.3)", (bool *)&layered)) {
+            gfx->state.ENABLE_LAYERED_SHADOWS = layered ? 1 : 0;
+            if (!layeredSupported) gfx->state.ENABLE_LAYERED_SHADOWS = 0;
+        }
+        ImGui::EndDisabled();
+        ImGui::TextDisabled(layeredSupported
+            ? "One instanced pass writes all six point-light faces; no image change."
+            : "Requires a 4.3 context (GX_GL43_CONTEXT=1); the 3.3 path stays legacy.");
     }
-    ImGui::TextDisabled("Aux targets reload next frame; reflections/AO lose a little precision.");
-    //ai: opt-in 4.3 point-shadow layering; the 3.3 path ignores the request.
-    gX_I1 layered = gfx->state.ENABLE_LAYERED_SHADOWS ? 1 : 0;
-    gX_I1 layeredSupported = (gX_GL.hasLayeredShadows && gX_GL.hasInstancing) ? 1 : 0;
-    ImGui::BeginDisabled(!layeredSupported);
-    if (ImGui::Checkbox("layered point shadows (4.3)", (bool *)&layered)) {
-        gfx->state.ENABLE_LAYERED_SHADOWS = layered ? 1 : 0;
-        if (!layeredSupported) gfx->state.ENABLE_LAYERED_SHADOWS = 0;
-    }
-    ImGui::EndDisabled();
-    ImGui::TextDisabled(layeredSupported
-        ? "One instanced pass writes all six point-light faces; no image change."
-        : "Requires a 4.3 context (GX_GL43_CONTEXT=1); the 3.3 path stays legacy.");
 }
 
 //opencode: expose an optional persisted fog-to-void color link.
@@ -8208,6 +8335,8 @@ static gX_I0 gfx_sky_panel(gX_RendererGFX *gfx) {
 }
 
 static gX_I0 gfx_skylab_panel(gX_RendererGFX *gfx) {
+    if (!gfx_ui_section((const gX_I8 *)"sky_lab",
+            GX_SETTINGS_UI_ADVANCED)) return;
     if (!ImGui::CollapsingHeader("Sky Lab", ImGuiTreeNodeFlags_DefaultOpen)) return;
     gX_I1 pe = gfx->state.ENABLE_PROCEDURAL_SKY ? 1 : 0;
     if (ImGui::Checkbox("procedural sky", (bool *)&pe))
@@ -8312,6 +8441,8 @@ static gX_I0 gfx_reflect_panel(gX_RendererGFX *gfx) {
 }
 
 static gX_I0 gfx_fogvolume_panel(gX_RendererGFX *gfx) {
+    if (!gfx_ui_section((const gX_I8 *)"fog_volume",
+            GX_SETTINGS_UI_ADVANCED)) return;
     if (!ImGui::CollapsingHeader("Fog Volume")) return;
     gX_I1 ve = gfx->state.ENABLE_VOLUME_FOG ? 1 : 0;
     if (ImGui::Checkbox("enable volume fog", (bool *)&ve))
@@ -8344,6 +8475,8 @@ static gX_I0 gfx_water_normal_browse(gX_RendererGFX *gfx)
 }
 
 static gX_I0 gfx_csm_panel(gX_RendererGFX *gfx) {
+    if (!gfx_ui_section((const gX_I8 *)"csm",
+            GX_SETTINGS_UI_ADVANCED)) return;
     if (!ImGui::CollapsingHeader("Shadows (CSM)")) return;
     int cc = gfx->csm.cascadeCount;
     if (cc < 1) cc = 1;
@@ -8357,6 +8490,8 @@ static gX_I0 gfx_csm_panel(gX_RendererGFX *gfx) {
 }
 
 static gX_I0 gfx_godray_panel(gX_RendererGFX *gfx) {
+    if (!gfx_ui_section((const gX_I8 *)"godrays",
+            GX_SETTINGS_UI_ADVANCED)) return;
     if (!ImGui::CollapsingHeader("Godrays")) return;
     gX_I1 ge = gfx->state.ENABLE_GODRAYS ? 1 : 0;
     if (ImGui::Checkbox("enable godrays", (bool *)&ge))
@@ -8370,6 +8505,8 @@ static gX_I0 gfx_godray_panel(gX_RendererGFX *gfx) {
 
 //ai: retain the visible intensity label while separating it from bloom's widget ID.
 static gX_I0 gfx_lensflare_panel(gX_RendererGFX *gfx) {
+    if (!gfx_ui_section((const gX_I8 *)"lensflare",
+            GX_SETTINGS_UI_ADVANCED)) return;
     if (!ImGui::CollapsingHeader("Lensflare")) return;
     gX_I1 le = gfx->state.ENABLE_LENS_FLARE ? 1 : 0;
     if (ImGui::Checkbox("enable lensflare", (bool *)&le))
@@ -8379,6 +8516,8 @@ static gX_I0 gfx_lensflare_panel(gX_RendererGFX *gfx) {
 }
 
 static gX_I0 gfx_toggles_panel(gX_RendererGFX *gfx) {
+    if (!gfx_ui_section((const gX_I8 *)"render_toggles",
+            GX_SETTINGS_UI_ADVANCED)) return;
     if (!ImGui::CollapsingHeader("Toggles")) return;
     gX_I1 pp = renderer.state.usePP ? 1 : 0;
     if (ImGui::Checkbox("postprocess", (bool *)&pp))
@@ -8413,7 +8552,13 @@ static gX_I0 gfx_toggles_panel(gX_RendererGFX *gfx) {
 //opencode: SSAO/GTAO and SSGI controls include explicit labels for the
 //   experimental indirect-light contribution.
 static gX_I0 gfx_ssao_panel(gX_RendererGFX *gfx) {
-    if (!ImGui::CollapsingHeader("SSAO / GTAO")) return;
+    gX_I1 basicVisible = gfx_ui_section((const gX_I8 *)"ssao",
+        GX_SETTINGS_UI_BASIC);
+    gX_I1 kernelVisible = gfx_ui_section((const gX_I8 *)"ssao_kernel",
+        GX_SETTINGS_UI_ADVANCED);
+    gX_I1 ssgiVisible = gfx_ui_section((const gX_I8 *)"ssgi",
+        GX_SETTINGS_UI_EXPERT);
+    if (!basicVisible || !ImGui::CollapsingHeader("SSAO / GTAO")) return;
     gX_I1 ssao = gfx->state.ENABLE_SSAO ? 1 : 0;
     if (ImGui::Checkbox("enable ambient occlusion", (bool *)&ssao))
         gfx->state.ENABLE_SSAO = ssao;
@@ -8423,14 +8568,18 @@ static gX_I0 gfx_ssao_panel(gX_RendererGFX *gfx) {
     ImGui::DragFloat("bias", &gfx->ssao.bias, 0.001f, 0.0f, 0.5f, "%.4f");
     ImGui::DragFloat("strength", &gfx->ssao.strength, 0.01f, 0.0f, 8.0f);
     ImGui::DragFloat("thickness", &gfx->ssao.thickness, 0.01f, 0.01f, 10.0f);
-    int kernel = gfx->ssao.kernelSize;
-    if (kernel < 1) kernel = 1;
-    if (kernel > 64) kernel = 64;
-    if (ImGui::SliderInt("kernel size", &kernel, 1, 64)) gfx->ssao.kernelSize = kernel;
-    gX_I1 ssgi = gfx->ssao.useSSGI ? 1 : 0;
-    if (ImGui::Checkbox("SSGI (experimental)", (bool *)&ssgi)) gfx->ssao.useSSGI = ssgi;
-    ImGui::DragFloat("SSGI intensity", &gfx->ssao.ssgiIntensity, 0.02f, 0.0f, 8.0f);
-    ImGui::DragFloat("SSGI bounce gain", &gfx->ssao.ssgiBounceGain, 0.01f, 0.0f, 2.0f);
+    if (kernelVisible) {
+        int kernel = gfx->ssao.kernelSize;
+        if (kernel < 1) kernel = 1;
+        if (kernel > 64) kernel = 64;
+        if (ImGui::SliderInt("kernel size", &kernel, 1, 64)) gfx->ssao.kernelSize = kernel;
+    }
+    if (ssgiVisible) {
+        gX_I1 ssgi = gfx->ssao.useSSGI ? 1 : 0;
+        if (ImGui::Checkbox("SSGI (experimental)", (bool *)&ssgi)) gfx->ssao.useSSGI = ssgi;
+        ImGui::DragFloat("SSGI intensity", &gfx->ssao.ssgiIntensity, 0.02f, 0.0f, 8.0f);
+        ImGui::DragFloat("SSGI bounce gain", &gfx->ssao.ssgiBounceGain, 0.01f, 0.0f, 2.0f);
+    }
 }
 
 //opencode: free-camera mode uses the renderer scene's existing camera input path.
@@ -8877,6 +9026,8 @@ static gX_I0 gfx_particles_panel(gX_RendererGFX *gfx) {
 
 //opencode: place and edit persistent decals from a selected model or camera target.
 static gX_I0 gfx_decals_panel(gX_RendererGFX *gfx) {
+    if (!gfx_ui_section((const gX_I8 *)"decals",
+            GX_SETTINGS_UI_ADVANCED)) return;
     if (!ImGui::CollapsingHeader("Decals")) return;
     gX_I1 enabled = gfx->state.ENABLE_DECALS ? 1 : 0;
     if (ImGui::Checkbox("enable decals", (bool *)&enabled)) gfx->state.ENABLE_DECALS = enabled;
@@ -9760,6 +9911,8 @@ static gX_I0 gfx_scene_prefabs_panel(gX_RendererGFX *gfx) {
 //   normal-from-height bake and ORM channel packing, all exported as PNG into
 //   the generated-textures folder.
 static gX_I0 gfx_scene_texture_panel(gX_RendererGFX *gfx) {
+    if (!gfx_ui_section((const gX_I8 *)"texture_tools",
+            GX_SETTINGS_UI_ADVANCED)) return;
     (void)gfx;
     ImGui::SeparatorText("Texture tools");
     static const gX_I8 *kinds[] = {
@@ -9902,6 +10055,8 @@ static gX_I0 gfx_scene_export_panel(gX_RendererGFX *gfx) {
 //   applies at load (shader variants compile per level), so the request is
 //   persisted and the hint says restart.
 static gX_I0 gfx_scene_gl_panel(gX_RendererGFX *gfx) {
+    if (!gfx_ui_section((const gX_I8 *)"gl_level",
+            GX_SETTINGS_UI_EXPERT)) return;
     (void)gfx;
     ImGui::SeparatorText("GL level");
     static const gX_I32 glLevels[] = { 0, 330, 400, 420, 430 };
@@ -9977,7 +10132,9 @@ static gX_I0 gfx_scene_stats_panel(gX_RendererGFX *gfx) {
     ImGui::SeparatorText("Scene stats");
     ImGui::TextDisabled("models %u/%u loaded · lights %u", loaded, models, lights);
     ImGui::TextDisabled("decals %u · emitters %u", decals, emitters);
-    if (ImGui::CollapsingHeader("Profiler")) {
+    if (gfx_ui_section((const gX_I8 *)"profiler",
+            GX_SETTINGS_UI_ADVANCED)
+        && ImGui::CollapsingHeader("Profiler")) {
         ImGui::TextDisabled("last frame %.2f ms", gX_Profiler_FrameMs());
         static gX_F32 history[120];
         gX_U32 samples = gX_Profiler_HistoryCopy(history, 120);
@@ -10013,7 +10170,9 @@ static gX_I0 gfx_scene_stats_panel(gX_RendererGFX *gfx) {
             ImGui::EndTable();
         }
     }
-    if (ImGui::CollapsingHeader("Watches")) {
+    if (gfx_ui_section((const gX_I8 *)"watches",
+            GX_SETTINGS_UI_EXPERT)
+        && ImGui::CollapsingHeader("Watches")) {
         if (ImGui::SmallButton("watch frame count##dbg"))
             gX_Debug_Watch_AddFrameCount();
         ImGui::SameLine();
@@ -10254,7 +10413,9 @@ static gX_I0 gfx_raymarch_panel(gX_RendererRaymarch *rm) {
             rm->flags.enableProxy = proxy ? 1 : 0;
         if (rm->flags.enableProxy)
             ImGui::TextDisabled("SDF march off — object/terrain wireframes only");
-        if (ImGui::TreeNode("Advanced tracing##rm")) {
+        if (gfx_ui_section((const gX_I8 *)"raymarch_tracing",
+                GX_SETTINGS_UI_EXPERT)
+            && ImGui::TreeNode("Advanced tracing##rm")) {
             ImGui::DragInt("steps##rm", &rm->parameters.steps, 1.0f, 1, 512);
             ImGui::DragInt("bounces##rm", &rm->parameters.bounces, 0.1f, 1, 8);
             ImGui::DragInt("steps per bounce (0 = shared)##rm", &rm->parameters.stepsPerBounce, 1.0f, 0, 512);
@@ -11396,21 +11557,28 @@ static gX_I0 gfx_lab_debug_draw(gX_RendererGFX *gfx)
 typedef struct GfxLabPanel {
     const gX_I8 *label;
     gX_I0 (*draw)(gX_RendererGFX *gfx);
+    gX_Settings_UILevel level;
 } GfxLabPanel;
 
 static const GfxLabPanel kGfxLabs[GX_GFX_LAB_COUNT] = {
-    { "Models", gfx_lab_models_draw },
-    { "Sky",    gfx_lab_sky_draw },
-    { "World",  gfx_lab_world_draw },
-    { "FX",     gfx_lab_fx_draw },
-    { "Lights", gfx_lab_lights_draw },
-    { "Render", gfx_lab_render_draw },
-    { "Water",  gfx_lab_water_draw },
-    { "Ray",    gfx_lab_ray_draw },
-    { "Particles", gfx_lab_particles_draw },
-    { "Refl",   gfx_lab_reflect_draw },
-    { "Debug",  gfx_lab_debug_draw },
+    { "Models", gfx_lab_models_draw, GX_SETTINGS_UI_BASIC },
+    { "Sky",    gfx_lab_sky_draw,    GX_SETTINGS_UI_BASIC },
+    { "World",  gfx_lab_world_draw,  GX_SETTINGS_UI_BASIC },
+    { "FX",     gfx_lab_fx_draw,     GX_SETTINGS_UI_BASIC },
+    { "Lights", gfx_lab_lights_draw, GX_SETTINGS_UI_BASIC },
+    { "Render", gfx_lab_render_draw, GX_SETTINGS_UI_BASIC },
+    { "Water",  gfx_lab_water_draw,  GX_SETTINGS_UI_ADVANCED },
+    { "Ray",    gfx_lab_ray_draw,    GX_SETTINGS_UI_EXPERT },
+    { "Particles", gfx_lab_particles_draw, GX_SETTINGS_UI_ADVANCED },
+    { "Refl",   gfx_lab_reflect_draw, GX_SETTINGS_UI_ADVANCED },
+    { "Debug",  gfx_lab_debug_draw,  GX_SETTINGS_UI_EXPERT },
 };
+
+static gX_I1 gfx_lab_allowed(gX_I32 index)
+{
+    if (index < 0 || index >= GX_GFX_LAB_COUNT) return 0;
+    return gfx_ui_lab(kGfxLabs[index].label, kGfxLabs[index].level);
+}
 
 extern "C" gX_I32 gX_Tools_Gfx_LabPanelCount(gX_I0) { return GX_GFX_LAB_COUNT; }
 
@@ -11423,6 +11591,7 @@ extern "C" const gX_I8 *gX_Tools_Gfx_LabPanelLabel(gX_I32 index)
 static gX_I0 gfx_lab_menu_items(gX_I0)
 {
     for (gX_I32 i = 0; i < GX_GFX_LAB_COUNT; i++) {
+        if (!gfx_lab_allowed(i)) continue;
         gX_U32 bit = 1u << i;
         bool open = (s_labMask & bit) != 0;
         if (ImGui::MenuItem((const char *)kGfxLabs[i].label, NULL, &open)) {
@@ -11442,6 +11611,7 @@ static gX_I0 gfx_lab_launcher(gX_I0)
     gX_F32 spacing = ImGui::GetStyle().ItemSpacing.x;
     gX_F32 pad = ImGui::GetStyle().FramePadding.x * 2.0f;
     for (gX_I32 i = 0; i < GX_GFX_LAB_COUNT; i++) {
+        if (!gfx_lab_allowed(i)) continue;
         gX_F32 width = ImGui::CalcTextSize((const char *)kGfxLabs[i].label).x + pad;
         if (used > 0.0f && used + spacing + width > avail) used = 0.0f;
         else if (used > 0.0f) ImGui::SameLine();
@@ -11855,6 +12025,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
             if (!gfx) {
                 ImGui::TextWrapped("No GFX state — open a GFX scene first (--gfx).");
             } else {
+                gfx_ui_level_selector();
                 gfx_editor_selection_panel(gfx);
                 ImGui::Separator();
                 if (ImGui::CollapsingHeader("Document", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -11867,6 +12038,13 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
         }
         ImGui::End();
         s_inspectorPanelOpen = inspectorOpen ? 1 : 0;
+    }
+
+    //ai: a level change closes labs above the active tier; the explicit
+    //   GX_GFX_PANEL_LABS hook is filtered by the same gate so a headless
+    //   surface cannot bypass it.
+    for (gX_I32 i = 0; i < GX_GFX_LAB_COUNT; i++) {
+        if (!gfx_lab_allowed(i)) s_labMask &= ~(1u << i);
     }
 
     //ai: renderer labs are independent floating panels. They default closed so

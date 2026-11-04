@@ -47,8 +47,9 @@ Start here:
   layering, its exact-image guarantee and measured trade.
 - [Scene feature manifest](feature_manifest.md) — the feature table, dependency
   closure, `GX_GFX_PLAN` readout and remaining lazy-target work.
-- [UI maturity levels](ui_maturity.md) — Basic/Advanced/Expert settings, the
-  shared metadata table and the expert value list.
+- [UI maturity levels](ui_maturity.md) — Basic/Advanced/Expert settings and
+  editor surfaces, the shared metadata table, `GX_UI_LEVEL` and the coverage
+  gate.
 - [Compressed texture sidecars](texture_compression.md) — BC7/BC5/BC4 DDS
   sidecars, encoder tooling and the loader fallback policy.
 - [Source-lineage audit](source_lineage_audit.md) — citation/self-reuse review

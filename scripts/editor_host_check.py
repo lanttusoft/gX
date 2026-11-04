@@ -26,6 +26,99 @@ TAB_RE = re.compile(r'EDITOR_HOST: tab=Sky x=(\d+) y=(\d+) w=(\d+) h=(\d+)')
 TAB_ALL_RE = re.compile(r'EDITOR_HOST: tab=(\S+) x=(\d+) y=(\d+) w=(\d+) h=(\d+)')
 DOCK_RE = re.compile(r'GFX_DOCK:.*viewport=\(([-0-9.]+),([-0-9.]+),([-0-9.]+),([-0-9.]+)\)')
 PANELS_RE = re.compile(r'GFX_DOCK:.*panels=(\d)/(\d)')
+UI_RE = re.compile(
+    r'GFX_UI_(LAB|SECTION): level=(\w+) name=(\S+) min=(\w+) visible=([01])')
+UI_RANK = {"Basic": 0, "Advanced": 1, "Expert": 2}
+UI_ALL_LABS = {"Models", "Sky", "World", "FX", "Lights", "Render", "Water",
+               "Ray", "Particles", "Refl", "Debug"}
+UI_LABS = {
+    "Basic": {"Models", "Sky", "World", "FX", "Lights", "Render"},
+    "Advanced": {"Models", "Sky", "World", "FX", "Lights", "Render",
+                 "Water", "Particles", "Refl"},
+    "Expert": UI_ALL_LABS,
+}
+UI_SECTIONS = {
+    "Basic": {
+        "visible": {"quality", "look", "ssao", "bloom"},
+        "hidden": {"shader_tuning", "gl_level", "render_toggles",
+                   "texture_tools", "quality_shader", "quality_aux",
+                   "ssao_kernel", "ssgi", "map_tuning", "material_overrides",
+                   "profiler", "watches", "sky_lab", "decals", "fog_volume",
+                   "godrays", "lensflare", "csm", "bloom_shape",
+                   "bloom_auto_exposure", "look_detail", "look_extras",
+                   "look_gpu"},
+    },
+    "Advanced": {
+        "visible": {"quality", "look", "ssao", "bloom",
+                    "render_toggles", "texture_tools", "quality_shader",
+                    "ssao_kernel", "material_overrides", "profiler",
+                    "sky_lab", "decals", "fog_volume", "godrays",
+                    "lensflare", "csm", "bloom_shape", "look_detail",
+                    "look_extras", "look_gpu"},
+        "hidden": {"shader_tuning", "gl_level", "quality_aux", "ssgi",
+                   "map_tuning", "watches", "bloom_auto_exposure"},
+    },
+    "Expert": {
+        "visible": {"shader_tuning", "gl_level", "quality_aux", "ssgi",
+                    "map_tuning", "watches", "bloom_auto_exposure"},
+        "hidden": set(),
+    },
+}
+
+
+#ai: one runtime pin for the Basic/Advanced/Expert editor surface — every
+#   traced row must match its minimum level, and the lab/section sets must
+#   stay complete (no silently ungated panel slipping back into Basic).
+def check_ui_level(tag, level, overrides):
+    environment = dict(overrides)
+    environment.update({
+        "GX_UI_LEVEL": level.lower(),
+        "GX_UI_TRACE": "1",
+        "GX_GFX_PANEL_LABS": str((1 << 11) - 1),
+    })
+    code, log, _ = run(tag, "--gfx", environment, frames=30, shot=20)
+    if code != 0:
+        raise RuntimeError(f"UI level {level} run failed ({code})")
+    rows = {}
+    for kind, rowLevel, name, minimum, visible in UI_RE.findall(log):
+        if rowLevel != level:
+            continue
+        rows[(kind, name)] = (minimum, visible == "1")
+    if not rows:
+        raise RuntimeError(f"UI level {level}: GFX_UI trace missing")
+    for (kind, name), (minimum, visible) in rows.items():
+        expected = UI_RANK[level] >= UI_RANK[minimum]
+        if visible != expected:
+            raise RuntimeError(
+                f"UI level {level}: {kind} {name} min={minimum} "
+                f"visible={int(visible)}, expected {int(expected)}")
+    labs = {name for (kind, name) in rows if kind == "LAB"}
+    if labs != UI_ALL_LABS:
+        raise RuntimeError(
+            f"UI level {level}: lab coverage {sorted(labs)}")
+    visibleLabs = {name for (kind, name), (_, visible) in rows.items()
+                   if kind == "LAB" and visible}
+    if visibleLabs != UI_LABS[level]:
+        raise RuntimeError(
+            f"UI level {level}: visible labs {sorted(visibleLabs)}")
+    sections = {name for (kind, name) in rows if kind == "SECTION"}
+    expected = UI_SECTIONS[level]
+    missingVisible = expected["visible"] - sections
+    missingHidden = expected["hidden"] - sections
+    if missingVisible or missingHidden:
+        raise RuntimeError(
+            f"UI level {level}: section trace missing "
+            f"visible={sorted(missingVisible)} hidden={sorted(missingHidden)}")
+    for (kind, name), (_, visible) in rows.items():
+        if kind != "SECTION":
+            continue
+        if name in expected["hidden"] and visible:
+            raise RuntimeError(
+                f"UI level {level}: section {name} leaked into the surface")
+        if name in expected["visible"] and not visible:
+            raise RuntimeError(
+                f"UI level {level}: section {name} missing from the surface")
+    return len(rows)
 
 
 def run(tag, scene, extra, frames=30, shot=20):
@@ -254,6 +347,13 @@ def main():
         if labs_dock[-1][:4] != host_dock[-1][:4]:
             raise RuntimeError("GFX lab panels resized the docked viewport")
 
+        #ai: Basic/Advanced/Expert surface coverage — labs and the gated
+        #   sections must match the declared minimum level at runtime.
+        uiRows = {}
+        for level in ("Basic", "Advanced", "Expert"):
+            uiRows[level] = check_ui_level(
+                f"ui-{level.lower()}", level, {"GX_TOOLS_OPEN": "gfx"})
+
         #ai: the preset browser root is env-overridable for authoring outside
         #   the shipped resource tree.
         with tempfile.TemporaryDirectory(prefix="gx_presets_",
@@ -318,6 +418,7 @@ def main():
           "below the bars, scene/inspector panels summonable, "
           "GFX/GFX Focus suite masks, aux asset/footer panels, "
           "renderer lab panels summonable without moving the dock, "
+          "Basic/Advanced/Expert lab and section coverage, "
           "preset-dir override")
     return 0
 

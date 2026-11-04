@@ -30,6 +30,7 @@ def run_readout(level, gl43=None):
         "GX_GFX_PRESET_LOAD": str(PRESET),
         "GX_GL_UI_TRACE": "1",
         "GX_GL_LEVEL": str(level),
+        "GX_UI_LEVEL": "expert",
     }
     #opencode: the default context is GL 3.3; a 4.3 request only lands when the
     #   startup patch env asks for a 4.3 core context.
