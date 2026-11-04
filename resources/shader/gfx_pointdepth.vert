@@ -15,6 +15,12 @@ uniform int gX_UseSkinning = 0;
 
 uniform mat4 matModelDepth;
 uniform mat4 matLightSpace;
+#if GX_GL_HAS_LAYERED_SHADOWS
+//ai: E5 layered point shadows — one instanced draw writes all six faces.
+uniform mat4 matPointLayers[6];
+uniform int gX_LayeredShadow;
+uniform int gX_LayerBase;
+#endif
 
 out vec3 worldPos;
 
@@ -31,5 +37,13 @@ void main() {
         localPosition = (skin * vec4(vertexPosition, 1.0)).xyz;
     }
     worldPos = (matModelDepth * vec4(localPosition, 1.0)).xyz;
+#if GX_GL_HAS_LAYERED_SHADOWS
+    if (gX_LayeredShadow == 1) {
+        gl_Layer = gX_LayerBase + gl_InstanceID;
+        gl_Position = matPointLayers[gl_InstanceID]
+            * matModelDepth * vec4(localPosition, 1.0);
+        return;
+    }
+#endif
     gl_Position = matLightSpace * matModelDepth * vec4(localPosition, 1.0);
 }

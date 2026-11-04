@@ -4,6 +4,22 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: minor
+
+### Added
+- **Layered point shadows (4.3 option)**: `ENABLE_LAYERED_SHADOWS` in presets
+  and the Quality editor panel. One instanced pass writes all six
+  point-light faces on a 4.3 context; the image is byte-identical to the
+  legacy six-pass path and the shadow pass drops ~34%. Default off; GL 3.3
+  keeps the legacy path.
+- **Compressed texture sidecars**: `scripts/compress_textures.py` encodes
+  BC7 albedo / BC5 normal / BC4 mask DDS sidecars with `bc7enc`; the runtime
+  prefers a sibling `.dds` and falls back to the source PNG when the GPU or
+  file is missing. `make texture-compression-check` covers PSNR, VRAM and
+  sidecar loading. Tooling tier; no sidecars are committed yet.
+
 ## [0.39.1] - 2026-11-03
 
 Release-Class: patch

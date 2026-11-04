@@ -355,3 +355,9 @@ gX_I0 gX_RHI_FBO_AttachLayer(gX_U32 texId, gX_I32 attachment, gX_I32 level, gX_I
     glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, (GLenum)attachment,
         (GLuint)texId, (GLint)level, (GLint)layer);
 }
+
+//ai: layered depth attachment — the draw selects the layer with gl_Layer.
+gX_I0 gX_RHI_FBO_AttachLayeredDepth(gX_U32 texId) {
+    glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+        (GLuint)texId, 0);
+}

@@ -53,6 +53,7 @@
 #include "motion_path.h"
 #include "bloom.h"
 #include "features.h"
+#include "gl_level.h"
 #include "dof.h"
 #include "taa.h"
 #include "motionblur.h"
@@ -387,6 +388,30 @@ gX_I0 gX_RendererGFX_IBL_PrepareSkyCube(gX_RendererGFX *gfx)
     gX_TraceLog_GFX(gX_LOG_NOTICE, "IBL sky cube captured (%ux%u)", size, size);
 }
 
+//ai: E5 layered point shadows — selected by the preset/editor field, the
+//   audit env overrides it, and only static casters take the instanced path.
+static gX_I1 gX_RendererGFX_PointShadow_AllStatic(gX_RendererGFX *gfx) {
+    GX_HEAP_FOREACH(gfx->models, gX_RendererGFX_Model, model) {
+        if (!model->loaded) continue;
+        for (gX_I32 mi = 0; mi < model->model.meshCount; mi++)
+            if (model->model.meshes[mi].boneIndices != NULL
+                || model->model.meshes[mi].boneWeights != NULL)
+                return 0;
+    }
+    return 1;
+}
+
+static gX_I1 gX_RendererGFX_PointShadow_LayeredWanted(gX_RendererGFX *gfx) {
+    static gX_I32 hook = -2;
+    if (hook == -2) {
+        const gX_I8 *value = getenv("GX_LAYERED_SHADOWS");
+        hook = value ? (value[0] == '1' ? 1 : 0) : -1;
+    }
+    gX_I1 wanted = hook >= 0 ? (hook == 1)
+        : (gfx->state.ENABLE_LAYERED_SHADOWS != 0);
+    return wanted && gX_GL.hasLayeredShadows && gX_GL.hasInstancing;
+}
+
 //opencode: point light shadow cubemap depth pass (6 faces, raw OpenGL)
 static gX_I0 gX_RendererGFX_PointShadow_Draw(gX_RendererGFX *gfx, gX_RendererGFX_Light *light)
 {
@@ -412,6 +437,75 @@ static gX_I0 gX_RendererGFX_PointShadow_Draw(gX_RendererGFX *gfx, gX_RendererGFX
     //opencode: the light's layer base in the shared 2D array — layer = lightIdx*6+face
     gX_U32 lightIdx = (gX_U32)(light - (gX_RendererGFX_Light*)gfx->lights.data);
     if (lightIdx >= gX_GFX_MAX_POINT_SHADOW_LIGHTS) lightIdx = gX_GFX_MAX_POINT_SHADOW_LIGHTS - 1;
+
+    //ai: E5 lab path — one instanced pass writes all six layers through
+    //   gl_Layer. Static casters only; a skinned model falls back to the
+    //   legacy six-pass path for that light.
+    gX_I1 layered = gX_RendererGFX_PointShadow_LayeredWanted(gfx)
+        && gX_RendererGFX_PointShadow_AllStatic(gfx);
+
+    if (layered) {
+        static gX_I1 layeredLogged = 0;
+        if (!layeredLogged) {
+            gX_TraceLog(gX_LOG_NOTICE,
+                "LAYERED_SHADOWS: active — six point-shadow faces in one instanced pass");
+            layeredLogged = 1;
+        }
+        gX_RHI_FBO_AttachLayeredDepth(light->shadowDepth.id);
+        gX_RHI_Shader_Use(gfx->pointDepth.shader.shader.id);
+        if (gfx->pointDepth.lightPosLoc >= 0)
+            gX_Shader_SetValue_V3(gfx->pointDepth.shader.shader,
+                gfx->pointDepth.lightPosLoc, light->pos);
+        if (gfx->pointDepth.farPlaneLoc >= 0)
+            gX_Shader_SetValue_Float(gfx->pointDepth.shader.shader,
+                gfx->pointDepth.farPlaneLoc, light->shadowFar);
+        if (gfx->pointDepth.useSkinningLoc >= 0)
+            gX_Shader_SetValue_Int(gfx->pointDepth.shader.shader,
+                gfx->pointDepth.useSkinningLoc, 0);
+        if (gfx->pointDepth.layeredLoc >= 0)
+            gX_Shader_SetValue_Int(gfx->pointDepth.shader.shader,
+                gfx->pointDepth.layeredLoc, 1);
+        if (gfx->pointDepth.layerBaseLoc >= 0)
+            gX_Shader_SetValue_Int(gfx->pointDepth.shader.shader,
+                gfx->pointDepth.layerBaseLoc, (gX_I32)(lightIdx * 6u));
+        if (gfx->pointDepth.layeredMatsLoc >= 0)
+            gX_RHI_UniformMatrix(gfx->pointDepth.layeredMatsLoc, 6, 1,
+                &light->shadowViews[0].m0);
+        GX_HEAP_FOREACH(gfx->models, gX_RendererGFX_Model, mp) {
+            if (!mp->loaded) continue;
+            gX_Matrix tmat = gX_Matrix_Translate(mp->params.pos.x,
+                mp->params.pos.y, mp->params.pos.z);
+            gX_Matrix rmat = gX_Matrix_RotateXYZ((gX_F32v3){
+                mp->params.rotation.x * gX_DEG2RAD,
+                mp->params.rotation.y * gX_DEG2RAD,
+                mp->params.rotation.z * gX_DEG2RAD
+            });
+            gX_Matrix smat = gX_Matrix_Scale(mp->params.scale.x,
+                mp->params.scale.y, mp->params.scale.z);
+            gX_Matrix trsPoint = gX_Matrix_Multiply(smat, rmat);
+            trsPoint = gX_Matrix_Multiply(trsPoint, tmat);
+            if (mp->aabbValid) {
+                gX_Matrix invTrs = gX_Matrix_Invert(trsPoint);
+                gX_F32v3 lightLocal = gX_F32v3_Transform(light->pos, invTrs);
+                if (lightLocal.x >= mp->aabbMin[0] && lightLocal.x <= mp->aabbMax[0]
+                    && lightLocal.y >= mp->aabbMin[1] && lightLocal.y <= mp->aabbMax[1]
+                    && lightLocal.z >= mp->aabbMin[2] && lightLocal.z <= mp->aabbMax[2])
+                    continue;
+            }
+            if (gfx->pointDepth.matModelLoc >= 0)
+                gX_Shader_SetValue_Matrix(gfx->pointDepth.shader.shader,
+                    gfx->pointDepth.matModelLoc, trsPoint);
+            for (gX_I32 mi = 0; mi < mp->model.meshCount; mi++)
+                gX_Raw_Mesh_DrawInstanced(mp->model.meshes[mi], 6);
+        }
+        if (gfx->pointDepth.layeredLoc >= 0)
+            gX_Shader_SetValue_Int(gfx->pointDepth.shader.shader,
+                gfx->pointDepth.layeredLoc, 0);
+        gX_RHI_UnbindFBO();
+        gX_RHI_BindFBO(prevFbo);
+        gX_GL_State_Pop();
+        return;
+    }
 
     for (int face = 0; face < 6; face++)
     {
@@ -964,6 +1058,17 @@ gX_I0 gX_RendererGFX_Draw_PointShadows(gX_RendererGFX *gfx)
     // Point light shadows: depth cubemap rendering
     if (gfx->state.ENABLE_POINT_SHADOWS)
     {
+        //ai: layered lights write disjoint 6-layer ranges, so clear the whole
+        //   array once. A per-light glClear would wipe every earlier light's
+        //   layers (glClear ignores gl_Layer and clears all layers).
+        if (gX_RendererGFX_PointShadow_LayeredWanted(gfx)
+            && gX_RendererGFX_PointShadow_AllStatic(gfx)
+            && gfx->common.pointShadowFbo > 0) {
+            gX_RHI_BindFBO(gfx->common.pointShadowFbo);
+            gX_RHI_FBO_AttachLayeredDepth(gfx->common.pointShadowArray);
+            gX_RHI_Clear(gX_RHI_DEPTH_BUFFER_BIT);
+            gX_RHI_UnbindFBO();
+        }
         GX_HEAP_FOREACH(gfx->lights, gX_RendererGFX_Light, light) {
             if (light->castShadows && !light->sun)
             {

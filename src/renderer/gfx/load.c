@@ -125,6 +125,7 @@ gX_I0 gX_RendererGFX_Load_SetDefaults(gX_RendererGFX *gfx)
     gfx->state.ENABLE_REFLECTIONS = false;
     gfx->state.ENABLE_PLANAR_REFLECTIONS = true;
     gfx->state.ENABLE_POINT_SHADOWS = false;
+    gfx->state.ENABLE_LAYERED_SHADOWS = false;
     gfx->state.ENABLE_COOKIES = false;
     gfx->state.ENABLE_BLOOM = false;
     gfx->state.ENABLE_MOTION_BLUR = false;
@@ -321,6 +322,7 @@ gX_I0 gX_RendererGFX_Load_SetDefaults(gX_RendererGFX *gfx)
         gfx->state.ENABLE_FOG = false;
         gfx->state.ENABLE_SHADOWS = false;
         gfx->state.ENABLE_POINT_SHADOWS = false;
+        gfx->state.ENABLE_LAYERED_SHADOWS = false;
         gfx->state.ENABLE_REFLECTIONS = false;
         gfx->state.ENABLE_PLANAR_REFLECTIONS = false;
     gfx->state.ENABLE_PARTICLES = false;

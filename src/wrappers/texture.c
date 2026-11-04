@@ -29,6 +29,9 @@
 #include "../common/config.h"
 #include "../main.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
 
 #include "../rhi/rhi_tex.h"
 #include "../rhi/rhi_fbo.h"
@@ -53,10 +56,193 @@ static const gX_U8 g_fallbackTexturePixels[64] = {
     0,0,0,255,     255,0,255,255,  0,0,0,255,   255,0,255,255,
 };
 
+//ai: E6 — minimal DDS reader for BC1/BC3/BC4/BC5/BC7 payloads. The encoder
+//   writes DX10 headers; legacy fourCC is accepted for BC1/BC3/BC5. The
+//   loader returns a zero texture when the GPU lacks the required extension,
+//   and the caller falls back to the source PNG.
+#define GX_DDS_MAGIC 0x20534444u
+#define GX_DDS_DX10  0x30315844u
+#define GX_DDS_BC1   0x31545844u
+#define GX_DDS_BC3   0x35545844u
+#define GX_DDS_BC5   0x32495441u /* ATI2 */
+#define GX_DDS_BC4   0x31495441u /* ATI1 */
+
+static gX_I1 gX_Texture_PathEndsWith(const gX_I8 *path, const gX_I8 *suffix) {
+    if (!path || !suffix) return 0;
+    size_t pathLen = strlen(path), suffixLen = strlen(suffix);
+    return pathLen >= suffixLen
+        && strcmp(path + pathLen - suffixLen, suffix) == 0;
+}
+
+static gX_I1 gX_Texture_DDSFormat(gX_U32 fourCC, gX_U32 dxgi,
+    gX_I32 *internalFormat, gX_I32 *blockBytes, gX_I1 *isDX10) {
+    const gX_RHI_Caps *caps = gX_RHI_GetCaps();
+    *isDX10 = 0;
+    if (fourCC == GX_DDS_DX10) {
+        *isDX10 = 1;
+        switch (dxgi) {
+            case 98: case 99:
+                if (!caps->hasBPTC) return 0;
+                *internalFormat = dxgi == 99 ? 0x8E8D : 0x8E8C;
+                *blockBytes = 16;
+                return 1;
+            case 83: case 84:
+                if (!caps->hasRGTC) return 0;
+                *internalFormat = dxgi == 84 ? 0x8DBE : 0x8DBD;
+                *blockBytes = 16;
+                return 1;
+            case 80: case 81:
+                if (!caps->hasRGTC) return 0;
+                *internalFormat = dxgi == 81 ? 0x8DBC : 0x8DBB;
+                *blockBytes = 8;
+                return 1;
+            case 71: case 72:
+                *internalFormat = dxgi == 72 ? 0x8C4D : 0x8C4C;
+                *blockBytes = 8;
+                return 1;
+            case 77: case 78:
+                *internalFormat = dxgi == 78 ? 0x8C4F : 0x8C4E;
+                *blockBytes = 16;
+                return 1;
+            default:
+                return 0;
+        }
+    }
+    switch (fourCC) {
+        case GX_DDS_BC1:
+            *internalFormat = 0x8C4C;
+            *blockBytes = 8;
+            return 1;
+        case GX_DDS_BC3:
+            *internalFormat = 0x8C4E;
+            *blockBytes = 16;
+            return 1;
+        case GX_DDS_BC5:
+            if (!caps->hasRGTC) return 0;
+            *internalFormat = 0x8DBD;
+            *blockBytes = 16;
+            return 1;
+        case GX_DDS_BC4:
+            if (!caps->hasRGTC) return 0;
+            *internalFormat = 0x8DBB;
+            *blockBytes = 8;
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static gX_Texture gX_Texture_Load_DDS(const gX_I8 *path) {
+    gX_Texture result = {0};
+    FILE *file = fopen(path, "rb");
+    if (!file) return result;
+    if (fseek(file, 0, SEEK_END) != 0) { fclose(file); return result; }
+    long length = ftell(file);
+    if (length < 128 || length > (long)(64 * 1024 * 1024)) { fclose(file); return result; }
+    rewind(file);
+    gX_U8 *data = (gX_U8 *)malloc((size_t)length);
+    if (!data) { fclose(file); return result; }
+    if (fread(data, 1, (size_t)length, file) != (size_t)length) {
+        fclose(file); free(data); return result;
+    }
+    fclose(file);
+    if (*(gX_U32 *)data != GX_DDS_MAGIC) { free(data); return result; }
+
+    gX_U32 height = *(gX_U32 *)(data + 12);
+    gX_U32 width = *(gX_U32 *)(data + 16);
+    gX_U32 mipmaps = *(gX_U32 *)(data + 28);
+    gX_U32 fourCC = *(gX_U32 *)(data + 84);
+    gX_I32 internalFormat = 0, blockBytes = 0;
+    gX_I1 isDX10 = 0;
+    gX_U32 dxgi = 0;
+    if (fourCC == GX_DDS_DX10) {
+        if (length < 148) { free(data); return result; }
+        dxgi = *(gX_U32 *)(data + 128);
+        if (*(gX_U32 *)(data + 140) > 1) { free(data); return result; }
+    }
+    if (!gX_Texture_DDSFormat(fourCC, dxgi, &internalFormat, &blockBytes, &isDX10)) {
+        free(data);
+        return result;
+    }
+    if (width == 0 || height == 0 || width > 16384 || height > 16384) {
+        free(data); return result;
+    }
+    if (mipmaps == 0) mipmaps = 1;
+    if (mipmaps > 16) mipmaps = 16;
+    gX_U32 caps2 = *(gX_U32 *)(data + 112);
+    if (caps2 & 0x200u) { free(data); return result; } /* cubemap */
+    gX_U32 offset = isDX10 ? 148u : 128u;
+    gX_U32 id = gX_RHI_Tex_Gen(gX_RHI_TEXTURE_2D, "dds");
+    if (id == 0) { free(data); return result; }
+    gX_I1 mipOK = 1;
+    for (gX_U32 level = 0; level < mipmaps; level++) {
+        gX_U32 mipW = width >> level; if (mipW == 0) mipW = 1;
+        gX_U32 mipH = height >> level; if (mipH == 0) mipH = 1;
+        gX_U32 blocksX = (mipW + 3) / 4;
+        gX_U32 blocksY = (mipH + 3) / 4;
+        gX_U32 imageSize = blocksX * blocksY * (gX_U32)blockBytes;
+        if (offset + imageSize > (gX_U32)length) { mipOK = 0; break; }
+        if (gX_RHI_Tex_Compressed2D(id, (gX_I32)level, internalFormat,
+                (gX_I32)mipW, (gX_I32)mipH, (gX_I32)imageSize,
+                data + offset) != 0) {
+            mipOK = 0;
+            break;
+        }
+        offset += imageSize;
+    }
+    free(data);
+    if (!mipOK) {
+        gX_RHI_Tex_Delete(id);
+        return result;
+    }
+    gX_RHI_Tex_Param(id, gX_RHI_TEXTURE_2D, gX_RHI_TEXTURE_MIN_FILTER,
+        mipmaps > 1 ? gX_RHI_LINEAR_MIPMAP_LINEAR : gX_RHI_LINEAR);
+    gX_RHI_Tex_Param(id, gX_RHI_TEXTURE_2D, gX_RHI_TEXTURE_MAG_FILTER,
+        gX_RHI_LINEAR);
+    gX_RHI_Tex_Param(id, gX_RHI_TEXTURE_2D, gX_RHI_TEXTURE_WRAP_S,
+        gX_RHI_REPEAT);
+    gX_RHI_Tex_Param(id, gX_RHI_TEXTURE_2D, gX_RHI_TEXTURE_WRAP_T,
+        gX_RHI_REPEAT);
+    result.id = id;
+    result.width = (gX_I32)width;
+    result.height = (gX_I32)height;
+    result.mipmaps = (gX_I32)mipmaps;
+    result.format = gX_RHI_RGBA8;
+    gX_TraceLog(gX_LOG_INFO, "DDS: loaded %s (%ux%u, %u mips, fmt 0x%x)",
+        path, width, height, mipmaps, (unsigned)internalFormat);
+    return result;
+}
+
+static gX_I1 gX_Texture_DDSSidecar(const gX_I8 *path, gX_I8 *out, size_t outSize) {
+    if (!gX_Texture_PathEndsWith(path, ".png")) return 0;
+    size_t length = strlen(path);
+    if (length + 5 >= outSize) return 0;
+    memcpy(out, path, length - 4);
+    memcpy(out + length - 4, ".dds", 5);
+    struct stat info;
+    return stat(out, &info) == 0;
+}
+
 gX_Texture gX_Texture_Load(const gX_I8 *path) {
-    //opencode: D12 — backend loader (raylib_Texture_Load handles the GLFW
-    //   immutable-storage re-upload internally)
-    gX_Texture textu = raylib_Texture_Load(path);
+    //ai: E6 — prefer a sibling .dds sidecar unless the audit hook disables
+    //   it; a failed/unsupported compressed load falls back to the backend.
+    gX_Texture textu = {0};
+    gX_I8 ddsPath[1024] = {0};
+    const gX_I8 *override = getenv("GX_NO_TEXTURE_DDS");
+    gX_I1 allowDDS = !(override && override[0] == '1');
+    if (allowDDS && path) {
+        if (gX_Texture_PathEndsWith(path, ".dds")) {
+            snprintf(ddsPath, sizeof(ddsPath), "%s", path);
+        } else if (!gX_Texture_DDSSidecar(path, ddsPath, sizeof(ddsPath))) {
+            ddsPath[0] = ' ';
+        }
+        if (ddsPath[0]) textu = gX_Texture_Load_DDS(ddsPath);
+    }
+    if (textu.id == 0) {
+        //opencode: D12 — backend loader (raylib_Texture_Load handles the GLFW
+        //   immutable-storage re-upload internally)
+        textu = raylib_Texture_Load(path);
+    }
     //opencode: v0.3.8 - guest fallback: registered guest roots may carry the
     //   texture when gX's own resources lack it (loaded from GX_ASSETS dirs)
     if (textu.id == 0) {

@@ -304,7 +304,9 @@ static gX_Shader gX_Shader_Compile(
     gX_F64 startTime = gX_Shader_TimingEnabled() ? gX_Shader_Now() : 0.0;
 
     if (vertSrc) {
-        processedVert = gX_Shader_Compiler_Preprocess(vertSrc, NULL, &vertLen);
+        //ai: vertex shaders share the injected GL/feature defines; the E5
+        //   layered-depth branch is selected in the vertex stage too.
+        processedVert = gX_Shader_Compiler_Preprocess(vertSrc, defines, &vertLen);
         //opencode: v0.2.0 — RM heap passes the shader DIRECTORY as vertPath;
         //   readFile() on a directory succeeds on Linux but yields an EMPTY
         //   buffer, and raylib's file-loader fallback would pair the fragment

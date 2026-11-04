@@ -114,6 +114,11 @@ gX_I32 gX_RHI_Tex_Storage3D(gX_U32 texId, gX_I32 target, gX_I32 levels,
 gX_I32 gX_RHI_Tex_Storage2D(gX_U32 texId, gX_I32 target, gX_I32 levels,
     gX_I32 internalFormat, gX_U32 w, gX_U32 h);
 
+//ai: upload one compressed mip level (BC7/BC5/BC4 DDS payloads).
+gX_I32 gX_RHI_Tex_Compressed2D(gX_U32 texId, gX_I32 level,
+    gX_I32 internalFormat, gX_I32 w, gX_I32 h, gX_I32 imageSize,
+    const void *data);
+
 // Bind a 2D/3D texture to a specific target — wraps glBindTexture.
 //   Does NOT manage texture units (use gX_RHI_Tex_BindOnUnit for unit management).
 gX_I0 gX_RHI_Tex_Bind(gX_U32 texId, gX_I32 target);

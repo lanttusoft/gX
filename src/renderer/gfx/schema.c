@@ -742,6 +742,7 @@ static gX_SchemaField gfx_state_fields[] = {
     GX_SCHEMA_BOOL("ENABLE_SKYBOX",            gX_RendererGFX_State, ENABLE_SKYBOX),
     GX_SCHEMA_BOOL("ENABLE_PROCEDURAL_SKY",    gX_RendererGFX_State, ENABLE_PROCEDURAL_SKY),
     GX_SCHEMA_BOOL("ENABLE_POINT_SHADOWS",     gX_RendererGFX_State, ENABLE_POINT_SHADOWS),
+    GX_SCHEMA_BOOL("ENABLE_LAYERED_SHADOWS",   gX_RendererGFX_State, ENABLE_LAYERED_SHADOWS),
     GX_SCHEMA_BOOL("ENABLE_COOKIES",           gX_RendererGFX_State, ENABLE_COOKIES),
     GX_SCHEMA_BOOL("ENABLE_BLOOM",             gX_RendererGFX_State, ENABLE_BLOOM),
     GX_SCHEMA_BOOL("ENABLE_SSR",               gX_RendererGFX_State, ENABLE_SSR),

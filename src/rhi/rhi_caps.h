@@ -77,6 +77,12 @@ typedef struct gX_RHI_Caps {
     gX_I1 hasMSTexture;            // multisample textures (GL 3.2+ / ES 3.1+)
     gX_I1 hasInstancing;           // GL 3.1+ / ES 3.0+ / GL_ARB_draw_instanced
     gX_I1 hasImmutableStorage;     // glTexStorage2D/3D (GL 4.2+ / ES 3.0+ / GL_ARB_texture_storage)
+    //ai: E5 opt-in hardware probe, gated by the selected GL level in
+    //   gfx/gl_level.c.
+    gX_I1 hasLayeredShadows;       // vertex-shader gl_Layer (GL 4.3 / ARB_shader_viewport_layer_array)
+    //ai: E6 texture compression probes.
+    gX_I1 hasBPTC;                 // BC7 (GL 4.2 / ARB_texture_compression_bptc)
+    gX_I1 hasRGTC;                 // BC4/BC5 (GL 3.0 / ARB_texture_compression_rgtc)
 } gX_RHI_Caps;
 
 //opencode: query backend capabilities. Lazy — detected on first call and

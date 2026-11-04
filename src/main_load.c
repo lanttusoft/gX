@@ -403,6 +403,19 @@ gX_I32 gX_Load(gX_I0) {
     //   are created here (must run after gX_Backend_Init, before any batch draws)
     extern gX_I0 gX_Batch_Init(gX_I0);
     if (maindata.backendLoaded) gX_Batch_Init();
+    //ai: E6 lab probe — load one texture after the GL backend is ready and
+    //   report dimensions/format; the normal frame loop still runs.
+    {
+        const gX_I8 *probePath = getenv("GX_TEXTURE_PROBE");
+        if (probePath && probePath[0]) {
+            gX_Texture probe = gX_Texture_Load(probePath);
+            gX_TraceLog(gX_LOG_NOTICE,
+                "TEXTURE_PROBE: path=%s id=%u width=%d height=%d mips=%d format=0x%x",
+                probePath, probe.id, probe.width, probe.height,
+                probe.mipmaps, (unsigned)probe.format);
+            if (probe.id) gX_Texture_Unload(probe);
+        }
+    }
     errors = gX_ResourceManager_Load();
 #if gX_ENABLE_GUI == 1
     //opencode: v0.4.0 — mark the startup scene switch so the title entrance

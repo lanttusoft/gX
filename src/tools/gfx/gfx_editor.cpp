@@ -8092,6 +8092,18 @@ static gX_I0 gfx_quality_panel(gX_RendererGFX *gfx) {
         gX_RendererGFX_RT_DietSet(gfx->state.ENABLE_RT_DIET);
     }
     ImGui::TextDisabled("Aux targets reload next frame; reflections/AO lose a little precision.");
+    //ai: opt-in 4.3 point-shadow layering; the 3.3 path ignores the request.
+    gX_I1 layered = gfx->state.ENABLE_LAYERED_SHADOWS ? 1 : 0;
+    gX_I1 layeredSupported = (gX_GL.hasLayeredShadows && gX_GL.hasInstancing) ? 1 : 0;
+    ImGui::BeginDisabled(!layeredSupported);
+    if (ImGui::Checkbox("layered point shadows (4.3)", (bool *)&layered)) {
+        gfx->state.ENABLE_LAYERED_SHADOWS = layered ? 1 : 0;
+        if (!layeredSupported) gfx->state.ENABLE_LAYERED_SHADOWS = 0;
+    }
+    ImGui::EndDisabled();
+    ImGui::TextDisabled(layeredSupported
+        ? "One instanced pass writes all six point-light faces; no image change."
+        : "Requires a 4.3 context (GX_GL43_CONTEXT=1); the 3.3 path stays legacy.");
 }
 
 //opencode: expose an optional persisted fog-to-void color link.

@@ -141,6 +141,18 @@ const gX_RHI_Caps *gX_RHI_GetCaps(gX_I0)
     //   extension — calling the NULL glad pointer would crash).
     gX_Caps.hasImmutableStorage = isGLES ? (major >= 3)
         : (major > 4 || (major == 4 && minor >= 2) || hasExt("GL_ARB_texture_storage"));
+    //ai: E5 layered point shadows need a 4.3 context
+    //   (ARB_shader_viewport_layer_array).
+    gX_Caps.hasLayeredShadows = !isGLES
+        && (major > 4 || (major == 4 && minor >= 3)
+            || hasExt("GL_ARB_shader_viewport_layer_array"));
+    //ai: E6 — RGTC is desktop GL 3.0+; BPTC/BC7 is GL 4.2+ or its ARB extension.
+    gX_Caps.hasRGTC = !isGLES
+        && (major > 3 || (major == 3 && minor >= 0)
+            || hasExt("GL_ARB_texture_compression_rgtc"));
+    gX_Caps.hasBPTC = !isGLES
+        && (major > 4 || (major == 4 && minor >= 2)
+            || hasExt("GL_ARB_texture_compression_bptc"));
 
     if (isGLES) {
         //opencode: ES level ladder — ES 3.0 → LEVEL_300, ES 3.1 → compute+SSBO,

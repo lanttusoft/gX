@@ -875,3 +875,20 @@ tier = ["tooling"]
 group = "tooling"
 cache = "content"
 description = "deterministic source archive, sidecar and clean extraction."
+
+[gate.layered-shadows]
+script = "gfx_layered_shadows_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "opt-in 4.3 layered point shadows are byte-identical (env + preset)."
+
+[gate.texture-compression]
+script = "texture_compression_check.py"
+args = []
+tier = ["tooling"]
+group = "tooling"
+cache = "content"
+inputs = ["scripts/compress_textures.py", "scripts/texture_compression_check.py", "resources/texture/"]
+description = "BC7/BC5/BC4 DDS encoding, loading and sidecar preference."

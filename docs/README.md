@@ -43,6 +43,10 @@ Start here:
   libclang type audit and the clang-tidy diff gate.
 - [Release hardening](release_hardening.md) — reproducible Release builds,
   SPDX SBOM, tracked-file secret scan and deterministic signed archives.
+- [Layered point shadows](layered_shadows.md) — opt-in 4.3 point-shadow
+  layering, its exact-image guarantee and measured trade.
+- [Compressed texture sidecars](texture_compression.md) — BC7/BC5/BC4 DDS
+  sidecars, encoder tooling and the loader fallback policy.
 - [gX Kernel](kernel.md)
 - [Lean size gate](lean_gate.md)
 - [Lean 4 proof audit](lean_proofs.md)

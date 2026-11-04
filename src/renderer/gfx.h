@@ -81,6 +81,8 @@ typedef struct gX_RendererGFX_State {
     gX_I1   ENABLE_SKYBOX;         //opencode: cubemap skybox (gfx_sky)
     gX_I1   ENABLE_PROCEDURAL_SKY; //opencode: procedural Rayleigh sky (sky_new.frag), takes priority over ENABLE_SKYBOX
     gX_I1   ENABLE_POINT_SHADOWS;  //opencode: point light shadow cubemaps
+    //ai: opt-in 4.3 path — one instanced pass writes all six point-shadow faces.
+    gX_I1   ENABLE_LAYERED_SHADOWS;
     gX_I1   ENABLE_COOKIES;        //opencode: light cookie projection textures
     
     gX_I1   SHOW_POSITION;

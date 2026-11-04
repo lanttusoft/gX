@@ -66,6 +66,8 @@ typedef struct gX_GL_Features {
     gX_I1 hasGeometryShaders;   // GL 3.2+ / ES 3.2+ — .geom programs (never in ES 3.0/3.1)
     gX_I1 hasMSTexture;         // GL 3.2+ / ES 3.1+ — multisampled texture attachments
     gX_I1 hasInstancing;        // GL 3.1+ / ES 3.0+ — hardware model instancing
+    //ai: E5 opt-in (selected-level gated, not a hardware report).
+    gX_I1 hasLayeredShadows;    // vertex-shader gl_Layer (GL 4.3 / ARB_shader_viewport_layer_array)
 } gX_GL_Features;
 
 //opencode: global GL capabilities — set once at init

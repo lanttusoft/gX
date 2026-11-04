@@ -118,6 +118,10 @@ gX_I0 gX_RHI_FBO_AttachCubeFaceLevel(gX_U32 texId, gX_U32 face, gX_I32 level);
 //   level: mipmap level (0 for base).
 gX_I0 gX_RHI_FBO_AttachLayer(gX_U32 texId, gX_I32 attachment, gX_I32 level, gX_I32 layer);
 
+//ai: attach every layer of a 2D array as a layered depth target (E5 point
+//   shadows: one pass writes six faces through gl_Layer).
+gX_I0 gX_RHI_FBO_AttachLayeredDepth(gX_U32 texId);
+
 // Attach a 2D texture to a color attachment slot of the currently bound FBO.
 //   attachment = gX_RHI_COLOR_ATTACHMENT0..gX_RHI_COLOR_ATTACHMENTn, or gX_RHI_DEPTH_ATTACHMENT.
 gX_I0 gX_RHI_FBO_AttachTexture(gX_U32 texId, gX_I32 attachment, gX_I32 target);

@@ -93,6 +93,8 @@ gX_I0 gX_GL_Detect(gX_I0)
         caps->glMajor, caps->glMinor, glslStr ? glslStr : "?", glLevel, gX_GL.useLevel,
         gX_GL.hasTessellation, gX_GL.hasCompute, gX_GL.hasSSBO, gX_GL.hasBindless,
         gX_GL.hasGeometryShaders, gX_GL.hasMSTexture, gX_GL.hasInstancing);
+    gX_TraceLog(gX_LOG_INFO, "GL: layered shadows available=%d",
+        gX_GL.hasLayeredShadows);
 }
 
 //opencode: compute feature flags from a given GL level. A feature requires
@@ -118,6 +120,7 @@ static gX_I0 gX_GL_UpdateFlags(gX_I32 lvl)
     gX_GL.hasGeometryShaders   = (lvl >= geometryLevel) && caps->hasGeometryShaders;
     gX_GL.hasMSTexture         = (lvl >= msaaTextureLevel) && caps->hasMSTexture;
     gX_GL.hasInstancing        = (lvl >= instancingLevel) && caps->hasInstancing;
+    gX_GL.hasLayeredShadows    = (lvl >= GX_GL_LEVEL_430) && caps->hasLayeredShadows;
 }
 
 gX_I32 gX_GL_SetLevel(gX_I32 newLevel)
@@ -151,7 +154,7 @@ char *gX_GL_VersionString(gX_I0)
 
 char *gX_GL_ShaderDefines(gX_I0)
 {
-    static gX_I8 buf[512];
+    static gX_I8 buf[1024];
     gX_I32 n = 0;
     n += sprintf(buf + n, "//gX: GL level defines\n");
     n += sprintf(buf + n, "#define GX_GL_VERSION %d\n", gX_GL.useLevel);
@@ -164,6 +167,9 @@ char *gX_GL_ShaderDefines(gX_I0)
     n += sprintf(buf + n, "#define GX_GL_HAS_GEOMETRY     %d\n", gX_GL.hasGeometryShaders);
     n += sprintf(buf + n, "#define GX_GL_HAS_MSAA_TEXTURE %d\n", gX_GL.hasMSTexture);
     n += sprintf(buf + n, "#define GX_GL_HAS_INSTANCING  %d\n", gX_GL.hasInstancing);
+    n += sprintf(buf + n, "#define GX_GL_HAS_LAYERED_SHADOWS %d\n", gX_GL.hasLayeredShadows);
+    if (gX_GL.hasLayeredShadows)
+        n += sprintf(buf + n, "#extension GL_ARB_shader_viewport_layer_array : require\n");
     buf[n] = '\0';
     return buf;
 }

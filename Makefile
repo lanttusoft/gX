@@ -1333,6 +1333,16 @@ ssr-resolution-check: all
 	#ai: the gate writes its capture evidence under the harness scratch dir.
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/ssr_resolution_check.py
 
+#ai: E6 compressed texture sidecars — encode, probe and PSNR/VRAM gate.
+.PHONY: texture-compression-check
+texture-compression-check: all
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/texture_compression_check.py
+
+#ai: opt-in 4.3 layered point shadows — exact image + activation log.
+.PHONY: layered-shadows-check
+layered-shadows-check: all
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_layered_shadows_check.py
+
 #ai: optional render-target diet: image budget + measured VRAM reduction.
 .PHONY: gfx-rt-diet-check
 gfx-rt-diet-check: all

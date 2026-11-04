@@ -856,9 +856,16 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         gfx->pointDepth.lightPosLoc = gX_Shader_GetLocation(gfx->pointDepth.shader.shader, "lightPos");
         gfx->pointDepth.farPlaneLoc = gX_Shader_GetLocation(gfx->pointDepth.shader.shader, "farPlane");
         gfx->pointDepth.matModelLoc = gX_Shader_GetLocation(gfx->pointDepth.shader.shader, "matModelDepth");
-        gX_TraceLog_GFX(gX_LOG_INFO, "pointDepth locs: lightSpace=%d lightPos=%d farPlane=%d matModel=%d",
+        //ai: E5 layered-shadow uniforms (all -1 on the legacy 3.3 shader).
+        gfx->pointDepth.layeredLoc = gX_Shader_GetLocation(gfx->pointDepth.shader.shader, "gX_LayeredShadow");
+        gfx->pointDepth.layerBaseLoc = gX_Shader_GetLocation(gfx->pointDepth.shader.shader, "gX_LayerBase");
+        gfx->pointDepth.layeredMatsLoc = gX_Shader_GetLocation(gfx->pointDepth.shader.shader, "matPointLayers");
+        gfx->pointDepth.useSkinningLoc = gX_Shader_GetLocation(gfx->pointDepth.shader.shader, "gX_UseSkinning");
+        gX_TraceLog_GFX(gX_LOG_INFO, "pointDepth locs: lightSpace=%d lightPos=%d farPlane=%d matModel=%d layered=%d layerBase=%d layers=%d skin=%d",
             gfx->pointDepth.lightSpaceLoc, gfx->pointDepth.lightPosLoc,
-            gfx->pointDepth.farPlaneLoc, gfx->pointDepth.matModelLoc);
+            gfx->pointDepth.farPlaneLoc, gfx->pointDepth.matModelLoc,
+            gfx->pointDepth.layeredLoc, gfx->pointDepth.layerBaseLoc,
+            gfx->pointDepth.layeredMatsLoc, gfx->pointDepth.useSkinningLoc);
         gfx->pointDepth.locsCached = true;
         gfx->pointDepth.shader.locsStale = false;
     }

@@ -358,6 +358,21 @@ gX_I32 gX_RHI_Tex_Storage3D(gX_U32 texId, gX_I32 target, gX_I32 levels,
 //   stayed undefined despite no GL error). Without immutable storage
 //   (pre-4.2 desktop GL) the RHI falls back to per-mip glTexImage2D with an
 //   explicit MAX_LEVEL so the texture stays complete.
+//ai: E6 compressed upload — the caller owns the block payload and the
+//   internal format; this wrapper only binds and reports GL errors.
+gX_I32 gX_RHI_Tex_Compressed2D(gX_U32 texId, gX_I32 level,
+    gX_I32 internalFormat, gX_I32 w, gX_I32 h, gX_I32 imageSize,
+    const void *data)
+{
+    if (texId == 0 || w <= 0 || h <= 0 || imageSize <= 0 || !data) return -1;
+    glBindTexture(GL_TEXTURE_2D, (GLuint)texId);
+    gX_TexTarget_Register(texId, (gX_U32)GL_TEXTURE_2D);
+    glCompressedTexImage2D(GL_TEXTURE_2D, (GLint)level,
+        (GLenum)internalFormat, (GLsizei)w, (GLsizei)h, 0,
+        (GLsizei)imageSize, data);
+    return glGetError() == GL_NO_ERROR ? 0 : -1;
+}
+
 gX_I32 gX_RHI_Tex_Storage2D(gX_U32 texId, gX_I32 target, gX_I32 levels,
     gX_I32 internalFormat, gX_U32 w, gX_U32 h)
 {

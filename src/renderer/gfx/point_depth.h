@@ -40,6 +40,11 @@ typedef struct gX_RendererGFX_PointDepth {
     gX_I32  lightPosLoc;
     gX_I32  farPlaneLoc;
     gX_I32  matModelLoc;
+    //ai: E5 layered path uniforms (zero on the legacy shader).
+    gX_I32  layeredLoc;
+    gX_I32  layerBaseLoc;
+    gX_I32  layeredMatsLoc;
+    gX_I32  useSkinningLoc;
     gX_I1   locsCached;
 } gX_RendererGFX_PointDepth;
 

@@ -224,6 +224,41 @@ gX_I0 gX_Raw_Mesh_Draw(gX_Mesh mesh) {
     glBindVertexArray(0);
 }
 
+//ai: instanced raw mesh draw (E5 layered point shadows). Mirrors
+//   gX_Raw_Mesh_Draw but issues one draw for all instances; gl_Layer selects
+//   the target layer in the layered depth shader.
+gX_I0 gX_Raw_Mesh_DrawInstanced(gX_Mesh mesh, gX_U32 instanceCount) {
+    if (mesh.vaoId == 0 || instanceCount == 0) return;
+    gX_RHI_Validate_PreDraw("Raw_Mesh_DrawInstanced");
+    gX_RHI_EventLog_Push(GX_RHI_EVENT_DRAW, 0, (gX_U32)mesh.vaoId,
+        (gX_U32)mesh.triangleCount, "MeshInstanced");
+    g_drawCallCount++;
+    glBindVertexArray(mesh.vaoId);
+    if (mesh.indices != NULL && mesh.vboId != NULL && mesh.vboId[6] > 0) {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.vboId[6]);
+    }
+#ifdef GX_GPU_SKINNING
+    if (mesh.boneIndices != NULL && mesh.vboId != NULL && mesh.vboId[7] > 0) {
+        glBindBuffer(GL_ARRAY_BUFFER, mesh.vboId[7]);
+        glVertexAttribPointer(7, 4, GL_UNSIGNED_BYTE, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(7);
+    }
+    if (mesh.boneWeights != NULL && mesh.vboId != NULL && mesh.vboId[8] > 0) {
+        glBindBuffer(GL_ARRAY_BUFFER, mesh.vboId[8]);
+        glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(8);
+    }
+#endif
+    if (mesh.indices != NULL) {
+        glDrawElementsInstanced(GL_TRIANGLES, mesh.triangleCount * 3,
+            GL_UNSIGNED_SHORT, NULL, (GLsizei)instanceCount);
+    } else {
+        glDrawArraysInstanced(GL_TRIANGLES, 0, mesh.vertexCount,
+            (GLsizei)instanceCount);
+    }
+    glBindVertexArray(0);
+}
+
 //opencode: activate shader — binds via GL directly (raylib's rlEnableShader
 //   is literally glUseProgram; no rlgl needed).
 gX_I0 gX_RHI_Shader_Use(gX_U32 programId) {

@@ -56,6 +56,10 @@ gX_I1 gX_GL_IsRawProgram(gX_U32 programId);
 //   already bound textures and uploaded shader uniforms.
 gX_I0 gX_Raw_Mesh_Draw(gX_Mesh mesh);
 
+//ai: instanced variant — one draw call covers N layers/instances. Used by the
+//   E5 layered point-shadow path; the caller supplies the shader uniforms.
+gX_I0 gX_Raw_Mesh_DrawInstanced(gX_Mesh mesh, gX_U32 instanceCount);
+
 //opencode: activate a shader program — glUseProgram. Sets the current program
 //   for the batch flush; does NOT touch the backend's shader tracker (raylib's
 //   rlSetShader is deliberately avoided to prevent a batch flush).
