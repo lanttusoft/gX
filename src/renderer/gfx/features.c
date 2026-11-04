@@ -30,6 +30,97 @@
 #include "../../common/log.h"
 #include "features.h"
 
+//ai: one table is the source of truth for enabled features, dependencies,
+//   passes and targets. The existing ENABLE_* flags remain the scene-level
+//   inputs; allocation/pass code can migrate onto this table incrementally.
+typedef enum gX_RendererGFX_FeatureId {
+    GX_GFX_FEATURE_SHADOWS = 0,
+    GX_GFX_FEATURE_POINT_SHADOWS,
+    GX_GFX_FEATURE_COOKIES,
+    GX_GFX_FEATURE_SSAO,
+    GX_GFX_FEATURE_SSGI,
+    GX_GFX_FEATURE_SSR,
+    GX_GFX_FEATURE_BLOOM,
+    GX_GFX_FEATURE_GODRAYS,
+    GX_GFX_FEATURE_LENS_FLARE,
+    GX_GFX_FEATURE_FOG,
+    GX_GFX_FEATURE_VOLUME_FOG,
+    GX_GFX_FEATURE_MOTION_BLUR,
+    GX_GFX_FEATURE_DOF,
+    GX_GFX_FEATURE_TAA,
+    GX_GFX_FEATURE_PARTICLES,
+    GX_GFX_FEATURE_PLANAR_REFLECTIONS,
+    GX_GFX_FEATURE_FXAA,
+    GX_GFX_FEATURE_COUNT
+} gX_RendererGFX_FeatureId;
+
+#define GX_FEATURE_BIT(id) (1u << (gX_U32)(id))
+
+typedef struct gX_RendererGFX_FeatureSpec {
+    const gX_I8 *id;
+    const gX_I8 *label;
+    gX_I1 (*enabled)(gX_RendererGFX *gfx);
+    gX_U32 depends;
+    gX_I1 needsHdr;
+    gX_I1 hasEffects;
+    gX_I8 cost; // 0 cheap, 1 medium, 2 expensive
+    const gX_I8 *passes;
+    const gX_I8 *targets;
+} gX_RendererGFX_FeatureSpec;
+
+static gX_I1 feature_shadows(gX_RendererGFX *gfx) { return gfx->state.ENABLE_SHADOWS ? 1 : 0; }
+static gX_I1 feature_point_shadows(gX_RendererGFX *gfx) { return gfx->state.ENABLE_POINT_SHADOWS ? 1 : 0; }
+static gX_I1 feature_cookies(gX_RendererGFX *gfx) { return gfx->state.ENABLE_COOKIES ? 1 : 0; }
+static gX_I1 feature_ssao(gX_RendererGFX *gfx) { return gfx->state.ENABLE_SSAO ? 1 : 0; }
+static gX_I1 feature_ssgi(gX_RendererGFX *gfx) { return gX_RendererGFX_Feature_HasSsgi(gfx); }
+static gX_I1 feature_ssr(gX_RendererGFX *gfx) { return gfx->state.ENABLE_SSR ? 1 : 0; }
+static gX_I1 feature_bloom(gX_RendererGFX *gfx) { return gfx->state.ENABLE_BLOOM ? 1 : 0; }
+static gX_I1 feature_godrays(gX_RendererGFX *gfx) { return gfx->state.ENABLE_GODRAYS ? 1 : 0; }
+static gX_I1 feature_lensflare(gX_RendererGFX *gfx) { return gfx->state.ENABLE_LENS_FLARE ? 1 : 0; }
+static gX_I1 feature_fog(gX_RendererGFX *gfx) { return gfx->state.ENABLE_FOG ? 1 : 0; }
+static gX_I1 feature_volume_fog(gX_RendererGFX *gfx) { return gfx->state.ENABLE_VOLUME_FOG ? 1 : 0; }
+static gX_I1 feature_motion(gX_RendererGFX *gfx) { return gfx->state.ENABLE_MOTION_BLUR ? 1 : 0; }
+static gX_I1 feature_dof(gX_RendererGFX *gfx) { return gfx->state.ENABLE_DOF ? 1 : 0; }
+static gX_I1 feature_taa(gX_RendererGFX *gfx) { return gfx->state.ENABLE_TAA ? 1 : 0; }
+static gX_I1 feature_particles(gX_RendererGFX *gfx) { return gfx->state.ENABLE_PARTICLES ? 1 : 0; }
+static gX_I1 feature_planar(gX_RendererGFX *gfx) { return gfx->state.ENABLE_PLANAR_REFLECTIONS ? 1 : 0; }
+static gX_I1 feature_fxaa(gX_RendererGFX *gfx) { return gfx->state.ENABLE_FXAA ? 1 : 0; }
+
+static const gX_RendererGFX_FeatureSpec gX_FeatureSpecs[GX_GFX_FEATURE_COUNT] = {
+    {"shadows", "Sun shadows", feature_shadows, 0, 0, 0, 1, "shadow", "sun.map,csm"},
+    {"point-shadows", "Point-light shadows", feature_point_shadows, 0, 0, 0, 2, "shadow", "pointarray"},
+    {"cookies", "Light cookies", feature_cookies, 0, 0, 0, 0, "opaque", "cookie.atlas"},
+    {"ssao", "GTAO/SSAO", feature_ssao, 0, 1, 0, 1, "ssao", "ssao.map,blur"},
+    {"ssgi", "Screen-space GI", feature_ssgi, GX_FEATURE_BIT(GX_GFX_FEATURE_SSAO), 1, 1, 2, "ssgi", "ssgi.accum"},
+    {"ssr", "Screen-space reflections", feature_ssr, 0, 1, 1, 2, "ssr", "ssr.map"},
+    {"bloom", "Bloom/HDR", feature_bloom, 0, 1, 1, 1, "bloom", "bloom.scene,hdrScene"},
+    {"godrays", "God rays", feature_godrays, 0, 1, 1, 1, "godrays", "godray.map"},
+    {"lensflare", "Lens flare", feature_lensflare, 0, 1, 1, 0, "lensflare", "lensflare.map"},
+    {"fog", "Distance fog", feature_fog, 0, 0, 1, 0, "fog", "bloom.scene"},
+    {"volume-fog", "Volumetric fog", feature_volume_fog, GX_FEATURE_BIT(GX_GFX_FEATURE_SHADOWS), 1, 1, 2, "fogvolume", "volfog.map"},
+    {"motion-blur", "Motion blur", feature_motion, 0, 1, 1, 1, "motionblur", "motion.map"},
+    {"dof", "Depth of field", feature_dof, 0, 1, 1, 1, "dof", "dof.coc"},
+    {"taa", "Temporal AA", feature_taa, 0, 1, 0, 1, "taa", "taa.history"},
+    {"particles", "Particles", feature_particles, 0, 0, 1, 1, "particles", "particle.buffers"},
+    {"planar-reflections", "Planar reflections", feature_planar, 0, 0, 0, 2, "reflections", "planar.rt"},
+    {"fxaa", "FXAA", feature_fxaa, 0, 0, 0, 0, "fxaa", "post.ldr"},
+};
+
+static gX_U32 gX_RendererGFX_Feature_Mask(gX_RendererGFX *gfx)
+{
+    gX_U32 mask = 0;
+    for (gX_U32 i = 0; i < (gX_U32)GX_GFX_FEATURE_COUNT; i++)
+        if (gX_FeatureSpecs[i].enabled(gfx)) mask |= GX_FEATURE_BIT(i);
+    return mask;
+}
+
+static gX_U32 gX_RendererGFX_Feature_PopCount(gX_U32 value)
+{
+    gX_U32 count = 0;
+    while (value) { count += value & 1u; value >>= 1u; }
+    return count;
+}
+
 gX_I1 gX_RendererGFX_Feature_HasSsgi(gX_RendererGFX *gfx)
 {
     return (gfx->state.ENABLE_SSAO && gfx->ssao.useSSGI) ? 1 : 0;
@@ -37,11 +128,10 @@ gX_I1 gX_RendererGFX_Feature_HasSsgi(gX_RendererGFX *gfx)
 
 gX_I1 gX_RendererGFX_Feature_HasEffects(gX_RendererGFX *gfx)
 {
-    return (gfx->state.ENABLE_BLOOM || gfx->state.ENABLE_GODRAYS ||
-        gfx->state.ENABLE_FOG || gfx->state.ENABLE_LENS_FLARE ||
-        gfx->state.ENABLE_SSR || gfx->state.ENABLE_VOLUME_FOG ||
-        gfx->state.ENABLE_MOTION_BLUR || gfx->state.ENABLE_DOF ||
-        gfx->state.ENABLE_PARTICLES || gX_RendererGFX_Feature_HasSsgi(gfx)) ? 1 : 0;
+    gX_U32 mask = gX_RendererGFX_Feature_Mask(gfx);
+    for (gX_U32 i = 0; i < (gX_U32)GX_GFX_FEATURE_COUNT; i++)
+        if ((mask & GX_FEATURE_BIT(i)) && gX_FeatureSpecs[i].hasEffects) return 1;
+    return 0;
 }
 
 gX_RenderTexture *gX_RendererGFX_Feature_SceneColorTarget(gX_RendererGFX *gfx)
@@ -58,15 +148,40 @@ gX_RenderTexture *gX_RendererGFX_Feature_SceneColorTarget(gX_RendererGFX *gfx)
 
 gX_I1 gX_RendererGFX_Feature_NeedHdr(gX_RendererGFX *gfx)
 {
-    return (gfx->state.ENABLE_BLOOM || gfx->state.ENABLE_GODRAYS ||
-        gfx->state.ENABLE_LENS_FLARE || gfx->state.ENABLE_SSR ||
-        gfx->state.ENABLE_DOF || gfx->state.ENABLE_MOTION_BLUR ||
-        gfx->state.ENABLE_TAA || gfx->state.ENABLE_SSAO ||
-        gfx->state.ENABLE_VOLUME_FOG) ? 1 : 0;
+    gX_U32 mask = gX_RendererGFX_Feature_Mask(gfx);
+    for (gX_U32 i = 0; i < (gX_U32)GX_GFX_FEATURE_COUNT; i++)
+        if ((mask & GX_FEATURE_BIT(i)) && gX_FeatureSpecs[i].needsHdr) return 1;
+    return 0;
+}
+
+gX_I0 gX_RendererGFX_Feature_PlanLog(gX_RendererGFX *gfx)
+{
+    const gX_I8 *hook = getenv("GX_GFX_PLAN");
+    static gX_I1 logged = 0;
+    if (!hook || hook[0] == '0' || logged) return;
+    logged = 1;
+    gX_U32 mask = gX_RendererGFX_Feature_Mask(gfx);
+    gX_U32 missing = 0;
+    for (gX_U32 i = 0; i < (gX_U32)GX_GFX_FEATURE_COUNT; i++)
+        if (mask & GX_FEATURE_BIT(i))
+            missing |= gX_FeatureSpecs[i].depends & ~mask;
+    gX_TraceLog_GFX(gX_LOG_NOTICE,
+        "GFX_PLAN mask=0x%08x count=%u needHdr=%d effects=%d missing=0x%08x",
+        mask, gX_RendererGFX_Feature_PopCount(mask),
+        gX_RendererGFX_Feature_NeedHdr(gfx),
+        gX_RendererGFX_Feature_HasEffects(gfx), missing);
+    for (gX_U32 i = 0; i < (gX_U32)GX_GFX_FEATURE_COUNT; i++) {
+        if (!(mask & GX_FEATURE_BIT(i))) continue;
+        gX_TraceLog_GFX(gX_LOG_NOTICE,
+            "GFX_PLAN feature=%s cost=%d passes=%s targets=%s",
+            gX_FeatureSpecs[i].id, (gX_I32)gX_FeatureSpecs[i].cost,
+            gX_FeatureSpecs[i].passes, gX_FeatureSpecs[i].targets);
+    }
 }
 
 gX_I0 gX_RendererGFX_Feature_Trace(gX_RendererGFX *gfx)
 {
+    gX_RendererGFX_Feature_PlanLog(gfx);
     const gX_I8 *trace = getenv("GX_GFX_FEATURE_TRACE");
     static gX_I1 traced = 0;
     if (!trace || trace[0] == '0' || traced) return;

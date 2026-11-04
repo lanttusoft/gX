@@ -45,6 +45,8 @@ Start here:
   SPDX SBOM, tracked-file secret scan and deterministic signed archives.
 - [Layered point shadows](layered_shadows.md) — opt-in 4.3 point-shadow
   layering, its exact-image guarantee and measured trade.
+- [Scene feature manifest](feature_manifest.md) — the feature table, dependency
+  closure, `GX_GFX_PLAN` readout and remaining lazy-target work.
 - [Compressed texture sidecars](texture_compression.md) — BC7/BC5/BC4 DDS
   sidecars, encoder tooling and the loader fallback policy.
 - [Source-lineage audit](source_lineage_audit.md) — citation/self-reuse review

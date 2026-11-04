@@ -50,6 +50,9 @@ gX_I1 gX_RendererGFX_Feature_HasSsgi(gX_RendererGFX *gfx);
 gX_RenderTexture *gX_RendererGFX_Feature_SceneColorTarget(gX_RendererGFX *gfx);
 //opencode: GX_GFX_FEATURE_TRACE=1 one-shot closure readout.
 gX_I0 gX_RendererGFX_Feature_Trace(gX_RendererGFX *gfx);
+//ai: GX_GFX_PLAN=1 one-shot resolved feature plan (enabled set, HDR/effect
+//   closure, missing dependency mask and per-feature passes/targets).
+gX_I0 gX_RendererGFX_Feature_PlanLog(gX_RendererGFX *gfx);
 
 #ifdef __cplusplus
 }
