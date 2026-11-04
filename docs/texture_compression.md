@@ -4,8 +4,8 @@ Compressed textures are opt-in sidecars: the source PNG stays the authoring
 input, and the runtime prefers a sibling `.dds` file when one exists.
 
 ```
-resources/texture/orb.png        authoring input (committed)
-resources/texture/orb.dds        optional BC7 payload (committed or generated)
+resources/texture/<name>.png     authoring input (committed)
+resources/texture/<name>.dds     optional BC7 payload (committed or generated)
 ```
 
 `gX_Texture_Load(".../orb.png")` loads `orb.dds` when present and falls back to
