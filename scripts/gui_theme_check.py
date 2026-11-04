@@ -68,8 +68,11 @@ def main():
 
     failures = 0
     images = {}
+    #ai: the scratch root is GX_SCRATCH-overridable and may not exist on a
+    #   fresh public checkout; create it before asking tempfile for a child.
+    audit.SCRATCH.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="gui_theme_check_",
-                                     dir="/tmp/opencode") as temp:
+                                     dir=str(audit.SCRATCH)) as temp:
         root = Path(temp)
         try:
             with audit.settings_preserved():

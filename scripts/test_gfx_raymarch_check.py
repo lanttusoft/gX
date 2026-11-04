@@ -51,7 +51,7 @@ class InspectorEvidenceTests(unittest.TestCase):
 
 class ArtifactTests(unittest.TestCase):
     def test_failed_probe_retains_report(self):
-        with tempfile.TemporaryDirectory(dir="/tmp/opencode") as temporary:
+        with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary) / "retained"
             directory.mkdir()
             with patch.object(gate.tempfile, "mkdtemp", return_value=str(directory)):

@@ -136,3 +136,10 @@ Start here:
 - [gX — Minimum Hardware Study (measured floor on a reference class)](minimum_hardware.md)
 
 The audit gate matrix is defined in `gates.toml`; each gate documents its own contract in its script header. The cache-key contract, manifest and `--changed` planner are described in [gate_memory.md](gate_memory.md).
+
+## Scratch paths
+
+Audit and benchmark scripts write disposable evidence under
+`${GX_SCRATCH:-/tmp/opencode}`. Documents that quote a path below that root
+describe a session-local capture, not a shipped resource; set `GX_SCRATCH` to
+relocate the scratch tree on another machine.
