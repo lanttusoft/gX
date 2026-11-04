@@ -436,39 +436,15 @@ extern "C" gX_I0 gX_Tools_ImGui_AccessibilityMenu(gX_I0)
     ImGui::Separator();
     //ai: virtual-screen presets — the console surface changes render/GUI
     //   space, never the window or the native ImGui tool size.
+    //ai: the virtual scene render target only; the native GUI stays at window
+    //   size, so the title/settings menus remain readable at 320x240 scene
+    //   resolution. The compact 320 GUI is the console shell's job.
     if (ImGui::BeginMenu("Console display")) {
-        bool virtualOn = settings.screenWidth != maindata.windowWidth
+        bool overrideOn = settings.screenWidth != maindata.windowWidth
             || settings.screenHeight != maindata.windowHeight;
-        bool isConsole = virtualOn && settings.screenWidth == 320
+        bool isConsole = overrideOn && settings.screenWidth == 320
             && settings.screenHeight == 240;
-        gX_F32 sceneScale = maindata.windowWidth > 0
-            ? 320.0f / (gX_F32)maindata.windowWidth : 0.3125f;
-        if (sceneScale < 0.25f) sceneScale = 0.25f;
-        if (sceneScale > 1.0f) sceneScale = 1.0f;
-        bool sceneOn = !virtualOn
-            && fabsf(settings.renderScale - sceneScale) < 0.001f;
-        //ai: scene mode keeps the native GUI/menus at window resolution and
-        //   renders the 3D scene at ~320x240; virtual mode is the console
-        //   framebuffer (the shell will own its compact GUI).
-        if (ImGui::MenuItem("Scene 320x240 soft", NULL,
-                sceneOn && settings.presentFilter == 1)) {
-            settings.screenWidth = maindata.windowWidth;
-            settings.screenHeight = maindata.windowHeight;
-            settings.renderScale = sceneScale;
-            settings.presentFilter = 1;
-            settings.dirtyFlag = 1;
-            gX_Settings_Apply();
-        }
-        if (ImGui::MenuItem("Scene 320x240 sharp", NULL,
-                sceneOn && settings.presentFilter == 0)) {
-            settings.screenWidth = maindata.windowWidth;
-            settings.screenHeight = maindata.windowHeight;
-            settings.renderScale = sceneScale;
-            settings.presentFilter = 0;
-            settings.dirtyFlag = 1;
-            gX_Settings_Apply();
-        }
-        if (ImGui::MenuItem("Virtual 320x240 soft", NULL,
+        if (ImGui::MenuItem("320x240 scene soft", NULL,
                 isConsole && settings.presentFilter == 1)) {
             settings.screenWidth = 320;
             settings.screenHeight = 240;
@@ -477,7 +453,7 @@ extern "C" gX_I0 gX_Tools_ImGui_AccessibilityMenu(gX_I0)
             settings.dirtyFlag = 1;
             gX_Settings_Apply();
         }
-        if (ImGui::MenuItem("Virtual 320x240 sharp", NULL,
+        if (ImGui::MenuItem("320x240 scene sharp", NULL,
                 isConsole && settings.presentFilter == 0)) {
             settings.screenWidth = 320;
             settings.screenHeight = 240;
@@ -486,7 +462,7 @@ extern "C" gX_I0 gX_Tools_ImGui_AccessibilityMenu(gX_I0)
             settings.dirtyFlag = 1;
             gX_Settings_Apply();
         }
-        if (ImGui::MenuItem("Native", NULL, !virtualOn && !sceneOn)) {
+        if (ImGui::MenuItem("Native", NULL, !overrideOn)) {
             settings.screenWidth = maindata.windowWidth;
             settings.screenHeight = maindata.windowHeight;
             settings.renderScale = 1.0f;
@@ -494,8 +470,8 @@ extern "C" gX_I0 gX_Tools_ImGui_AccessibilityMenu(gX_I0)
             settings.dirtyFlag = 1;
             gX_Settings_Apply();
         }
-        ImGui::TextDisabled("Scene mode keeps native menus; virtual mode is");
-        ImGui::TextDisabled("the console framebuffer (shell preview).");
+        ImGui::TextDisabled("Scene render target; native GUI stays at window");
+        ImGui::TextDisabled("resolution. The 320 GUI is the console shell.");
         ImGui::EndMenu();
     }
     ImGui::Separator();

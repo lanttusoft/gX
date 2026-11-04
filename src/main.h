@@ -454,6 +454,11 @@ typedef struct gX_MainData {
     //   than the window; presentFilter 0 = sharp/nearest, 1 = soft/linear.
     gX_I1       virtualScreen;
     gX_I32      presentFilter;
+    //ai: explicit scene render target (virtualWidth/Height); the GUI screen
+    //   stays window-sized so the native menus remain readable.
+    gX_I1       renderOverride;
+    gX_U16      renderOverrideWidth;
+    gX_U16      renderOverrideHeight;
     //render: rendering resolution for a framebuffer (renderer resolution [2D/3D])
     gX_F32      renderScale;
     gX_U16      renderWidth;

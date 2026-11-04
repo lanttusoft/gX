@@ -73,8 +73,8 @@ static const gX_Settings_FieldInfo gX_Settings_Fields[] = {
     GX_FIELD_I32("presentFilter", "Present filter", presentFilter, GX_SETTINGS_UI_BASIC, 0.0f, 1.0f, 0.0f),
     GX_FIELD_I32("toolGlLevel", "GL level request", toolGlLevel, GX_SETTINGS_UI_EXPERT, 0.0f, 430.0f, 0.0f),
     GX_FIELD_I32("uiLevel", "UI level", uiLevel, GX_SETTINGS_UI_EXPERT, 0.0f, 2.0f, 1.0f),
-    GX_FIELD_U32("screenWidth", "Screen width", screenWidth, GX_SETTINGS_UI_EXPERT, 320.0f, 3840.0f, 1024.0f, "px"),
-    GX_FIELD_U32("screenHeight", "Screen height", screenHeight, GX_SETTINGS_UI_EXPERT, 240.0f, 2160.0f, 768.0f, "px"),
+    GX_FIELD_U32("screenWidth", "Virtual render width", screenWidth, GX_SETTINGS_UI_EXPERT, 320.0f, 3840.0f, 1024.0f, "px"),
+    GX_FIELD_U32("screenHeight", "Virtual render height", screenHeight, GX_SETTINGS_UI_EXPERT, 240.0f, 2160.0f, 768.0f, "px"),
     GX_FIELD_U32("windowWidth", "Window width", windowWidth, GX_SETTINGS_UI_EXPERT, 320.0f, 3840.0f, 1024.0f, "px"),
     GX_FIELD_U32("windowHeight", "Window height", windowHeight, GX_SETTINGS_UI_EXPERT, 240.0f, 2160.0f, 768.0f, "px"),
     GX_FIELD_BOOL("masterFilterEnabled", "Master filter", masterFilterEnabled, GX_SETTINGS_UI_EXPERT),
@@ -368,8 +368,10 @@ gX_I32 gX_Settings_Init(gX_I0) {
     settings.masterFilterCutoff = 0.8f;
     settings.masterFilterResonance = 0.0f;
     
-    settings.screenWidth = maindata.screenWidth;
-    settings.screenHeight = maindata.screenHeight;
+    settings.screenWidth = maindata.renderOverride
+        ? maindata.renderOverrideWidth : maindata.screenWidth;
+    settings.screenHeight = maindata.renderOverride
+        ? maindata.renderOverrideHeight : maindata.screenHeight;
     settings.windowWidth = maindata.windowWidth;
     settings.windowHeight = maindata.windowHeight;
     settings.renderScale = maindata.renderScale;
@@ -417,8 +419,10 @@ gX_I32 gX_Settings_Reset(gX_I0) {
     settings.masterFilterMode = GX_AUDIO_FILTER_LP;
     settings.masterFilterCutoff = 0.8f;
     settings.masterFilterResonance = 0.0f;
-    settings.screenWidth  = maindata.screenWidth;
-    settings.screenHeight = maindata.screenHeight;
+    settings.screenWidth  = maindata.renderOverride
+        ? maindata.renderOverrideWidth : maindata.screenWidth;
+    settings.screenHeight = maindata.renderOverride
+        ? maindata.renderOverrideHeight : maindata.screenHeight;
     settings.windowWidth  = maindata.windowWidth;
     settings.windowHeight = maindata.windowHeight;
     settings.renderScale  = maindata.renderScale;
@@ -471,8 +475,8 @@ gX_I32 gX_Settings_Load(gX_I0) {
         if (filterOverride) settings.presentFilter = maindata.presentFilter;
         else maindata.presentFilter = settings.presentFilter;
         if (maindata.virtualScreen) {
-            settings.screenWidth = maindata.screenWidth;
-            settings.screenHeight = maindata.screenHeight;
+            settings.screenWidth = maindata.renderOverrideWidth;
+            settings.screenHeight = maindata.renderOverrideHeight;
         }
     }
     settings.uiThemePreset = gX_Settings_UITheme_Clamp(settings.uiThemePreset);
@@ -509,18 +513,23 @@ gX_I32 gX_Settings_Save(gX_I0) {
 gX_I0 gX_Settings_Apply_VirtualScreen(gX_I0) {
     settings.presentFilter = settings.presentFilter != 0 ? 1 : 0;
     maindata.presentFilter = settings.presentFilter;
-    //ai: the persisted screen size is the virtual console surface; applying
-    //   it must not resize the window. Callers set maindata.refresh.
+    //ai: the persisted screen size is the virtual scene render target; the
+    //   GUI screen stays window-sized so the native menus remain readable.
     gX_U32 applyW = settings.screenWidth;
     gX_U32 applyH = settings.screenHeight;
     if (applyW >= 64 && applyW <= 4096
-        && applyH >= 64 && applyH <= 4096) {
-        maindata.screenWidth = (gX_U16)applyW;
-        maindata.screenHeight = (gX_U16)applyH;
-        maindata.virtualScreen = (applyW != maindata.windowWidth
-            || applyH != maindata.windowHeight) ? 1 : 0;
-        gX_MainData_Refresh();
+        && applyH >= 64 && applyH <= 4096
+        && (applyW != maindata.windowWidth
+            || applyH != maindata.windowHeight)) {
+        maindata.renderOverride = 1;
+        maindata.renderOverrideWidth = (gX_U16)applyW;
+        maindata.renderOverrideHeight = (gX_U16)applyH;
+        maindata.virtualScreen = 1;
+    } else {
+        maindata.renderOverride = 0;
+        maindata.virtualScreen = 0;
     }
+    gX_MainData_Refresh();
 }
 
 gX_I32 gX_Settings_Apply(gX_I0) {

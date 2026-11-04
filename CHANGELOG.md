@@ -9,12 +9,13 @@ SemVer.
 Release-Class: minor
 
 ### Added
-- **gX-240 virtual screen**: `--virtualWidth/--virtualHeight` set the virtual
-  screen independently of the window, `--presentFilter sharp|soft` selects the
-  nearest/linear upscale, and the Accessibility **Console display** menu offers
-  Scene 320x240 (native menus), Virtual 320x240 (shell preview) and Native.
-  The editor-host gate pins the virtual/render/window trace and the
-  Soft-vs-Sharp high-frequency difference.
+- **gX-240 virtual scene**: `--virtualWidth/--virtualHeight` set the scene
+  render target independently of the window, `--presentFilter sharp|soft`
+  selects the nearest/linear upscale, and the Accessibility **Console
+  display** menu offers 320x240 scene Soft/Sharp and Native while the native
+  GUI stays at window resolution. The editor-host gate pins the
+  virtual/render/window trace and the Soft-vs-Sharp high-frequency
+  difference.
 - **UI maturity in the GFX editor**: Basic/Advanced/Expert now gate whole
   renderer labs and the fine-tuning sections (shader tuning, GL level, raw
   toggles, texture tools, map tuning, SSGI, aux targets, CSM, decals, volumes,

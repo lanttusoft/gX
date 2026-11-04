@@ -3827,6 +3827,9 @@ static gX_I32 gX_Tests_SettingsUI(void) {
         gX_U16 savedRenderW = maindata.renderWidth;
         gX_U16 savedRenderH = maindata.renderHeight;
         gX_I1 savedVirtual = maindata.virtualScreen;
+        gX_I1 savedOverride = maindata.renderOverride;
+        gX_U16 savedOverrideW = maindata.renderOverrideWidth;
+        gX_U16 savedOverrideH = maindata.renderOverrideHeight;
         gX_I32 savedFilter = maindata.presentFilter;
         gX_F32 savedRenderScale = maindata.renderScale;
         gX_U32 savedSetW = settings.screenWidth;
@@ -3839,9 +3842,13 @@ static gX_I32 gX_Tests_SettingsUI(void) {
         settings.renderScale = 1.0f;
         maindata.renderScale = 1.0f;
         gX_Settings_Apply_VirtualScreen();
-        if (maindata.screenWidth != 320 || maindata.screenHeight != 240
+        if (maindata.screenWidth != savedScreenW
+            || maindata.screenHeight != savedScreenH
             || maindata.renderWidth != 320 || maindata.renderHeight != 240
-            || !maindata.virtualScreen || maindata.presentFilter != 1) {
+            || !maindata.renderOverride || !maindata.virtualScreen
+            || maindata.renderOverrideWidth != 320
+            || maindata.renderOverrideHeight != 240
+            || maindata.presentFilter != 1) {
             gX_TraceLog(gX_LOG_ERROR,
                 "SETTINGS_UI_TEST FAIL: virtual screen apply");
             errors++;
@@ -3855,6 +3862,9 @@ static gX_I32 gX_Tests_SettingsUI(void) {
         maindata.renderWidth = savedRenderW;
         maindata.renderHeight = savedRenderH;
         maindata.virtualScreen = savedVirtual;
+        maindata.renderOverride = savedOverride;
+        maindata.renderOverrideWidth = savedOverrideW;
+        maindata.renderOverrideHeight = savedOverrideH;
         maindata.presentFilter = savedFilter;
         maindata.renderScale = savedRenderScale;
     }

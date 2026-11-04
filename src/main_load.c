@@ -69,8 +69,13 @@
 
 gX_I32 gX_MainData_Refresh(gX_I0) {
     
-    maindata.renderWidth = (gX_U16)(maindata.renderScale*maindata.screenWidth);
-    maindata.renderHeight = (gX_U16)(maindata.renderScale*maindata.screenHeight);
+    if (maindata.renderOverride) {
+        maindata.renderWidth = maindata.renderOverrideWidth;
+        maindata.renderHeight = maindata.renderOverrideHeight;
+    } else {
+        maindata.renderWidth = (gX_U16)(maindata.renderScale*maindata.screenWidth);
+        maindata.renderHeight = (gX_U16)(maindata.renderScale*maindata.screenHeight);
+    }
     
     return 0;
 }
@@ -94,11 +99,13 @@ gX_I32 gX_MainData_Reset(gX_I0) {
         maindata.screenHeight = MAINDATA_DEFAULT_SCREENHEIGHT;
     }
 
-    //ai: virtual-screen presentation — the GUI/render space can differ from
-    //   the window. CLI wins, then the GX_VIRTUAL_* audit hook, then the
-    //   window-sized default above.
+    //ai: virtual-screen presentation — --virtualWidth/Height and the
+    //   GX_VIRTUAL_* hook size the scene render target only. The GUI screen
+    //   (screenWidth/Height) stays at the window size, so the native menus
+    //   remain readable; the console shell owns a compact 320 GUI later.
     maindata.virtualScreen = 0;
     maindata.presentFilter = 0;
+    maindata.renderOverride = 0;
     {
         const gX_I8 *vwEnv = getenv("GX_VIRTUAL_WIDTH");
         const gX_I8 *vhEnv = getenv("GX_VIRTUAL_HEIGHT");
@@ -116,8 +123,9 @@ gX_I32 gX_MainData_Reset(gX_I0) {
             if (vw > 4096) vw = 4096;
             if (vh < 64) vh = 64;
             if (vh > 4096) vh = 4096;
-            maindata.screenWidth = (gX_U16)vw;
-            maindata.screenHeight = (gX_U16)vh;
+            maindata.renderOverride = 1;
+            maindata.renderOverrideWidth = (gX_U16)vw;
+            maindata.renderOverrideHeight = (gX_U16)vh;
             maindata.virtualScreen = 1;
         }
     }
@@ -140,7 +148,10 @@ gX_I32 gX_MainData_Reset(gX_I0) {
         if (windowTrace && windowTrace[0] && windowTrace[0] != '0')
             gX_TraceLog(gX_LOG_INFO,
                 "MAIN: virtual=%ux%u window=%ux%u render=%ux%u filter=%d",
-                maindata.screenWidth, maindata.screenHeight,
+                maindata.renderOverride ? maindata.renderWidth
+                    : maindata.screenWidth,
+                maindata.renderOverride ? maindata.renderHeight
+                    : maindata.screenHeight,
                 maindata.windowWidth, maindata.windowHeight,
                 maindata.renderWidth, maindata.renderHeight,
                 maindata.presentFilter);
@@ -268,12 +279,8 @@ static gX_I32 gX_Backend_Init(gX_I0) {
                 gX_Window_SetPosition((monW - (gX_I32)fitW) / 2, (monH - (gX_I32)fitH) / 2);
                 maindata.windowWidth = fitW;
                 maindata.windowHeight = fitH;
-                //ai: a virtual screen keeps its size when the window is
-                //   clamped to the monitor; only the window shrinks.
-                if (!maindata.virtualScreen) {
-                    maindata.screenWidth = fitW;
-                    maindata.screenHeight = fitH;
-                }
+                maindata.screenWidth = fitW;
+                maindata.screenHeight = fitH;
                 gX_MainData_Refresh();
                 settings.dirtyFlag = true;
                 gX_TraceLog(gX_LOG_INFO, "MAIN: window %ux%u exceeds monitor %dx%d — fitted to %ux%u",

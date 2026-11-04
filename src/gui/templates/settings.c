@@ -197,7 +197,7 @@ gX_I0 gX_GUI_Template_Settings(gX_I32 canvasindex) {
     {
         gX_I8 resLabel[64];
         snprintf(resLabel, sizeof(resLabel),
-            "Resolution: %ux%u", settings.screenWidth, settings.screenHeight);
+            "Render: %ux%u", settings.screenWidth, settings.screenHeight);
         gX_GUI_Builder_Element_Begin(&b);
             gX_GUI_Builder_RectGrid(&b, 0.8f, 3.45f, 3.0f, 0.3f);
             gX_GUI_Builder_Color(&b, 0, 0, 0, 0);

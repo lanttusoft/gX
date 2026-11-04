@@ -66,9 +66,9 @@ A cartridge is a gX scene preset plus an asset set and a settings profile:
 
 | gX surface | gX-240 use |
 | --- | --- |
-| `maindata.screenWidth/Height` | virtual screen / console framebuffer (320x240) |
+| `maindata.screenWidth/Height` | GUI virtual screen (window-sized by default) |
 | `maindata.windowWidth/Height` | actual window and native ImGui tools |
-| `maindata.renderWidth/Height` | scene render target; supersampling can raise it above the output size |
+| `maindata.renderWidth/Height` | scene render target; `--virtualWidth/Height` sets it explicitly |
 | `gX_RHI_Blit` present filter | Soft (linear) or Sharp (nearest) |
 | Raster path | RASTER-1 |
 | Texture filtering / BC sidecars | TEXEL-1 |
@@ -82,26 +82,23 @@ A cartridge is a gX scene preset plus an asset set and a settings profile:
 
 The first implementation adds:
 
-- `--virtualWidth/--virtualHeight` — set the virtual screen independently of
-  the window (the window keeps `--screenWidth/--screenHeight`). This is the
-  console framebuffer; the native title/menu layouts are designed for
-  1024x768 and need the console shell before they read well at 240p.
-- Scene mode — `renderScale = 320 / windowWidth` keeps the native GUI and
-  menus at window resolution while rendering the 3D scene at 320x240. This is
-  the safe CRT mode today.
-- `--presentFilter sharp|soft` — nearest or linear upscale of the virtual
-  screen into the window.
+- `--virtualWidth/--virtualHeight` — set the **scene render target**
+  independently of the window and GUI. The native title/settings menus stay at
+  window resolution, so they remain readable; the scene is 320x240.
+- Scene mode — `renderScale = 320 / windowWidth` is the equivalent for 4:3
+  windows and remains available for custom scaling.
+- `--presentFilter sharp|soft` — nearest or linear upscale of the scene into
+  the window.
 - `GX_VIRTUAL_WIDTH/HEIGHT` and `GX_PRESENT_FILTER` audit hooks.
 - A persisted `presentFilter` settings row and an Accessibility **Console
-  display** submenu with Scene 320x240 Soft/Sharp, Virtual 320x240
-  Soft/Sharp and Native.
+  display** submenu with 320x240 scene Soft/Sharp and Native.
 - The editor-host gate pins the virtual/render/window trace and the
   Soft-vs-Sharp high-frequency difference.
 
-The console shell, cartridge browser, OSD, save states, supersampled
-render/output split, dither and CRT filters are follow-ups. Until the shell
-exists, use **Scene 320x240** for a readable native UI and **Virtual 320x240**
-for scene-only CRT captures.
+The console shell, cartridge browser, OSD, save states, a compact 320x240
+native GUI, supersampled render/output split, dither and CRT filters are
+follow-ups. Until the shell exists, the native GUI stays at window resolution
+and only the scene is 240p.
 
 ## CRT notes
 
@@ -110,23 +107,21 @@ cases:
 
 | Mode | Hsync | Scale of 320x240 | Use |
 | --- | ---: | ---: | --- |
-| 640x480 @ 100 Hz | ~52.5 kHz | 2x | `renderScale 0.5`, native UI |
-| 800x600 @ 100 Hz | ~62.8 kHz | 2.5x | `renderScale 0.4`; 0.5 gives 400x300 |
-| 960x720 @ 85 Hz | ~63.8 kHz | 3x | `renderScale 0.334` |
-| 1280x960 @ 60 Hz | ~60 kHz | 4x | `renderScale 0.25` |
+| 640x480 @ 100 Hz | ~52.5 kHz | 2x | `--virtualWidth 320 --virtualHeight 240` |
+| 800x600 @ 100 Hz | ~62.8 kHz | 2.5x | same; 640x480 render stays exact |
+| 960x720 @ 85 Hz | ~63.8 kHz | 3x | same |
+| 1280x960 @ 60 Hz | ~60 kHz | 4x | same |
 | 320x240 @ 120 Hz | ~31.5 kHz | 1x | true 240p, scene-only |
 
 Do not use 320x240@60 on a VGA monitor: its ~15.7 kHz hsync is below the
 normal VGA sync range. Set the CRT mode with the OS/GPU first; gX uses the
-current monitor mode in fullscreen.
-
-Scene mode keeps the native menus readable; Virtual mode is for scene-only
-captures until the console shell provides a compact 320x240 GUI.
+current monitor mode in fullscreen. The native GUI stays at the window size;
+only the scene render target is 320x240.
 
 ## Presets
 
-- **Console 240p — Sharp**: 320x240 virtual, point upscale.
-- **Console 240p — Soft**: 320x240 virtual, bilinear upscale.
+- **Console 240p — Sharp**: 320x240 scene render, point upscale.
+- **Console 240p — Soft**: 320x240 scene render, bilinear upscale.
 - **Console 240p — Max** (later): 320x240 output with a higher internal render
   size (4x/9x supersample), all GFX features on, raymarch full quality.
 - **Console 240p — Dither/CRT** (later): 16-bit quantization, Bayer dither,
