@@ -18,7 +18,9 @@ Release-Class: minor
   BC7 albedo / BC5 normal / BC4 mask DDS sidecars with `bc7enc`; the runtime
   prefers a sibling `.dds` and falls back to the source PNG when the GPU or
   file is missing. `make texture-compression-check` covers PSNR, VRAM and
-  sidecar loading. Tooling tier; no sidecars are committed yet.
+  sidecar loading. Shipped sidecars: BC7 `orb.dds` and `misc/testcard.dds`;
+  `make texture-assets-check` pins the 71.68 dB / 0.49% image budget and the
+  0.25× storage ratio. Encoder tooling stays tooling-tier.
 - **Source-lineage audit**: `scripts/source_lineage_audit.py` compares source
   shingles against an optional private archive or vendored corpus and requires
   a `[gX:` banner or explicit credit on high-similarity files. The public

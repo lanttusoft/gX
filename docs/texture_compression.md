@@ -6,6 +6,10 @@ input, and the runtime prefers a sibling `.dds` file when one exists.
 ```
 resources/texture/<name>.png     authoring input (committed)
 resources/texture/<name>.dds     optional BC7 payload (committed or generated)
+
+Committed sidecars: `orb.png` (BC7) and `misc/testcard.png` (BC7). The materials
+fixture loads both through the primitive/emissive maps; the normal and lightmap
+fixtures are deferred until their format/quality trade is settled.
 ```
 
 `gX_Texture_Load(".../orb.png")` loads `orb.dds` when present and falls back to
@@ -42,6 +46,7 @@ on the shipped fixtures (`--check`):
 | Kind | PSNR | File vs RGBA8 |
 | --- | --- | --- |
 | BC7 orb | 53.61 dB | 0.25× |
+| BC7 testcard (640×480) | 55.77 dB | 0.25× |
 | BC5 normal | 39.18 dB | 0.25× |
 | BC4 scorch mask | 57.12 dB | 0.13× |
 
@@ -52,13 +57,20 @@ a future encoder writes them. ASTC is not wired into this pipeline.
 
 A committed `.dds` is a derived asset and needs its own
 `license/provenance.json` entry (origin derived from the named source PNG).
-`make provenance-check` / `provenance_audit.py --strict` enforces it. The gate
-generates sidecars under the scratch directory, so the repository stays free
-of build products.
+`make provenance-check` / `provenance_audit.py --strict` enforces it. The
+encoder gate generates extra sidecars under the scratch directory; only the
+two shipped sidecars are tracked.
 
 ## Gate
 
-`make texture-compression-check` / `python3 scripts/texture_compression_check.py`:
+`make texture-assets-check` / `python3 scripts/texture_assets_check.py`
+(quick): loads the materials fixture with and without the sidecars; requires
+PSNR >= 55 dB, mean <= 0.05, max channel <= 32, changed pixels <= 2%, both
+sidecars in the DDS log, none in the PNG arm, and <=0.5× RGBA8 storage.
+Measured: 71.68 dB, mean 0.0024, max 13, 0.49% changed.
+
+`make texture-compression-check` / `python3 scripts/texture_compression_check.py`
+(tooling):
 
 - SKIPs when `GX_BC7ENC`/`bc7enc` is absent;
 - encodes the three fixtures and checks decoded PSNR + ≤0.5× RGBA8;

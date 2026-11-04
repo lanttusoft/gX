@@ -77,6 +77,7 @@ def encode(source, output, kind, encoder):
         "vram_ratio": len(payload) / raw_bytes if raw_bytes else 0.0,
     }
     unpacked.unlink()
+    unpacked.with_suffix(".unpacked_alpha.png").unlink(missing_ok=True)
     if quality < threshold:
         raise RuntimeError("%s PSNR %.2f < %.2f" % (kind, quality, threshold))
     return metrics

@@ -105,6 +105,40 @@ def check_model(path):
     except Exception as e:
         report("MOD", path, f"Can't read: {e}")
 
+def check_dds(path):
+    #ai: E6 compressed sidecars — validate the DDS magic, dimensions and the
+    #   BCn DXGI formats the runtime loader accepts.
+    rel = os.path.relpath(path, PROJECT).replace(os.sep, "/")
+    try:
+        size = os.path.getsize(path)
+        with open(path, "rb") as stream:
+            header = stream.read(148)
+    except OSError as error:
+        report("TEX", rel, "Can't read: %s" % error)
+        return
+    if len(header) < 128 or header[:4] != b"DDS ":
+        report("TEX", rel, "Bad DDS magic")
+        return
+    height, width = struct.unpack("<II", header[12:20])
+    fourcc = header[84:88]
+    data_offset = 128
+    if fourcc == b"DX10":
+        if len(header) < 148:
+            report("TEX", rel, "Truncated DX10 header")
+            return
+        dxgi = struct.unpack("<I", header[128:132])[0]
+        if dxgi not in (80, 81, 83, 84, 98, 99):
+            report("TEX", rel, "Unsupported DXGI format %d" % dxgi)
+        data_offset = 148
+    elif fourcc not in (b"DXT1", b"DXT5", b"ATI1", b"ATI2"):
+        report("TEX", rel, "Unsupported fourCC %r" % fourcc)
+    if width == 0 or height == 0 or width % 4 or height % 4:
+        report("TEX", rel, "Dimensions must be non-zero multiples of 4")
+    minimum = data_offset + (width // 4) * (height // 4) * 8
+    if size < minimum:
+        report("TEX", rel, "Payload %d B is smaller than the base level %d B"
+               % (size, minimum))
+
 def check_wavetable(path):
     #opencode: raw little-endian float32 wavetable for gX_Synth_WT_LoadFile —
     #   1..2048 samples; the engine maps values from 0..1 to -1..1.
@@ -122,6 +156,7 @@ def walk():
     valid_extensions = {
         '.png': check_texture,
         '.bmp': check_texture,
+        '.dds': check_dds,
         '.jpg': None,
         '.jpeg': None,
         '.glb': check_model,

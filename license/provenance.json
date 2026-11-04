@@ -129,6 +129,18 @@
    "origin": "author",
    "license": "project (GPLv3), authored presets",
    "publish": "keep"
+  },
+  {
+   "match": "resources/texture/orb.dds",
+   "origin": "derived",
+   "license": "BC7 sidecar encoded from resources/texture/orb.png (project-owned)",
+   "publish": "keep"
+  },
+  {
+   "match": "resources/texture/misc/testcard.dds",
+   "origin": "derived",
+   "license": "BC7 sidecar encoded from resources/texture/misc/testcard.png (project-owned)",
+   "publish": "keep"
   }
  ]
 }

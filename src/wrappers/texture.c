@@ -195,6 +195,18 @@ static gX_Texture gX_Texture_Load_DDS(const gX_I8 *path) {
         gX_RHI_Tex_Delete(id);
         return result;
     }
+    //ai: one-level DDS payloads get a runtime mip chain; the PNG path also
+    //   samples with mipmaps, so both sides minify consistently.
+    if (mipmaps == 1 && (width > 1 || height > 1)) {
+        gX_U32 levels = 1, mipW = width, mipH = height;
+        while (mipW > 1 || mipH > 1) {
+            mipW = (mipW + 1) / 2;
+            mipH = (mipH + 1) / 2;
+            levels++;
+        }
+        gX_RHI_Tex_GenMipmap(id, gX_RHI_TEXTURE_2D);
+        mipmaps = levels;
+    }
     gX_RHI_Tex_Param(id, gX_RHI_TEXTURE_2D, gX_RHI_TEXTURE_MIN_FILTER,
         mipmaps > 1 ? gX_RHI_LINEAR_MIPMAP_LINEAR : gX_RHI_LINEAR);
     gX_RHI_Tex_Param(id, gX_RHI_TEXTURE_2D, gX_RHI_TEXTURE_MAG_FILTER,
@@ -206,6 +218,13 @@ static gX_Texture gX_Texture_Load_DDS(const gX_I8 *path) {
     result.id = id;
     result.width = (gX_I32)width;
     result.height = (gX_I32)height;
+    //ai: creation binds through raw GL; resync raylib's texture state so a
+    //   later rlEnableTexture() cannot skip a rebind and sample this texture.
+    rlActiveTextureSlot(0);
+    rlEnableTexture(id);
+    rlEnableTexture(0);
+    //ai: and invalidate the RHI unit shadow for the same reason.
+    gX_RHI_Tex_UnitInit();
     result.mipmaps = (gX_I32)mipmaps;
     result.format = gX_RHI_RGBA8;
     gX_TraceLog(gX_LOG_INFO, "DDS: loaded %s (%ux%u, %u mips, fmt 0x%x)",
@@ -234,7 +253,7 @@ gX_Texture gX_Texture_Load(const gX_I8 *path) {
         if (gX_Texture_PathEndsWith(path, ".dds")) {
             snprintf(ddsPath, sizeof(ddsPath), "%s", path);
         } else if (!gX_Texture_DDSSidecar(path, ddsPath, sizeof(ddsPath))) {
-            ddsPath[0] = ' ';
+            ddsPath[0] = '\0';
         }
         if (ddsPath[0]) textu = gX_Texture_Load_DDS(ddsPath);
     }

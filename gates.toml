@@ -901,3 +901,12 @@ group = "tooling"
 cache = "content"
 inputs = ["scripts/source_lineage_audit.py", "src/", "external/raylib/src/"]
 description = "high-similarity source files carry a lineage banner or credit."
+
+[gate.texture-assets]
+script = "texture_assets_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+inputs = ["scripts/texture_assets_check.py", "resources/texture/orb.dds", "resources/texture/misc/testcard.dds", "resources/tools/gfx_materials.json"]
+description = "committed DDS sidecars: image budget and storage."

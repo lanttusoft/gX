@@ -90,6 +90,8 @@ check: all
 	$(MAKE) -s clean-defaults-check
 	@echo "== [gX CI] static-lightmap contract =="
 	python3 scripts/lightmap_check.py
+	@echo "== [gX CI] compressed texture sidecars =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/texture_assets_check.py
 	#ai: ambient-only Phong shading must preserve albedo texture variation.
 	python3 scripts/test_phong_ambient_albedo.py
 	#ai: uncached file materials must not inherit another material's emission.
@@ -213,6 +215,8 @@ check-fast: all
 	@echo "== [gX fast] attribution =="
 	python3 scripts/attribution_audit.py --strict
 	python3 scripts/script_license_audit.py --strict
+	@echo "== [gX fast] compressed texture sidecars =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/texture_assets_check.py
 	@echo "== [gX fast] secret scan + SBOM =="
 	python3 -m unittest discover -s scripts -p test_secret_scan.py
 	python3 -m unittest discover -s scripts -p test_sbom.py
@@ -1339,6 +1343,11 @@ lineage-audit:
 	python3 scripts/source_lineage_audit.py \
 	  $${GX_LINEAGE_ARCHIVE:+--archive $$GX_LINEAGE_ARCHIVE} \
 	  --compare external/raylib/src --strict
+
+#ai: committed compressed sidecars — image budget + storage gate.
+.PHONY: texture-assets-check
+texture-assets-check: all
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/texture_assets_check.py
 
 #ai: E6 compressed texture sidecars — encode, probe and PSNR/VRAM gate.
 .PHONY: texture-compression-check
