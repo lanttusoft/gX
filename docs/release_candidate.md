@@ -25,13 +25,13 @@ items. Until all three gates and the operations contract hold, gX stays a
 
 | Item | Value |
 | --- | --- |
-| Version | v0.40.1 (beta) |
+| Version | v0.41.0 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 93 quick/full gates (103 manifest entries; 90 unique in a full run); last full run **90/90** on the v0.40.1 code commit `a7aec02` (`AUDIT_CACHE=0`, 1,112.5 s wall) |
+| Audit baseline | 93 quick/full gates (103 manifest entries; 90 unique in a full run); last full run **90/90** on the v0.41.0 code commit `13d67e8` (`AUDIT_CACHE=0`, 1,104.5 s wall) |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 4,143,195 B (51,109 B headroom), BSS 2,699,648 B (5,352 B headroom) — v0.40.1 `make check` |
-| Release class | PATCH (v0.40.1: cppcheck warning cleanup, guards and format fixes) |
+| Lean gate | payload 4,149,851 B (44,453 B headroom), BSS 2,699,712 B (5,288 B headroom) — v0.41.0 `make check` |
+| Release class | MINOR (v0.41.0: scene feature manifest, lazy HDR allocation, editor feature checklist, Basic/Advanced/Expert UI levels) |
 
 ## Completeness ledger
 
@@ -45,7 +45,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Source | Release builds reproduce across extraction paths | holds | `make reproducible-check` (two clean trees, fixed epoch) |
 | Admission | `make check` (build, tests, scene smoke, audits, proofs, lean gate) | holds | release CI logs |
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
-| Admission | full audit matrix green (`make audit-summary-full`) | holds | **90/90** on `a7aec02` (2026-11-04, `AUDIT_CACHE=0`, 1,112.5 s wall / 2,213.8 s gate time) |
+| Admission | full audit matrix green (`make audit-summary-full`) | holds | **90/90** on `13d67e8` (2026-11-04, `AUDIT_CACHE=0`, 1,104.5 s wall / 2,200.0 s gate time) |
 | Tests | unit suite + contract gates green | holds | `--test-only`, gate manifest |
 | Stability | 3 consecutive full admission runs without a flake | holds | 3 x `make check` on 2026-11-01 (v0.30.0 + readiness docs), logs archived privately; the rare test-only SIGSEGV remains a watch item |
 | Docs | documentation index covers public surfaces; API/enum coverage gates | holds | `docs/README.md`, `api_coverage.py`, `enum_coverage.py` |
@@ -101,6 +101,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-03 | Release hardening: reproducible two-tree Release builds, SPDX 2.3 SBOM, tracked-file secret scan, deterministic signed-archive helper. Matrix 88/88 on `c942acc`. | owner/agent |
 | 2026-11-04 | v0.40.0: opt-in 4.3 layered point shadows (byte-identical), BC7 orb/testcard sidecars with asset gate, source-lineage audit. Matrix 90/90 on `a46164d`. | owner/agent |
 | 2026-11-04 | v0.40.1: cppcheck 198→0 warnings (allocation/null/format/bounds guards; intentional ImGui casts filtered). Matrix 90/90 on `a7aec02`. | owner/agent |
+| 2026-11-04 | v0.41.0: scene feature manifest + lazy HDR allocation, GFX Features checklist/templates, Basic/Advanced/Expert settings with expert metadata list. Matrix 90/90 on `13d67e8`. | owner/agent |
 
 ## Change rule
 

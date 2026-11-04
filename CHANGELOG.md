@@ -4,9 +4,9 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
-## [Unreleased]
+## [0.41.0] - 2026-11-04
 
-Release-Class: patch
+Release-Class: minor
 
 ### Added
 - **UI maturity levels**: `settings.uiLevel` (Basic/Advanced/Expert) with a
