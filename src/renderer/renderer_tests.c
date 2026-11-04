@@ -26,13 +26,55 @@
 
 //ai: pin GFX content ownership so unrelated scenes cannot clear the editor heap.
 #include "renderer_scene_transition.h"
+#include "gfx/features.h"
 //ai: hybrid toggles are metadata-only and testable without a GL context.
 #if gX_ENABLE_RENDERER
 #include "renderer.h"
 #include <string.h>
+#include <stdlib.h>
 #endif
 
 #include "../common/log.h"
+
+gX_I32 gX_Tests_FeatureManifest(gX_I0);
+gX_I32 gX_Tests_FeatureManifest(gX_I0) {
+    gX_I32 errors = 0;
+    gX_RendererGFX *gfx = (gX_RendererGFX *)calloc(1, sizeof(*gfx));
+    if (!gfx) return 1;
+    gX_RendererGFX_Feature_ApplyTemplate(gfx, "unlit");
+    if (!gfx->state.ENABLE_FLAT || gfx->state.ENABLE_PHONG
+        || gfx->state.ENABLE_BLOOM || gfx->state.ENABLE_SHADOWS) {
+        gX_TraceLog(gX_LOG_ERROR, "FEATURE_TEST FAIL: unlit template");
+        errors++;
+    }
+    gX_RendererGFX_Feature_ApplyTemplate(gfx, "hdr-bloom");
+    if (!gfx->state.ENABLE_BLOOM || !gfx->state.ENABLE_SHADOWS
+        || !gfx->state.ENABLE_FXAA || gfx->state.ENABLE_FLAT
+        || !gfx->state.ENABLE_PHONG) {
+        gX_TraceLog(gX_LOG_ERROR, "FEATURE_TEST FAIL: hdr-bloom template");
+        errors++;
+    }
+    gX_RendererGFX_Feature_ApplyTemplate(gfx, "full");
+    if (!gfx->state.ENABLE_SSAO || !gfx->state.ENABLE_SSR
+        || !gfx->state.ENABLE_TAA || !gfx->state.ENABLE_PARTICLES) {
+        gX_TraceLog(gX_LOG_ERROR, "FEATURE_TEST FAIL: full template");
+        errors++;
+    }
+    //ai: dependency closure must be symmetric in the editor setter.
+    gX_RendererGFX_Feature_ApplyTemplate(gfx, "lit");
+    gX_RendererGFX_Feature_Set(gfx, 4, 1); // SSGI -> SSAO
+    if (!gfx->state.ENABLE_SSAO || !gfx->ssao.useSSGI) {
+        gX_TraceLog(gX_LOG_ERROR, "FEATURE_TEST FAIL: dependency enable");
+        errors++;
+    }
+    gX_RendererGFX_Feature_Set(gfx, 3, 0); // SSAO off -> SSGI off
+    if (gfx->ssao.useSSGI) {
+        gX_TraceLog(gX_LOG_ERROR, "FEATURE_TEST FAIL: dependency disable");
+        errors++;
+    }
+    free(gfx);
+    return errors;
+}
 
 gX_I32 gX_Tests_Renderer_SceneTransition(gX_I0);
 gX_I32 gX_Tests_Renderer_SceneTransition(gX_I0) {

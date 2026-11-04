@@ -40,6 +40,19 @@ extern "C" {
 
 typedef struct gX_RendererGFX gX_RendererGFX;
 
+//ai: public manifest row for the editor and tests.
+typedef struct gX_RendererGFX_FeatureInfo {
+    const gX_I8 *id;
+    const gX_I8 *label;
+    gX_U32 dependencies;
+    gX_I1 needsHdr;
+    gX_I1 hasEffects;
+    gX_I1 contextOnly;   // scene-driven, not a user toggle
+    gX_I32 cost;         // 0 cheap, 1 medium, 2 expensive
+    const gX_I8 *passes;
+    const gX_I8 *targets;
+} gX_RendererGFX_FeatureInfo;
+
 //opencode: any pre-present effect that needs the composite chain.
 gX_I1 gX_RendererGFX_Feature_HasEffects(gX_RendererGFX *gfx);
 //opencode: scene-linear HDR color/depth is required.
@@ -53,6 +66,14 @@ gX_I0 gX_RendererGFX_Feature_Trace(gX_RendererGFX *gfx);
 //ai: GX_GFX_PLAN=1 one-shot resolved feature plan (enabled set, HDR/effect
 //   closure, missing dependency mask and per-feature passes/targets).
 gX_I0 gX_RendererGFX_Feature_PlanLog(gX_RendererGFX *gfx);
+//ai: manifest accessors and the dependency-aware setter used by the editor.
+gX_U32 gX_RendererGFX_Feature_Count(gX_I0);
+const gX_RendererGFX_FeatureInfo *gX_RendererGFX_Feature_InfoAt(gX_U32 id);
+gX_I1 gX_RendererGFX_Feature_IsEnabled(gX_RendererGFX *gfx, gX_U32 id);
+gX_I0 gX_RendererGFX_Feature_Set(gX_RendererGFX *gfx, gX_U32 id,
+    gX_I1 enabled);
+gX_I0 gX_RendererGFX_Feature_ApplyTemplate(gX_RendererGFX *gfx,
+    const gX_I8 *name);
 
 #ifdef __cplusplus
 }

@@ -41,5 +41,12 @@ the closure/loaded target state for the existing gate.
   luminance target. Scene-level dependencies keep the historical holdouts
   correct without making them LDR: `gfx-scene` (the GFX demo), `battle`,
   `gui-menu` (pause backdrop) and `raymarch` all declare `needsHdr`.
-- Remaining: the editor feature checklist/templates, bloom-owned tonemap
-  cleanup, and the per-feature target/VRAM delta row.
+- The GFX editor **Features** panel renders the same table: checkbox per user
+  feature, cost/dependency hint, and templates `Unlit`, `Lit`, `Lit + shadows`,
+  `HDR + bloom`, `Full`. Context-driven features (battle, GFX scene, pause
+  menu, raymarch) are read-only and marked `(scene)`.
+- Enabling a feature auto-enables its dependencies; disabling a dependency
+  disables its dependents (`SSGI ↔ SSAO`, `volume fog → shadows`). A C unit
+  test pins the template masks and dependency closure.
+- Remaining: bloom-owned tonemap cleanup and the per-feature target/VRAM delta
+  row.

@@ -182,6 +182,112 @@ gX_I1 gX_RendererGFX_Feature_NeedHdr(gX_RendererGFX *gfx)
     return 0;
 }
 
+gX_U32 gX_RendererGFX_Feature_Count(gX_I0)
+{
+    return (gX_U32)GX_GFX_FEATURE_COUNT;
+}
+
+const gX_RendererGFX_FeatureInfo *gX_RendererGFX_Feature_InfoAt(gX_U32 id)
+{
+    static gX_RendererGFX_FeatureInfo info;
+    if (id >= (gX_U32)GX_GFX_FEATURE_COUNT) return NULL;
+    const gX_RendererGFX_FeatureSpec *spec = &gX_FeatureSpecs[id];
+    info.id = spec->id;
+    info.label = spec->label;
+    info.dependencies = spec->depends;
+    info.needsHdr = spec->needsHdr;
+    info.hasEffects = spec->hasEffects;
+    info.contextOnly = id >= (gX_U32)GX_GFX_FEATURE_RAYMARCH;
+    info.cost = spec->cost;
+    info.passes = spec->passes;
+    info.targets = spec->targets;
+    return &info;
+}
+
+gX_I1 gX_RendererGFX_Feature_IsEnabled(gX_RendererGFX *gfx, gX_U32 id)
+{
+    if (id >= (gX_U32)GX_GFX_FEATURE_COUNT) return 0;
+    return gX_FeatureSpecs[id].enabled(gfx);
+}
+
+gX_I0 gX_RendererGFX_Feature_Set(gX_RendererGFX *gfx, gX_U32 id,
+    gX_I1 enabled)
+{
+    if (id >= (gX_U32)GX_GFX_FEATURE_RAYMARCH) return;
+    gX_I1 value = enabled ? 1 : 0;
+    switch (id) {
+        case GX_GFX_FEATURE_SHADOWS: gfx->state.ENABLE_SHADOWS = value; break;
+        case GX_GFX_FEATURE_POINT_SHADOWS: gfx->state.ENABLE_POINT_SHADOWS = value; break;
+        case GX_GFX_FEATURE_COOKIES: gfx->state.ENABLE_COOKIES = value; break;
+        case GX_GFX_FEATURE_SSAO:
+            gfx->state.ENABLE_SSAO = value;
+            if (!value) gfx->ssao.useSSGI = 0;
+            break;
+        case GX_GFX_FEATURE_SSGI:
+            gfx->state.ENABLE_SSAO = value ? 1 : gfx->state.ENABLE_SSAO;
+            gfx->ssao.useSSGI = value;
+            break;
+        case GX_GFX_FEATURE_SSR: gfx->state.ENABLE_SSR = value; break;
+        case GX_GFX_FEATURE_BLOOM: gfx->state.ENABLE_BLOOM = value; break;
+        case GX_GFX_FEATURE_GODRAYS: gfx->state.ENABLE_GODRAYS = value; break;
+        case GX_GFX_FEATURE_LENS_FLARE: gfx->state.ENABLE_LENS_FLARE = value; break;
+        case GX_GFX_FEATURE_FOG: gfx->state.ENABLE_FOG = value; break;
+        case GX_GFX_FEATURE_VOLUME_FOG: gfx->state.ENABLE_VOLUME_FOG = value; break;
+        case GX_GFX_FEATURE_MOTION_BLUR: gfx->state.ENABLE_MOTION_BLUR = value; break;
+        case GX_GFX_FEATURE_DOF: gfx->state.ENABLE_DOF = value; break;
+        case GX_GFX_FEATURE_TAA: gfx->state.ENABLE_TAA = value; break;
+        case GX_GFX_FEATURE_PARTICLES: gfx->state.ENABLE_PARTICLES = value; break;
+        case GX_GFX_FEATURE_PLANAR_REFLECTIONS: gfx->state.ENABLE_PLANAR_REFLECTIONS = value; break;
+        case GX_GFX_FEATURE_FXAA: gfx->state.ENABLE_FXAA = value; break;
+        default: return;
+    }
+    if (value) {
+        for (gX_U32 i = 0; i < (gX_U32)GX_GFX_FEATURE_RAYMARCH; i++)
+            if (gX_FeatureSpecs[id].depends & GX_FEATURE_BIT(i))
+                gX_RendererGFX_Feature_Set(gfx, i, 1);
+    } else {
+        for (gX_U32 i = 0; i < (gX_U32)GX_GFX_FEATURE_RAYMARCH; i++)
+            if ((gX_FeatureSpecs[i].depends & GX_FEATURE_BIT(id))
+                && gX_RendererGFX_Feature_IsEnabled(gfx, i))
+                gX_RendererGFX_Feature_Set(gfx, i, 0);
+    }
+}
+
+gX_I0 gX_RendererGFX_Feature_ApplyTemplate(gX_RendererGFX *gfx,
+    const gX_I8 *name)
+{
+    if (!gfx || !name) return;
+    for (gX_U32 i = 0; i < (gX_U32)GX_GFX_FEATURE_RAYMARCH; i++)
+        gX_RendererGFX_Feature_Set(gfx, i, 0);
+    gfx->state.ENABLE_FLAT = 0;
+    gfx->state.ENABLE_GOURAUD = 0;
+    gfx->state.ENABLE_PHONG = 1;
+    if (strcmp((const char *)name, "unlit") == 0) {
+        gfx->state.ENABLE_FLAT = 1;
+        gfx->state.ENABLE_PHONG = 0;
+        return;
+    }
+    gX_U32 mask = 0;
+    if (strcmp((const char *)name, "lit") == 0) {
+        mask = 0;
+    } else if (strcmp((const char *)name, "lit-shadows") == 0) {
+        mask = GX_FEATURE_BIT(GX_GFX_FEATURE_SHADOWS)
+            | GX_FEATURE_BIT(GX_GFX_FEATURE_FXAA);
+    } else if (strcmp((const char *)name, "hdr-bloom") == 0) {
+        mask = GX_FEATURE_BIT(GX_GFX_FEATURE_SHADOWS)
+            | GX_FEATURE_BIT(GX_GFX_FEATURE_BLOOM)
+            | GX_FEATURE_BIT(GX_GFX_FEATURE_FXAA);
+    } else if (strcmp((const char *)name, "full") == 0) {
+        for (gX_U32 i = 0; i < (gX_U32)GX_GFX_FEATURE_RAYMARCH; i++)
+            mask |= GX_FEATURE_BIT(i);
+    } else {
+        return;
+    }
+    for (gX_U32 i = 0; i < (gX_U32)GX_GFX_FEATURE_COUNT; i++)
+        if (mask & GX_FEATURE_BIT(i))
+            gX_RendererGFX_Feature_Set(gfx, i, 1);
+}
+
 gX_I0 gX_RendererGFX_Feature_PlanLog(gX_RendererGFX *gfx)
 {
     const gX_I8 *hook = getenv("GX_GFX_PLAN");

@@ -15,7 +15,9 @@ Release-Class: patch
   read the table; `hdrScene`, `hdrMSAA` and auto-exposure are allocated from
   the plan, while the GFX demo, battle, pause-menu and raymarch scenes declare
   their HDR dependency explicitly. The feature-trace gate pins all-off LDR,
-  DOF HDR, and a missing-shadow dependency. Editor migration remains follow-up.
+  DOF HDR, and a missing-shadow dependency. The GFX editor now renders the
+  same table as a Features checklist with dependency closure and Unlit / Lit /
+  Lit+shadows / HDR+bloom / Full templates; context-driven rows are read-only.
 
 ## [0.40.1] - 2026-11-04
 

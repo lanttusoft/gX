@@ -119,6 +119,7 @@ gX_I32 gX_Tests_ScenePhysics(gX_I0);
 gX_I32 gX_Tests_SceneImpactSound(gX_I0);
 gX_I32 gX_Tests_SceneSynthVis(gX_I0);
 gX_I32 gX_Tests_Renderer_SceneTransition(gX_I0);
+gX_I32 gX_Tests_FeatureManifest(gX_I0);
 #include "renderer/gfx/light.h"
 #include "renderer/gfx/temporal_history.h"
 #endif
@@ -3800,6 +3801,7 @@ gX_I32 gX_Tests(gX_I0) {
     errors += gX_Tests_ScenePhysics();
     errors += gX_Tests_SceneImpactSound();
     errors += gX_Tests_SceneSynthVis();
+    errors += gX_Tests_FeatureManifest();
     errors += gX_Tests_Renderer_SceneTransition();
     errors += gX_Tests_TemporalHistory();
     errors += gX_Tests_LightOrbit();

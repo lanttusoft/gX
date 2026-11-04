@@ -65,6 +65,7 @@
     #include "../../renderer/gfx/glb_writer.h"
     #include "../../renderer/gfx/animation.h"
     #include "../../renderer/gfx/gl_level.h"
+#include "../../renderer/gfx/features.h"
     #include "../../settings.h"
     #include "../../renderer/renderer.h"
     //opencode: raymarch preset schema declarations (save/load entry points).
@@ -8055,6 +8056,48 @@ static gX_I0 gfx_look_panel(gX_RendererGFX *gfx) {
     ImGui::TextDisabled("Instancing is available only when the selected GL level supports SSBOs.");
 }
 
+//ai: manifest-driven feature checklist with dependency hints and scene
+//   templates. The table is the source of truth; context-driven rows are
+//   read-only and cannot be toggled by the user.
+static gX_I0 gfx_features_panel(gX_RendererGFX *gfx) {
+    if (!ImGui::CollapsingHeader("Features")) return;
+    const gX_I8 *costNames[] = { "cheap", "medium", "expensive" };
+    ImGui::TextDisabled("Templates");
+    if (ImGui::Button("Unlit##feat")) gX_RendererGFX_Feature_ApplyTemplate(gfx, "unlit");
+    ImGui::SameLine();
+    if (ImGui::Button("Lit##feat")) gX_RendererGFX_Feature_ApplyTemplate(gfx, "lit");
+    ImGui::SameLine();
+    if (ImGui::Button("Lit + shadows##feat")) gX_RendererGFX_Feature_ApplyTemplate(gfx, "lit-shadows");
+    ImGui::SameLine();
+    if (ImGui::Button("HDR + bloom##feat")) gX_RendererGFX_Feature_ApplyTemplate(gfx, "hdr-bloom");
+    ImGui::SameLine();
+    if (ImGui::Button("Full##feat")) gX_RendererGFX_Feature_ApplyTemplate(gfx, "full");
+    ImGui::Separator();
+    gX_U32 count = gX_RendererGFX_Feature_Count();
+    for (gX_U32 i = 0; i < count; i++) {
+        const gX_RendererGFX_FeatureInfo *info =
+            gX_RendererGFX_Feature_InfoAt(i);
+        if (!info) continue;
+        if (info->contextOnly) {
+            ImGui::TextDisabled("%s (scene)", info->label);
+            continue;
+        }
+        bool enabled = gX_RendererGFX_Feature_IsEnabled(gfx, i) ? true : false;
+        if (ImGui::Checkbox(info->label, &enabled)) {
+            gX_RendererGFX_Feature_Set(gfx, i, enabled ? 1 : 0);
+        }
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s%s", costNames[info->cost < 0 ? 0
+            : (info->cost > 2 ? 2 : info->cost)],
+            info->dependencies ? " + deps" : "");
+        if (ImGui::IsItemHovered() && info->dependencies) {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted("Enabling also enables its dependencies.");
+            ImGui::EndTooltip();
+        }
+    }
+}
+
 static gX_I0 gfx_quality_panel(gX_RendererGFX *gfx) {
     if (!ImGui::CollapsingHeader("Quality")) return;
     //opencode: ApplyQualityPreset is runtime-safe (showcase.c cycles it
@@ -11319,6 +11362,7 @@ static gX_I0 gfx_lab_render_draw(gX_RendererGFX *gfx)
     gfx_look_panel(gfx);
     gfx_ssao_panel(gfx);
     gfx_shader_tuning_panel(gfx);
+    gfx_features_panel(gfx);
     gfx_quality_panel(gfx);
     gfx_toggles_panel(gfx);
 }
