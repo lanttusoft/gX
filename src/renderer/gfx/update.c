@@ -1471,8 +1471,25 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             gX_TraceLog_GFX(gX_LOG_NOTICE, "IBL ready — all 3 textures generated");
     }
 
-    gX_RendererGFX_RenderTexture_Update(&gfx->bloom.hdrScene);
-    gX_RendererGFX_RenderTexture_Update(&gfx->bloom.luminanceRT); //opencode: v0.3-M1 — auto-exposure target
+    //ai: HDR/MSAA/luminance are feature-owned. A scene that never enables a
+    //   float target starts on the LDR path; enabling a feature later loads
+    //   the target at the next update.
+    if (gX_RendererGFX_Feature_NeedHdr(gfx)) {
+        if (!gfx->bloom.hdrScene.wrapper.loadingState.loaded) {
+            gfx->bloom.hdrScene.wrapper.loadingState.loadAsap = true;
+            gX_RendererGFX_RenderTexture_Update(&gfx->bloom.hdrScene);
+        }
+        if (gfx->bloom.hdrScene.wrapper.loadingState.loaded
+            && gfx->state.msaaLevel >= 2
+            && !gfx->bloom.hdrMSAA.wrapper.loadingState.loaded) {
+            gX_RendererGFX_MSAA_Create(gfx);
+        }
+    }
+    if (gfx->state.ENABLE_BLOOM && gfx->bloom.autoExposure) {
+        if (!gfx->bloom.luminanceRT.wrapper.loadingState.loaded)
+            gfx->bloom.luminanceRT.wrapper.loadingState.loadAsap = true;
+        gX_RendererGFX_RenderTexture_Update(&gfx->bloom.luminanceRT);
+    }
     //opencode: one closure predicate now owns the composite-chain lifecycle.
     //   The old hand list missed DOF, motion blur and particles, so those
     //   effects could run with bloom.scene never allocated and write nowhere.

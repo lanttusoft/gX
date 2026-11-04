@@ -29,6 +29,9 @@
 #include "../gfx.h"
 #include "../../common/log.h"
 #include "features.h"
+#include "../renderer.h"
+#include "../../gui/gui.h"
+#include "../../main.h"
 
 //ai: one table is the source of truth for enabled features, dependencies,
 //   passes and targets. The existing ENABLE_* flags remain the scene-level
@@ -51,6 +54,10 @@ typedef enum gX_RendererGFX_FeatureId {
     GX_GFX_FEATURE_PARTICLES,
     GX_GFX_FEATURE_PLANAR_REFLECTIONS,
     GX_GFX_FEATURE_FXAA,
+    GX_GFX_FEATURE_RAYMARCH,
+    GX_GFX_FEATURE_GUI_MENU,
+    GX_GFX_FEATURE_BATTLE,
+    GX_GFX_FEATURE_GFX_SCENE,
     GX_GFX_FEATURE_COUNT
 } gX_RendererGFX_FeatureId;
 
@@ -85,6 +92,23 @@ static gX_I1 feature_taa(gX_RendererGFX *gfx) { return gfx->state.ENABLE_TAA ? 1
 static gX_I1 feature_particles(gX_RendererGFX *gfx) { return gfx->state.ENABLE_PARTICLES ? 1 : 0; }
 static gX_I1 feature_planar(gX_RendererGFX *gfx) { return gfx->state.ENABLE_PLANAR_REFLECTIONS ? 1 : 0; }
 static gX_I1 feature_fxaa(gX_RendererGFX *gfx) { return gfx->state.ENABLE_FXAA ? 1 : 0; }
+static gX_I1 feature_raymarch(gX_RendererGFX *gfx) {
+    (void)gfx;
+    if (renderer.raymarch.amount > 0 && renderer.raymarch.state.DRAW_ALL) return 1;
+    const gX_I8 *view = getenv("GX_GFX_RAYMARCH_VIEW");
+    const gX_I8 *depth = getenv("GX_GFX_RAYMARCH_DEPTH");
+    const gX_I8 *composite = getenv("GX_GFX_RAYMARCH_COMPOSITE");
+    return (view && view[0] == '1') || (depth && depth[0] == '1')
+        || (composite && composite[0] != '0')
+        || getenv("GX_RAYMARCH_DEPTH_TEST") != NULL;
+}
+static gX_I1 feature_gui_menu(gX_RendererGFX *gfx) { (void)gfx; return gui.state.SHOW_MENU ? 1 : 0; }
+static gX_I1 feature_battle(gX_RendererGFX *gfx) { return gfx->common.battleScene ? 1 : 0; }
+static gX_I1 feature_gfx_scene(gX_RendererGFX *gfx) {
+    (void)gfx;
+    return (maindata.masterIndex == gX_SCENE_RENDERER_GFX
+        || maindata.masterIndex == gX_SCENE_GFXDEBUG) ? 1 : 0;
+}
 
 static const gX_RendererGFX_FeatureSpec gX_FeatureSpecs[GX_GFX_FEATURE_COUNT] = {
     {"shadows", "Sun shadows", feature_shadows, 0, 0, 0, 1, "shadow", "sun.map,csm"},
@@ -104,6 +128,10 @@ static const gX_RendererGFX_FeatureSpec gX_FeatureSpecs[GX_GFX_FEATURE_COUNT] = 
     {"particles", "Particles", feature_particles, 0, 0, 1, 1, "particles", "particle.buffers"},
     {"planar-reflections", "Planar reflections", feature_planar, 0, 0, 0, 2, "reflections", "planar.rt"},
     {"fxaa", "FXAA", feature_fxaa, 0, 0, 0, 0, "fxaa", "post.ldr"},
+    {"raymarch", "Raymarch renderer", feature_raymarch, 0, 1, 0, 2, "raymarch_depth", "hdrScene.depth"},
+    {"gui-menu", "Pause menu backdrop", feature_gui_menu, 0, 1, 0, 0, "gui", "gui.ping"},
+    {"battle", "Battle scene", feature_battle, 0, 1, 0, 1, "battle", "hdrScene"},
+    {"gfx-scene", "GFX demo scene", feature_gfx_scene, 0, 1, 0, 1, "scene", "hdrScene"},
 };
 
 static gX_U32 gX_RendererGFX_Feature_Mask(gX_RendererGFX *gfx)

@@ -72,10 +72,11 @@ def main():
         dep, dep_plan = run({"GX_T_FOG": "1", "GX_T_SHADOWS": "0"})
         # hasEffects, needHdr, ssgi, bloom, ssr, fog, dof, motion, particles,
         # hdrLoaded, bloomSceneLoaded
-        if off[0] != 0 or off[10] != 0 or off_plan[2] != 0 or off_plan[3] != 0:
+        if off[0] != 0 or off[9] != 0 or off[10] != 0 \
+                or off_plan[2] != 0 or off_plan[3] != 0:
             raise RuntimeError(f"all-off effect/HDR closure is not empty: {off} {off_plan}")
-        if dof[0] != 1 or dof[6] != 1 or dof[10] != 1:
-            raise RuntimeError(f"DOF-only closure did not load composite: {dof}")
+        if dof[0] != 1 or dof[6] != 1 or dof[9] != 1 or dof[10] != 1:
+            raise RuntimeError(f"DOF-only closure did not load HDR/composite: {dof}")
         if dof_plan[1] < 1 or dof_plan[2] != 1 or dof_plan[3] != 1:
             raise RuntimeError(f"DOF plan did not request HDR/effects: {dof_plan}")
         if dep_plan[4] == 0:

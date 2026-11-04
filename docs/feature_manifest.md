@@ -36,7 +36,10 @@ the closure/loaded target state for the existing gate.
   - all-off scene: no effect/HDR closure;
   - DOF-only: HDR + effect closure and `bloom.scene` loaded;
   - volume fog without shadows: missing dependency reported.
-- Still open: allocation derived from the plan (lazy `hdrScene`/`luminanceRT`,
-  bloom-owned tonemap), the editor feature checklist/templates, and the three
-  lazy-target holdouts (`gui-pause-blur`, `raymarch-features`, `battle`).
-  Those remain deliberately gated until their HDR assumptions are audited.
+- `hdrScene`, `hdrMSAA` and `luminanceRT` are now allocated from the plan:
+  an all-off scene stays on LDR, DOF/effects load HDR, and bloom owns the
+  luminance target. Scene-level dependencies keep the historical holdouts
+  correct without making them LDR: `gfx-scene` (the GFX demo), `battle`,
+  `gui-menu` (pause backdrop) and `raymarch` all declare `needsHdr`.
+- Remaining: the editor feature checklist/templates, bloom-owned tonemap
+  cleanup, and the per-feature target/VRAM delta row.

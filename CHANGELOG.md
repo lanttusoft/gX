@@ -12,8 +12,10 @@ Release-Class: patch
 - **Scene feature manifest**: one table for feature dependencies, HDR/effect
   closure, pass/resource ownership and cost class; `GX_GFX_PLAN=1` prints the
   resolved plan (including missing dependencies). The existing predicates now
-  read the table, and the feature-trace gate pins the DOF and missing-shadow
-  dependency cases. Allocation/editor migration remains follow-up work.
+  read the table; `hdrScene`, `hdrMSAA` and auto-exposure are allocated from
+  the plan, while the GFX demo, battle, pause-menu and raymarch scenes declare
+  their HDR dependency explicitly. The feature-trace gate pins all-off LDR,
+  DOF HDR, and a missing-shadow dependency. Editor migration remains follow-up.
 
 ## [0.40.1] - 2026-11-04
 
