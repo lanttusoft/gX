@@ -105,7 +105,7 @@ static gX_I0 gX_teletext_populate_100(gX_RendererTeletext *ttx, gX_U32 pageIdx) 
     gX_teletext_fill_line(ttx, pageIdx, 3, "* * *   W E L C O M E   * * *", yellow, bg);
 
     // Row 5-7: engine info
-    gX_teletext_fill_line(ttx, pageIdx, 5, "ENGINE:  gX", cyan, bg);
+    gX_teletext_fill_line(ttx, pageIdx, 5, "ENGINE:  gameX / gX", cyan, bg);
     gX_teletext_fill_span(ttx, pageIdx, 6, 0, "STATUS:  Teletext renderer active", green, bg);
     gX_teletext_fill_span(ttx, pageIdx, 7, 0, "PAGES:   100-104  (use PGUP/PGDN)", white, bg);
 

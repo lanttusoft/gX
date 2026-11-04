@@ -17,6 +17,9 @@ workflow.
   ([`docs/tooling_scope.md`](docs/tooling_scope.md)).
 - The renderer, editor and gates are the product surface. A change that only
   looks right in a screenshot is not done until its gate is green.
+- `gameX`/`game3`/`game2` mentions in source comments and the teletext page
+  are intentional lineage/easter eggs. They carry no private assets or paths;
+  do not scrub them as a privacy cleanup.
 
 ## Build and verify
 
