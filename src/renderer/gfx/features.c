@@ -106,7 +106,7 @@ static gX_I1 feature_gui_menu(gX_RendererGFX *gfx) { (void)gfx; return gui.state
 static gX_I1 feature_battle(gX_RendererGFX *gfx) { return gfx->common.battleScene ? 1 : 0; }
 static gX_I1 feature_gfx_scene(gX_RendererGFX *gfx) {
     (void)gfx;
-    return (maindata.masterIndex == gX_SCENE_RENDERER_GFX
+    return ((maindata.masterIndex == gX_SCENE_RENDERER_GFX && !arguments.showcase)
         || maindata.masterIndex == gX_SCENE_GFXDEBUG) ? 1 : 0;
 }
 
