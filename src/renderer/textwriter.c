@@ -586,6 +586,7 @@ gX_I32 gX_TextWriter_LoadFileTXT(gX_RendererTextWriter *writer, const gX_I8 *pat
 //   text paths are refused under the harness guard (GX_NO_SETTINGS_SAVE), so
 //   a gate-launched editor can never rewrite the fixtures it verifies.
 gX_I32 gX_TextWriter_SaveFileTXT(gX_RendererTextWriter *writer, const gX_I8 *path) {
+    if (writer == NULL || path == NULL) return 1;
     gX_TextWriter_LineBuffer *buf = &writer->lineBuffer;
     if (!buf->loaded || buf->linesAmount == 0) {
         gX_TraceLog_RENDERER(gX_LOG_WARNING,"TextWriter: nothing to save");

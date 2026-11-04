@@ -90,10 +90,12 @@ gX_I0 gX_RendererGFX_Mirror_BeginFrame(gX_RendererGFX *gfx)
     gX_Matrix proj = gX_Matrix_Perspective(camera.camera3D.fovy * gX_DEG2RAD, aspect, camera.frustum.near, camera.frustum.far);
     gX_Matrix vp = gX_Matrix_Multiply(view, proj);
     gX_I1 same = 1;
+    // cppcheck-suppress objectIndex
     const gX_F32 *have = &vp.m0;
     const gX_F32 *last = &mirror->lastVP.m0;
     for (gX_I32 i = 0; i < 16; i++)
     {
+        // cppcheck-suppress objectIndex
         if (have[i] != last[i]) { same = 0; break; }
     }
     if (mirror->lastWidth != (gX_I32)maindata.renderWidth) same = 0;

@@ -138,8 +138,12 @@ make perf-stat        # perf software counters for --test-only
 make coverage-check   # gcov report + gcovr HTML when installed
 ```
 
-Current cppcheck baseline: **0 errors**, 199 advisory warnings (mostly
-`nullPointerOutOfMemory` and intentional pointer casts). `bloaty` on the
+Current cppcheck baseline: **0 errors, 0 warnings**. The remaining
+`dangerousTypeCast` class is filtered for `src/tools/**` C++ files because
+Dear ImGui's API takes `float*`/`bool*` and the old-style casts are
+intentional; clang-tidy still owns C++ cast style there. Allocation guards in
+billboard/water/wireframe/raylib wrappers, printf format fixes and the
+remaining null/array guards are real source fixes. `bloaty` on the
 Release payload reports 3.26 MiB `.text`, 2.57 MiB `.bss`, 547 KiB `.rodata`.
 `perf record` is blocked by the host's `perf_event_paranoid`; `perf stat`
 works. `semgrep` is installed but currently fails to start (missing

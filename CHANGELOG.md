@@ -4,6 +4,18 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [Unreleased]
+
+Release-Class: patch
+
+### Fixed
+- Cppcheck warning cleanup: allocation guards in the billboard/water/
+  wireframe/raylib wrapper buffers, null guards for save paths and shader
+  state, unsigned printf formats, out-of-range array guards, and the duplicate
+  painter guard. The cppcheck gate now reports **0 errors, 0 warnings**;
+  intentional Dear ImGui `float*`/`bool*` casts in `src/tools/**` are filtered
+  there and remain clang-tidy's concern.
+
 ## [0.40.0] - 2026-11-04
 
 Release-Class: minor

@@ -221,6 +221,7 @@ RenderTexture2D raylib_RenderTexture_Load(gX_I32 width, gX_I32 height, gX_I1 dep
         //   half-float is 0x3C00.
         if (floatingpoint) {
             gX_U16 *blackData = (gX_U16 *)RL_CALLOC(width * height * 4, sizeof(gX_U16));
+            if (blackData == NULL) return target;
             //opencode: set alpha=1.0 (half-float) for all pixels (calloc zeroes RGB).
             for (gX_I32 i = 0; i < width * height; i++) blackData[i*4 + 3] = 0x3C00;
             target.texture.id = rlLoadTexture(blackData, width, height, PIXELFORMAT_UNCOMPRESSED_R16G16B16A16, 1);
@@ -229,6 +230,7 @@ RenderTexture2D raylib_RenderTexture_Load(gX_I32 width, gX_I32 height, gX_I1 dep
         }
         else {
             gX_U8 *blackData = (gX_U8 *)RL_CALLOC(width * height * 4, sizeof(gX_U8));
+            if (blackData == NULL) return target;
             //opencode: set alpha=255 for all pixels (calloc only zeroes).
             for (gX_I32 i = 0; i < width * height; i++) blackData[i*4 + 3] = 255;
             target.texture.id = rlLoadTexture(blackData, width, height, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, 1);

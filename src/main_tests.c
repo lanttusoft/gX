@@ -1142,6 +1142,7 @@ static gX_I32 gX_Tests_JSON(gX_I0) {
 
     // 1. basic parse
     f = fopen(path, "wb");
+    if (!f) return errors + 1;
     fputs("{\"a\":1,\"b\":2.5,\"c\":\"hi\",\"d\":true,\"e\":[1,2,3],\"f\":{\"g\":null}}", f);
     fclose(f);
     struct json_object *root = json_object_from_file(path);
@@ -1165,6 +1166,7 @@ static gX_I32 gX_Tests_JSON(gX_I0) {
 
     // 2. escapes + unicode
     f = fopen(path, "wb");
+    if (!f) return errors + 1;
     fputs("{\"s\":\"a\\\"b\\\\c\\/d\\ne\\tf\\u0041\"}", f);
     fclose(f);
     root = json_object_from_file(path);
@@ -1181,6 +1183,7 @@ static gX_I32 gX_Tests_JSON(gX_I0) {
 
     // 3. surrogate pair → 4-byte UTF-8 (U+1F600)
     f = fopen(path, "wb");
+    if (!f) return errors + 1;
     fputs("{\"s\":\"\\uD83D\\uDE00\"}", f);
     fclose(f);
     root = json_object_from_file(path);
@@ -1197,6 +1200,7 @@ static gX_I32 gX_Tests_JSON(gX_I0) {
 
     // 4. int vs double fidelity
     f = fopen(path, "wb");
+    if (!f) return errors + 1;
     fputs("{\"i\":42,\"d\":42.0}", f);
     fclose(f);
     root = json_object_from_file(path);
@@ -1212,6 +1216,7 @@ static gX_I32 gX_Tests_JSON(gX_I0) {
 
     // 5. duplicate keys → last-wins
     f = fopen(path, "wb");
+    if (!f) return errors + 1;
     fputs("{\"k\":1,\"k\":2}", f);
     fclose(f);
     root = json_object_from_file(path);
@@ -1224,14 +1229,17 @@ static gX_I32 gX_Tests_JSON(gX_I0) {
 
     // 6. malformed → NULL
     f = fopen(path, "wb");
+    if (!f) return errors + 1;
     fputs("{\"a\":", f);
     fclose(f);
     if (json_object_from_file(path) != NULL) { gX_TraceLog(gX_LOG_INFO, "JSON test 6a: malformed accepted"); errors++; }
     f = fopen(path, "wb");
+    if (!f) return errors + 1;
     fputs("[1,2", f);
     fclose(f);
     if (json_object_from_file(path) != NULL) { gX_TraceLog(gX_LOG_INFO, "JSON test 6b: malformed accepted"); errors++; }
     f = fopen(path, "wb");
+    if (!f) return errors + 1;
     fputs("{\"a\" 1}", f);
     fclose(f);
     if (json_object_from_file(path) != NULL) { gX_TraceLog(gX_LOG_INFO, "JSON test 6c: malformed accepted"); errors++; }

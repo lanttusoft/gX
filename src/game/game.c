@@ -46,5 +46,4 @@ gX_I32 gX_GameData_Unload(gX_I0) {
 }
 
 gX_I0 gX_GameData_Update(gX_I0) {
-    (void)0;
 }

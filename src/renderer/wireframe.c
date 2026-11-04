@@ -96,6 +96,7 @@ static gX_I0 wireframe_gpu_load(gX_I0 *arg) {
                 gX_I32 vf = m->vertexCount;
                 gX_I32 floatCount = vf * 10; // 3 pos + 3 normal + 4 color
                 gX_F32 *buf = (gX_F32*)malloc(floatCount * sizeof(gX_F32));
+                if (!buf) continue;
                 for (gX_I32 vi = 0; vi < vf; vi++) {
                     buf[vi*10+0] = m->vertices[vi*3+0];
                     buf[vi*10+1] = m->vertices[vi*3+1];

@@ -245,6 +245,7 @@ static gX_I0 gX_PhysicsThermal_Conduct_(gX_PhysicsThermal_Body_ *entryA,
         return;
     }
     gX_PhysicsThermal_Body_ *entry = entryA ? entryA : entryB;
+    if (entry == NULL) return;
     gX_F32 temperature = thermalTemperatureForH_(entry, entry->enthalpy);
     gX_F32 heat = k * (temperature - g_thermalSettings.ambientTemperature) * dt;
     entry->enthalpy = thermalHClamp_(entry, entry->enthalpy - heat / entry->mass);

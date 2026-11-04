@@ -1389,7 +1389,7 @@ gX_I32 gX_Synth_WT_LoadFile(gX_U32 wtIndex, const gX_I8 *path) {
 //   refused under the harness guard (GX_NO_SETTINGS_SAVE), mirroring the GFX
 //   preset guard, so a gate-launched editor can never rewrite them.
 gX_I32 gX_Synth_WT_SaveFile(gX_U32 wtIndex, const gX_I8 *path) {
-    if (wtIndex >= GX_SYNTH_MAX_WT) return 1;
+    if (wtIndex >= GX_SYNTH_MAX_WT || path == NULL) return 1;
     gX_Synth_Wavetable *wt = &g_synth.wavetables[wtIndex];
     if (!wt->loaded || wt->size == 0) {
         gX_TraceLog(gX_LOG_ERROR, "SYNTH: wavetable %u is not loaded", wtIndex);

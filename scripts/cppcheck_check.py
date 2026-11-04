@@ -78,6 +78,13 @@ def main():
         if not path.startswith("src/") or path.startswith(
                 ("src/external/", "src/tools/imgui/")):
             continue
+        #ai: gfx_editor.cpp is C++ over C value types; Dear ImGui's API takes
+        #   float*/bool*, so the old-style casts are intentional. Keep the
+        #   C++ cast lint in clang-tidy; do not count them as cppcheck debt.
+        if error.get("id") == "dangerousTypeCast" \
+                and path.startswith("src/tools/") \
+                and not path.startswith("src/tools/imgui/"):
+            continue
         text = "%s:%s %s [%s] %s" % (
             path, location.get("line", "?"), error.get("severity", "?"),
             error.get("id", "?"), error.get("msg", ""))

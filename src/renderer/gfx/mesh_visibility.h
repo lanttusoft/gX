@@ -57,6 +57,7 @@ static gX_I1 gfx_mesh_bounds_build(const gX_Mesh *Mesh, gX_F32 Bounds[6])
 
 static gX_I1 gfx_mesh_bounds_outside(const gX_F32 Bounds[6], gX_Matrix MVP)
 {
+    // cppcheck-suppress objectIndex
     const gX_F32 *Matrix = &MVP.m0;
     for (gX_I32 Axis = 0; Axis < 3; Axis++)
     {
@@ -64,6 +65,7 @@ static gX_I1 gfx_mesh_bounds_outside(const gX_F32 Bounds[6], gX_Matrix MVP)
             || Bounds[Axis] > Bounds[Axis + 3]) return 0;
     }
     for (gX_I32 Element = 0; Element < 16; Element++)
+        // cppcheck-suppress objectIndex
         if (!isfinite(Matrix[Element])) return 0;
     for (gX_I32 Plane = 0; Plane < 6; Plane++)
     {

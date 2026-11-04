@@ -528,6 +528,7 @@ static gX_I0 gX_RendererRaymarch_Noise_Generate(gX_RendererRaymarch *rm) {
     }
     gX_U32 ns = 256;
     gX_U8 *pixels = (gX_U8*)malloc(ns * ns * 4);
+    if (pixels == NULL) return;
     gX_F32 seedF = (gX_F32)rm->terrain.seed;
     for (gX_U32 y = 0; y < ns; y++) {
         for (gX_U32 x = 0; x < ns; x++) {

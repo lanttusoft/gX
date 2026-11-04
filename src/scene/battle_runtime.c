@@ -70,6 +70,7 @@ static gX_I0 gX_SceneBattle_Runtime_Message(gX_SceneBattle_Runtime *runtime,
     const gX_I8 *message) {
     gX_U32 CopyIndex = 0;
     if (!runtime || !message) return;
+    // cppcheck-suppress arrayIndexOutOfBoundsCond
     while (CopyIndex + 1 < sizeof(runtime->message) && message[CopyIndex]) {
         runtime->message[CopyIndex] = message[CopyIndex];
         CopyIndex++;

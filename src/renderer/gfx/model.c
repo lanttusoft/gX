@@ -142,22 +142,23 @@ gX_I0 gX_RendererGFX_Model_MeshMaterialValues(
         if (mi < (gX_U32)md->materialCount && md->materials[mi].maps)
             base = md->materials[mi].maps[gX_MATERIAL_MAP_ALBEDO].color;
     }
+    gX_I32 safeIndex = meshIndex >= 0 ? meshIndex : 0;
     gX_Color tint = (mask & gX_GFX_MMASK_ALBEDO)
-        ? model->params.effectiveAlbedo[meshIndex]
+        ? model->params.effectiveAlbedo[safeIndex]
         : (model->params.useTopTint ? (gX_Color){255, 255, 255, 255}
                                     : model->params.albedoTint);
     out->albedo = gX_RendererGFX_AlbedoTint_Apply(base,
         model->params.albedo, tint);
     out->emissive = (mask & gX_GFX_MMASK_EMISSIVE)
-        ? model->params.effectiveEmissiveColor[meshIndex]
+        ? model->params.effectiveEmissiveColor[safeIndex]
         : model->params.emissiveColor;
     out->emissiveGlow = (mask & gX_GFX_MMASK_EMISSIVE)
-        ? model->params.effectiveEmissiveGlow[meshIndex]
+        ? model->params.effectiveEmissiveGlow[safeIndex]
         : model->params.emissiveFactor;
     out->roughness = (mask & gX_GFX_MMASK_ROUGHNESS)
-        ? model->params.effectiveRoughness[meshIndex] : model->params.roughness;
+        ? model->params.effectiveRoughness[safeIndex] : model->params.roughness;
     out->metalness = (mask & gX_GFX_MMASK_METALNESS)
-        ? model->params.effectiveMetalness[meshIndex] : model->params.metalness;
+        ? model->params.effectiveMetalness[safeIndex] : model->params.metalness;
     const gX_RendererGFX_MaterialOverride *ov =
         gX_RendererGFX_Model_MeshOverride(model, meshIndex);
     if (ov) {

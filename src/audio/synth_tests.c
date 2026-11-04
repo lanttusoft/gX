@@ -191,6 +191,7 @@ static gX_I32 syn_test_release(void) {
 
     gX_I32 v = gX_Synth_NoteOn(440.0f, 0.8f, GX_SYNTH_WAVE_SINE);
     SYN_TEST_ASSERT(v >= 0, "note allocated");
+    if (v < 0 || v >= (gX_I32)GX_SYNTH_MAX_VOICES) return errors + 1;
     syn_test_peak(2048);
 
     gX_Synth_NoteOff((gX_U32)v);
@@ -209,7 +210,7 @@ static gX_I32 syn_test_voice_stealing(void) {
     for (gX_I32 i = 0; i < (gX_I32)GX_SYNTH_MAX_VOICES; i++) {
         gX_I32 v = gX_Synth_NoteOn(200.0f + (gX_F32)i * 20.0f, 0.5f, GX_SYNTH_WAVE_SINE);
         SYN_TEST_ASSERT(v >= 0 && v < (gX_I32)GX_SYNTH_MAX_VOICES, "voice in range");
-        if (v >= 0) seen[v] = 1;
+        if (v >= 0 && v < (gX_I32)GX_SYNTH_MAX_VOICES) seen[v] = 1;
     }
     gX_I32 count = 0;
     for (gX_U32 i = 0; i < GX_SYNTH_MAX_VOICES; i++) count += seen[i];
@@ -376,6 +377,7 @@ static gX_I32 syn_test_delay_tail(void) {
 
     gX_I32 v = gX_Synth_NoteOn(440.0f, 1.0f, GX_SYNTH_WAVE_SINE);
     SYN_TEST_ASSERT(v >= 0, "delay note allocated");
+    if (v < 0 || v >= (gX_I32)GX_SYNTH_MAX_VOICES) return errors + 1;
     syn_test_peak(9600);
 
     gX_Synth_NoteOff((gX_U32)v);

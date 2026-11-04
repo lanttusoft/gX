@@ -308,12 +308,12 @@ gX_I32 gX_Parse(int argc, char **argv) {
                 if (!strcmp(long_options[option_index].name,"screenWidth")) {
                     arguments.screenWidth = (gX_U16)atoi(optarg);
                     arguments.hasScreenWidth = true;
-                    printf("screenWidth: %i \n", arguments.screenWidth);
+                    printf("screenWidth: %u \n", (unsigned)arguments.screenWidth);
                 }
                 if (!strcmp(long_options[option_index].name,"screenHeight")) {
                     arguments.screenHeight = (gX_U16)atoi(optarg);
                     arguments.hasScreenHeight = true;
-                    printf("screenHeight: %i \n", arguments.screenHeight);
+                    printf("screenHeight: %u \n", (unsigned)arguments.screenHeight);
                 }
                 if (!strcmp(long_options[option_index].name,"masterIndex")) {
                     arguments.masterIndex = (gX_I32)atoi(optarg);
@@ -782,13 +782,13 @@ if (!strcmp(long_options[option_index].name,"guest-model")) {
             case 'w': {
                 arguments.screenWidth = (gX_U16)atoi(optarg);
                 arguments.hasScreenWidth = true;
-                printf("screenWidth: %i \n", arguments.screenWidth);
+                printf("screenWidth: %u \n", (unsigned)arguments.screenWidth);
                 break;
             }
             case 'h': {
                 arguments.screenHeight = (gX_U16)atoi(optarg);
                 arguments.hasScreenHeight = true;
-                printf("screenHeight: %i \n", arguments.screenHeight);
+                printf("screenHeight: %u \n", (unsigned)arguments.screenHeight);
                 break;
             }
             case '?': {

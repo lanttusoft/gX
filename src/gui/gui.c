@@ -603,7 +603,6 @@ gX_F32v2 gX_GUI_ScreenToGame(gX_F32 sx, gX_F32 sy) {
 }
 
 gX_Rectangle gX_GUI_ViewportBox_Get(gX_I0) {
-    (void)0;
     return gui.viewportBox;
 }
 
@@ -1771,8 +1770,8 @@ gX_I0 gX_GUI_Draw(gX_I0) {    //opencode: full-frame GL state diff gated behind 
                     "  Canvas: %s\n"
                     "  Rect: (%.0f, %.0f, %.0f, %.0f)\n"
                     "  Color: (%d, %d, %d, %d)\n"
-                    "  State: HVR=%d CLK=%d PRS=%d FOC=%d DIS=%d DRW=%d\n"
-                    "  Rendering: centerXY=%d/%d shadow=%d wire=%d\n"
+                    "  State: HVR=%u CLK=%u PRS=%u FOC=%u DIS=%u DRW=%u\n"
+                    "  Rendering: centerXY=%u/%u shadow=%u wire=%u\n"
                     "  canvasHue: (%d,%d,%d,%d)\n"
                     "  canvasBox: (%.0f,%.0f,%.0f,%.0f)",
                     gui.inspectorCanvasID, gui.inspectorElementID,

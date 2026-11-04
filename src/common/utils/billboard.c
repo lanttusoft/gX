@@ -118,6 +118,7 @@ static gX_Mesh billboard_create_quad_mesh(gX_I0) {
 
     // Vertex positions (TL, TR, BR, BL in CCW order)
     gX_F32 *verts = (gX_F32 *)malloc(4 * 3 * sizeof(gX_F32));
+    if (!verts) return (gX_Mesh){0};
     verts[0] = -0.5f;  verts[1] =  0.5f;  verts[2] = 0.0f; // TL
     verts[3] =  0.5f;  verts[4] =  0.5f;  verts[5] = 0.0f; // TR
     verts[6] =  0.5f;  verts[7] = -0.5f;  verts[8] = 0.0f; // BR
@@ -126,6 +127,7 @@ static gX_Mesh billboard_create_quad_mesh(gX_I0) {
 
     // UV coordinates
     gX_F32 *uvs = (gX_F32 *)malloc(4 * 2 * sizeof(gX_F32));
+    if (!uvs) { free(verts); return (gX_Mesh){0}; }
     uvs[0] = 0.0f; uvs[1] = 0.0f; // TL
     uvs[2] = 1.0f; uvs[3] = 0.0f; // TR
     uvs[4] = 1.0f; uvs[5] = 1.0f; // BR
@@ -134,6 +136,7 @@ static gX_Mesh billboard_create_quad_mesh(gX_I0) {
 
     // Normals (face +Z)
     gX_F32 *norms = (gX_F32 *)malloc(4 * 3 * sizeof(gX_F32));
+    if (!norms) { free(verts); free(uvs); return (gX_Mesh){0}; }
     for (gX_I32 i = 0; i < 4; i++) {
         norms[i * 3 + 0] = 0.0f;
         norms[i * 3 + 1] = 0.0f;
@@ -143,6 +146,7 @@ static gX_Mesh billboard_create_quad_mesh(gX_I0) {
 
     // Vertex colors (white)
     gX_U8 *cols = (gX_U8 *)malloc(4 * 4 * sizeof(gX_U8));
+    if (!cols) { free(verts); free(uvs); free(norms); return (gX_Mesh){0}; }
     for (gX_I32 i = 0; i < 4; i++) {
         cols[i * 4 + 0] = 255;
         cols[i * 4 + 1] = 255;
@@ -153,6 +157,8 @@ static gX_Mesh billboard_create_quad_mesh(gX_I0) {
 
     // Indices (CCW: TL->BR->TR, TL->BL->BR)
     gX_U16 *idxs = (gX_U16 *)malloc(6 * sizeof(gX_U16));
+    if (!idxs) { free(verts); free(uvs); free(norms); free(cols);
+        return (gX_Mesh){0}; }
     idxs[0] = 0; idxs[1] = 2; idxs[2] = 1; // TL, BR, TR
     idxs[3] = 0; idxs[4] = 3; idxs[5] = 2; // TL, BL, BR
     mesh.indices = idxs;

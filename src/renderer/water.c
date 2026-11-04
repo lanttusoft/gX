@@ -266,6 +266,10 @@ static gX_I0 water_gpu_load(gX_I0 *arg)
         gX_F32 *normals = (gX_F32*)malloc(vertCount * 3 * sizeof(gX_F32));
         gX_F32 *texcoords = (gX_F32*)malloc(vertCount * 2 * sizeof(gX_F32));
         gX_U16 *indices = (gX_U16*)malloc(idxCount * sizeof(gX_U16));
+        if (!verts || !normals || !texcoords || !indices) {
+            free(verts); free(normals); free(texcoords); free(indices);
+            return;
+        }
 
         gX_I32 vi = 0;
         for (gX_I32 iz = 0; iz <= segs; iz++) {

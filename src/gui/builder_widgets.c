@@ -353,7 +353,6 @@ gX_I0 gX_GUI_Builder_Widget_Back(gX_GUI_Builder *b,
     gX_I32 targetState, gX_I32 *statePtr)
 {
     gX_GUI_Builder_Element_Begin(b);
-    if (!b->currentElement) return;
     if (!b->currentElement) return; //opencode: guard against element heap exhaustion
     b->currentElement->type = gX_GUI_ELEMENT_TYPE_BUTTON;
         gX_GUI_Builder_RectGrid(b, gridX, gridY, gui.style.backW, gui.style.backH);

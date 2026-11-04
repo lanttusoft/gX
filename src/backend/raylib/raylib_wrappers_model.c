@@ -294,6 +294,13 @@ gX_I0 raylib_Mesh_GenTangents(  gX_Mesh *mesh) {
     // when the second loop reads indices the first loop didn't touch)
     Vector3 *tan1 = (Vector3 *)RL_CALLOC((gX_U32)mesh->vertexCount, (gX_U32)sizeof(Vector3));
     Vector3 *tan2 = (Vector3 *)RL_CALLOC((gX_U32)mesh->vertexCount, (gX_U32)sizeof(Vector3));
+    if (mesh->tangents == NULL || tan1 == NULL || tan2 == NULL) {
+        RL_FREE(mesh->tangents);
+        RL_FREE(tan1);
+        RL_FREE(tan2);
+        mesh->tangents = NULL;
+        return;
+    }
 
     for (int i = 0; i < mesh->vertexCount; i += 3) {
         // Get triangle vertices

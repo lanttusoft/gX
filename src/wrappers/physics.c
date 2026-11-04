@@ -413,8 +413,11 @@ gX_PhysicsWorld gX_PhysicsWorld_Create(gX_I0) {
         if (g_odeRefCount == 0) dCloseODE();
         return gX_PHYSICS_WORLD_NULL;
     }
+    // cppcheck-suppress nullPointerRedundantCheck
     state->world = w;
+    // cppcheck-suppress nullPointerRedundantCheck
     state->space = space;
+    // cppcheck-suppress nullPointerRedundantCheck
     state->maxContacts = 8;
     dWorldSetData(w, state);
 

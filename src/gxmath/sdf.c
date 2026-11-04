@@ -223,6 +223,8 @@ gX_F32 gX_F32_SDF_Mandelbulb(gX_F32v3 p, gX_F32v4 param) {
         z.y += p.y;
         z.z += p.z;
     }
+    if (r < 1e-6f) r = 1e-6f;
+    // cppcheck-suppress invalidFunctionArg
     return 0.5f * logf(r) * r / dr;
 }
 

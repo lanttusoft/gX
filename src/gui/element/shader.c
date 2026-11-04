@@ -330,7 +330,8 @@ static gX_I0 gX_GUI_Element_Shader_Draw(gX_GUI_Element_Shader *shader, gX_GUI_El
 //   the watch table never retains a pointer into reused module memory. The
 //   REMOVE/CLEARMODULE macros funnel every removal through this function.
 gX_I0 gX_GUI_Element_Shader_Clear(gX_GUI_Element_Shader *shader) {
-    if (shader && shader->shader && shader->shader->id != 0) {
+    if (shader == NULL) return;
+    if (shader->shader && shader->shader->id != 0) {
         gX_Shader_Compiler_Unsubscribe(*(shader->shader),
             gX_GUI_Element_Shader_OnReload,
             (gX_I0 *)shader);
