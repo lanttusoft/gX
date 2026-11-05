@@ -106,6 +106,11 @@ The first implementation adds:
   Soft-vs-Sharp high-frequency difference, the quality mask (planar + FXAA +
   gfx-scene only, no forced SSR/TAA/DOF), the quality tier, and the Full
   320-vs-1024 frame budget.
+- Resolution/buffer audit: `GX_RESIZE_TEST=WxH@frame` changes the virtual
+  target at runtime; `GX_GFX_BUFFER_AUDIT` target summaries now include their
+  size. The editor-host gate compares a cold 320 start with a 1024→320 runtime
+  resize over all 32 active targets and requires image parity (measured
+  0.62/255 mean difference).
 
 Peer review found why the old Max looked broken: the default scene declares
 only **planar reflections + FXAA**, while Full forced 18 features. SSR
@@ -175,12 +180,16 @@ only the scene render target is 320x240.
 - Full Max 320x240 vs 1024x768 relative frame budget (>=10% faster).
 - Input mapping round-trip at the virtual scale.
 - Retro asset budget (texture dimensions, triangle/material counts).
-- Resolution/buffer audit: screen-sized targets reload after a virtual
-  resolution change; no stale dimensions (planned).
+- Resolution/buffer audit: cold 320 vs runtime-resized 320 target sizes and
+  image parity (32 active targets, ~0.6/255 mean difference).
 - No UI clipping with native tool panels at window resolution.
 
 ## Follow-up
 
+- **PRISM-1 diffraction spikes**: threshold the HDR bright pass, convolve with
+  a 6/8-blade star kernel, add chromatic dispersion and rotate with the
+  camera. Intended for water sun sparkles, neon, chrome and specular glints;
+  scene-authored (Look/Bloom controls), not forced by Console Max.
 - Console shell and boot sequence.
 - OSD: `320x240 · SOFT · 60Hz`, save state, frame advance, fast-forward.
 - Supersampled render/output split.

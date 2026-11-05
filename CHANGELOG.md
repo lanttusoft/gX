@@ -26,6 +26,13 @@ Release-Class: minor
   `GX_CONSOLE_MAX=1` (quality) and `GX_CONSOLE_MAX_FULL=1` (full+quality).
   `editor-host-check` pins the quality mask and the Full 320x240-vs-1024x768
   budget (9.8 ms vs 22.9 ms on the reference GTX 1060).
+- **Resolution/buffer audit**: `GX_RESIZE_TEST=WxH@frame` changes the virtual
+  scene target at runtime, and `GX_GFX_BUFFER_AUDIT` target summaries include
+  their size. `editor-host-check` compares a cold 320x240 start with a
+  1024→320 resize over all 32 active targets and requires image parity
+  (measured 0.62/255 mean difference). The audit also stops querying the
+  core-profile-invalid `GL_STENCIL_BITS`, so its own GL error cannot mask a
+  renderer error.
 - **UI maturity in the GFX editor**: Basic/Advanced/Expert now gate whole
   renderer labs and the fine-tuning sections (shader tuning, GL level, raw
   toggles, texture tools, map tuning, SSGI, aux targets, CSM, decals, volumes,

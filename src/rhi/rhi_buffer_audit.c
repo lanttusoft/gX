@@ -185,10 +185,11 @@ gX_I0 gX_RHI_BufferAudit_EndFrame(gX_I0)
         if (target->frameDraws == 0 && target->frameTextureBinds == 0
             && target->frameTargetBegins == 0 && target->frameClearMask == 0) continue;
         BufferAudit_Emit("op=frame_target_summary target=%s fbo=%u color=%u depth=%u "
-            "draws=%u textureBinds=%u begins=%u clearMask=0x%x colorInit=%u depthInit=%u "
+            "size=%ux%u draws=%u textureBinds=%u begins=%u clearMask=0x%x colorInit=%u depthInit=%u "
             "colorWritten=%u depthWritten=%u colorClearFrame=%llu depthClearFrame=%llu",
             (const char *)target->name, target->fbo, target->colorTexture,
-            target->depthTexture, target->frameDraws, target->frameTextureBinds,
+            target->depthTexture, target->width, target->height,
+            target->frameDraws, target->frameTextureBinds,
             target->frameTargetBegins, target->frameClearMask,
             (gX_U32)target->colorInitialized, (gX_U32)target->depthInitialized,
             (gX_U32)target->colorWritten, (gX_U32)target->depthWritten,
@@ -365,12 +366,15 @@ gX_I0 gX_RHI_BufferAudit_Clear(gX_U32 mask)
     GLboolean colorMask[4] = {GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE};
     GLboolean depthMask = GL_TRUE;
     GLint stencilMask = -1;
+    //ai: GL_STENCIL_BITS is not queryable in a core profile and raises
+    //   GL_INVALID_ENUM (the buffer audit itself would fail the error scan).
+    //   The resize audit only needs target sizes; leave stencil clear
+    //   analysis disabled unless a context exposes the bit count elsewhere.
     GLint stencilBits = 0;
     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFbo);
     glGetBooleanv(GL_COLOR_WRITEMASK, colorMask);
     glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask);
     glGetIntegerv(GL_STENCIL_WRITEMASK, &stencilMask);
-    glGetIntegerv(GL_STENCIL_BITS, &stencilBits);
     gX_I1 scissorEnabled = glIsEnabled(GL_SCISSOR_TEST) ? 1 : 0;
     if (scissorEnabled) glGetIntegerv(GL_SCISSOR_BOX, scissor);
     gX_I32 index = BufferAudit_FindTarget((gX_U32)drawFbo);

@@ -248,6 +248,91 @@ def check_console_max(tag, virtual, full=False):
     return float(average)
 
 
+#ai: resolution/buffer audit — all active render targets must reload at the
+#   new virtual size, and a runtime-resized frame must match a cold capture.
+TARGET_RE = re.compile(
+    r"frame=(\d+).*op=frame_target_summary target=(\S+).*"
+    r"size=(\d+)x(\d+)")
+
+
+def last_rt_targets(path):
+    frames = {}
+    for line in Path(path).read_text(errors="replace").splitlines():
+        match = TARGET_RE.search(line)
+        if match:
+            frames.setdefault(int(match.group(1)), {})[match.group(2)] = (
+                int(match.group(3)), int(match.group(4)))
+    if not frames:
+        raise RuntimeError(f"no buffer-audit target summaries in {path}")
+    return frames[max(frames)]
+
+
+def check_console_resize():
+    directory = OUT / "console-resize"
+    directory.mkdir(parents=True, exist_ok=True)
+    common = {
+        "GX_FIXED_DT": "0.0166666667",
+        "GX_CONSOLE_MAX": "1",
+        "GX_CONSOLE_MAX_FULL": "1",
+        "GX_PRESENT_FILTER": "soft",
+    }
+    cold_audit = directory / "cold-buffers.log"
+    resize_audit = directory / "resize-buffers.log"
+    cold_env = dict(common)
+    cold_env.update({
+        "GX_VIRTUAL_WIDTH": "320",
+        "GX_VIRTUAL_HEIGHT": "240",
+        "GX_GFX_BUFFER_AUDIT": str(cold_audit),
+    })
+    resize_env = dict(common)
+    resize_env.update({
+        "GX_RESIZE_TEST": "320x240",
+        "GX_RESIZE_TEST_FRAME": "30",
+        "GX_GFX_BUFFER_AUDIT": str(resize_audit),
+    })
+    images = {}
+    for tag, environment in (("cold", cold_env), ("resize", resize_env)):
+        shot_dir = directory / tag
+        shot_dir.mkdir(parents=True, exist_ok=True)
+        env = audit.scene_env(environment, clean=True)
+        result = audit.run_scene("--gfx", env, width=WIDTH, height=HEIGHT,
+            fps=None, frames=100, shot_frame=90, screenshot_dir=shot_dir,
+            timeout=180, check=False)
+        log = audit.strip_ansi(result.stdout or "")
+        if result.returncode != 0:
+            raise RuntimeError(f"console resize {tag} failed "
+                               f"({result.returncode})")
+        if "ERROR!" in log or "FATAL!" in log:
+            raise RuntimeError(f"console resize {tag}: engine error")
+        shot = audit.newest_shot(shot_dir)
+        if shot is None:
+            raise RuntimeError(f"console resize {tag}: capture missing")
+        images[tag] = np.asarray(audit.Image.open(shot).convert("RGB"),
+                                 dtype=np.float32)
+    if images["cold"].shape[:2] != (HEIGHT, WIDTH) \
+            or images["resize"].shape[:2] != (HEIGHT, WIDTH):
+        raise RuntimeError("console resize: capture size mismatch")
+    cold = last_rt_targets(cold_audit)
+    resized = last_rt_targets(resize_audit)
+    if cold != resized:
+        onlyCold = sorted(set(cold) - set(resized))
+        onlyResize = sorted(set(resized) - set(cold))
+        mismatches = sorted(name for name in set(cold) & set(resized)
+                            if cold[name] != resized[name])
+        raise RuntimeError(
+            f"console resize: target mismatch onlyCold={onlyCold} "
+            f"onlyResize={onlyResize} sizes={mismatches}")
+    if len(cold) < 25:
+        raise RuntimeError(
+            f"console resize: too few active targets ({len(cold)})")
+    parity = float(np.abs(images["cold"] - images["resize"]).mean())
+    if parity >= 2.0:
+        raise RuntimeError(
+            f"console resize: cold/resize parity {parity:.3f}")
+    print(f"CONSOLE_RESIZE: targets={len(cold)} parity={parity:.3f}")
+    return len(cold)
+
+
 def run(tag, scene, extra, frames=30, shot=20):
     directory = OUT / tag
     directory.mkdir(parents=True, exist_ok=True)
@@ -512,6 +597,10 @@ def main():
               f"1024x768 {consoleMax1024:.2f} ms; full 320x240 "
               f"{consoleFull320:.2f} ms vs 1024x768 {consoleFull1024:.2f} ms")
 
+        #ai: a runtime virtual-resolution change must reload every target
+        #   and produce the same frame as a cold 320 start.
+        resizeTargets = check_console_resize()
+
         #ai: the preset browser root is env-overridable for authoring outside
         #   the shipped resource tree.
         with tempfile.TemporaryDirectory(prefix="gx_presets_",
@@ -579,6 +668,7 @@ def main():
           "Basic/Advanced/Expert lab and section coverage, "
           "320x240 virtual screen Soft/Sharp split, "
           "Console Max quality mask + Full 320<1024 budget, "
+          "runtime buffer resize audit, "
           "preset-dir override")
     return 0
 

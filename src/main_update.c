@@ -157,6 +157,40 @@ static gX_I32 gX_MainData_RefreshResponses(gX_I0) {
 gX_I32 gX_MainData_Update_Before(gX_I0) {
     gX_I32 errors = 0;
     
+    //ai: resolution/buffer audit hook — change the virtual scene target at a
+    //   frame so the gate can verify every render target reloads at the new
+    //   size. GX_RESIZE_TEST=WxH, GX_RESIZE_TEST_FRAME=30.
+    {
+        const gX_I8 *resize = getenv("GX_RESIZE_TEST");
+        static gX_I1 resizeDone = 0;
+        if (resize && resize[0] && !resizeDone) {
+            gX_I32 at = 30;
+            const gX_I8 *atEnv = getenv("GX_RESIZE_TEST_FRAME");
+            if (atEnv && atEnv[0]) at = atoi((const char *)atEnv);
+            if ((gX_I32)maindata.frameCount >= at) {
+                gX_U32 width = 0;
+                gX_U32 height = 0;
+                if (sscanf((const char *)resize, "%ux%u", &width, &height) == 2
+                    && width >= 64 && width <= 4096
+                    && height >= 64 && height <= 4096) {
+                    maindata.renderOverride = 1;
+                    maindata.renderOverrideWidth = (gX_U16)width;
+                    maindata.renderOverrideHeight = (gX_U16)height;
+                    maindata.virtualScreen = 1;
+                    maindata.refresh = true;
+                    gX_TraceLog(gX_LOG_INFO,
+                        "MAIN: resize test -> %ux%u at frame %llu",
+                        width, height,
+                        (unsigned long long)maindata.frameCount);
+                } else {
+                    gX_TraceLog(gX_LOG_WARNING,
+                        "MAIN: invalid GX_RESIZE_TEST '%s'", resize);
+                }
+                resizeDone = 1;
+            }
+        }
+    }
+
     if (maindata.refresh) {
         gX_MainData_Refresh();
         maindata.refreshOngoing = true;
