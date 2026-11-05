@@ -47,11 +47,15 @@
 //   All state is scene-local statics; the gfx renderer is untouched.
 
 static gX_I1  s_defaultsApplied = false;
+static gX_I1  s_cartridgeOsdLogged;
+static gX_F64 s_cartridgeOsdBoot = -1.0;
 
 //ai: cartridge boot after a prior GFX visit restores the one-shot showcase
-//   defaults so the selected profile can take effect.
+//   defaults and replays the boot OSD so the selected profile can take effect.
 gX_I0 gX_Showcase_ResetDefaults(gX_I0) {
     s_defaultsApplied = false;
+    s_cartridgeOsdLogged = 0;
+    s_cartridgeOsdBoot = -1.0;
 }
 static gX_F32 s_yaw = 45.0f;
 static gX_F32 s_pitch = 25.0f;
@@ -640,7 +644,46 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
     }
 }
 
+//ai: cartridge OSD — a short boot banner over the 320x240 scene. It is part
+//   of the rendered frame (so it inherits the Soft upscale), fades after a
+//   few seconds, and stays out of the development HUD path.
+static gX_I1 cartridge_osd(gX_RendererGFX *gfx, gX_RenderTexture *overlayTgt) {
+    (void)gfx;
+    const gX_I8 *hook = getenv("GX_T_CARTRIDGE_OSD");
+    if (hook && hook[0] == '0') return 1;
+    if (s_cartridgeOsdBoot < 0.0) s_cartridgeOsdBoot = maindata.timeElapsed;
+    gX_F32 age = (gX_F32)(maindata.timeElapsed - s_cartridgeOsdBoot);
+    if (age > 7.0f) return 1;
+    gX_F32 alpha = age < 4.0f ? 1.0f : 1.0f - (age - 4.0f) / 3.0f;
+    if (alpha < 0.0f) alpha = 0.0f;
+    gX_U8 a = (gX_U8)(255.0f * alpha);
+    if (!s_cartridgeOsdLogged) {
+        s_cartridgeOsdLogged = 1;
+        gX_TraceLog(gX_LOG_NOTICE, "CARTRIDGE_OSD: banner");
+    }
+    gX_Drawing_BeginTexture(*overlayTgt);
+    gX_Camera2D cam2d = {{0,0}, {0,0}, 0.0f, 1.0f};
+    gX_Drawing_Begin2D(cam2d);
+    gX_Rectangle_Draw((gX_Rectangle){6, 6, 230, 38},
+        (gX_Color){0, 0, 0, (gX_U8)(150.0f * alpha)});
+    gX_Font font = gX_Font_GetDefault();
+    gX_RawString_Draw("gX-240", font, (gX_F32v2){10, 10}, (gX_F32v2){0,0},
+        0.0f, 12.0f, 1.0f, (gX_Color){90, 220, 240, a});
+    gX_RawString_Draw("CARTRIDGE 01  Y2K CGI", font, (gX_F32v2){10, 27},
+        (gX_F32v2){0,0}, 0.0f, 10.0f, 1.0f, (gX_Color){235, 240, 255, a});
+    const gX_I8 *status = "320x240  4x MSAA  PRISM-1";
+    gX_F32v2 size = gX_RawString_Measure(status, font, 9.0f, 1.0f);
+    gX_RawString_Draw(status, font,
+        (gX_F32v2){(gX_F32)maindata.renderWidth - size.x - 8.0f,
+            (gX_F32)maindata.renderHeight - 14.0f},
+        (gX_F32v2){0,0}, 0.0f, 9.0f, 1.0f,
+        (gX_Color){150, 180, 210, (gX_U8)(220.0f * alpha)});
+    return 1;
+}
+
 gX_I0 gX_Showcase_DrawHUD(gX_RendererGFX *gfx, gX_RenderTexture *overlayTgt) {
+    if (arguments.cartridgeY2K && arguments.showcase
+        && cartridge_osd(gfx, overlayTgt)) return;
     if (!arguments.showcase || !s_hudVisible) return;
 
     gX_Drawing_BeginTexture(*overlayTgt);

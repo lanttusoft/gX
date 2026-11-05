@@ -158,10 +158,10 @@ six/eight-ray stars, threshold/midtone rejection and the chromatic centroid
 order. It runs as part of `make check`.
 
 The console shell boot view and the Y2K cartridge route now exist. Still
-follow-ups: real save-state storage, a compact 320x240 native GUI, the
-emulator-style OSD, supersampled render/output split, dither and CRT filters,
-and CRT-safe idle blanking. The shell keeps the native GUI at window
-resolution; only the scene is 240p.
+follow-ups: real save-state storage, a compact 320x240 native GUI, the full
+emulator-style OSD menu, supersampled render/output split, dither and CRT
+filters. CRT-safe idle blanking and the boot OSD now ship with the shell. The shell keeps the native
+GUI at window resolution; only the scene is 240p.
 
 ## CRT notes
 
@@ -198,6 +198,12 @@ only the scene render target is 320x240.
   (320x240 Soft/Sharp, Native) and a save-state route. Booting Y2K from the
   shell applies the 320x240 Soft profile, cold-boots the GFX renderer and
   rebuilds the authored scene; the shell keeps the native GUI at window size.
+  After 120 s without input the shell (and cartridge playback) fades to a
+  black screen with a dim drifting gX mark; the first input is swallowed so
+  it wakes the display without activating a hidden control.
+  `GX_CONSOLE_IDLE_SECONDS` shortens the timeout for probes. Cartridge boot
+  shows a short OSD banner (gX-240 / CARTRIDGE 01 Y2K CGI / 320x240 4x MSAA
+  PRISM-1) that fades after seven seconds; `GX_T_CARTRIDGE_OSD=0` disables it.
 - **Y2K CGI cartridge** — `--cartridge-y2k` boots the fixed profile: 320x240
   scene with Soft upscale, the Y2K composition, 128 px brushed-metal
   albedo/normal/ORM on the low-poly forms, Max-quality cascade (4x MSAA, 4 CSM
@@ -230,8 +236,9 @@ only the scene render target is 320x240.
   scene, Max quality, diffraction contribution and the 160x120 star-map
   target (`make cartridge-check`).
 - Console shell: boot-view trace, Sharp video route (320x240 filter 0),
-  save-slot route, and a cartridge boot from the shell that cold-boots GFX
-  and reaches the 320x240 Soft/4x MSAA/diffraction profile
+  save-slot route, CRT-safe idle blank/wake with the wake input swallowed,
+  the cartridge OSD banner, and a cartridge boot from the shell that
+  cold-boots GFX and reaches the 320x240 Soft/4x MSAA/diffraction profile
   (`make console-check`).
 - No UI clipping with native tool panels at window resolution.
 

@@ -43,6 +43,7 @@
 
 #include "../main.h"
 #include "../input.h"
+#include "../rhi/rhi_matrix.h"
 
 #include "../common/heap.h"
 #include "../common/log.h"
@@ -1357,6 +1358,164 @@ static gX_I0 gX_GUI_Draw_Diagnostics_End(gX_GL_State *before, gX_I1 enabled, con
     gX_GL_State_Diff(before, &after, label);
 }
 
+//ai: CRT-safe console idle blanking. Only the gX-240 shell and cartridge
+//   playback opt in; any keyboard/mouse/gamepad activity wakes instantly.
+//   The fade covers the whole GUI and leaves a dim drifting gX mark.
+#define GX_CONSOLE_IDLE_DEFAULT 120.0f
+#define GX_CONSOLE_IDLE_FADE      4.0f
+static gX_F32 s_consoleIdleSeconds;
+static gX_F32 s_consoleIdleAlpha;
+static gX_F32 s_consoleIdleLast;
+static gX_I1 s_consoleIdleBlanked;
+static gX_Texture s_consoleIdleWhite;
+static gX_Texture s_consoleIdleLogo;
+static gX_I1 s_consoleIdleAssets;
+static gX_F32v2 s_consoleIdleMouse;
+static gX_I1 s_consoleIdleMouseInit;
+
+static gX_I1 console_idle_enabled(gX_I0) {
+    return (arguments.consoleShell && maindata.masterIndex == gX_SCENE_TITLE)
+        || (arguments.cartridgeY2K
+            && maindata.masterIndex == gX_SCENE_RENDERER_GFX);
+}
+
+static gX_I1 console_idle_input(gX_I0) {
+    for (gX_I32 i = 0; i < gX_INPUT_KEYBOARD_KEYS; i++) {
+        if (input.keyboard.keys[i].state.PRESSED
+            || input.keyboard.keys[i].state.DOWN) return 1;
+    }
+    if (!s_consoleIdleMouseInit) {
+        s_consoleIdleMouse = input.mouse.coord;
+        s_consoleIdleMouseInit = 1;
+    }
+    if (fabsf(input.mouse.coord.x - s_consoleIdleMouse.x) > 0.5f
+        || fabsf(input.mouse.coord.y - s_consoleIdleMouse.y) > 0.5f)
+        return 1;
+    if (fabsf(input.mouse.coordDelta.x) > 0.01f
+        || fabsf(input.mouse.coordDelta.y) > 0.01f
+        || fabsf(input.mouse.scroll) > 0.001f
+        || input.mouse.leftButton.DOWN
+        || input.mouse.rightButton.DOWN
+        || input.mouse.middleButton.DOWN) return 1;
+    for (gX_I32 g = 0; g < 8; g++) {
+        if (!input.gamepad[g].available) continue;
+        for (gX_I32 i = 0; i < 64; i++)
+            if (input.gamepad[g].buttons[i].DOWN) return 1;
+        for (gX_I32 i = 0; i < input.gamepad[g].axisCount && i < 8; i++)
+            if (fabsf(input.gamepad[g].axisMovement[i]) > 0.2f) return 1;
+    }
+    return 0;
+}
+
+static gX_F32 console_idle_timeout(gX_I0) {
+    const gX_I8 *hook = getenv("GX_CONSOLE_IDLE_SECONDS");
+    gX_F32 seconds = (hook && hook[0]) ? (gX_F32)atof((const char *)hook)
+        : GX_CONSOLE_IDLE_DEFAULT;
+    if (seconds < 2.0f) seconds = 2.0f;
+    if (seconds > 3600.0f) seconds = 3600.0f;
+    return seconds;
+}
+
+//ai: waking input is swallowed so the first key/mouse event on a blanked
+//   screen does not activate the focused boot card.
+static gX_I0 console_idle_consume(gX_I0) {
+    for (gX_I32 i = 0; i < gX_INPUT_KEYBOARD_KEYS; i++)
+        input.keyboard.keys[i].state = (gX_Input_State){0};
+    input.mouse.leftButton = (gX_Input_State){0};
+    input.mouse.rightButton = (gX_Input_State){0};
+    input.mouse.middleButton = (gX_Input_State){0};
+    input.mouse.scroll = 0.0f;
+    input.mouse.scrollIntegral = 0.0f;
+    input.mouse.coordDelta = (gX_F32v2){0};
+    input.virtInput.clickPending = 0;
+    input.virtInput.keyPending = 0;
+    for (gX_I32 g = 0; g < 8; g++)
+        for (gX_I32 i = 0; i < 64; i++)
+            input.gamepad[g].buttons[i] = (gX_Input_State){0};
+}
+
+gX_I0 gX_GUI_ConsoleIdle_Update(gX_I0) {
+    gX_F32 now = (gX_F32)maindata.timeElapsed;
+    gX_F32 dt = s_consoleIdleLast >= 0.0f ? now - s_consoleIdleLast : 0.0f;
+    if (dt < 0.0f) dt = 0.0f;
+    if (dt > 0.25f) dt = 0.25f;
+    s_consoleIdleLast = now;
+    if (!console_idle_enabled()) {
+        s_consoleIdleSeconds = 0.0f;
+        s_consoleIdleAlpha = 0.0f;
+        s_consoleIdleBlanked = 0;
+        return;
+    }
+    if (console_idle_input()) {
+        if (s_consoleIdleBlanked || s_consoleIdleAlpha > 0.01f) {
+            gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_IDLE: wake");
+            console_idle_consume();
+        }
+        s_consoleIdleMouse = input.mouse.coord;
+        s_consoleIdleSeconds = 0.0f;
+        s_consoleIdleAlpha = 0.0f;
+        s_consoleIdleBlanked = 0;
+        return;
+    }
+    s_consoleIdleMouse = input.mouse.coord;
+    s_consoleIdleSeconds += dt;
+    gX_F32 fade = (s_consoleIdleSeconds - console_idle_timeout())
+        / GX_CONSOLE_IDLE_FADE;
+    if (fade < 0.0f) fade = 0.0f;
+    if (fade > 1.0f) fade = 1.0f;
+    s_consoleIdleAlpha = fade;
+    if (fade >= 1.0f && !s_consoleIdleBlanked) {
+        s_consoleIdleBlanked = 1;
+        gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_IDLE: blank");
+    }
+}
+
+static gX_I0 console_idle_assets(gX_I0) {
+    if (s_consoleIdleAssets) return;
+    gX_U8 white[4] = { 255, 255, 255, 255 };
+    s_consoleIdleWhite = gX_Texture_LoadFromData(1, 1, white);
+    s_consoleIdleLogo = gX_Texture_Load(
+        (const gX_I8 *)GX_RESOURCE_DIR "/texture/gx_title.png");
+    s_consoleIdleAssets = 1;
+}
+
+static gX_I0 console_idle_draw(gX_I0) {
+    if (s_consoleIdleAlpha <= 0.001f) return;
+    console_idle_assets();
+    if (s_consoleIdleWhite.id == 0) return;
+    gX_RHI_Disable(gX_RHI_SCISSOR_TEST);
+    gX_RHI_Viewport(0, 0, (gX_I32)maindata.screenWidth,
+        (gX_I32)maindata.screenHeight);
+    gX_RHI_Matrix_Mode(GX_RHI_MATRIX_PROJECTION);
+    gX_RHI_Matrix_LoadIdentity();
+    gX_RHI_Matrix_Ortho(0, (gX_F64)maindata.screenWidth,
+        (gX_F64)maindata.screenHeight, 0, 0.0, 1.0);
+    gX_RHI_Matrix_Mode(GX_RHI_MATRIX_MODELVIEW);
+    gX_RHI_Matrix_LoadIdentity();
+    gX_Texture_Draw(s_consoleIdleWhite, (gX_Texture_Draw_Params){
+        .dst = {0, 0, (gX_F32)maindata.screenWidth,
+            (gX_F32)maindata.screenHeight},
+        .tint = {0, 0, 0, (gX_U8)(255.0f * s_consoleIdleAlpha)},
+        .scale = {1.0f, 1.0f}
+    });
+    if (s_consoleIdleLogo.id > 0) {
+        gX_F32 t = (gX_F32)maindata.timeElapsed;
+        gX_F32 size = 180.0f;
+        gX_F32 x = (gX_F32)maindata.screenWidth * 0.5f - size * 0.5f
+            + 24.0f * sinf(t * 0.12f);
+        gX_F32 y = (gX_F32)maindata.screenHeight * 0.5f - size * 0.5f
+            + 16.0f * cosf(t * 0.09f);
+        gX_Texture_Draw(s_consoleIdleLogo, (gX_Texture_Draw_Params){
+            .src = {0, 0, (gX_F32)s_consoleIdleLogo.width,
+                (gX_F32)s_consoleIdleLogo.height},
+            .dst = {x, y, size, size},
+            .tint = {255, 255, 255, (gX_U8)(70.0f * s_consoleIdleAlpha)},
+            .scale = {1.0f, 1.0f}
+        });
+    }
+    gX_Drawing_Flush();
+}
+
 gX_I0 gX_GUI_Draw(gX_I0) {    //opencode: full-frame GL state diff gated behind --gl-diagnostics (see
     //   canvas.c — two snapshots + diff per frame is debug-only overhead).
     gX_GL_State guiDrawBefore = {0};
@@ -1576,7 +1735,10 @@ gX_I0 gX_GUI_Draw(gX_I0) {    //opencode: full-frame GL state diff gated behind 
     //opencode: v0.3.8 — transition wipe overlay. Drawn after canvas composites
     //   AND the SDF flush so the sweep covers the entire GUI surface.
     gX_GUI_Transition_DrawOverlay();
-    
+
+    //ai: CRT-safe blanking rides above every canvas/transition layer.
+    console_idle_draw();
+
     //opencode: generic layout debug — validate + overlay + ruler for every
     //   GUI screen (battle draws its own raw-drawn HUD tracking in
     //   battle/ui.c, so it runs its own validate/overlay/ruler).

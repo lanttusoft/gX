@@ -54,8 +54,14 @@ Release-Class: minor
   Y2K applies the 320x240 Soft profile, cold-boots the GFX renderer (clearing
   previous demo/battle/physics content and re-arming showcase defaults) and
   launches the textured cartridge; a runtime virtual-screen change now
-  requests the renderer refresh it previously skipped. `make console-check`
-  drives the boot view, sharp video route, save slots and cartridge boot.
+  requests the renderer refresh it previously skipped. After 120 s idle the
+  shell/cartridge fades to a black screen with a dim drifting gX mark, and
+  the wake input is swallowed so it cannot activate a hidden card
+  (`GX_CONSOLE_IDLE_SECONDS` for probes). Cartridge boot also draws a
+  seven-second OSD banner (gX-240 / CARTRIDGE 01 Y2K CGI / 320x240 4x MSAA
+  PRISM-1) inside the 240p frame; `GX_T_CARTRIDGE_OSD=0` disables it.
+  `make console-check` drives the boot view, sharp video route, save slots,
+  idle blank/wake, OSD banner and cartridge boot.
 - **Y2K CGI cartridge**: `--cartridge-y2k` boots a fixed console profile — the
   Y2K composition at a 320x240 Soft scene target, the authored 128 px
   brushed-metal albedo/normal/ORM set on the low-poly floor and ring, Max

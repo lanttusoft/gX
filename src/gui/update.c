@@ -386,6 +386,11 @@ static gX_I1 gX_GUI_Focus_AdjustSlider(gX_GUI_Element *element,
 //opencode: an active ImGui tool owns native GUI input to avoid key and click-through.
 gX_I0 gX_GUI_Update(gX_I0) {
 
+    //ai: console idle blanking runs before any element consumes input, so the
+    //   wake event is swallowed instead of activating a hidden control.
+    extern gX_I0 gX_GUI_ConsoleIdle_Update(gX_I0);
+    gX_GUI_ConsoleIdle_Update();
+
     gX_GUI_Canvas *canvases = gui.canvases.data;
     gX_Heap_Meta *canvasesMeta = gui.canvases.meta;
     gui.toolsInputCaptured = gX_Tools_RuntimeActive();

@@ -34,7 +34,7 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
-def capture(tag, actions, frames, shot_frame, out):
+def capture(tag, actions, frames, shot_frame, out, extra=None):
     directory = out / tag
     directory.mkdir(parents=True, exist_ok=True)
     for old in directory.glob("gXss_*.png"):
@@ -42,6 +42,8 @@ def capture(tag, actions, frames, shot_frame, out):
     environment = {
         "GX_FIXED_DT": "%.12f" % (1.0 / 60.0),
     }
+    if extra:
+        environment.update(extra)
     if actions:
         environment["GX_AI_INPUT"] = actions
     result = audit.run_scene(
@@ -79,6 +81,10 @@ def main():
                 "2.0 move 512 584 200;2.5 click 512 584", 220, 200, out)
             boot, boot_log = capture("boot",
                 "2.0 move 512 184 200;2.5 click 512 184", 300, 260, out)
+            idle, idle_log = capture("idle", None, 460, 440, out,
+                extra={"GX_CONSOLE_IDLE_SECONDS": "2"})
+            woke, wake_log = capture("wake", "7.5 move 100 700 200",
+                540, 520, out, extra={"GX_CONSOLE_IDLE_SECONDS": "2"})
 
         require(VIEW_RE.search(shell_log), "shell boot trace missing")
         require("gX_Scene: switched to masterIndex 1 [TITLE]" in shell_log,
@@ -112,6 +118,8 @@ def main():
             and video[-1][5] == "1", f"cartridge video profile: {video}")
         require("RENDERER: GFX cold boot" in boot_log,
             "cartridge did not cold boot the GFX renderer")
+        require("CARTRIDGE_OSD: banner" in boot_log,
+            "cartridge boot OSD missing")
         cartridge = CARTRIDGE_RE.findall(boot_log)
         require(cartridge and cartridge[-1] == ("1", "6", "3"),
             f"cartridge profile: {cartridge}")
@@ -125,6 +133,20 @@ def main():
         require("[ ERROR ]" not in shell_log + sharp_log + save_log + boot_log,
             "console shell log contains errors")
 
+        require("CONSOLE_IDLE: blank" in idle_log,
+            "idle timeout did not blank the shell")
+        idle_mean, idle_std = image_stats(idle)
+        require(idle_mean < 6.0, f"blanked frame mean {idle_mean:.1f}")
+        require(idle_std < 12.0, f"blanked frame std {idle_std:.1f}")
+        require("CONSOLE_IDLE: blank" in wake_log
+            and "CONSOLE_IDLE: wake" in wake_log,
+            "idle wake trace missing")
+        require("CONSOLE: boot=" not in wake_log,
+            "wake input activated a hidden cartridge card")
+        wake_mean, wake_std = image_stats(woke)
+        require(wake_mean > 5.0 and wake_std > 8.0,
+            f"wake did not restore the shell ({wake_mean:.1f}/{wake_std:.1f})")
+
         boot_mean, boot_std = image_stats(boot)
         require(5.0 < boot_mean < 100.0,
             f"cartridge mean luma {boot_mean:.1f}")
@@ -137,7 +159,8 @@ def main():
         print(f"CONSOLE_SHELL: FAIL — {error}", file=sys.stderr)
         return 1
     print("CONSOLE_SHELL: PASS boot view, sharp video route, save slots, "
-          "cartridge cold boot at 320x240 Soft + 4x MSAA + diffraction")
+          "CRT-safe idle blank/wake (input swallowed), cartridge OSD + cold "
+          "boot at 320x240 Soft + 4x MSAA + diffraction")
     return 0
 
 
