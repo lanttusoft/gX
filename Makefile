@@ -56,6 +56,8 @@ check: all
 	python3 -m unittest discover -s scripts -p test_version_suggest.py
 	python3 -m unittest discover -s scripts -p test_gate_manifest.py
 	python3 -m unittest discover -s scripts -p test_model_import.py
+	#ai: console layout/focus gates must reject missing telemetry and broken controls.
+	python3 -m unittest discover -s scripts -p test_console_shell_check.py
 	@if [ ! -d ../proofs ]; then \
 	  echo "gX public source beta: full 'make check' needs the proof tree (../proofs)."; \
 	  echo "Use 'make check-fast' for the public source-beta CI."; \
@@ -216,6 +218,8 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_version_suggest.py
 	python3 -m unittest discover -s scripts -p test_gate_manifest.py
 	python3 -m unittest discover -s scripts -p test_model_import.py
+	#ai: display-free rejection controls for console layout and controller traversal.
+	python3 -m unittest discover -s scripts -p test_console_shell_check.py
 	@echo "== [gX fast] unit tests =="
 	./build/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/gX_build --test-only && exit 1)
 	@echo "== [gX fast] attribution =="
@@ -806,6 +810,7 @@ cartridge-check: all
 .PHONY: console-check
 console-check: all
 	@echo "== [gX CI] console shell =="
+	python3 -m unittest discover -s scripts -p test_console_shell_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_shell_check.py
 
 .PHONY: gfx-authoring-check lensflare-check

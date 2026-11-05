@@ -163,6 +163,16 @@ one `GUITRACE: element ...` line per live element with name, text, rect, and
 state flags), which is what keeps the gate calibration template-owned. The
 trace is inert unless the environment variable is set.
 
+<!-- //ai: focused console layout/interaction coverage and gate rejection tests. -->
+`make console-check` applies the same element-owned click calibration to the
+gX-240 shell. It checks shell/save-browser/cartridge-pause text fit, control
+bounds and overlap, plus D-pad focus order/wrap at 640x480, 1024x768 and
+1280x720. It also exercises held Start, slot-0 isolation, save-browser return
+and swallowing a cartridge click on idle wake. The display-free
+`scripts/test_console_shell_check.py` tests the gate's rejection paths;
+`make check-fast` and `make check` include them. See
+[`console_240p.md`](console_240p.md) for the remaining coverage limits.
+
 ## Theme gate
 
 `GX_GUI_THEME=<path>` overrides the active theme file for the run without
@@ -316,6 +326,13 @@ transparent behavior is intentional.
 GPU capture/timing launches set `GX_SKIP_TESTS=1` so rendering validation is
 independent from the headless `--test-only` gate. Direct `--test-only` runs
 always execute the full suite.
+
+<!-- //ai: optional final-boundary hook cleanup for deterministic console probes. -->
+`audit_common.run_scene(..., clean=True)` strips ambient audit hooks before
+applying the probe's overrides at the subprocess boundary. Passing a previously
+cleaned dictionary alone does not remove inherited hooks when an environment
+is rebuilt. Console probes opt into this cleanup, including GUI and scripted
+input hooks; other callers retain the existing default behavior.
 
 The scoreboard's completeness percentages are a curated coverage estimate,
 not implementation progress telemetry. Runtime costs compare the title-scene

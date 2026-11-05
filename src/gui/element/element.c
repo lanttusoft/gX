@@ -203,6 +203,7 @@ gX_I0 gX_GUI_Element_MakeClickable(gX_GUI_Element *element) {
 }
 
 //opencode: runtime ImGui tools share the screen, so their native GUI underlay is inert.
+//ai: south-face activation is routed through focused element state, like keyboard Enter/Space.
 static gX_I0 gX_GUI_Element_Update_State(gX_GUI_Element *element, gX_GUI_Canvas *canvas) {
     
     gX_GUI_Element_State *state = &element->state;
@@ -365,7 +366,9 @@ static gX_I0 gX_GUI_Element_Update_State(gX_GUI_Element *element, gX_GUI_Canvas 
         && gX_GUI_Canvas_Element_Eligible(canvas, element->id)) {
         if (input.keyboard.keys[gX_KEY_ENTER].state.PRESSED ||
             input.keyboard.keys[gX_KEY_KP_ENTER].state.PRESSED ||
-            input.keyboard.keys[gX_KEY_SPACE].state.PRESSED) {
+            input.keyboard.keys[gX_KEY_SPACE].state.PRESSED ||
+            (input.gamepad[0].available
+                && input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_RIGHT_FACE_DOWN].PRESSED)) {
             state->CLICKED_LEFT = true;
         }
     }

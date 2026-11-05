@@ -62,10 +62,10 @@ HOOK_PREFIXES = ("GX_T_", "GX_CAM_", "GX_FOG_", "GX_SNOW_", "GX_SNOWFALL_",
                  "GX_RAIN_", "GX_FOGSPRITE_", "GX_SPLAT_", "GX_MIRROR_",
                  "GX_PROBE_", "GX_EXTRA_", "GX_LAYOUT_", "GX_RAYMARCH_",
                  "GX_UI_", "GX_VIRTUAL_", "GX_PRESENT_", "GX_WINDOW_",
-                 "GX_CONSOLE_", "GX_RESIZE_")
+                 "GX_CONSOLE_", "GX_RESIZE_", "GX_GUI_")
 HOOK_KEYS = ("GX_SCREENSHOT_DIR", "GX_SHOT_FRAME", "GX_SHOT_FORCE", "GX_FRAMES",
               "GX_FIXED_DT", "GX_SKY_CHECK", "GX_GFX_RAYMARCH_DEPTH",
-              "GX_REDUCE_MOTION", "GX_GFX_BUFFER_AUDIT")
+              "GX_REDUCE_MOTION", "GX_GFX_BUFFER_AUDIT", "GX_AI_INPUT")
 
 
 def display():
@@ -161,15 +161,17 @@ def run_scene(scene, env=None, *, binary=None, width=MATRIX_WIDTH,
               height=MATRIX_HEIGHT,
               fps=MATRIX_FPS, frames=None, shot_frame=DEFAULT_SHOT_FRAME,
               screenshot_dir=None, timeout=DEFAULT_TIMEOUT, check=True,
-              extra_args=(), screenshot_after=False):
+              extra_args=(), screenshot_after=False, clean=False):
     """Run the engine once; capture a screenshot when screenshot_dir is given.
 
     binary overrides the default build for checks that use an isolated
     configuration (e.g. build/gl-level33/gX_build).
     screenshot_after=True switches to --ai-screenshot-after (required by the
     GX_BURST multi-frame capture path) instead of --ai-screenshot-final.
+    clean=True strips ambient audit hooks at the final subprocess boundary.
     """
-    environment = scene_env(env)
+    #ai: final opt-in cleanup must not reintroduce hooks stripped by the caller.
+    environment = scene_env(env, clean=clean)
     if frames is not None:
         environment["GX_FRAMES"] = str(frames)
     command = [str(binary or BIN), scene]

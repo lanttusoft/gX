@@ -383,6 +383,7 @@ static gX_I1 gX_GUI_Focus_AdjustSlider(gX_GUI_Element *element,
     return true;
 }
 
+//ai: the east face button closes the gX-240 pause overlay through the shared Back path.
 //opencode: an active ImGui tool owns native GUI input to avoid key and click-through.
 gX_I0 gX_GUI_Update(gX_I0) {
 
@@ -739,6 +740,10 @@ gX_I0 gX_GUI_Update(gX_I0) {
 
         //opencode: gamepad B button → cancel/back (Esc equivalent)
         if (gpCancel) {
+            gX_I1 consolePauseMenu = gui.state.SHOW_MENU
+                && (arguments.cartridgeY2K
+                    || (arguments.consoleShell
+                        && maindata.masterIndex != gX_SCENE_TITLE));
             if (gX_GUI_Dialog_IsOpen()) {
                 gX_GUI_Dialog_Close(false);
             } else if (maindata.exitRequested) {
@@ -747,6 +752,8 @@ gX_I0 gX_GUI_Update(gX_I0) {
             } else if (!gX_GUI_Handle_Back() && gui.state.SHOW_MENU) {
                 gui.state.SHOW_MENU = false;
                 gX_GUI_Focus_Clear();
+                if (consolePauseMenu)
+                    gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_INPUT: east menu=0");
             }
         }
 

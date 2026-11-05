@@ -714,7 +714,8 @@ static gX_I0 gX_Input_Update_Mouse(gX_I0) {
 //opencode: v0.2.0-pre9 — GX_AI_INPUT: timed virtual input for headless
 //   testing, layered on the virtInput override below. Never touches the
 //   real cursor; synthesizes mouse state after the OS poll.
-//   "1.0 click 180 354; 3.0 drag 500 980 640 980 300 CTRL+RX; 5.0 move 110 194 2000; 6.0 key 74"
+//ai: timed virtual gamepad actions support deterministic gX-240 controller gates.
+//   "1.0 click 180 354; 3.0 drag 500 980 640 980 300 CTRL+RX; 5.0 move 110 194 2000; 6.0 key 74; 7.0 pad 0 start"
 //   click/drag hold the button; move parks button-up (pre-position). Drag
 //   chords are posted through the existing ImGui bridge for editor gestures.
 typedef struct {
@@ -728,6 +729,9 @@ typedef struct {
     //opencode: Ctrl remains a distinct gesture modifier for transform snapping.
     gX_I1 modifierCtrl;
     gX_I1 keyShift;
+    gX_I1 isPad;
+    gX_I32 padIndex;
+    gX_I32 padButton;
     //opencode: synthesized button for camera gestures: 0=left, 1=right, 2=middle.
     gX_I32 button;
     gX_F32 x1, y1, x2, y2;
@@ -755,6 +759,32 @@ static struct {
     gX_F32 parkX, parkY;
     gX_I1 hasPark;
 } g_aiInput = {.activeIdx = -1, .t0Wall = -1.0};
+
+//ai: the script uses semantic face and D-pad names while the runtime stores raylib button slots.
+static gX_I32 gX_AI_Input_GamepadButton(const gX_I8 *name)
+{
+    if (strcmp((const char *)name, "south") == 0)
+        return gX_GAMEPAD_BUTTON_RIGHT_FACE_DOWN;
+    if (strcmp((const char *)name, "east") == 0)
+        return gX_GAMEPAD_BUTTON_RIGHT_FACE_RIGHT;
+    if (strcmp((const char *)name, "west") == 0)
+        return gX_GAMEPAD_BUTTON_RIGHT_FACE_LEFT;
+    if (strcmp((const char *)name, "north") == 0)
+        return gX_GAMEPAD_BUTTON_RIGHT_FACE_UP;
+    if (strcmp((const char *)name, "start") == 0)
+        return gX_GAMEPAD_BUTTON_MIDDLE_RIGHT;
+    if (strcmp((const char *)name, "select") == 0)
+        return gX_GAMEPAD_BUTTON_MIDDLE_LEFT;
+    if (strcmp((const char *)name, "dpad-up") == 0)
+        return gX_GAMEPAD_BUTTON_LEFT_FACE_UP;
+    if (strcmp((const char *)name, "dpad-right") == 0)
+        return gX_GAMEPAD_BUTTON_LEFT_FACE_RIGHT;
+    if (strcmp((const char *)name, "dpad-down") == 0)
+        return gX_GAMEPAD_BUTTON_LEFT_FACE_DOWN;
+    if (strcmp((const char *)name, "dpad-left") == 0)
+        return gX_GAMEPAD_BUTTON_LEFT_FACE_LEFT;
+    return -1;
+}
 
 static gX_I0 gX_AI_Input_Parse(const gX_I8 *src) {
     gX_I8 buf[512];
@@ -791,6 +821,20 @@ static gX_I0 gX_AI_Input_Parse(const gX_I8 *src) {
             if (sscanf(tok, "%*f %*s %d %d %d", &a->keyCode, &shift, &ctrl) < 1) continue;
             a->keyShift = shift != 0;
             a->keyCtrl = ctrl != 0;
+        } else if (strcmp(kind, "pad") == 0) {
+            gX_I8 buttonName[16] = {0};
+            gX_F32 durationMs = 150.0f;
+            gX_I32 fields = sscanf(tok, "%*f %*s %d %15s %f",
+                &a->padIndex, buttonName, &durationMs);
+            if (fields < 2 || a->padIndex < 0 || a->padIndex >= 8) continue;
+            a->padButton = gX_AI_Input_GamepadButton(buttonName);
+            if (a->padButton < 0 || a->padButton > gX_GAMEPAD_BUTTON_RIGHT_THUMB)
+                continue;
+            if (fields >= 3) {
+                if (durationMs <= 0.0f || durationMs > 60000.0f) continue;
+                a->dur = durationMs / 1000.0f;
+            }
+            a->isPad = true;
         } else if (strcmp(kind, "move") == 0) {
             //opencode: park the cursor button-up (pre-position before a
             //   press; clicks route by last-frame hover, so a teleport +
@@ -889,7 +933,7 @@ static gX_I0 gX_AI_Input_Apply(gX_I0) {
     if (idx >= 0) {
         const gX_AI_Action *a = &g_aiInput.actions[idx];
         //opencode: move parks button-up; click/drag hold the button.
-        down = a->isKey ? 0 : ((a->isDrag == 2) ? 0 : 1);
+        down = (a->isKey || a->isPad) ? 0 : ((a->isDrag == 2) ? 0 : 1);
         button = a->button;
         g_aiInput.activeIdx = idx;
         if (a->isKey) {
@@ -899,6 +943,8 @@ static gX_I0 gX_AI_Input_Apply(gX_I0) {
             g_aiInput.lastKeyCtrl = a->keyCtrl;
             if (idx != prevKeyAction) gX_Input_Virtual_SetKey(a->keyCode, a->keyShift);
             prevKeyAction = idx;
+        } else if (a->isPad) {
+            prevKeyAction = -1;
         } else {
             //opencode: scripts author in window px; engine owns game coords.
             gX_F32 wx, wy;
@@ -956,6 +1002,45 @@ static gX_I0 gX_AI_Input_Apply(gX_I0) {
     g_aiInput.lastButton = button;
 }
 
+//ai: apply scripted pad state after physical polling so the same GUI path handles test and hardware input.
+static gX_I0 gX_AI_Input_Apply_Gamepad(gX_I0)
+{
+    const gX_I8 *script = getenv("GX_AI_INPUT");
+    if (!script || !script[0] || !g_aiInput.parsed) return;
+    gX_I32 activeAction = -1;
+    for (gX_I32 i = 0; i < g_aiInput.count; i++) {
+        const gX_AI_Action *action = &g_aiInput.actions[i];
+        if (g_aiInput.clock >= action->t0
+            && g_aiInput.clock < action->t0 + action->dur) {
+            activeAction = i;
+            break;
+        }
+    }
+    static gX_I32 previousAction = -1;
+    static gX_I32 previousPad = -1;
+    static gX_I32 previousButton = -1;
+    if (previousAction >= 0 && previousAction != activeAction) {
+        gX_Input_State *state = &input.gamepad[previousPad].buttons[previousButton];
+        state->DOWN = false;
+        state->PRESSED = false;
+        state->RELEASED = true;
+        state->UP = true;
+        previousAction = -1;
+    }
+    if (activeAction < 0 || !g_aiInput.actions[activeAction].isPad) return;
+    gX_AI_Action *action = &g_aiInput.actions[activeAction];
+    gX_Input_Gamepad *pad = &input.gamepad[action->padIndex];
+    gX_Input_State *state = &pad->buttons[action->padButton];
+    pad->available = true;
+    state->DOWN = true;
+    state->PRESSED = previousAction != activeAction;
+    state->RELEASED = false;
+    state->UP = false;
+    previousAction = activeAction;
+    previousPad = action->padIndex;
+    previousButton = action->padButton;
+}
+
 //opencode: predicate for the rlImGui poll guard — while a script owns the
 //   cursor the backend must not re-post the real cursor (its poll runs after
 //   our bridge posts, so it would win every frame).
@@ -1000,6 +1085,13 @@ static gX_I0 gX_Input_Update_Binds(gX_I0) {
     for (gX_U32 i = 0; i < input.bindAmount; i++) {
         gX_Input_Bind_Process(&input.binds[i]);
     }
+}
+
+//ai: reserve the Start menu action for gX-240 cartridge playback.
+static gX_I1 gX_Input_ConsoleController_Enabled(gX_I0)
+{
+    return arguments.cartridgeY2K
+        || (arguments.consoleShell && maindata.masterIndex != gX_SCENE_TITLE);
 }
 
 //opencode: poll all connected gamepads and update button/axis state.
@@ -1065,6 +1157,7 @@ gX_I0 gX_Input_Update(gX_I0) {
     //opencode: discard cursor recentering so mode changes do not become camera look.
     if (input.cursorSwitched) input.mouse.coordDelta = (gX_F32v2){0.0f, 0.0f};
     gX_Input_Update_Gamepad();
+    gX_AI_Input_Apply_Gamepad();
     if (updateBinds) gX_Input_Update_Binds();
     GX_PROFILE_ZONE_END("input:devices");
 
@@ -1117,7 +1210,11 @@ gX_I0 gX_Input_Update(gX_I0) {
     //so AI virtual key presses work correctly
     if (input.keyboard.keys[gX_KEY_INSERT].state.PRESSED) {
         gX_Cursor_Toggle();
-    }    if (input.keyboard.keys[input.menuKey].state.PRESSED
+    }
+    gX_I1 consoleStartPressed = gX_Input_ConsoleController_Enabled()
+        && input.gamepad[0].available
+        && input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_MIDDLE_RIGHT].PRESSED;
+    if ((input.keyboard.keys[input.menuKey].state.PRESSED || consoleStartPressed)
         && !gX_Tools_RuntimeActive()) {
         //opencode: ignore ESC during scene transition (fade in progress, canvases may not exist)
         if (gui.directdraw.fadeActive || maindata.masterIndexSwitch) return;
@@ -1140,6 +1237,10 @@ gX_I0 gX_Input_Update(gX_I0) {
                 gui.state.SHOW_MENU = true;
             }
         }
+    }
+    if (consoleStartPressed && !gX_Tools_RuntimeActive()) {
+        gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_INPUT: start menu=%d",
+            gui.state.SHOW_MENU ? 1 : 0);
     }
     if (input.keyboard.keys[input.screenshotKey].state.PRESSED) {
         maindata.screenshot = true;

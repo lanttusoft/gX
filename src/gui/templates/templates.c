@@ -241,6 +241,18 @@ gX_I0 gX_GUI_Template_SDFT(gX_I32 canvasindex) {
 //   are dropped per the pivot (engine-only). Consumes the gui.style.escape.*
 //   tokens that the theme schema already carried (previously unused) and
 //   the gui.ping blur machinery.
+//ai: the console pause panel fits a centered native 560x560 area; the regular
+//   pause template and editor surfaces retain their original grid geometry.
+static gX_I0 console_pause_rect(gX_GUI_Builder *b,
+    gX_F32 x, gX_F32 y, gX_F32 width, gX_F32 height)
+{
+    gX_F32 Scale = fminf((gX_F32)b->width / 1024.0f,
+        (gX_F32)b->height / 768.0f);
+    gX_GUI_Builder_Rect(b, ((gX_F32)b->width - 560.0f * Scale) * 0.5f + x * Scale,
+        ((gX_F32)b->height - 560.0f * Scale) * 0.5f + y * Scale,
+        width * Scale, height * Scale);
+}
+
 //ai: cartridge playback specializes this canvas as the compact gX-240 menu.
 gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex);
 gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
@@ -248,6 +260,8 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     gX_GUI_Builder b = gX_GUI_Builder_New(canvas, "EscapeMenu", "escape menu", gX_GUI_TEMPLATE_ESCAPEMENU);
     gX_I1 ConsoleMenu = arguments.cartridgeY2K
         || (arguments.consoleShell && maindata.masterIndex != gX_SCENE_TITLE);
+    gX_F32 ConsoleTextScale = fminf(1.0f,
+        (gX_F32)b.height * 4.0f / (3.0f * (gX_F32)b.width));
     if (ConsoleMenu)
         gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_MENU: active");
 
@@ -278,6 +292,7 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     //menu panel
     gX_GUI_Builder_Element_Begin(&b);
         gX_GUI_Builder_RectGrid(&b, 1.5f, 1.5f, 5.0f, 5.5f);
+        if (ConsoleMenu) console_pause_rect(&b, 0, 0, 560, 560);
         gX_GUI_Builder_Color(&b, gui.style.escape.panelBg.r, gui.style.escape.panelBg.g,
             gui.style.escape.panelBg.b, gui.style.escape.panelBg.a);
         b.currentElement->cornerRadius = gui.style.cornerRadius;
@@ -292,12 +307,19 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     //panel title
     gX_GUI_Builder_Element_Begin(&b);
         gX_GUI_Builder_RectGrid(&b, 3.25f, 1.6f, 1.5f, 0.5f);
+        if (ConsoleMenu) console_pause_rect(&b, 24, 20, 440, 52);
         gX_GUI_Builder_Color(&b, gui.style.escape.titleBarBg.r, gui.style.escape.titleBarBg.g,
             gui.style.escape.titleBarBg.b, gui.style.escape.titleBarBg.a);
         gX_GUI_Builder_Text_Begin(&b);
             gX_GUI_Builder_Text_Set(&b,
                 ConsoleMenu ? "gX-240" : "Pause");
             gX_GUI_Builder_Text_Color(&b, gui.style.escape.titleText);
+            if (ConsoleMenu)
+            {
+                gX_GUI_Builder_Text_FontSize(&b, 22.0f * ConsoleTextScale);
+                gX_GUI_Builder_Text_CenterX(&b);
+                gX_GUI_Builder_Text_CenterY(&b);
+            }
         gX_GUI_Builder_Text_End(&b);
         gX_GUI_Builder_Class(&b, "pause-title");
     gX_GUI_Builder_Element_End(&b);
@@ -307,6 +329,8 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     #define GX_PAUSE_BTN(label, y, clickFn, arg) \
         gX_GUI_Builder_Element_Begin(&b); \
             gX_GUI_Builder_RectGrid(&b, 2.2f, y, 3.6f, 0.50f); \
+            if (ConsoleMenu) console_pause_rect(&b, 24, \
+                100.0f + ((y) - 2.35f) * (68.0f / 0.65f), 512, 56); \
             gX_GUI_Builder_Color(&b, gui.style.escape.buttonBg.r, gui.style.escape.buttonBg.g, \
                 gui.style.escape.buttonBg.b, gui.style.escape.buttonBg.a); \
             gX_GUI_Element_Template_Button_Standard(b.currentElement); \
@@ -329,6 +353,11 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
                 gX_GUI_Builder_Text_Set(&b, label); \
                 gX_GUI_Builder_Text_CenterX(&b); \
                 if (b.curText) b.curText->autoShrink = true; \
+                if (ConsoleMenu) \
+                { \
+                    gX_GUI_Builder_Text_FontSize(&b, 20.0f * ConsoleTextScale); \
+                    gX_GUI_Builder_Text_CenterY(&b); \
+                } \
             gX_GUI_Builder_Text_End(&b); \
             gX_GUI_OnClick(b.currentElement, clickFn, (gX_I0*)(gX_U64)(uintptr_t)arg); \
         gX_GUI_Builder_Element_End(&b)
@@ -374,6 +403,7 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     //close button (top-right of panel)
     gX_GUI_Builder_Element_Begin(&b);
         gX_GUI_Builder_RectGrid(&b, 6.1f, 1.6f, 0.4f, 0.4f);
+        if (ConsoleMenu) console_pause_rect(&b, 492, 20, 44, 44);
         gX_GUI_Builder_Color(&b, gui.style.escape.closeBg.r, gui.style.escape.closeBg.g,
             gui.style.escape.closeBg.b, gui.style.escape.closeBg.a);
         gX_GUI_Element_Template_Button_Standard(b.currentElement);
@@ -385,6 +415,11 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
             //opencode: close glyph uses widget scale — the 32px default was
             //   taller than the 0.4-grid button (layout pass).
             if (b.curText) { b.curText->fontSize = gui.style.smallSize; b.curText->autoShrink = true; }
+            if (ConsoleMenu)
+            {
+                gX_GUI_Builder_Text_FontSize(&b, 18.0f * ConsoleTextScale);
+                gX_GUI_Builder_Text_CenterY(&b);
+            }
         gX_GUI_Builder_Text_End(&b);
         gX_GUI_OnClick(b.currentElement, gX_Widget_OnClick_CloseEscapeMenu, 0);
     gX_GUI_Builder_Element_End(&b);
@@ -393,8 +428,8 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     //ai: hint chip — a quiet dark backing keeps the light hint legible on the
     //   Aero glass panel (the bare panel can composite light scene pixels).
     gX_GUI_Builder_Element_Begin(&b);
-        gX_GUI_Builder_RectGrid(&b, ConsoleMenu ? 1.6f : 2.65f, 6.30f,
-            ConsoleMenu ? 4.8f : 2.7f, 0.55f);
+        gX_GUI_Builder_RectGrid(&b, 2.65f, 6.30f, 2.7f, 0.55f);
+        if (ConsoleMenu) console_pause_rect(&b, 24, 456, 512, 76);
         gX_GUI_Builder_Color(&b, 8, 10, 18, 250);
         b.currentElement->cornerRadius = gui.style.cornerRadius;
     gX_GUI_Builder_Element_End(&b);
@@ -402,16 +437,21 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
         //opencode: the hint was 1.5 grid units wide for a 254px label (layout
         //   pass); widen the box and keep a shrink guard for themes with
         //   wider type.
-        gX_GUI_Builder_RectGrid(&b, ConsoleMenu ? 1.7f : 2.8f, 6.35f,
-            ConsoleMenu ? 4.6f : 2.4f, 0.4f);
+        gX_GUI_Builder_RectGrid(&b, 2.8f, 6.35f, 2.4f, 0.4f);
+        if (ConsoleMenu) console_pause_rect(&b, 36, 468, 488, 52);
         gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
         b.currentElement->stateRendering.RECT_NO_DRAW = true;
         gX_GUI_Builder_Text_Begin(&b);
             gX_GUI_Builder_Text_Set(&b,
-                ConsoleMenu ? "ESC RESUME  F5 SAVE  F8 LOAD" : "ESC to close");
+                ConsoleMenu ? "START / ESC RESUME\nSOUTH SELECT  EAST BACK" : "ESC to close");
             gX_GUI_Builder_Text_Color(&b, gui.style.escape.hintText);
             gX_GUI_Builder_Text_CenterX(&b);
             if (b.curText) b.curText->autoShrink = true;
+            if (ConsoleMenu)
+            {
+                gX_GUI_Builder_Text_FontSize(&b, 16.0f * ConsoleTextScale);
+                gX_GUI_Builder_Text_CenterY(&b);
+            }
         gX_GUI_Builder_Text_End(&b);
         gX_GUI_Builder_Class(&b, "pause-hint");
     gX_GUI_Builder_Element_End(&b);

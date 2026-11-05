@@ -157,11 +157,18 @@ bloom/HDR and is not forced by Console Max.
 six/eight-ray stars, threshold/midtone rejection and the chromatic centroid
 order. It runs as part of `make check`.
 
-The console shell boot view, the Y2K cartridge, save states, CRT-safe idle
-blanking, boot OSD and an ESC system menu now exist. Still follow-ups: a
-compact 320x240 native GUI, supersampled render/output split, dither and CRT
-filters, and more cartridge profiles. The shell keeps the native GUI at window
-resolution; only the scene is 240p.
+<!-- //ai: backlog reconciled against the generic rendering experiments. -->
+The console shell boot view, Y2K cartridge, save states, CRT-safe idle blanking,
+boot OSD and ESC system menu now exist. The native GUI remains window-sized;
+only the scene is 320x240. The current render-then-upscale path is not a
+supersampled render/output split.
+
+Generic deterministic dither, palette quantization and interlace experiments
+already have opt-in hooks and gates in `docs/rendering_backlog.md`:
+`make dither-check`, `make palette-check` and `make interlace-check`. They are
+not yet wired as a gX-240/PRISM-1 profile. The existing EGA16/RGB332 modes are
+not 16-bit output quantization, and interlace patterns do not provide a full
+CRT mask or scanline treatment.
 
 ## CRT notes
 
@@ -191,8 +198,11 @@ only the scene render target is 320x240.
 - **Console 240p — Full** (experimental): all effects + Ultra quality; use
   only for scenes authored around SSR/TAA/DOF/volumetrics. `GX_CONSOLE_MAX_FULL=1`
   for demos/gates.
-- **Console 240p — Dither/CRT** (later): 16-bit quantization, Bayer dither,
-  scanlines/CRT mask.
+- **Console 240p — Dither/CRT** (later): expose the existing deterministic
+  dither/interlace experiments through the console profile, then define the
+  PRISM-1 output format and any composite/scanline/phosphor-mask treatment.
+  The generic palette modes are reduced palettes, not 16-bit output. Keep the
+  effects opt-in and independently testable.
 - **gX-240 console shell** — `--console-shell` opens the boot view: cartridge
   select (Y2K CGI, RAY-1, particle sandbox, empty slot), video output
   (320x240 Soft/Sharp, Native) and save-state slots. Booting Y2K from the
@@ -209,7 +219,17 @@ only the scene render target is 320x240.
   during cartridge playback. Resume/ESC closes it; Save Slot 1 and Load Slot 1
   mirror F5/F8, a successful save refreshes the slot label in place, Video
   cycles Soft → Sharp → Native, and Exit to Shell returns to the gX-240 boot
-  view. Keyboard/gamepad focus navigation is supported.
+  view. Controller slot 0 maps D-pad to navigate, south face to confirm, east
+  face to go back, and Start to open/close the menu during playback. The shell
+  view and overlay use the shared keyboard/gamepad focus navigation.
+- <!-- //ai: compact native shell, save browser and cartridge pause layout. -->
+  **Compact native UI** — the shell groups cartridges and video/save controls
+  in two columns inside a centered, aspect-fitted 720x560 panel (reference
+  window 1024x768). The cartridge pause panel uses 560x560. Both keep native
+  GUI coordinates and scale to fit 4:3 or widescreen windows, independently of
+  the 320x240 scene target. Save-slot descriptions are labels, not dead focus
+  stops; LOAD has its own non-overlapping control. Save-browser BACK/East
+  returns to the console shell. Native editor/tool panels are unchanged.
 - **Save states** — three slots in `save/console_slot_N.json` hold the
   cartridge id, video profile and orbit camera. While a cartridge runs, **F5**
   saves slot 1 and **F8** loads it; the shell's Save states view lists the
@@ -248,15 +268,40 @@ only the scene render target is 320x240.
   target (`make cartridge-check`).
 - Console shell: boot-view trace, Sharp video route (320x240 filter 0),
   save-slot route, CRT-safe idle blank/wake with the wake input swallowed,
-  the cartridge OSD banner, F5/F8 save-load with camera restore, the shell
+  the cartridge OSD banner, F5/F8 save-load with nondefault camera restore
+  after a camera cut (plus a no-load control), the shell
   LOAD slot route, and a cartridge boot from the shell that cold-boots GFX
   and reaches the 320x240 Soft/4x MSAA/diffraction profile. The ESC menu gate
-  covers save/load, video cycling and Exit to Shell
+  covers save/load, video cycling, Exit to Shell and the controller
+  Start/D-pad/south/east mapping, including held-Start edge behavior and
+  nonprimary-pad isolation. Shell, populated saves and pause layouts are
+  checked at 640x480, 1024x768 and 1280x720: complete element maps, text fit,
+  usable control sizes, no overlapping labels/controls, and four-direction
+  controller focus traversal/wrap. Empty-save focus and save-browser return
+  routes are covered too. Clicks resolve from the engine's current element
+  map rather than fixed pixel coordinates; the wake test clicks a cartridge
+  while blanked. Every capture rejects engine errors and writes its log beside
+  the screenshot under the scratch directory
   (`make console-check`).
+  Ten display-free gate tests reject missing/partial telemetry, stale or
+  ambiguous click targets, clipped/tiny/off-screen/overlapping controls,
+  missing or incorrectly ordered controller focus events, and ambient input/UI
+  hooks leaking back into the subprocess environment. They also run
+  in `make check-fast` and `make check`. This is focused console coverage, not
+  physical-controller, CRT, every-theme or arbitrary-window-size validation.
 - No UI clipping with native tool panels at window resolution.
 
 ## Follow-up
 
-- OSD: `320x240 · SOFT · 60Hz`, save state, frame advance, fast-forward.
-- Supersampled render/output split.
-- Dither/CRT/film-grain variants.
+- OSD status such as `320x240 · SOFT · 60Hz` and save-slot state, plus
+  frame-advance/fast-forward controls with defined simulation timing semantics.
+- Supersampled render/output split, separately specified from the current
+  320x240 scene render followed by window upscale.
+- PRISM-1 presentation work: choose 16-bit quantization semantics and validate
+  scanline/composite/phosphor-mask variants. Reuse the generic dither,
+  quantization and interlace hooks where appropriate; keep each effect
+  deterministic, opt-in and independently gated. Film grain remains an
+  optional experiment, not a decided console requirement.
+- Complete or add bootable cartridge profiles beyond the Y2K path.
+- Validate on a physical CRT across supported modes, checking monitor limits
+  before testing.

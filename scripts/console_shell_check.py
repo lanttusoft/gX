@@ -7,14 +7,19 @@
 #   save-slot routes, then launches the Y2K cartridge from the boot menu and
 #   pins the cold-boot presentation/quality chain.
 
+import json
 import re
 import subprocess
 import sys
+import tempfile
+from itertools import combinations
 from pathlib import Path
 
 import numpy as np
 
 import audit_common as audit
+import gui_interaction_check as interaction
+import gui_layout_check as layout
 
 
 SCRATCH = audit.SCRATCH / "console_shell_check"
@@ -34,27 +39,123 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+#ai: inspect the latest build only, require complete draw-truth telemetry, and
+#   resolve clicks from labels so a layout change cannot silently miscalibrate input.
+def elements(log, canvas=0):
+    builds = [match for match in interaction.BUILD_RE.finditer(log)
+              if int(match.group(1)) == canvas]
+    require(builds, f"canvas {canvas}: build trace missing")
+    rows = []
+    for match in layout.ELEMENT_RE.finditer(log, builds[-1].end()):
+        if int(match.group(1)) != canvas:
+            continue
+        rows.append({
+            "canvas": canvas, "element": int(match.group(2)),
+            "name": match.group(3), "text": match.group(4),
+            "rect": tuple(float(match.group(i)) for i in range(5, 9)),
+            "visible": int(match.group(9)), "disabled": int(match.group(10)),
+            "clickable": int(match.group(11)), "focusable": int(match.group(12)),
+            "measure": (float(match.group(13)), float(match.group(14))),
+            "truncated": int(match.group(16)), "overflow": int(match.group(17)),
+            "shrink": float(match.group(18)),
+        })
+    raw_rows = [row for row in interaction.parse_elements(log[builds[-1].end():])
+                if row["canvas"] == canvas]
+    require(rows and len(rows) == len(raw_rows)
+        and len({row["element"] for row in rows}) == len(rows)
+        and all(0 <= row["element"] < int(builds[-1].group(4)) for row in rows),
+        f"canvas {canvas}: incomplete element/text-fit trace")
+    return rows
+
+
+def target(rows, text):
+    found = [row for row in rows if row["text"] == text and row["visible"]
+             and not row["disabled"] and row["clickable"]]
+    require(len(found) == 1, f"expected one active '{text}' target, got {len(found)}")
+    return found[0]
+
+
+def assert_layout(log, width, height, expected_focus, canvas=0):
+    rows = elements(log, canvas)
+    visible = [row for row in rows if row["visible"]]
+    focus = [row for row in visible if row["focusable"] and not row["disabled"]]
+    require([row["text"] for row in focus] == expected_focus,
+        f"{width}x{height} canvas {canvas}: missing/extra focus targets: "
+        f"{[row['text'] for row in focus]}")
+    labels = [row for row in visible if row["text"]]
+    for row in labels:
+        x, y, w, h = row["rect"]
+        require(w > 0 and h > 0 and min(x, y) >= -1
+            and x + w <= width + 1 and y + h <= height + 1,
+            f"{width}x{height}: off-screen '{row['text']}' {row['rect']}")
+        require(not row["truncated"] and not row["overflow"],
+            f"{width}x{height}: text clips in '{row['text']}'")
+        require(row["measure"][0] > 0 and row["measure"][1] > 0,
+            f"{width}x{height}: missing text bounds for '{row['text']}'")
+        if row in focus:
+            require(row["clickable"] and row["shrink"] >= 0.85
+                and row["measure"][1] >= 12 and h >= 26,
+                f"{width}x{height}: unreadable/inert control '{row['text']}'")
+    for left, right in combinations(labels, 2):
+        x, y, w, h = left["rect"]
+        rx, ry, rw, rh = right["rect"]
+        require(min(x + w, rx + rw) - max(x, rx) <= 1
+            or min(y + h, ry + rh) - max(y, ry) <= 1,
+            f"{width}x{height}: overlapping labels/controls "
+            f"'{left['text']}' and '{right['text']}'")
+    return rows
+
+
+def focus_actions(count, start=1.0):
+    directions = ["down"] * (count + 1) + ["up", "left", "right"]
+    return ";".join(f"{start + index * 0.25:.2f} pad 0 dpad-{direction}"
+                    for index, direction in enumerate(directions)), directions
+
+
+def assert_focus_walk(log, rows, directions, canvas=0):
+    ids = [row["element"] for row in rows if row["visible"]
+           and row["focusable"] and not row["disabled"]]
+    walked = [event["element"] for event in interaction.parse_events(log)
+              if event["type"] == "focus" and event["canvas"] == canvas]
+    require(len(walked) >= len(directions), "controller focus events missing")
+    walked = walked[-len(directions):]
+    require(set(walked) == set(ids), "controller skipped a target or focused an inert row")
+    for previous, current, direction in zip(walked, walked[1:], directions[1:]):
+        step = -1 if direction in ("up", "left") else 1
+        require(current == ids[(ids.index(previous) + step) % len(ids)],
+            f"controller {direction} focus order/wrap is wrong")
+
+
 def capture(tag, actions, frames, shot_frame, out, extra=None,
-        scene="--console-shell"):
+        scene="--console-shell", width=1024, height=768):
     directory = out / tag
     directory.mkdir(parents=True, exist_ok=True)
     for old in directory.glob("gXss_*.png"):
         old.unlink()
     environment = {
         "GX_FIXED_DT": "%.12f" % (1.0 / 60.0),
+        "GX_GUI_TRACE": "1", "GX_SKIP_TESTS": "1",
+        "GX_EDITOR_DEFAULT_SCENE": "0", "GX_CARTRIDGE_DIFFRACTION": "1",
+        "GX_AI_INPUT": actions or "",
+        "GX_CONSOLE_SAVE_DIR": str(out / "empty_slots"),
     }
     if extra:
         environment.update(extra)
-    if actions:
-        environment["GX_AI_INPUT"] = actions
     result = audit.run_scene(
-        scene, environment, width=1024, height=768,
+        scene, environment, width=width, height=height,
         frames=frames, shot_frame=shot_frame, screenshot_dir=directory,
-        timeout=180, check=True)
+        timeout=180, check=False, clean=True)
     log = audit.strip_ansi(result.stdout or "")
+    (directory / "run.log").write_text(log, encoding="utf-8")
+    require(result.returncode == 0, f"{tag}: exited {result.returncode}; {directory}/run.log")
+    require(not re.search(r"\[\s*ERROR\s*\]", log),
+        f"{tag}: error in {directory}/run.log")
     shot = audit.newest_shot(directory)
     require(shot is not None, f"{tag}: no screenshot")
-    return audit.load_rgb(shot), log
+    image = audit.load_rgb(shot)
+    require(image.shape[:2] == (height, width),
+        f"{tag}: capture size {image.shape[:2]}, expected {height}x{width}")
+    return image, log
 
 
 def image_stats(image):
@@ -66,8 +167,8 @@ def main():
     if not audit.BIN.is_file():
         print("CONSOLE_SHELL: missing binary", file=sys.stderr)
         return 1
-    out = SCRATCH
-    out.mkdir(parents=True, exist_ok=True)
+    SCRATCH.mkdir(parents=True, exist_ok=True)
+    out = Path(tempfile.mkdtemp(prefix="run_", dir=SCRATCH))
     try:
         help_text = subprocess.run([str(audit.BIN), "--help"], text=True,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout
@@ -76,25 +177,44 @@ def main():
 
         with audit.settings_preserved():
             shell, shell_log = capture("shell", None, 80, 60, out)
+            shell_rows = elements(shell_log)
+            sharp_button = target(shell_rows, "320x240 SHARP")
+            saves_button = target(shell_rows, "SAVE STATES")
+            boot_button = target(shell_rows, "Y2K CGI DEMO")
             sharp, sharp_log = capture("sharp",
-                "2.0 move 512 518 200;2.5 click 512 518", 220, 200, out)
+                interaction.click_actions((2.0, sharp_button)), 220, 200, out)
             saves, save_log = capture("saves",
-                "2.0 move 512 584 200;2.5 click 512 584", 220, 200, out)
+                interaction.click_actions((2.0, saves_button)), 220, 200, out)
             boot, boot_log = capture("boot",
-                "2.0 move 512 184 200;2.5 click 512 184", 300, 260, out)
+                interaction.click_actions((2.0, boot_button)), 300, 260, out)
             idle, idle_log = capture("idle", None, 460, 440, out,
                 extra={"GX_CONSOLE_IDLE_SECONDS": "2"})
-            woke, wake_log = capture("wake", "7.5 move 100 700 200",
+            wake_x, wake_y = interaction.center(boot_button)
+            woke, wake_log = capture("wake", f"7.5 click {wake_x} {wake_y}",
                 540, 520, out, extra={"GX_CONSOLE_IDLE_SECONDS": "2"})
             save_dir = out / "save_states"
             save_dir.mkdir(parents=True, exist_ok=True)
             for stale in save_dir.glob("console_slot_*.json"):
                 stale.unlink()
+            camera_env = {"GX_CAM_YAW": "-47", "GX_CAM_PITCH": "24", "GX_CAM_DIST": "12",
+                "GX_CAM_CUT_FRAME": "150", "GX_CAM_CUT_YAW": "70",
+                "GX_CAM_CUT_PITCH": "9", "GX_CAM_CUT_DIST": "6",
+                "GX_NO_SETTINGS_SAVE": "0"}
             _saved, state_save_log = capture("save_state",
-                "2.0 key 294;3.0 key 297", 260, 240, out,
-                extra={"GX_CONSOLE_SAVE_DIR": str(save_dir),
-                    "GX_NO_SETTINGS_SAVE": "0"},
+                "2.0 key 294;3.0 key 297;3.5 key 294", 280, 260, out,
+                extra={**camera_env, "GX_CONSOLE_SAVE_DIR": str(save_dir)},
                 scene="--cartridge-y2k")
+            restored = json.loads((save_dir / "console_slot_1.json").read_text())["camera"]
+            require([restored[key] for key in ("yaw", "pitch", "dist")]
+                == [-47.0, 24.0, 12.0], "F8 did not restore the saved nondefault camera")
+            control_dir = out / "camera_no_load"
+            _control, _control_log = capture("camera_no_load",
+                "2.0 key 294;3.5 key 294", 280, 260, out,
+                extra={**camera_env, "GX_CONSOLE_SAVE_DIR": str(control_dir)},
+                scene="--cartridge-y2k")
+            changed = json.loads((control_dir / "console_slot_1.json").read_text())["camera"]
+            require([changed[key] for key in ("yaw", "pitch", "dist")]
+                == [23.0, 9.0, 6.0], "camera restore control did not change the orbit")
             _menu_saved, menu_save_log = capture("menu_save",
                 "1.0 key 256;2.0 key 264;2.5 key 257", 220, 200, out,
                 extra={"GX_CONSOLE_SAVE_DIR": str(save_dir),
@@ -119,10 +239,70 @@ def main():
                 "2.75 key 264;3.25 key 257", 300, 280, out,
                 extra={"GX_NO_SETTINGS_SAVE": "1"},
                 scene="--cartridge-y2k")
-            loaded, load_log = capture("load_state",
-                "2.5 move 512 584 200;3.0 click 512 584;"
-                "4.0 move 742 216 200;4.5 click 742 216", 320, 300, out,
+            controller_save_dir = out / "controller_save_states"
+            controller_save_dir.mkdir(parents=True, exist_ok=True)
+            for stale in controller_save_dir.glob("console_slot_*.json"):
+                stale.unlink()
+            _controller_menu, controller_menu_log = capture(
+                "controller_menu",
+                "1.0 pad 0 start 650;2.0 pad 0 dpad-down;2.5 pad 0 south;"
+                "3.5 pad 0 start;4.5 pad 0 start;5.0 pad 0 east",
+                430, 400, out,
+                extra={"GX_CONSOLE_SAVE_DIR": str(controller_save_dir),
+                    "GX_NO_SETTINGS_SAVE": "0"},
+                scene="--cartridge-y2k")
+            _populated, populated_log = capture("populated_saves",
+                interaction.click_actions((1.0, saves_button)), 150, 130, out,
                 extra={"GX_CONSOLE_SAVE_DIR": str(save_dir)})
+            load_button = target(elements(populated_log), "LOAD")
+            loaded, load_log = capture("load_state",
+                interaction.click_actions((1.0, saves_button), (2.5, load_button)),
+                260, 240, out,
+                extra={"GX_CONSOLE_SAVE_DIR": str(save_dir)})
+            _wrong_pad, wrong_pad_log = capture("nonprimary_pad",
+                "1.0 pad 1 start 650;2.0 pad 1 south;2.5 pad 1 east",
+                210, 190, out, scene="--cartridge-y2k")
+            require("CONSOLE_INPUT:" not in wrong_pad_log
+                and "CONSOLE_MENU: resume" not in wrong_pad_log,
+                "nonprimary gamepad activated the console menu")
+
+            shell_focus = ["Y2K CGI DEMO", "RAY-1 TECH DEMO", "PARTICLE SANDBOX",
+                "320x240 SOFT", "320x240 SHARP", "NATIVE", "SAVE STATES", "BACK"]
+            assert_layout(shell_log, 1024, 768, shell_focus)
+            assert_layout(save_log, 1024, 768, ["BACK"])
+            for width, height in ((640, 480), (1024, 768), (1280, 720)):
+                for view, focus, canvas, scene_flag, extra in (
+                    ("shell", shell_focus, 0, "--console-shell", {}),
+                    ("saves", ["LOAD", "BACK"], 0, "--console-shell",
+                        {"GX_GUI_TITLE_VIEW": "1", "GX_CONSOLE_SAVE_DIR": str(save_dir)}),
+                    ("pause", ["Resume", "Save Slot 1 (F5)", "Load Slot 1",
+                        "Video: Soft", "Exit to Shell", "X"], 5, "--cartridge-y2k",
+                        {"GX_CONSOLE_SAVE_DIR": str(save_dir)}),
+                ):
+                    script, directions = focus_actions(len(focus),
+                        start=2.0 if view == "pause" else 1.0)
+                    if view == "pause":
+                        script = "1.0 pad 0 start;" + script
+                    _image, log = capture(f"layout_{view}_{width}x{height}",
+                        script, 360, 340, out, scene=scene_flag, extra=extra,
+                        width=width, height=height)
+                    rows = assert_layout(log, width, height, focus, canvas)
+                    assert_focus_walk(log, rows, directions, canvas)
+            back_script = interaction.click_actions((1.0, saves_button),
+                (2.5, target(elements(populated_log), "BACK")))
+            _back, back_log = capture("saves_back", back_script, 240, 220, out,
+                extra={"GX_CONSOLE_SAVE_DIR": str(save_dir)})
+            require(interaction.ordered(interaction.parse_events(back_log), [
+                {"type": "title-view", "canvas": 1},
+                {"type": "title-view", "canvas": 6},
+            ]), "save browser BACK did not return to the console shell")
+            _east, east_log = capture("saves_east",
+                interaction.click_actions((1.0, saves_button)) + ";2.5 pad 0 east",
+                240, 220, out)
+            require(interaction.ordered(interaction.parse_events(east_log), [
+                {"type": "title-view", "canvas": 1},
+                {"type": "title-view", "canvas": 6},
+            ]), "save browser East did not return to the console shell")
 
         require(VIEW_RE.search(shell_log), "shell boot trace missing")
         require("gX_Scene: switched to masterIndex 1 [TITLE]" in shell_log,
@@ -134,9 +314,10 @@ def main():
 
         video = VIDEO_RE.findall(sharp_log)
         require(video, "video profile trace missing")
-        mode, _ww, _wh, rw, rh, filter_value = video[-1]
+        mode, ww, wh, rw, rh, filter_value = video[-1]
         require(mode == "sharp", f"video mode {mode}")
-        require((rw, rh) == ("320", "240") and filter_value == "0",
+        require((ww, wh) == ("1024", "768") and (rw, rh) == ("320", "240")
+            and filter_value == "0",
             f"sharp profile {rw}x{rh} filter={filter_value}")
         _sharp_mean, sharp_std = image_stats(sharp)
         require(sharp_std > 12.0, "video route lost the shell frame")
@@ -168,9 +349,6 @@ def main():
         require(any(width == "320" and height == "240" and samples == "4"
             for width, height, samples in msaa),
             f"cartridge 320x240 4x MSAA missing: {msaa}")
-        require("[ ERROR ]" not in shell_log + sharp_log + save_log + boot_log,
-            "console shell log contains errors")
-
         require("CONSOLE_IDLE: blank" in idle_log,
             "idle timeout did not blank the shell")
         idle_mean, idle_std = image_stats(idle)
@@ -190,7 +368,7 @@ def main():
         require((save_dir / "console_slot_1.json").is_file(),
             "save slot file missing")
         require("CONSOLE_STATE: load slot=1 cartridge=y2k "
-            "camera=-32.0/19.0/14.5" in state_save_log,
+            "camera=-47.0/24.0/12.0" in state_save_log,
             "cartridge F8 load/camera restore failed")
         require("CONSOLE_MENU: active" in menu_save_log
             and "CONSOLE_MENU: save slot=1 result=0" in menu_save_log,
@@ -208,6 +386,14 @@ def main():
         exit_mean, exit_std = image_stats(menu_exit)
         require(exit_mean > 5.0 and exit_std > 8.0,
             f"system menu exit did not show the shell ({exit_mean:.1f}/{exit_std:.1f})")
+        require(re.findall(r"CONSOLE_INPUT: start menu=(\d)", controller_menu_log)
+            == ["1", "0", "1"],
+            "gamepad Start did not toggle exactly once per press")
+        require(controller_menu_log.count("CONSOLE_MENU: save slot=1 result=0") == 1
+            and (controller_save_dir / "console_slot_1.json").is_file(),
+            "gamepad D-pad/South did not navigate and activate Save Slot 1")
+        require("CONSOLE_INPUT: east menu=0" in controller_menu_log,
+            "gamepad East did not back out of the system menu")
         require("CONSOLE: load_slot=1" in load_log
             and "CONSOLE_STATE: load slot=1 cartridge=y2k" in load_log,
             "shell LOAD slot route failed")
@@ -225,13 +411,15 @@ def main():
             - shell.astype(np.float32)).mean())
         require(delta > 8.0,
             f"cartridge boot did not replace the shell ({delta:.2f})")
-    except (OSError, RuntimeError, ValueError) as error:
+    except (OSError, RuntimeError, ValueError, KeyError, subprocess.SubprocessError) as error:
         print(f"CONSOLE_SHELL: FAIL — {error}", file=sys.stderr)
         return 1
     print("CONSOLE_SHELL: PASS boot view, sharp video route, save slots, "
           "CRT-safe idle blank/wake (input swallowed), cartridge OSD + cold "
           "boot at 320x240 Soft + 4x MSAA + diffraction, save/load slots, "
-          "ESC system menu save/load/video/exit")
+          "ESC system menu save/load/video/exit, gamepad Start/D-pad/South/East map; "
+          "shell/saves/pause layout + focus at 640x480, 1024x768, 1280x720")
+    print(f"CONSOLE_SHELL: evidence {out}")
     return 0
 
 
