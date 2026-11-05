@@ -62,7 +62,10 @@ A cartridge is a gX scene preset plus an asset set and a settings profile:
   shadows through the ray path.
 - **Particle/physics sandbox** — uses the fast CPU and cheap low-res overdraw.
 - **Console shell** — boot menu, cartridge select, video options, save states,
-  controller mapping, emulator-style OSD.
+  controller mapping, emulator-style OSD. First slice: `--console-shell` opens
+  the gX-240 boot view (cartridge slot, video output, save states); the Y2K
+  card cold-boots the cartridge at 320x240 Soft with Max quality and
+  diffraction.
 
 ## gX mapping
 
@@ -154,10 +157,11 @@ bloom/HDR and is not forced by Console Max.
 six/eight-ray stars, threshold/midtone rejection and the chromatic centroid
 order. It runs as part of `make check`.
 
-The console shell, cartridge browser, OSD, save states, a compact 320x240
-native GUI, supersampled render/output split, dither and CRT filters are
-follow-ups. Until the shell exists, the native GUI stays at window resolution
-and only the scene is 240p.
+The console shell boot view and the Y2K cartridge route now exist. Still
+follow-ups: real save-state storage, a compact 320x240 native GUI, the
+emulator-style OSD, supersampled render/output split, dither and CRT filters,
+and CRT-safe idle blanking. The shell keeps the native GUI at window
+resolution; only the scene is 240p.
 
 ## CRT notes
 
@@ -189,6 +193,11 @@ only the scene render target is 320x240.
   for demos/gates.
 - **Console 240p — Dither/CRT** (later): 16-bit quantization, Bayer dither,
   scanlines/CRT mask.
+- **gX-240 console shell** — `--console-shell` opens the boot view: cartridge
+  select (Y2K CGI, RAY-1, particle sandbox, empty slot), video output
+  (320x240 Soft/Sharp, Native) and a save-state route. Booting Y2K from the
+  shell applies the 320x240 Soft profile, cold-boots the GFX renderer and
+  rebuilds the authored scene; the shell keeps the native GUI at window size.
 - **Y2K CGI cartridge** — `--cartridge-y2k` boots the fixed profile: 320x240
   scene with Soft upscale, the Y2K composition, 128 px brushed-metal
   albedo/normal/ORM on the low-poly forms, Max-quality cascade (4x MSAA, 4 CSM
@@ -220,6 +229,10 @@ only the scene render target is 320x240.
 - Y2K cartridge: 320x240 Soft trace, 4x MSAA quality 3, textured low-poly
   scene, Max quality, diffraction contribution and the 160x120 star-map
   target (`make cartridge-check`).
+- Console shell: boot-view trace, Sharp video route (320x240 filter 0),
+  save-slot route, and a cartridge boot from the shell that cold-boots GFX
+  and reaches the 320x240 Soft/4x MSAA/diffraction profile
+  (`make console-check`).
 - No UI clipping with native tool panels at window resolution.
 
 ## Follow-up

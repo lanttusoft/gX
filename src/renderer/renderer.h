@@ -211,6 +211,8 @@ gX_I1 gX_Renderer_GetCompositorDrawn(gX_I0);
 
 
 gX_I32 gX_Renderer_Load(gX_I0);
+//ai: drop GFX demo content and one-shot scene defaults before a cartridge boot.
+gX_I0 gX_Renderer_GFX_ColdBoot(gX_I0);
 gX_I32 gX_Renderer_Unload(gX_I0);
 
 gX_I0 gX_Renderer_Update(gX_I0);

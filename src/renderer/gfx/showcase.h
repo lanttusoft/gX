@@ -36,6 +36,7 @@ extern "C" {
 //opencode: interactive GFX demo (--showcase) — orbit camera, effect hotkeys,
 //   model focus, and a HUD legend. Pure scene controller; no new state.
 gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx);
+gX_I0 gX_Showcase_ResetDefaults(gX_I0);
 gX_I0 gX_Showcase_DrawHUD(gX_RendererGFX *gfx, gX_RenderTexture *overlayTgt);
 
 #ifdef __cplusplus

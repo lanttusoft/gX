@@ -47,6 +47,12 @@
 //   All state is scene-local statics; the gfx renderer is untouched.
 
 static gX_I1  s_defaultsApplied = false;
+
+//ai: cartridge boot after a prior GFX visit restores the one-shot showcase
+//   defaults so the selected profile can take effect.
+gX_I0 gX_Showcase_ResetDefaults(gX_I0) {
+    s_defaultsApplied = false;
+}
 static gX_F32 s_yaw = 45.0f;
 static gX_F32 s_pitch = 25.0f;
 static gX_F32 s_dist = 9.0f;

@@ -32,6 +32,7 @@
 
 #include "renderer.h"
 #include "gfx/scene.h"
+#include "gfx/showcase.h"
 #include "renderer_scene_transition.h"
 #include "../main.h"
 
@@ -382,6 +383,20 @@ gX_I32 gX_Renderer_Unload(gX_I0) {
     
     gX_TRACELOG_EPILOGUE("RENDERER: Unloading done")
     return errors;
+}
+
+//ai: cartridge select — clear the previous demo/battle/physics content and
+//   re-arm the showcase defaults so the next GFX update rebuilds from the
+//   current arguments profile.
+gX_I0 gX_Renderer_GFX_ColdBoot(gX_I0) {
+    gX_RendererGFX *gfx = (gX_RendererGFX *)renderer.gfx.data;
+    if (!gfx || renderer.gfx.amount == 0) return;
+    gX_RendererGFX_ClearScene(gfx);
+    gfx->common.demoSceneAdded = false;
+    gfx->common.battleScene = false;
+    gfx->common.physicsScene = false;
+    gX_Showcase_ResetDefaults();
+    gX_TraceLog(gX_LOG_NOTICE, "RENDERER: GFX cold boot");
 }
 
 gX_I0 gX_Renderer_Update(gX_I0) {

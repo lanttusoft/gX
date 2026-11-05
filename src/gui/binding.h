@@ -81,6 +81,11 @@ gX_I0 gX_Widget_OnClick_TitleExtras(gX_I0 *arg);           // title: swap to ext
 gX_I0 gX_Widget_OnClick_TitleCredits(gX_I0 *arg);          // title: swap to credits sub-view
 //ai: title demo hub for Battle and the GFX showcase.
 gX_I0 gX_Widget_OnClick_TitleDemos(gX_I0 *arg);
+//ai: gX-240 console shell — boot view, video profile and cartridge launch.
+gX_I0 gX_Widget_OnClick_TitleConsole(gX_I0 *arg);
+gX_I0 gX_Widget_OnClick_ConsoleVideo(gX_I0 *arg);
+gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg);
+gX_I0 gX_Widget_OnClick_ConsoleSaves(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_OpenEditor(gX_I0 *arg);            // extras: open GUI editor over current scene
 gX_I0 gX_Widget_OnClick_OpenTheme(gX_I0 *arg);             // extras: open theme editor over current scene
 gX_I0 gX_Widget_OnClick_OpenThemLab(gX_I0 *arg);           // extras: open theme lab preview + theme editor

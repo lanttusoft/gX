@@ -47,6 +47,8 @@
 #include "../settings.h"
 
 extern gX_I32 gX_MainData_Switch(gX_I32 masterIndex);
+extern gX_I0 gX_Renderer_GFX_ColdBoot(gX_I0);
+extern gX_MainArguments arguments;
 extern gX_GUI gui;
 
 //=============================================================================
@@ -323,6 +325,73 @@ gX_I0 gX_Widget_OnClick_TitleDemos(gX_I0 *arg) {
     gX_GUI_Template_TitleGX_SetView(5);
     gX_GUI_Canvas *canvas = gX_Heap_SeekPtr_Index(&gui.canvases, 0);
     if (canvas) canvas->refresh = true;
+}
+
+//ai: gX-240 console shell — a boot view over the title canvas. The shell
+//   launches cartridges cold so the selected profile rebuilds the demo scene.
+static gX_I0 console_refresh_view(gX_I0) {
+    gX_GUI_Canvas *canvas = gX_Heap_SeekPtr_Index(&gui.canvases, 0);
+    if (canvas) canvas->refresh = true;
+}
+
+gX_I0 gX_Widget_OnClick_TitleConsole(gX_I0 *arg) {
+    (void)arg;
+    gX_GUI_Focus_Clear();
+    gX_GUI_Template_TitleGX_SetView(6);
+    gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: view=shell");
+    console_refresh_view();
+}
+
+gX_I0 gX_Widget_OnClick_ConsoleVideo(gX_I0 *arg) {
+    gX_I32 mode = (gX_I32)(gX_U64)(uintptr_t)arg;
+    if (mode == 2) {
+        settings.screenWidth = maindata.windowWidth;
+        settings.screenHeight = maindata.windowHeight;
+        settings.presentFilter = 0;
+    } else {
+        settings.screenWidth = 320;
+        settings.screenHeight = 240;
+        settings.presentFilter = mode == 0 ? 1 : 0;
+    }
+    gX_Settings_Apply_VirtualScreen();
+    settings.dirtyFlag = 1;
+    gX_TraceLog(gX_LOG_NOTICE,
+        "CONSOLE: video=%s window=%ux%u render=%ux%u filter=%d",
+        mode == 2 ? "native" : (mode == 0 ? "soft" : "sharp"),
+        maindata.windowWidth, maindata.windowHeight,
+        maindata.renderWidth, maindata.renderHeight, maindata.presentFilter);
+    console_refresh_view();
+}
+
+gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
+    gX_I32 cartridge = (gX_I32)(gX_U64)(uintptr_t)arg;
+    gX_I32 scene = gX_SCENE_RENDERER_GFX;
+    if (cartridge == 0) {
+        arguments.showcase = true;
+        arguments.showcaseY2K = true;
+        arguments.cartridgeY2K = true;
+        gX_Widget_OnClick_ConsoleVideo((gX_I0*)(gX_U64)0);
+        gX_Renderer_GFX_ColdBoot();
+    } else if (cartridge == 1) {
+        arguments.showcase = false;
+        arguments.showcaseY2K = false;
+        arguments.cartridgeY2K = false;
+        scene = gX_SCENE_RENDERER_RAYMARCH;
+    } else {
+        arguments.showcase = false;
+        arguments.showcaseY2K = false;
+        arguments.cartridgeY2K = false;
+        scene = gX_SCENE_PHYSICS;
+    }
+    gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: boot=%d scene=%d", cartridge, scene);
+    gX_MainData_Switch(scene);
+}
+
+//ai: the console shell routes save-state management through the existing
+//   save-slot view and traces the intent for the shell gate.
+gX_I0 gX_Widget_OnClick_ConsoleSaves(gX_I0 *arg) {
+    gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: save=slots");
+    gX_Widget_OnClick_TitleSaves(arg);
 }
 
 //opencode: v0.6.5 — in-app tool openers (EXTRAS buttons). Runtime API in

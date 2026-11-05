@@ -530,6 +530,9 @@ gX_I0 gX_Settings_Apply_VirtualScreen(gX_I0) {
         maindata.virtualScreen = 0;
     }
     gX_MainData_Refresh();
+    //ai: a runtime virtual-screen change must reload the renderer canvas and
+    //   scene targets, not just the maindata dimensions (black frame otherwise).
+    maindata.refresh = true;
 }
 
 gX_I32 gX_Settings_Apply(gX_I0) {

@@ -94,6 +94,8 @@ check: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/diffraction_shape_check.py
 	@echo "== [gX CI] Y2K cartridge =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/cartridge_check.py
+	@echo "== [gX CI] console shell =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_shell_check.py
 	@echo "== [gX CI] compressed texture sidecars =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/texture_assets_check.py
 	#ai: ambient-only Phong shading must preserve albedo texture variation.
@@ -799,6 +801,12 @@ diffraction-check:
 cartridge-check: all
 	@echo "== [gX CI] Y2K cartridge =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/cartridge_check.py
+
+#ai: gX-240 shell boot view, video route and cartridge select.
+.PHONY: console-check
+console-check: all
+	@echo "== [gX CI] console shell =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_shell_check.py
 
 .PHONY: gfx-authoring-check lensflare-check
 

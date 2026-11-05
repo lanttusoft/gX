@@ -62,8 +62,11 @@
 #define TITLEGX_VIEW_SETTINGS 4
 //ai: title demos hub view for the Battle and renderer showcase routes.
 #define TITLEGX_VIEW_DEMOS 5
+//ai: gX-240 console shell boot view.
+#define TITLEGX_VIEW_CONSOLE 6
 
 static gX_I32 titleView = TITLEGX_VIEW_MENU;
+static gX_I1 s_consoleBootApplied = 0;
 
 //opencode: v0.2.0-pre8 — menu density variants per frontend_iteration1.png:
 //   FULL = continue/new/load/settings/demos/extras/quit,
@@ -84,7 +87,7 @@ static gX_I32 titleVariant(void) {
 
 gX_I0 gX_GUI_Template_TitleGX_SetView(gX_I32 view);
 gX_I0 gX_GUI_Template_TitleGX_SetView(gX_I32 view) {
-    if (view >= TITLEGX_VIEW_MENU && view <= TITLEGX_VIEW_DEMOS) {
+    if (view >= TITLEGX_VIEW_MENU && view <= TITLEGX_VIEW_CONSOLE) {
         titleView = view;
         gui.focusFirstPending = true;
         gX_GUI_Trace_Event("title-view", view, -1, NULL);
@@ -190,7 +193,12 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
         const gX_I8 *viewEnv = getenv("GX_GUI_TITLE_VIEW");
         if (viewEnv) {
             gX_I32 vv = atoi(viewEnv);
-            titleView = (vv >= TITLEGX_VIEW_MENU && vv <= TITLEGX_VIEW_DEMOS) ? vv : TITLEGX_VIEW_MENU;
+            titleView = (vv >= TITLEGX_VIEW_MENU && vv <= TITLEGX_VIEW_CONSOLE) ? vv : TITLEGX_VIEW_MENU;
+        } else if (!s_consoleBootApplied && arguments.consoleShell) {
+            //ai: one-shot boot route; backing out to the menu must stick.
+            s_consoleBootApplied = 1;
+            titleView = TITLEGX_VIEW_CONSOLE;
+            gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: view=shell boot=1");
         }
     }
 
@@ -402,6 +410,161 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
                 gX_GUI_Builder_Text_End(&b);
                 gX_GUI_OnClick(b.currentElement, gX_Widget_OnClick_CallSwitch,
                     (gX_I0*)(gX_U64)(uintptr_t)gX_SCENE_RENDERER_RAYMARCH);
+            gX_GUI_Builder_Element_End(&b);
+
+            gX_GUI_Builder_Element_Begin(&b);
+                gX_GUI_Builder_RectGrid(&b, 1.2f, 5.65f, 5.6f, 0.74f);
+                gX_GUI_Builder_ColorV(&b, gui.style.title2.saveSlotBg);
+                gX_GUI_Element_Template_Button(b.currentElement);
+                gX_GUI_Builder_Text_Begin(&b);
+                    gX_GUI_Builder_Text_Set(&b, "CONSOLE SHELL");
+                    b.currentElement->stateRendering.TEXT_CENTER_X = true;
+                    b.currentElement->stateRendering.TEXT_CENTER_Y = true;
+                    if (b.curText) {
+                        b.curText->fontSize = 15;
+                        b.curText->color = gui.style.title2.saveSlotText;
+                    }
+                gX_GUI_Builder_Text_End(&b);
+                gX_GUI_OnClick(b.currentElement,
+                    gX_Widget_OnClick_TitleConsole, 0);
+            gX_GUI_Builder_Element_End(&b);
+
+            gX_GUI_Builder_Element_Begin(&b);
+                gX_GUI_Builder_RectGrid(&b, 3.0f, 6.55f, 2.0f, 0.55f);
+                gX_GUI_Builder_ColorV(&b, gui.style.title2.backBg);
+                gX_GUI_Element_Template_Button(b.currentElement);
+                gX_GUI_Builder_Text_Begin(&b);
+                    gX_GUI_Builder_Text_Set(&b, "BACK");
+                    b.currentElement->stateRendering.TEXT_CENTER_X = true;
+                    b.currentElement->stateRendering.TEXT_CENTER_Y = true;
+                    if (b.curText) {
+                        b.curText->fontSize = 14;
+                        b.curText->color = gui.style.title2.backText;
+                    }
+                gX_GUI_Builder_Text_End(&b);
+                gX_GUI_OnClick(b.currentElement, gX_Widget_OnClick_TitleBack, 0);
+            gX_GUI_Builder_Element_End(&b);
+
+        gX_GUI_Builder_Element_End(&b);
+    } else if (titleView == TITLEGX_VIEW_CONSOLE) {
+        //ai: gX-240 shell — cartridge select, video output and save slots.
+        //   A full-screen boot backdrop replaces the title stars/gradient.
+        gX_GUI_Builder_Element_Begin(&b);
+            gX_GUI_Builder_RectGrid(&b, 0.0f, 0.0f, 8.0f, 8.0f);
+            gX_GUI_Builder_Color(&b, 3, 5, 9, 255);
+        gX_GUI_Builder_Element_End(&b);
+
+        gX_GUI_Builder_Element_Begin(&b);
+            gX_GUI_Builder_RectGrid(&b, 0.5f, 0.5f, 7.0f, 7.0f);
+            gX_GUI_Builder_Color(&b, 8, 10, 18, 255);
+
+            gX_GUI_Builder_Element_Begin(&b);
+                gX_GUI_Builder_RectGrid(&b, 1.2f, 0.65f, 5.6f, 0.55f);
+                gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
+                b.currentElement->stateRendering.RECT_NO_DRAW = true;
+                gX_GUI_Builder_Text_Begin(&b);
+                    gX_GUI_Builder_Text_Set(&b, "gX-240 SYSTEM");
+                    b.currentElement->stateRendering.TEXT_CENTER_X = true;
+                    if (b.curText) {
+                        b.curText->fontSize = 20;
+                        b.curText->color = (gX_Color){90, 220, 240, 255};
+                    }
+                gX_GUI_Builder_Text_End(&b);
+            gX_GUI_Builder_Element_End(&b);
+
+            gX_GUI_Builder_Element_Begin(&b);
+                gX_GUI_Builder_RectGrid(&b, 1.2f, 1.22f, 5.6f, 0.30f);
+                gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
+                b.currentElement->stateRendering.RECT_NO_DRAW = true;
+                gX_GUI_Builder_Text_Begin(&b);
+                    gX_GUI_Builder_Text_Set(&b, "CARTRIDGE SLOT");
+                    b.currentElement->stateRendering.TEXT_CENTER_X = true;
+                    if (b.curText) {
+                        b.curText->fontSize = 12;
+                        b.curText->color = (gX_Color){120, 140, 170, 255};
+                    }
+                gX_GUI_Builder_Text_End(&b);
+            gX_GUI_Builder_Element_End(&b);
+
+            struct { const gX_I8 *label; gX_F32 y; gX_I32 cartridge; gX_I1 empty; } cart[4] = {
+                { "Y2K CGI DEMO", 1.58f, 0, 0 },
+                { "RAY-1 TECH DEMO", 2.36f, 1, 0 },
+                { "PARTICLE SANDBOX", 3.14f, 2, 0 },
+                { "EMPTY SLOT", 3.92f, -1, 1 },
+            };
+            for (gX_I32 ci = 0; ci < 4; ci++) {
+                gX_GUI_Builder_Element_Begin(&b);
+                    gX_GUI_Builder_RectGrid(&b, 1.2f, cart[ci].y, 5.6f, 0.68f);
+                    gX_GUI_Builder_ColorV(&b, gui.style.title2.saveSlotBg);
+                    gX_GUI_Element_Template_Button(b.currentElement);
+                    if (cart[ci].empty) b.currentElement->state.DISABLED = true;
+                    gX_GUI_Builder_Text_Begin(&b);
+                        gX_GUI_Builder_Text_Set(&b, cart[ci].label);
+                        b.currentElement->stateRendering.TEXT_CENTER_X = true;
+                        b.currentElement->stateRendering.TEXT_CENTER_Y = true;
+                        if (b.curText) {
+                            b.curText->fontSize = 15;
+                            b.curText->color = gui.style.title2.saveSlotText;
+                        }
+                    gX_GUI_Builder_Text_End(&b);
+                    if (!cart[ci].empty)
+                        gX_GUI_OnClick(b.currentElement,
+                            gX_Widget_OnClick_ConsoleBoot,
+                            (gX_I0*)(gX_U64)(uintptr_t)cart[ci].cartridge);
+                gX_GUI_Builder_Element_End(&b);
+            }
+
+            gX_GUI_Builder_Element_Begin(&b);
+                gX_GUI_Builder_RectGrid(&b, 1.2f, 4.78f, 5.6f, 0.30f);
+                gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
+                b.currentElement->stateRendering.RECT_NO_DRAW = true;
+                gX_GUI_Builder_Text_Begin(&b);
+                    gX_GUI_Builder_Text_Set(&b, "VIDEO OUTPUT");
+                    b.currentElement->stateRendering.TEXT_CENTER_X = true;
+                    if (b.curText) {
+                        b.curText->fontSize = 12;
+                        b.curText->color = (gX_Color){120, 140, 170, 255};
+                    }
+                gX_GUI_Builder_Text_End(&b);
+            gX_GUI_Builder_Element_End(&b);
+
+            static const gX_I8 *videoLabels[3] = {
+                "320x240 SOFT", "320x240 SHARP", "NATIVE" };
+            for (gX_I32 vi = 0; vi < 3; vi++) {
+                gX_GUI_Builder_Element_Begin(&b);
+                    gX_GUI_Builder_RectGrid(&b,
+                        1.2f + (gX_F32)vi * 1.9f, 5.14f, 1.8f, 0.52f);
+                    gX_GUI_Builder_ColorV(&b, gui.style.title2.saveSlotBg);
+                    gX_GUI_Element_Template_Button(b.currentElement);
+                    gX_GUI_Builder_Text_Begin(&b);
+                        gX_GUI_Builder_Text_Set(&b, videoLabels[vi]);
+                        b.currentElement->stateRendering.TEXT_CENTER_X = true;
+                        b.currentElement->stateRendering.TEXT_CENTER_Y = true;
+                        if (b.curText) {
+                            b.curText->fontSize = 12;
+                            b.curText->color = gui.style.title2.saveSlotText;
+                        }
+                    gX_GUI_Builder_Text_End(&b);
+                    gX_GUI_OnClick(b.currentElement,
+                        gX_Widget_OnClick_ConsoleVideo,
+                        (gX_I0*)(gX_U64)(uintptr_t)vi);
+                gX_GUI_Builder_Element_End(&b);
+            }
+
+            gX_GUI_Builder_Element_Begin(&b);
+                gX_GUI_Builder_RectGrid(&b, 1.2f, 5.82f, 5.6f, 0.52f);
+                gX_GUI_Builder_ColorV(&b, gui.style.title2.saveSlotBg);
+                gX_GUI_Element_Template_Button(b.currentElement);
+                gX_GUI_Builder_Text_Begin(&b);
+                    gX_GUI_Builder_Text_Set(&b, "SAVE STATES");
+                    b.currentElement->stateRendering.TEXT_CENTER_X = true;
+                    b.currentElement->stateRendering.TEXT_CENTER_Y = true;
+                    if (b.curText) {
+                        b.curText->fontSize = 13;
+                        b.curText->color = gui.style.title2.saveSlotText;
+                    }
+                gX_GUI_Builder_Text_End(&b);
+                gX_GUI_OnClick(b.currentElement, gX_Widget_OnClick_ConsoleSaves, 0);
             gX_GUI_Builder_Element_End(&b);
 
             gX_GUI_Builder_Element_Begin(&b);

@@ -52,6 +52,10 @@ DEMOS = "2.0 key 264;2.4 key 264;2.8 key 264;3.2 key 264;3.6 key 264;4.0 key 257
 #   a slow first frame dropped the early Downs and landed on QUIT, so the
 #   "extras" view was really the quit dialog and extras_layout found no cards.
 EXTRAS = "2.0 move 511 615 200;2.5 click 511 615"
+#ai: the console shell sits in the DEMOS hub; drive both with fixed mouse
+#   coordinates so the keyboard focus cascade cannot change the target.
+DEMOS_CLICK = "2.0 move 511 568 200;2.5 click 511 568"
+CONSOLE = DEMOS_CLICK + ";3.5 move 512 578 200;4.0 click 512 578"
 VIEWS = (
     ("load_game", LOAD_GAME, "view"),
     ("demos", DEMOS, "view"),
@@ -61,6 +65,8 @@ VIEWS = (
     ("escape_back", "2.0 key 256;4.0 key 256", "return"),
     ("load_game_back", LOAD_GAME + ";4.2 key 256", "return"),
     ("extras_back", EXTRAS + ";4.5 key 256", "return"),
+    ("console", CONSOLE, "view"),
+    ("console_back", CONSOLE + ";4.6 key 256", "return"),
 )
 
 

@@ -112,7 +112,8 @@ physics a simulation; renderer modes are composition studies. The identifiers ke
 Bryce/Y2K abstract terrain with glass/metal/neon materials, style pinned in
 `docs/visual_direction.md`, preset `resources/tools/gfx_y2k.json`),
 `--cartridge-y2k` (the Y2K cartridge: 320x240 Soft, authored 128 px
-brushed-metal maps, Max quality, diffraction), `--analog`,
+brushed-metal maps, Max quality, diffraction), `--console-shell` (the
+gX-240 boot view with cartridge select and video output), `--analog`,
 `--clock`, `--sky`, `--water`, `--textwriter`, `--synthvis`, `--fractal`,
 `--teletext`, `--wireframe`, `--raymarch`, `--generate`.
 `--physics` is the rigid-body props sandbox: bodies spawn into the shared

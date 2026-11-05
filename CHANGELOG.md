@@ -48,6 +48,14 @@ Release-Class: minor
   seams, and the material path bakes its normal with wrapped sampling.
   `GX_GFX_TEXTURE_CHECK` and `gfx_texture_check.py` pin seam continuity, the
   streak axis, exact ORM channels, unit-length normals and byte determinism.
+- **gX-240 console shell**: `--console-shell` opens a boot view with a
+  cartridge slot (Y2K CGI, RAY-1 tech demo, particle sandbox, empty slot),
+  video output (320x240 Soft/Sharp, Native) and a save-state route. Booting
+  Y2K applies the 320x240 Soft profile, cold-boots the GFX renderer (clearing
+  previous demo/battle/physics content and re-arming showcase defaults) and
+  launches the textured cartridge; a runtime virtual-screen change now
+  requests the renderer refresh it previously skipped. `make console-check`
+  drives the boot view, sharp video route, save slots and cartridge boot.
 - **Y2K CGI cartridge**: `--cartridge-y2k` boots a fixed console profile — the
   Y2K composition at a 320x240 Soft scene target, the authored 128 px
   brushed-metal albedo/normal/ORM set on the low-poly floor and ring, Max
