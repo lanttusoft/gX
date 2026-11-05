@@ -70,6 +70,7 @@ typedef struct gX_MainArguments {
     gX_I1   showcaseReflectRow; //opencode: v0.3.4 --reflectrow reflection testbed: plane + material-sweep ball row
     gX_I1   showcaseLedRow;     //opencode: --ledrow night LED testbed: moonlit slab + PBR centerpiece + LED ring + animated rig
     gX_I1   showcaseY2K;        //opencode: --showcase-y2k — opt-in Bryce/Y2K abstract terrain style study
+    gX_I1   cartridgeY2K;       //ai: --cartridge-y2k — bootable Y2K CGI cartridge (320x240 soft, Max quality, diffraction)
     gX_I1   showcaseForest;     //opencode: --forest dead-forest testbed: ~36 guest trees (guest fallback) + thick fog
     gX_I1   showcaseLake;       //opencode: --lake forest-ringed lake testbed: water plane + banks + tree ring + thin fog
     gX_I1   layoutTest;   //opencode: --layout-test — deliberately broken scene for the auto-seat pass

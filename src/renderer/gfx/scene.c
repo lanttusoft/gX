@@ -549,6 +549,25 @@ gX_I32 gX_RendererGFX_Scene_AddDemoContent(gX_RendererGFX *gfx)
     //   neon accents, twilight sky, and a restrained realtime post stack.
     if (arguments.showcaseY2K)
     {
+        //ai: cartridge profile — the exported brushed-metal set is authored
+        //   at 128 px for the 320x240 target. ORM is bound to the metalness
+        //   slot (glTF G=roughness, B=metalness) and the occlusion slot (R).
+        gX_I32 cartridgeAlbedo = -1;
+        gX_I32 cartridgeNormal = -1;
+        gX_I32 cartridgeOrm = -1;
+        if (arguments.cartridgeY2K)
+        {
+            gX_I8 texturePath[256];
+            snprintf(texturePath, sizeof(texturePath),
+                GX_RESOURCE_DIR "/texture/y2k/brushed_albedo.png");
+            cartridgeAlbedo = gX_RendererGFX_Texture_Add(gfx, texturePath);
+            snprintf(texturePath, sizeof(texturePath),
+                GX_RESOURCE_DIR "/texture/y2k/brushed_normal.png");
+            cartridgeNormal = gX_RendererGFX_Texture_Add(gfx, texturePath);
+            snprintf(texturePath, sizeof(texturePath),
+                GX_RESOURCE_DIR "/texture/y2k/brushed_orm.png");
+            cartridgeOrm = gX_RendererGFX_Texture_Add(gfx, texturePath);
+        }
         typedef struct gX_Y2KModelSpec {
             const gX_I8 *file;
             gX_F32v3 pos;
@@ -561,18 +580,19 @@ gX_I32 gX_RendererGFX_Scene_AddDemoContent(gX_RendererGFX *gfx)
             gX_Color emissionColor;
             gX_I1 glass;
             gX_I1 mirror;
+            gX_I1 textured;
         } gX_Y2KModelSpec;
         //opencode: compact composition keeps the stepped forms, violet spire,
         //   cyan ring, and glass sphere as the foreground focal group.
         static const gX_Y2KModelSpec specs[] = {
             //opencode: floor lifted out of black-crush (was 18,24,64 / 0.78 /
             //   0.18: dark + metallic under a 0.08 sun reads near-black).
-            {"primitive/cube.glb", {0.0f, -0.075f, 0.0f}, {14.0f, 0.15f, 10.0f}, {0,0,0}, {42,58,118,255}, 0.62f, 0.30f, 0.0f, {0,0,0,255}, 0, 1},
-            {"primitive/cube.glb", {-4.0f, 0.30f, -1.7f}, {2.8f, 0.35f, 1.2f}, {0,-18,0}, {55,140,200,255}, 0.45f, 0.32f, 0.0f, {0,0,0,255}, 0, 0},
-            {"primitive/cube.glb", {-1.2f, 0.72f, -1.0f}, {1.7f, 0.72f, 1.0f}, {0,14,0}, {65,225,210,255}, 0.30f, 0.30f, 0.0f, {0,0,0,255}, 0, 0},
-            {"primitive/cone.glb", {2.5f, 1.05f, -1.8f}, {1.2f, 2.1f, 1.2f}, {0,20,0}, {150,60,220,255}, 0.25f, 0.35f, 0.35f, {190,70,255,255}, 0, 0},
-            {"primitive/torus.glb", {1.1f, 0.65f, 2.5f}, {1.35f, 1.35f, 1.35f}, {70,0,0}, {60,180,255,255}, 0.70f, 0.18f, 0.70f, {30,210,255,255}, 0, 0},
-            {"primitive/sphere.glb", {4.0f, 1.0f, 1.1f}, {0.9f, 0.9f, 0.9f}, {0,0,0}, {180,240,255,255}, 0.10f, 0.12f, 0.0f, {0,0,0,255}, 1, 0},
+            {"primitive/cube.glb", {0.0f, -0.075f, 0.0f}, {14.0f, 0.15f, 10.0f}, {0,0,0}, {42,58,118,255}, 0.62f, 0.30f, 0.0f, {0,0,0,255}, 0, 1, 1},
+            {"primitive/cube.glb", {-4.0f, 0.30f, -1.7f}, {2.8f, 0.35f, 1.2f}, {0,-18,0}, {55,140,200,255}, 0.45f, 0.32f, 0.0f, {0,0,0,255}, 0, 0, 0},
+            {"primitive/cube.glb", {-1.2f, 0.72f, -1.0f}, {1.7f, 0.72f, 1.0f}, {0,14,0}, {65,225,210,255}, 0.30f, 0.30f, 0.0f, {0,0,0,255}, 0, 0, 0},
+            {"primitive/cone.glb", {2.5f, 1.05f, -1.8f}, {1.2f, 2.1f, 1.2f}, {0,20,0}, {150,60,220,255}, 0.25f, 0.35f, 0.35f, {190,70,255,255}, 0, 0, 0},
+            {"primitive/torus.glb", {1.1f, 0.65f, 2.5f}, {1.35f, 1.35f, 1.35f}, {70,0,0}, {60,180,255,255}, 0.70f, 0.18f, 0.70f, {30,210,255,255}, 0, 0, 1},
+            {"primitive/sphere.glb", {4.0f, 1.0f, 1.1f}, {0.9f, 0.9f, 0.9f}, {0,0,0}, {180,240,255,255}, 0.10f, 0.12f, 0.0f, {0,0,0,255}, 1, 0, 0},
         };
         static const gX_F32v3 lightPos[] = {{4.0f, 4.0f, 2.0f}, {-4.0f, 3.0f, -1.0f}, {0.0f, 5.0f, 4.0f}, {0.0f, 2.0f, -4.0f}};
         static const gX_Color lightCol[] = {{60,220,255,255}, {255,50,210,255}, {255,170,80,255}, {120,100,255,255}};
@@ -594,6 +614,39 @@ gX_I32 gX_RendererGFX_Scene_AddDemoContent(gX_RendererGFX *gfx)
             m->params.roughness = s->roughness;
             m->params.emissiveColor = s->emissionColor;
             m->params.emissiveFactor = s->emissionFactor;
+            if (arguments.cartridgeY2K && s->textured)
+            {
+                gX_F32v2 tile = (i == 0) ? (gX_F32v2){8.0f, 6.0f}
+                    : (gX_F32v2){3.0f, 2.0f};
+                //ai: the large floor keeps its authored tint and takes only
+                //   the surface maps; a full albedo map on the cube's
+                //   transposed atlas reads as wood grain at this scale.
+                gX_I32 ids[4] = { (i == 0) ? -1 : cartridgeAlbedo,
+                    cartridgeNormal, cartridgeOrm, cartridgeOrm };
+                gX_I32 purposes[4] = { gX_MATERIAL_MAP_ALBEDO,
+                    gX_MATERIAL_MAP_NORMAL, gX_MATERIAL_MAP_METALNESS,
+                    gX_MATERIAL_MAP_OCCLUSION };
+                for (gX_I32 slot = 0; slot < 4; slot++)
+                    if (ids[slot] >= 0)
+                    {
+                        m->textureID[slot] = ids[slot];
+                        m->texturePurpose[slot] = purposes[slot];
+                    }
+                m->params.albedoMapScale = tile;
+                m->params.normalMapScale = tile;
+                m->params.metalnessMapScale = tile;
+                m->params.aoMapScale = tile;
+                //ai: ORM drives rough/metal (G/B) and occlusion (R); using
+                //   the authored scalars too would square the maps.
+                m->params.roughness = 1.0f;
+                m->params.metalness = 1.0f;
+                //ai: attenuate the groove normal so the large floor reads as
+                //   brushed metal rather than a corrugated sheet.
+                m->params.normalMapFactor = (i == 0) ? 0.35f : 0.60f;
+                //ai: lighter tint keeps the 128 px streak detail visible.
+                if (i != 0)
+                    m->params.albedoTint = (gX_Color){100, 200, 220, 255};
+            }
             if (s->mirror)
             {
                 m->params.reflectionSource = 1;
@@ -645,8 +698,12 @@ gX_I32 gX_RendererGFX_Scene_AddDemoContent(gX_RendererGFX *gfx)
         gfx->fogVolume.heightFalloff = 1.4f;
         gfx->fogVolume.scattering = 0.45f;
         gfx->state.SHOW_LIGHT_MARKERS = 0;
-        gX_TraceLog(gX_LOG_NOTICE, "SHOWCASE-Y2K: models=%u lights=%u",
-            gfx->models.amount, gfx->lights.amount);
+        gX_TraceLog(gX_LOG_NOTICE,
+            "SHOWCASE-Y2K: models=%u lights=%u cartridge=%d textured=%d",
+            gfx->models.amount, gfx->lights.amount,
+            arguments.cartridgeY2K ? 1 : 0,
+            (cartridgeAlbedo >= 0 && cartridgeNormal >= 0
+                && cartridgeOrm >= 0) ? 1 : 0);
         return 0;
     }
 

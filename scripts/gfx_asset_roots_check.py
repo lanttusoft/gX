@@ -93,9 +93,10 @@ def main():
                     f"vs {guest_models} guest")
             if textures < 1:
                 raise RuntimeError("no textures indexed")
-            #opencode: the texture hook writes 7 files (5 generators + the
-            #   normal bake + the ORM pack); all must join the grid.
-            if generated != 7:
+            #ai: the texture hook writes 14 files (5 generators, the normal
+            #   bake, the ORM pack, and the 7-map brushed material set); all
+            #   must join the grid.
+            if generated != 14:
                 raise RuntimeError(
                     f"generated textures not indexed (generated={generated})")
     except (OSError, RuntimeError, ValueError) as error:

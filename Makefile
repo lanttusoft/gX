@@ -92,6 +92,8 @@ check: all
 	python3 scripts/lightmap_check.py
 	@echo "== [gX CI] diffraction shape =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/diffraction_shape_check.py
+	@echo "== [gX CI] Y2K cartridge =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/cartridge_check.py
 	@echo "== [gX CI] compressed texture sidecars =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/texture_assets_check.py
 	#ai: ambient-only Phong shading must preserve albedo texture variation.
@@ -791,6 +793,12 @@ gfx-pp-check: all
 diffraction-check:
 	@echo "== [gX CI] diffraction shape =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/diffraction_shape_check.py
+
+#ai: fixed Y2K cartridge profile — presentation, Max quality, textures, spikes.
+.PHONY: cartridge-check
+cartridge-check: all
+	@echo "== [gX CI] Y2K cartridge =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/cartridge_check.py
 
 .PHONY: gfx-authoring-check lensflare-check
 

@@ -55,7 +55,9 @@ pixels. The console died; gX remembers it.
 A cartridge is a gX scene preset plus an asset set and a settings profile:
 
 - **Y2K CGI demo** — low-poly, 128–256 px textures, PBR, soft shadows, bloom,
-  lens flare, fog, 320x240 Soft output.
+  fog, diffraction spikes, 320x240 Soft output and Max quality. Boots with
+  `--cartridge-y2k` (the same composition as `--showcase-y2k` plus the
+  authored 128 px brushed-metal set, diffraction and the console profile).
 - **RAY-1 tech demo** — raymarched SDF scene at full quality, reflections and
   shadows through the ray path.
 - **Particle/physics sandbox** — uses the fast CPU and cheap low-res overdraw.
@@ -187,6 +189,12 @@ only the scene render target is 320x240.
   for demos/gates.
 - **Console 240p — Dither/CRT** (later): 16-bit quantization, Bayer dither,
   scanlines/CRT mask.
+- **Y2K CGI cartridge** — `--cartridge-y2k` boots the fixed profile: 320x240
+  scene with Soft upscale, the Y2K composition, 128 px brushed-metal
+  albedo/normal/ORM on the low-poly forms, Max-quality cascade (4x MSAA, 4 CSM
+  cascades, 64-sample GTAO, full-res SSR when authored, auto exposure) and
+  6-blade diffraction on the neon/glass glints. `GX_CARTRIDGE_DIFFRACTION=0`
+  gives the A/B control.
 
 ## Non-goals
 
@@ -208,7 +216,10 @@ only the scene render target is 320x240.
 - Input mapping round-trip at the virtual scale.
 - Retro asset budget (texture dimensions, triangle/material counts).
 - Resolution/buffer audit: cold 320 vs runtime-resized 320 target sizes and
-  image parity (32 active targets, ~0.6/255 mean difference).
+  image parity (33 active targets, ~0.62/255 mean difference).
+- Y2K cartridge: 320x240 Soft trace, 4x MSAA quality 3, textured low-poly
+  scene, Max quality, diffraction contribution and the 160x120 star-map
+  target (`make cartridge-check`).
 - No UI clipping with native tool panels at window resolution.
 
 ## Follow-up

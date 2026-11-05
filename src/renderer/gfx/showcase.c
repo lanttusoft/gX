@@ -37,6 +37,7 @@
 #include "../renderer.h"
 #include "../../wrappers/wrappers.h"
 #include "load.h"
+#include "features.h"
 #include "../../rhi/rhi_state.h"
 //opencode: hunt - implicit-decl sweep
 #include "../../gxmath/gxmath.h"
@@ -146,6 +147,30 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
                 gfx->fogVolume.density = 0.012f;
                 gfx->fogVolume.heightFalloff = 1.4f;
                 gfx->fogVolume.scattering = 0.45f;
+                //ai: cartridge profile — authored diffraction glints on the
+                //   neon/glass group, then Max quality applied to the scene's
+                //   own feature mask (never forces SSR/TAA/DOF/volumetrics).
+                if (arguments.cartridgeY2K) {
+                    const gX_I8 *diffractionOff =
+                        getenv("GX_CARTRIDGE_DIFFRACTION");
+                    gfx->state.ENABLE_DIFFRACTION =
+                        (diffractionOff && diffractionOff[0] == '0') ? 0 : 1;
+                    gfx->diffraction.threshold = 1.10f;
+                    gfx->diffraction.knee = 0.12f;
+                    gfx->diffraction.intensity = 1.2f;
+                    gfx->diffraction.length = 0.045f;
+                    gfx->diffraction.chromatic = 0.30f;
+                    gfx->diffraction.rotation = 0.0f;
+                    gfx->diffraction.sparkle = 0.10f;
+                    gfx->diffraction.blades = 6;
+                    gfx->diffraction.taps = 12;
+                    gX_RendererGFX_ConsoleMax_Apply(gfx);
+                    gX_TraceLog_GFX(gX_LOG_NOTICE,
+                        "CARTRIDGE: y2k diffraction=%d blades=%d quality=%d",
+                        gfx->state.ENABLE_DIFFRACTION ? 1 : 0,
+                        gfx->diffraction.blades,
+                        gfx->state.qualityPreset);
+                }
             }
             //opencode: --showcase-water — float the demo cluster above the water
             //   surface (the scene content is raised +2 in the demo scene setup)
@@ -175,6 +200,9 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
             gfx->state.ssrDebugMode = arguments.ssrDebug;
             s_hudVisible = true;
         }
+        //ai: cartridge boots into a clean presentation; the dev HUD stays off
+        //   unless GX_T_HUD explicitly re-enables it.
+        if (arguments.cartridgeY2K) s_hudVisible = false;
         gX_TraceLog(gX_LOG_NOTICE, "SHOWCASE: interactive demo — LMB drag orbit, wheel zoom, 1-9 focus, Q preset, H help");
     }
 

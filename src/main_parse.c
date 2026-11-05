@@ -50,6 +50,7 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
         "      --virtualHeight <px>   Virtual screen height\n"
         "      --renderScale <0-1>    Render resolution scale\n"
         "      --presentFilter <s>    Virtual-screen upscale: sharp (nearest) or soft (linear)\n"
+        "      --cartridge-y2k       Boot the Y2K CGI cartridge (320x240 soft, Max quality)\n"
         "      --targetFPS <n>        Target framerate\n"
         "      --seed <n>             Fixed random seed\n"
         "      --masterIndex <n>      Startup scene index\n"
@@ -203,6 +204,7 @@ gX_I32 gX_Parse(int argc, char **argv) {
         {"virtualHeight",required_argument, NULL, 0},
         {"renderScale", required_argument,  NULL, 0},
         {"presentFilter", required_argument, NULL, 0},
+        {"cartridge-y2k",no_argument,       NULL, 0},
         {"targetFPS",   required_argument,  NULL, 0},
         {"seed",        required_argument,  NULL, 0},
         {"masterIndex", required_argument,  NULL, 0},
@@ -604,6 +606,16 @@ if (!strcmp(long_options[option_index].name,"guest-model")) {
                     arguments.hasMasterIndex = true;
                     arguments.showcase = true;
                     arguments.showcaseY2K = true;
+                }
+                //ai: bootable cartridge profile — the same Y2K scene with the
+                //   low-res presentation, authored textures, diffraction and
+                //   Max quality applied as a fixed console profile.
+                if (!strcmp(long_options[option_index].name,"cartridge-y2k")) {
+                    arguments.masterIndex = gX_SCENE_RENDERER_GFX;
+                    arguments.hasMasterIndex = true;
+                    arguments.showcase = true;
+                    arguments.showcaseY2K = true;
+                    arguments.cartridgeY2K = true;
                 }
                 //opencode: dead-forest testbed - 110 guest trees via the
                 //   GX_ASSETS guest fallback + thick volume fog (batch read)

@@ -106,6 +106,22 @@ gX_I32 gX_MainData_Reset(gX_I0) {
     maindata.virtualScreen = 0;
     maindata.presentFilter = 0;
     maindata.renderOverride = 0;
+    //ai: the cartridge profile owns its presentation: 320x240 scene, soft
+    //   upscale, unless explicit CLI flags override the profile.
+    if (arguments.cartridgeY2K) {
+        if (!arguments.hasVirtualWidth) {
+            arguments.virtualWidth = 320;
+            arguments.hasVirtualWidth = 1;
+        }
+        if (!arguments.hasVirtualHeight) {
+            arguments.virtualHeight = 240;
+            arguments.hasVirtualHeight = 1;
+        }
+        if (!arguments.hasPresentFilter) {
+            arguments.presentFilter = 1;
+            arguments.hasPresentFilter = 1;
+        }
+    }
     {
         const gX_I8 *vwEnv = getenv("GX_VIRTUAL_WIDTH");
         const gX_I8 *vhEnv = getenv("GX_VIRTUAL_HEIGHT");

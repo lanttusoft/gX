@@ -122,6 +122,12 @@ code, assets, and content bundled with gX, per their respective licenses.
   AI-generated (author-prompted).
 - `resources/texture/misc/scorch.png` — AI-generated (author-prompted,
   procedural script; impact-scorch decal).
+- `resources/texture/y2k/brushed_albedo.png`,
+  `brushed_height.png`, `brushed_roughness.png`, `brushed_metalness.png`,
+  `brushed_ao.png`, `brushed_normal.png`, `brushed_orm.png` — AI-generated
+  (author-prompted deterministic gX procedural material set; regenerate with
+  `GX_GFX_TEXTURE_CHECK=1 GX_GFX_TEXTURE_SIZE=128` and
+  `GX_GFX_TEXTURE_DIR=resources/texture/y2k`).
 - `resources/audio/wavetable/*.f32` — AI-generated (author-prompted,
   procedural script; additive wavetables).
 - `resources/model/probe/*` — project-generated fixtures (see below).

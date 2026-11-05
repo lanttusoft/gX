@@ -7905,29 +7905,36 @@ static gX_I0 gfx_preset_headless_hooks(gX_RendererGFX *gfx) {
     const char *textureCheck = getenv("GX_GFX_TEXTURE_CHECK");
     if (textureCheck && textureCheck[0] && !s_headlessTextureCheckDone
         && maindata.frameCount >= 5) {
+        const char *sizeHook = getenv("GX_GFX_TEXTURE_SIZE");
+        gX_I32 checkSize = 64;
+        if (sizeHook && sizeHook[0]) {
+            checkSize = (gX_I32)atoi((const char *)sizeHook);
+            if (checkSize < 8) checkSize = 8;
+            if (checkSize > 2048) checkSize = 2048;
+        }
         gX_Color texLight = { 255, 255, 255, 255 };
         gX_Color texDark = { 51, 51, 51, 255 };
         gX_I8 texSolid[640], texChecker[640], texGradient[640],
             texNoise[640], texValue[640], texNormal[640], texOrm[640];
         gX_I32 made = 0;
-        made += gfx_texture_generate(0, 64, 64, 0.0f, texLight, texDark,
-            "solid", texSolid, sizeof(texSolid));
-        made += gfx_texture_generate(1, 64, 64, 8.0f, texLight, texDark,
-            "checker", texChecker, sizeof(texChecker));
-        made += gfx_texture_generate(2, 64, 64, 0.0f, texDark, texLight,
-            "gradient", texGradient, sizeof(texGradient));
-        made += gfx_texture_generate(4, 64, 64, 0.5f, texLight, texDark,
-            "noise", texNoise, sizeof(texNoise));
-        made += gfx_texture_generate(7, 64, 64, 4.0f, texLight, texDark,
-            "value", texValue, sizeof(texValue));
+        made += gfx_texture_generate(0, checkSize, checkSize, 0.0f, texLight,
+            texDark, "solid", texSolid, sizeof(texSolid));
+        made += gfx_texture_generate(1, checkSize, checkSize, 8.0f, texLight,
+            texDark, "checker", texChecker, sizeof(texChecker));
+        made += gfx_texture_generate(2, checkSize, checkSize, 0.0f, texDark,
+            texLight, "gradient", texGradient, sizeof(texGradient));
+        made += gfx_texture_generate(4, checkSize, checkSize, 0.5f, texLight,
+            texDark, "noise", texNoise, sizeof(texNoise));
+        made += gfx_texture_generate(7, checkSize, checkSize, 4.0f, texLight,
+            texDark, "value", texValue, sizeof(texValue));
         gX_I1 normalOK = gfx_texture_normal_from_height(texChecker, 2.0f,
             "checker_n", texNormal, sizeof(texNormal));
         gX_I1 ormOK = gfx_texture_pack_orm(texChecker, texNoise, texSolid,
             "packed_orm", texOrm, sizeof(texOrm));
         gX_Color brushedTint = { 196, 200, 206, 255 };
         gX_I8 texBrushed[640];
-        gX_I1 materialOK = gfx_texture_material_brushed(64, 64, 6.0f, 0.30f,
-            0.92f, 0.45f, 1, brushedTint, "brushed", texBrushed,
+        gX_I1 materialOK = gfx_texture_material_brushed(checkSize, checkSize,
+            6.0f, 0.30f, 0.92f, 0.45f, 1, brushedTint, "brushed", texBrushed,
             sizeof(texBrushed));
         gX_I1 previewOK = (s_texPreview.id > 0) ? 1 : 0;
         gX_I1 pass = (made == 5 && normalOK && ormOK && materialOK

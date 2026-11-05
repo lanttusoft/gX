@@ -29,6 +29,10 @@ readable, technically clean, and visibly authored.
   `src/renderer/gfx/showcase.c` post/rim/env tuning). Compact stepped
   terrain, one violet spire, cyan ring, one glass sphere, twilight sky,
   restrained bloom + fog + rim. Existing primitive GLBs only.
+- Cartridge: `--cartridge-y2k` boots the same composition at 320x240 Soft
+  with Max quality, a 128 px brushed-metal set
+  (`resources/texture/y2k/`) on the floor/ring, and 6-blade diffraction on
+  the neon/glass glints.
 - Preset: `resources/tools/gfx_y2k.json` — saved from the polished live
   state via `GX_GFX_PRESET_SAVE`; load with `GX_GFX_PRESET_LOAD` over the
   live scene (see the preset bar in `--gfx-editor`).

@@ -48,6 +48,15 @@ Release-Class: minor
   seams, and the material path bakes its normal with wrapped sampling.
   `GX_GFX_TEXTURE_CHECK` and `gfx_texture_check.py` pin seam continuity, the
   streak axis, exact ORM channels, unit-length normals and byte determinism.
+- **Y2K CGI cartridge**: `--cartridge-y2k` boots a fixed console profile — the
+  Y2K composition at a 320x240 Soft scene target, the authored 128 px
+  brushed-metal albedo/normal/ORM set on the low-poly floor and ring, Max
+  quality (4x MSAA, 4 CSM cascades, 64-sample GTAO, full-res SSR when
+  authored, auto exposure) and 6-blade diffraction on the neon/glass glints.
+  The cartridge hides the developer HUD by default; `GX_CARTRIDGE_DIFFRACTION=0`
+  provides the A/B control. `make cartridge-check` pins the presentation trace,
+  quality cascade, texture binding, diffraction contribution and 160x120
+  star-map target.
 - **UI maturity in the GFX editor**: Basic/Advanced/Expert now gate whole
   renderer labs and the fine-tuning sections (shader tuning, GL level, raw
   toggles, texture tools, map tuning, SSGI, aux targets, CSM, decals, volumes,
