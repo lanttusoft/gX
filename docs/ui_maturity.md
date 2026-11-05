@@ -42,7 +42,7 @@ active tier; the `GX_GFX_PANEL_LABS` hook is filtered by the same gate.
 | Render lab | Features, Quality, Look, SSAO | + toggles, shader quality, kernel | + advanced shader tuning, SSGI, aux RT/layered shadows |
 | Look | exposure, model, maps, culling, tone map | + detail, rim/env/cookies, clustering | — |
 | Bloom | enable, threshold, knee, intensity | + shape controls | + auto exposure |
-| Effects | fog | + volumes, godrays, lens flare | — |
+| Effects | fog | + volumes, godrays, lens flare, diffraction | — |
 | Lights | lights, shadows | + CSM | — |
 | Models | model list, transforms, material | + per-material overrides | + map tuning |
 | Raymarch | scene panel, render modes, textures | — | + advanced tracing |

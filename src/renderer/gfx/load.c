@@ -265,6 +265,53 @@ gX_I0 gX_RendererGFX_Load_SetDefaults(gX_RendererGFX *gfx)
     gfx->lensflare.intensity    = 1.0f;
     gfx->lensflare.dispersal    = 1.0f;
 
+    //ai: aperture diffraction spikes — off by default; tunable post effect.
+    gfx->state.ENABLE_DIFFRACTION = false;
+    gfx->diffraction.threshold = 1.0f;
+    gfx->diffraction.knee = 0.1f;
+    gfx->diffraction.intensity = 1.0f;
+    gfx->diffraction.length = 0.06f;
+    gfx->diffraction.chromatic = 0.25f;
+    gfx->diffraction.rotation = 0.0f;
+    gfx->diffraction.sparkle = 0.0f;
+    gfx->diffraction.blades = 6;
+    gfx->diffraction.taps = 12;
+    {
+        const gX_I8 *hook = getenv("GX_T_DIFFRACTION");
+        if (hook && hook[0]) gfx->state.ENABLE_DIFFRACTION = atoi(hook) != 0;
+        const gX_I8 *value = getenv("GX_T_DIFFRACTION_THRESHOLD");
+        if (value && value[0]) gfx->diffraction.threshold = (gX_F32)atof(value);
+        value = getenv("GX_T_DIFFRACTION_KNEE");
+        if (value && value[0]) gfx->diffraction.knee = (gX_F32)atof(value);
+        value = getenv("GX_T_DIFFRACTION_INTENSITY");
+        if (value && value[0]) gfx->diffraction.intensity = (gX_F32)atof(value);
+        value = getenv("GX_T_DIFFRACTION_LENGTH");
+        if (value && value[0]) gfx->diffraction.length = (gX_F32)atof(value);
+        value = getenv("GX_T_DIFFRACTION_CHROMATIC");
+        if (value && value[0]) gfx->diffraction.chromatic = (gX_F32)atof(value);
+        value = getenv("GX_T_DIFFRACTION_ROTATION");
+        if (value && value[0]) gfx->diffraction.rotation = (gX_F32)atof(value);
+        value = getenv("GX_T_DIFFRACTION_SPARKLE");
+        if (value && value[0]) gfx->diffraction.sparkle = (gX_F32)atof(value);
+        value = getenv("GX_T_DIFFRACTION_BLADES");
+        if (value && value[0]) gfx->diffraction.blades = atoi(value);
+        value = getenv("GX_T_DIFFRACTION_TAPS");
+        if (value && value[0]) gfx->diffraction.taps = atoi(value);
+        if (gfx->state.ENABLE_DIFFRACTION) gfx->state.ENABLE_BLOOM = 1;
+    }
+    {
+        const gX_I8 *fixture = getenv("GX_T_DIFFRACTION_FIXTURE");
+        if (fixture && fixture[0] == '1') {
+            gfx->state.ENABLE_DIFFRACTION = 1;
+            gfx->state.ENABLE_BLOOM = 1;
+            gfx->state.ENABLE_PROCEDURAL_SKY = 0;
+            gfx->state.ENABLE_SKYBOX = 0;
+            gfx->state.ENABLE_ENV_AMBIENT = 0;
+            gfx->state.ENABLE_RIM = 0;
+            gfx->sky.color = (gX_Color){0, 0, 0, 255};
+        }
+    }
+
     //opencode: occlusion culling — off by default (opt-in for world scene).
     gfx->state.ENABLE_OCCLUSION_CULLING = false;
 
@@ -852,6 +899,13 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     gfx->lensflare.intensity = 1.0f;
     gfx->lensflare.dispersal = 1.0f;
 
+    //ai: aperture diffraction spikes — half-res star map + fullscreen shader.
+    GX_GFX_RT_INIT_HALF(gfx, diffraction.map);
+    gfx->diffraction.map.hdr = true;
+    gfx->diffraction.map.colorOnly = 1;
+    gfx->diffraction.map.filter = gX_TEXTURE_FILTER_BILINEAR;
+    GX_GFX_SHADER_INIT(gfx, diffraction.shader, "gfx_diffraction.frag");
+
     //opencode: IBL — BRDF LUT + irradiance/prefilter (shaders only, textures deferred)
     gX_RendererGFX_Shader_Init(&gfx->ibl.brdfShader, 0, GX_PATH("shader", "gfx_ibl_brdf.frag"));
     gX_RendererGFX_Shader_Init(&gfx->ibl.irradianceShader, 0, GX_PATH("shader", "gfx_ibl_irradiance.frag"));
@@ -1026,6 +1080,7 @@ gX_I0 gX_RendererGFX_Unload_FreeRTs(gX_RendererGFX *gfx)
     GX_GFX_RT_UNLOAD(gfx, taa.resolveMap);
     GX_GFX_RT_UNLOAD(gfx, godray.genMap);
     GX_GFX_RT_UNLOAD(gfx, fogVolume.genMap);
+    GX_GFX_RT_UNLOAD(gfx, diffraction.map);
     GX_GFX_RT_UNLOAD(gfx, bloom.hdrScene);
     GX_GFX_RT_UNLOAD(gfx, bloom.luminanceRT);
     GX_GFX_RT_UNLOAD(gfx, ssao.ssgiMap);

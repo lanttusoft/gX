@@ -120,6 +120,7 @@ typedef enum gX_GFX_PassId {
     PASS_SCENE_COPY,
     PASS_SSGI,
     PASS_BLOOM,
+    PASS_DIFFRACTION,
     PASS_GODRAY,
     PASS_LENSFLARE,
     PASS_SSR_COMP,
@@ -636,6 +637,17 @@ static gX_I0 Pass_Run_Ssgi(gX_RendererGFX *gfx, gX_RenderTexture *)
     gX_RHI_Debug_PushGroup("GFX_SSGI");
     gX_RendererGFX_SSGI_Draw(gfx);
     gX_RHI_Debug_PopGroup();
+    return;
+}
+static gX_I1 Pass_On_Diffraction(gX_RendererGFX *gfx)
+{
+    return gfx->state.ENABLE_DIFFRACTION;
+}
+static gX_I0 Pass_Run_Diffraction(gX_RendererGFX *gfx, gX_RenderTexture *)
+{
+    GX_PROFILE_ZONE_BEGIN("gfx:diffraction");
+    gX_RendererGFX_Diffraction_Draw(gfx);
+    GX_PROFILE_ZONE_END("gfx:diffraction");
     return;
 }
 static gX_I0 Pass_Run_Godray(gX_RendererGFX *gfx, gX_RenderTexture *)
@@ -1536,6 +1548,7 @@ static const gX_GFX_Pass s_gfxPasses[PASS_COUNT] = {
     {"scene_copy",  Pass_On_SceneCopy,  Pass_Run_SceneCopy,   "hdrScene/LDR",         "bloom.scene"},
     {"ssgi",        Pass_On_Ssgi,       Pass_Run_Ssgi,        "hdrScene.depth,color", "ssgi.map,accum"},
     {"bloom",       NULL,               Pass_Run_Bloom,       "hdrScene",             "bloom.scene"},
+    {"diffraction", Pass_On_Diffraction, Pass_Run_Diffraction, "hdrScene",           "compositeTarget,diffraction.map"},
     {"godray",      NULL,               Pass_Run_Godray,      "hdrScene",             "compositeTarget"},
     {"lensflare",   NULL,               Pass_Run_Lensflare,   "LDR,hdrScene.depth",   "compositeTarget"},
     {"ssr_comp",    Pass_On_SsrComp,    Pass_Run_SsrComp,     "ssr.map",              "bloom.scene"},
@@ -1645,6 +1658,7 @@ static gX_I0 Pass_AuditTargets(gX_RendererGFX *gfx, gX_RenderTexture *outputRT)
     Pass_AuditTarget((const gX_I8 *)"ssgi.accumB", &gfx->ssao.ssgiAccumB);
     Pass_AuditTarget((const gX_I8 *)"fogVolume.gen", &gfx->fogVolume.genMap);
     Pass_AuditTarget((const gX_I8 *)"godray.gen", &gfx->godray.genMap);
+    Pass_AuditTarget((const gX_I8 *)"diffraction.map", &gfx->diffraction.map);
     Pass_AuditTarget((const gX_I8 *)"contact.map", &gfx->contact.map);
     Pass_AuditTarget((const gX_I8 *)"mirror.fresh", &gfx->mirror.freshB);
     Pass_AuditTarget((const gX_I8 *)"mirror.histA", &gfx->mirror.histA);

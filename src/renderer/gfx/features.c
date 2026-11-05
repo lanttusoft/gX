@@ -56,6 +56,7 @@ typedef enum gX_RendererGFX_FeatureId {
     GX_GFX_FEATURE_PARTICLES,
     GX_GFX_FEATURE_PLANAR_REFLECTIONS,
     GX_GFX_FEATURE_FXAA,
+    GX_GFX_FEATURE_DIFFRACTION,
     GX_GFX_FEATURE_RAYMARCH,
     GX_GFX_FEATURE_GUI_MENU,
     GX_GFX_FEATURE_BATTLE,
@@ -94,6 +95,7 @@ static gX_I1 feature_taa(gX_RendererGFX *gfx) { return gfx->state.ENABLE_TAA ? 1
 static gX_I1 feature_particles(gX_RendererGFX *gfx) { return gfx->state.ENABLE_PARTICLES ? 1 : 0; }
 static gX_I1 feature_planar(gX_RendererGFX *gfx) { return gfx->state.ENABLE_PLANAR_REFLECTIONS ? 1 : 0; }
 static gX_I1 feature_fxaa(gX_RendererGFX *gfx) { return gfx->state.ENABLE_FXAA ? 1 : 0; }
+static gX_I1 feature_diffraction(gX_RendererGFX *gfx) { return gfx->state.ENABLE_DIFFRACTION ? 1 : 0; }
 static gX_I1 feature_raymarch(gX_RendererGFX *gfx) {
     (void)gfx;
     if (renderer.raymarch.amount > 0 && renderer.raymarch.state.DRAW_ALL) return 1;
@@ -130,6 +132,7 @@ static const gX_RendererGFX_FeatureSpec gX_FeatureSpecs[GX_GFX_FEATURE_COUNT] = 
     {"particles", "Particles", feature_particles, 0, 0, 1, 1, "particles", "particle.buffers"},
     {"planar-reflections", "Planar reflections", feature_planar, 0, 0, 0, 2, "reflections", "planar.rt"},
     {"fxaa", "FXAA", feature_fxaa, 0, 0, 0, 0, "fxaa", "post.ldr"},
+    {"diffraction", "Diffraction spikes", feature_diffraction, GX_FEATURE_BIT(GX_GFX_FEATURE_BLOOM), 1, 1, 1, "diffraction", "compositeTarget,diffraction.map"},
     {"raymarch", "Raymarch renderer", feature_raymarch, 0, 1, 0, 2, "raymarch_depth", "hdrScene.depth"},
     {"gui-menu", "Pause menu backdrop", feature_gui_menu, 0, 1, 0, 0, "gui", "gui.ping"},
     {"battle", "Battle scene", feature_battle, 0, 1, 0, 1, "battle", "hdrScene"},
@@ -241,6 +244,7 @@ gX_I0 gX_RendererGFX_Feature_Set(gX_RendererGFX *gfx, gX_U32 id,
         case GX_GFX_FEATURE_PARTICLES: gfx->state.ENABLE_PARTICLES = value; break;
         case GX_GFX_FEATURE_PLANAR_REFLECTIONS: gfx->state.ENABLE_PLANAR_REFLECTIONS = value; break;
         case GX_GFX_FEATURE_FXAA: gfx->state.ENABLE_FXAA = value; break;
+        case GX_GFX_FEATURE_DIFFRACTION: gfx->state.ENABLE_DIFFRACTION = value; break;
         default: return;
     }
     if (value) {

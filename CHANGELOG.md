@@ -33,6 +33,13 @@ Release-Class: minor
   (measured 0.62/255 mean difference). The audit also stops querying the
   core-profile-invalid `GL_STENCIL_BITS`, so its own GL error cannot mask a
   renderer error.
+- **Aperture diffraction spikes**: a scene-authored PRISM-1 post effect with
+  HDR threshold/knee, intensity, length, 4/6/8/9 blade count, rotation,
+  chromatic dispersion, sparkle and 4–16 taps. A half-res star map is added
+  to the composite after bloom so the spikes stay sharp; the `diffraction`
+  feature depends on bloom/HDR and is exposed in the FX panel. The new
+  `diffraction-check` gate pins six/eight-ray shape, threshold/midtone
+  rejection and chromatic centroid order.
 - **UI maturity in the GFX editor**: Basic/Advanced/Expert now gate whole
   renderer labs and the fine-tuning sections (shader tuning, GL level, raw
   toggles, texture tools, map tuning, SSGI, aux targets, CSM, decals, volumes,

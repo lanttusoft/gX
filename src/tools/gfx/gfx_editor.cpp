@@ -8528,6 +8528,44 @@ static gX_I0 gfx_lensflare_panel(gX_RendererGFX *gfx) {
     ImGui::DragFloat("dispersal", &gfx->lensflare.dispersal, 0.02f, 0.0f, 4.0f);
 }
 
+//ai: PRISM-1 aperture diffraction — tunable HDR glint spikes.
+static gX_I0 gfx_diffraction_panel(gX_RendererGFX *gfx) {
+    if (!gfx_ui_section((const gX_I8 *)"diffraction",
+            GX_SETTINGS_UI_ADVANCED)) return;
+    if (!ImGui::CollapsingHeader("Diffraction spikes")) return;
+    gX_I1 enabled = gfx->state.ENABLE_DIFFRACTION ? 1 : 0;
+    if (ImGui::Checkbox("enable diffraction##diffraction", (bool *)&enabled)) {
+        gfx->state.ENABLE_DIFFRACTION = enabled ? 1 : 0;
+        if (enabled) gfx->state.ENABLE_BLOOM = 1;
+    }
+    ImGui::TextDisabled("Bright HDR glints only; scene-authored.");
+    ImGui::DragFloat("threshold##diffraction", &gfx->diffraction.threshold,
+        0.05f, 0.0f, 20.0f);
+    ImGui::DragFloat("knee##diffraction", &gfx->diffraction.knee,
+        0.005f, 0.0f, 2.0f);
+    ImGui::DragFloat("intensity##diffraction", &gfx->diffraction.intensity,
+        0.01f, 0.0f, 8.0f);
+    ImGui::DragFloat("length##diffraction", &gfx->diffraction.length,
+        0.001f, 0.005f, 0.3f, "%.3f");
+    static const gX_I32 bladeValues[] = { 4, 6, 8, 9 };
+    static const gX_I8 *bladeNames[] = { "4", "6", "8", "9" };
+    gX_I32 bladeIndex = 1;
+    for (gX_I32 i = 0; i < 4; i++)
+        if (gfx->diffraction.blades == bladeValues[i]) bladeIndex = i;
+    if (ImGui::Combo("blades##diffraction", &bladeIndex, bladeNames, 4))
+        gfx->diffraction.blades = bladeValues[bladeIndex];
+    ImGui::DragFloat("rotation##diffraction", &gfx->diffraction.rotation,
+        0.01f, 0.0f, 6.283185f, "%.2f rad");
+    ImGui::DragFloat("chromatic##diffraction", &gfx->diffraction.chromatic,
+        0.01f, 0.0f, 1.0f);
+    ImGui::DragFloat("sparkle##diffraction", &gfx->diffraction.sparkle,
+        0.01f, 0.0f, 1.0f);
+    gX_I32 taps = gfx->diffraction.taps;
+    if (ImGui::SliderInt("taps##diffraction", &taps, 4, 16))
+        gfx->diffraction.taps = taps;
+    ImGui::TextDisabled("Threshold is HDR luma; lower values catch more glints.");
+}
+
 static gX_I0 gfx_toggles_panel(gX_RendererGFX *gfx) {
     if (!gfx_ui_section((const gX_I8 *)"render_toggles",
             GX_SETTINGS_UI_ADVANCED)) return;
@@ -11522,6 +11560,7 @@ static gX_I0 gfx_lab_fx_draw(gX_RendererGFX *gfx)
     gfx_bloom_panel(gfx);
     gfx_godray_panel(gfx);
     gfx_lensflare_panel(gfx);
+    gfx_diffraction_panel(gfx);
 }
 
 static gX_I0 gfx_lab_lights_draw(gX_RendererGFX *gfx)

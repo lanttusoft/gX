@@ -389,6 +389,8 @@ if(GX_ENABLE_RENDERER)
         src/renderer/gfx/rt_helpers.c
         src/renderer/gfx/terrain.c
         src/renderer/gfx/lensflare.c
+        #ai: aperture diffraction post pass
+        src/renderer/gfx/diffraction.c
         src/renderer/gfx/layout.c
         src/renderer/gfx/light.c
         src/renderer/gfx/load.c

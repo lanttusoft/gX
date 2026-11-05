@@ -793,6 +793,8 @@ static gX_SchemaField gfx_state_fields[] = {
     GX_SCHEMA_BOOL("ENABLE_VOLUME_FOG",       gX_RendererGFX_State, ENABLE_VOLUME_FOG),
     //opencode: lens flares toggle (tuning lives in the lensflare sub-object)
     GX_SCHEMA_BOOL("ENABLE_LENS_FLARE",       gX_RendererGFX_State, ENABLE_LENS_FLARE),
+    //ai: aperture diffraction spikes (tuning lives in the diffraction sub-object)
+    GX_SCHEMA_BOOL("ENABLE_DIFFRACTION",      gX_RendererGFX_State, ENABLE_DIFFRACTION),
     //opencode: occlusion culling
     GX_SCHEMA_BOOL("ENABLE_OCCLUSION_CULLING", gX_RendererGFX_State, ENABLE_OCCLUSION_CULLING),
     GX_SCHEMA_BOOL("ENABLE_INSTANCING",        gX_RendererGFX_State, ENABLE_INSTANCING),
@@ -891,6 +893,19 @@ static gX_SchemaField gfx_fogvolume_fields[] = {
 static gX_SchemaField gfx_lensflare_fields[] = {
     GX_SCHEMA_F32("intensity", gX_RendererGFX_LensFlare, intensity),
     GX_SCHEMA_F32("dispersal", gX_RendererGFX_LensFlare, dispersal),
+};
+
+//ai: aperture diffraction spikes — all scene-authored tunables.
+static gX_SchemaField gfx_diffraction_fields[] = {
+    GX_SCHEMA_F32("threshold", gX_RendererGFX_Diffraction, threshold),
+    GX_SCHEMA_F32("knee", gX_RendererGFX_Diffraction, knee),
+    GX_SCHEMA_F32("intensity", gX_RendererGFX_Diffraction, intensity),
+    GX_SCHEMA_F32("length", gX_RendererGFX_Diffraction, length),
+    GX_SCHEMA_F32("chromatic", gX_RendererGFX_Diffraction, chromatic),
+    GX_SCHEMA_F32("rotation", gX_RendererGFX_Diffraction, rotation),
+    GX_SCHEMA_F32("sparkle", gX_RendererGFX_Diffraction, sparkle),
+    GX_SCHEMA_I32("blades", gX_RendererGFX_Diffraction, blades),
+    GX_SCHEMA_I32("taps", gX_RendererGFX_Diffraction, taps),
 };
 
 // ---------------------------------------------------------------------------
@@ -1072,6 +1087,9 @@ static gX_SchemaField gfx_root_fields[] = {
     GX_SCHEMA_OBJECT("lensflare", gX_RendererGFX, lensflare,
                      gfx_lensflare_fields,
                      (gX_U32)(sizeof(gfx_lensflare_fields) / sizeof(gfx_lensflare_fields[0]))),
+    GX_SCHEMA_OBJECT("diffraction", gX_RendererGFX, diffraction,
+                     gfx_diffraction_fields,
+                     (gX_U32)(sizeof(gfx_diffraction_fields) / sizeof(gfx_diffraction_fields[0]))),
     GX_SCHEMA_OBJECT("bloom", gX_RendererGFX, bloom,
                      gfx_bloom_fields,
                      (gX_U32)(sizeof(gfx_bloom_fields) / sizeof(gfx_bloom_fields[0]))),

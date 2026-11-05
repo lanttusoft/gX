@@ -74,6 +74,7 @@ A cartridge is a gX scene preset plus an asset set and a settings profile:
 | Texture filtering / BC sidecars | TEXEL-1 |
 | Raymarch / SSR / ray effects | RAY-1 |
 | Present/post filter | PRISM-1 |
+| Aperture diffraction | PRISM-1 |
 | Synth / wavetable | AUDIO-1 |
 | Scene preset | cartridge |
 | Basic UI level | console-style shell controls |
@@ -127,6 +128,30 @@ resolution-speed claim. The **Full** path is the headroom proof:
 **9.8 ms at 320x240 vs 22.9 ms at 1024x768** (120-frame post-warmup averages
 on the reference GTX 1060), and the gate requires at least 10% headroom.
 
+### PRISM-1 diffraction spikes
+
+Bright HDR glints (water sun sparkles, chrome, neon) can emit aperture
+diffraction spikes. The feature is scene-authored and fully tunable:
+
+- threshold + soft knee on HDR luma,
+- intensity and spike length,
+- aperture blade count (4/6/8/9 rays) and rotation,
+- chromatic dispersion,
+- twinkle/sparkle amount,
+- tap count (4–16; half-res map).
+
+The pass runs **after bloom** so the spikes stay sharp instead of dissolving
+into the halo: a half-res star map is generated from `hdrScene`, then added
+additively to the composite. The `diffraction.map` target is registered in the
+buffer audit. The FX panel exposes every parameter; the feature depends on
+bloom/HDR and is not forced by Console Max.
+
+`GX_T_DIFFRACTION*` sets the tunables for headless probes;
+`GX_T_DIFFRACTION_FIXTURE=1` gives a dark studio with the effect enabled.
+`diffraction-check` runs the production shader on a synthetic point and pins
+six/eight-ray stars, threshold/midtone rejection and the chromatic centroid
+order. It runs as part of `make check`.
+
 The console shell, cartridge browser, OSD, save states, a compact 320x240
 native GUI, supersampled render/output split, dither and CRT filters are
 follow-ups. Until the shell exists, the native GUI stays at window resolution
@@ -175,6 +200,8 @@ only the scene render target is 320x240.
 - Virtual screen trace: `virtual=320x240`, `window=1024x768`,
   `render=320x240`, `filter=soft|sharp`.
 - Soft vs Sharp high-frequency-energy difference.
+- Diffraction shape: six/eight-ray stars, threshold/midtone rejection,
+  chromatic dispersion (`make diffraction-check`).
 - Max quality preserves the authored mask (planar/FXAA/gfx-scene, no forced
   SSR/TAA/DOF) and applies shader 2 + 4x MSAA.
 - Full Max 320x240 vs 1024x768 relative frame budget (>=10% faster).
@@ -186,10 +213,6 @@ only the scene render target is 320x240.
 
 ## Follow-up
 
-- **PRISM-1 diffraction spikes**: threshold the HDR bright pass, convolve with
-  a 6/8-blade star kernel, add chromatic dispersion and rotate with the
-  camera. Intended for water sun sparkles, neon, chrome and specular glints;
-  scene-authored (Look/Bloom controls), not forced by Console Max.
 - Console shell and boot sequence.
 - OSD: `320x240 · SOFT · 60Hz`, save state, frame advance, fast-forward.
 - Supersampled render/output split.

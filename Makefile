@@ -90,6 +90,8 @@ check: all
 	$(MAKE) -s clean-defaults-check
 	@echo "== [gX CI] static-lightmap contract =="
 	python3 scripts/lightmap_check.py
+	@echo "== [gX CI] diffraction shape =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/diffraction_shape_check.py
 	@echo "== [gX CI] compressed texture sidecars =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/texture_assets_check.py
 	#ai: ambient-only Phong shading must preserve albedo texture variation.
@@ -785,6 +787,11 @@ gfx-pp-check: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/pp_routing_check.py
 
 #ai: label placement/history, water height preservation and production ImGui ID/edit isolation.
+.PHONY: diffraction-check
+diffraction-check:
+	@echo "== [gX CI] diffraction shape =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/diffraction_shape_check.py
+
 .PHONY: gfx-authoring-check lensflare-check
 
 #ai: half-resolution godray source must not replay stale SSR mip levels.

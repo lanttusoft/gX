@@ -105,7 +105,7 @@ def main():
             require(sum('diagnostics' in d for d in documents)==1,'diagnostics must be explicitly opted in')
             state=next(d['diagnostics'] for d in documents if 'diagnostics' in d)
             allowed={'name','description','created_date','created_time','state','ssao','csm','ssr',
-                     'reflection','godray','fogVolume','lensflare','bloom','fog','camera','editor',
+                     'reflection','godray','fogVolume','lensflare','diffraction','bloom','fog','camera','editor',
                      'viewport_x','viewport_y','viewport_width','viewport_height','selected_model',
                      'render_camera','render_camera_index','render_camera_name'}
             optional={'render_camera','render_camera_index','render_camera_name'}
@@ -123,6 +123,9 @@ def main():
                     and isinstance(state['render_camera_name'],str),'render camera identity missing')
             require('useGTAO' in state['ssao'] and 'useSSGI' in state['ssao'],'GI state missing')
             require('maxSteps' in state['ssr'] and 'intensity' in state['bloom'],'effect tuning missing')
+            require('threshold' in state['diffraction']
+                and 'blades' in state['diffraction']
+                and 'chromatic' in state['diffraction'],'diffraction tuning missing')
             for d in documents:
                 require(re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ',d['utc']) is not None,'UTC metadata missing')
                 require(d['engine_version'] and d['preset'],'engine/preset metadata missing')

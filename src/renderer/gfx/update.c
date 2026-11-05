@@ -420,6 +420,8 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             gfx->fogVolume.blendShader.reload = true;
             // Lens flare shader
             gfx->lensflare.shader.reload = true;
+            // Aperture diffraction shader
+            gfx->diffraction.shader.reload = true;
             //opencode: include every lazily-enabled shader in quality reloads
             gfx->fxaaShader.reload = true;
             //opencode: reload the experimental palette shader only when active.
@@ -535,6 +537,10 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         GX_GFX_RT_RELOAD(gfx, fogVolume.genMap);
         gfx->fogVolume.genMap.wrapper.width = maindata.renderWidth / 2;
         gfx->fogVolume.genMap.wrapper.height = maindata.renderHeight / 2;
+
+        GX_GFX_RT_RELOAD(gfx, diffraction.map);
+        gfx->diffraction.map.wrapper.width = maindata.renderWidth / 2;
+        gfx->diffraction.map.wrapper.height = maindata.renderHeight / 2;
 
         //opencode: E-5 — 7 RTs were missing from the resize handler and kept
         //   stale dimensions after a window resize (RenderTexture_Update only
@@ -1212,6 +1218,10 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         gX_RendererGFX_Shader_Update(&gfx->lensflare.shader, gfx);
     gX_RendererGFX_LensFlare_CacheLocs(gfx);
 
+    if (gfx->state.ENABLE_DIFFRACTION)
+        gX_RendererGFX_Shader_Update(&gfx->diffraction.shader, gfx);
+    gX_RendererGFX_Diffraction_CacheLocs(gfx);
+
     //opencode: particle system update (compute dispatch)
     gX_RendererGFX_Particle_Update(gfx);
 
@@ -1512,6 +1522,10 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         gX_RendererGFX_RenderTexture_Update(&gfx->bloom.ping);
         gX_RendererGFX_RenderTexture_Update(&gfx->bloom.pong);
         gX_RendererGFX_RenderTexture_Update(&gfx->bloom.scene);
+    }
+    if (gfx->state.ENABLE_DIFFRACTION) {
+        gfx->diffraction.map.wrapper.loadingState.loadAsap = true;
+        gX_RendererGFX_RenderTexture_Update(&gfx->diffraction.map);
     }
     gX_RendererGFX_Feature_Trace(gfx);
     if (gfx->state.ENABLE_PLANAR_REFLECTIONS

@@ -197,15 +197,15 @@ def check_console_max(tag, virtual, full=False):
         raise RuntimeError(f"console max {tag}: GFX_PLAN missing")
     mask, count, needHdr, effects, missing = plan.groups()
     maskValue = int(mask, 16)
-    required = (1 << 15) | (1 << 16) | (1 << 20)
+    required = (1 << 15) | (1 << 16) | (1 << 21)
     forbidden = ((1 << 4) | (1 << 5) | (1 << 10) | (1 << 11)
-                 | (1 << 12) | (1 << 13))
+                 | (1 << 12) | (1 << 13) | (1 << 17))
     if full:
-        required = 0x1FFFF | (1 << 20)
+        required = 0x3FFFF | (1 << 21)
         forbidden = 0
     if maskValue & required != required or maskValue & forbidden:
         raise RuntimeError(f"console max {tag}: feature mask 0x{mask}")
-    expectedCount = 18 if full else 3
+    expectedCount = 19 if full else 3
     expectedEffects = "1" if full else "0"
     if int(count) != expectedCount or needHdr != "1" \
             or effects != expectedEffects or int(missing, 16) != 0:
@@ -213,14 +213,14 @@ def check_console_max(tag, virtual, full=False):
             f"console max {tag}: plan count={count} hdr={needHdr} "
             f"effects={effects} missing=0x{missing}")
     requiredFeatures = (("ssgi", "planar-reflections", "volume-fog", "dof",
-                         "taa", "fxaa") if full
+                         "taa", "fxaa", "diffraction") if full
                         else ("planar-reflections", "fxaa", "gfx-scene"))
     for feature in requiredFeatures:
         if f"GFX_PLAN feature={feature} " not in log:
             raise RuntimeError(f"console max {tag}: {feature} missing")
     if not full:
         for feature in ("ssgi", "ssr", "taa", "dof", "motion-blur",
-                        "volume-fog"):
+                        "volume-fog", "diffraction"):
             if f"GFX_PLAN feature={feature} " in log:
                 raise RuntimeError(
                     f"console max {tag}: forced experimental {feature}")

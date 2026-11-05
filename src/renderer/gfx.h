@@ -49,6 +49,7 @@ extern "C" {
 #include "gfx/contact.h"
 #include "gfx/clusters.h"
 #include "gfx/lensflare.h"
+#include "gfx/diffraction.h"
 #include "gfx/particle.h"
 #include "water.h"
 
@@ -152,6 +153,7 @@ typedef struct gX_RendererGFX_State {
     gX_I1   ENABLE_PARTICLES;
     gX_I1   ENABLE_VOLUME_FOG;
     gX_I1   ENABLE_LENS_FLARE;
+    gX_I1   ENABLE_DIFFRACTION;
 
     //opencode: occlusion culling — skips drawing models whose bounding box
     //   was fully occluded by the depth buffer on the previous frame.
@@ -381,6 +383,7 @@ typedef struct gX_RendererGFX {
     gX_RendererGFX_Contact contact; //opencode: screen-space contact shadows (spike 1)
     gX_RendererGFX_LightClusters clusters; //opencode: v0.3.2 Forward+ tile grid
     gX_RendererGFX_LensFlare lensflare;
+    gX_RendererGFX_Diffraction diffraction;
     gX_RendererGFX_Particle particle;
     gX_RendererGFX_Weather weather;
     gX_RendererGFX_Splat splat;
