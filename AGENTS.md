@@ -108,6 +108,20 @@ make version-check               # version format/consistency
 
 ## Agent workflow
 
+<!-- //ai: durable proposal/outcome memory across sessions and harnesses. -->
+Before proposing features or follow-up work, search
+[`docs/ideas.md`](docs/ideas.md) and its linked subsystem backlogs. Reuse the
+existing idea ID and record substantial new ideas, decisions and outcomes
+there. Keep deferred/declined reasons; do not reopen them merely because a
+session is new. A ledger entry is not authorization to implement it.
+
+<!-- //ai: shared worktree/branch memory; observation is not cleanup permission. -->
+Follow [`docs/worktree_tracking.md`](docs/worktree_tracking.md) when creating,
+switching, handing off or finishing a workstream. Refresh the shared local
+inventory and record purpose, related idea IDs, verification and disposition
+in its notes. Include branches without worktrees. Unknown work stays unreviewed;
+never remove/prune worktrees or delete branches without explicit approval.
+
 1. Read this file, [`docs/README.md`](docs/README.md) and the contract for the
    surface you will touch.
 2. Make the smallest change that satisfies the contract, on a branch.
@@ -123,6 +137,8 @@ make version-check               # version format/consistency
 - [`docs/architecture.md`](docs/architecture.md) — system layout
 - [`docs/porting.md`](docs/porting.md) — matrix/renderer traps
 - [`docs/api_reference.md`](docs/api_reference.md) — public API index
+- [`docs/ideas.md`](docs/ideas.md) — ideas, decisions, remaining work and revisit conditions
+- [`docs/worktree_tracking.md`](docs/worktree_tracking.md) — shared branch/worktree inventory and cleanup review
 - [`gates.toml`](gates.toml) — the audit matrix
 - [`docs/ai_policy.md`](docs/ai_policy.md) — AI contribution policy
 - [`AI_CONTRIBUTING.md`](AI_CONTRIBUTING.md) — the short reviewer checklist

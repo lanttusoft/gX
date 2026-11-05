@@ -293,6 +293,11 @@ only the scene render target is 320x240.
 
 ## Follow-up
 
+<!-- //ai: retain idea outcomes as well as the current work list. -->
+The [idea ledger](ideas.md) records decisions and completed/deferred variants
+(`GX-I001`–`GX-I014`). Check it before proposing these items again; this section
+remains the console's detailed open-work list.
+
 - OSD status such as `320x240 · SOFT · 60Hz` and save-slot state, plus
   frame-advance/fast-forward controls with defined simulation timing semantics.
 - Supersampled render/output split, separately specified from the current

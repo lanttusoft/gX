@@ -9,6 +9,11 @@ Start here:
   agents; [AI-assisted contributions](../AI_CONTRIBUTING.md) — the short
   review and provenance checklist.
 - [Changelog](../CHANGELOG.md) — released versions and current changes.
+<!-- //ai: versioned idea/outcome memory, separate from session handoffs. -->
+- [Ideas and decisions](ideas.md) — search before proposing work; retains done,
+  partial, deferred, declined and superseded ideas with reasons and sources.
+- [Worktree and branch tracking](worktree_tracking.md) — shared local inventory,
+  workstream notes and explicit review before future cleanup.
 - [Versioning policy](versioning.md) — official MAJOR/MINOR/PATCH rules,
   `Release-Class` metadata and the change classifier.
 - [Release candidate ledger](release_candidate.md) — the three gates (author
