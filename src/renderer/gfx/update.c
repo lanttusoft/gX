@@ -234,6 +234,16 @@ static gX_I0 gfx_ibl_refresh_update(gX_RendererGFX *gfx)
 //ai: load the shared velocity pass whenever temporal GTAO is active.
 gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
 {
+    {
+        static gX_I1 consoleMaxApplied = 0;
+        const gX_I8 *consoleMax = getenv("GX_CONSOLE_MAX");
+        if (consoleMax && consoleMax[0] == '1' && !consoleMaxApplied) {
+            gX_RendererGFX_ConsoleMax_Apply(gfx);
+            consoleMaxApplied = 1;
+            gX_TraceLog_GFX(gX_LOG_NOTICE,
+                "GX_CONSOLE_MAX: max preset applied");
+        }
+    }
     glass_test_move(gfx);
     water_refraction_test_toggle(gfx);
     water_refraction_test_transition(gfx);

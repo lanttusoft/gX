@@ -61,7 +61,8 @@ DEFAULT_SHOT_FRAME = 120
 HOOK_PREFIXES = ("GX_T_", "GX_CAM_", "GX_FOG_", "GX_SNOW_", "GX_SNOWFALL_",
                  "GX_RAIN_", "GX_FOGSPRITE_", "GX_SPLAT_", "GX_MIRROR_",
                  "GX_PROBE_", "GX_EXTRA_", "GX_LAYOUT_", "GX_RAYMARCH_",
-                 "GX_UI_", "GX_VIRTUAL_", "GX_PRESENT_", "GX_WINDOW_")
+                 "GX_UI_", "GX_VIRTUAL_", "GX_PRESENT_", "GX_WINDOW_",
+                 "GX_CONSOLE_")
 HOOK_KEYS = ("GX_SCREENSHOT_DIR", "GX_SHOT_FRAME", "GX_SHOT_FORCE", "GX_FRAMES",
               "GX_FIXED_DT", "GX_SKY_CHECK", "GX_GFX_RAYMARCH_DEPTH",
               "GX_REDUCE_MOTION")

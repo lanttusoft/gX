@@ -8189,6 +8189,18 @@ static gX_I0 gfx_features_panel(gX_RendererGFX *gfx) {
     if (ImGui::Button("HDR + bloom##feat")) gX_RendererGFX_Feature_ApplyTemplate(gfx, "hdr-bloom");
     ImGui::SameLine();
     if (ImGui::Button("Full##feat")) gX_RendererGFX_Feature_ApplyTemplate(gfx, "full");
+    if (ImGui::Button("Console Max##feat")) {
+        settings.screenWidth = 320;
+        settings.screenHeight = 240;
+        settings.renderScale = 1.0f;
+        settings.presentFilter = 1;
+        settings.dirtyFlag = 1;
+        gX_Settings_Apply();
+        gX_RendererGFX_ConsoleMax_Apply(gfx);
+        gX_TraceLog(gX_LOG_INFO, "GfxEd: Console Max preset applied");
+    }
+    ImGui::SameLine();
+    ImGui::TextDisabled("320 scene + all features + ultra quality");
     ImGui::Separator();
     gX_U32 count = gX_RendererGFX_Feature_Count();
     for (gX_U32 i = 0; i < count; i++) {

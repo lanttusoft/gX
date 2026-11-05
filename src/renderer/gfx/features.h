@@ -74,6 +74,8 @@ gX_I0 gX_RendererGFX_Feature_Set(gX_RendererGFX *gfx, gX_U32 id,
     gX_I1 enabled);
 gX_I0 gX_RendererGFX_Feature_ApplyTemplate(gX_RendererGFX *gfx,
     const gX_I8 *name);
+//ai: one-click Console 240p Max — full feature closure + ultra quality.
+gX_I0 gX_RendererGFX_ConsoleMax_Apply(gX_RendererGFX *gfx);
 
 #ifdef __cplusplus
 }
