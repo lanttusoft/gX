@@ -158,10 +158,10 @@ six/eight-ray stars, threshold/midtone rejection and the chromatic centroid
 order. It runs as part of `make check`.
 
 The console shell boot view, the Y2K cartridge, save states, CRT-safe idle
-blanking and the boot OSD now exist. Still follow-ups: an in-cartridge system
-menu over ESC, a compact 320x240 native GUI, supersampled render/output split,
-dither and CRT filters, and more cartridge profiles. The shell keeps the
-native GUI at window resolution; only the scene is 240p.
+blanking, boot OSD and an ESC system menu now exist. Still follow-ups: a
+compact 320x240 native GUI, supersampled render/output split, dither and CRT
+filters, and more cartridge profiles. The shell keeps the native GUI at window
+resolution; only the scene is 240p.
 
 ## CRT notes
 
@@ -204,6 +204,12 @@ only the scene render target is 320x240.
   `GX_CONSOLE_IDLE_SECONDS` shortens the timeout for probes. Cartridge boot
   shows a short OSD banner (gX-240 / CARTRIDGE 01 Y2K CGI / 320x240 4x MSAA
   PRISM-1) that fades after seven seconds; `GX_T_CARTRIDGE_OSD=0` disables it.
+- <!-- //ai: ESC system-menu behavior and its focused gate are session additions. -->
+  **Cartridge system menu** — ESC opens the native-resolution pause overlay
+  during cartridge playback. Resume/ESC closes it; Save Slot 1 and Load Slot 1
+  mirror F5/F8, a successful save refreshes the slot label in place, Video
+  cycles Soft → Sharp → Native, and Exit to Shell returns to the gX-240 boot
+  view. Keyboard/gamepad focus navigation is supported.
 - **Save states** — three slots in `save/console_slot_N.json` hold the
   cartridge id, video profile and orbit camera. While a cartridge runs, **F5**
   saves slot 1 and **F8** loads it; the shell's Save states view lists the
@@ -244,13 +250,13 @@ only the scene render target is 320x240.
   save-slot route, CRT-safe idle blank/wake with the wake input swallowed,
   the cartridge OSD banner, F5/F8 save-load with camera restore, the shell
   LOAD slot route, and a cartridge boot from the shell that cold-boots GFX
-  and reaches the 320x240 Soft/4x MSAA/diffraction profile
+  and reaches the 320x240 Soft/4x MSAA/diffraction profile. The ESC menu gate
+  covers save/load, video cycling and Exit to Shell
   (`make console-check`).
 - No UI clipping with native tool panels at window resolution.
 
 ## Follow-up
 
-- Console shell and boot sequence.
 - OSD: `320x240 · SOFT · 60Hz`, save state, frame advance, fast-forward.
 - Supersampled render/output split.
 - Dither/CRT/film-grain variants.

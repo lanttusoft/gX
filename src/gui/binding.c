@@ -24,6 +24,7 @@
 **********************************************************************************************/
 
 
+#include <stdio.h>
 #include <string.h>
 
 #include "binding.h"
@@ -163,10 +164,14 @@ gX_I0 gX_Widget_OnClick_DismissToast(gX_I0 *arg) {
     gui.state.toastMessage[0] = '\0';
 }
 
+//ai: cartridge Resume action uses this shared close callback and trace.
 gX_I0 gX_Widget_OnClick_CloseEscapeMenu(gX_I0 *arg) {
     (void)arg;
     gui.state.SHOW_MENU = false;
     gX_GUI_Focus_Clear();
+    if (arguments.cartridgeY2K
+        || (arguments.consoleShell && maindata.masterIndex != gX_SCENE_TITLE))
+        gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_MENU: resume");
 }
 
 //opencode: open settings — rebuild menu canvas with settings template
@@ -401,6 +406,72 @@ gX_I0 gX_Widget_OnClick_ConsoleLoadSlot(gX_I0 *arg) {
     gX_I32 slot = (gX_I32)(gX_U64)(uintptr_t)arg;
     gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: load_slot=%d", slot);
     gX_ConsoleState_Load(slot);
+}
+
+//ai: direct pause-menu save/load use slot 1, matching the cartridge hotkeys.
+gX_I0 gX_Widget_OnClick_ConsolePauseSave(gX_I0 *arg) {
+    (void)arg;
+    gX_I32 Result = gX_ConsoleState_Save(1);
+    if (Result == 0) {
+        if (gui.menuCanvas) gui.menuCanvas->refresh = true;
+        gui.focusFirstPending = true;
+    } else {
+        snprintf((char *)gui.state.toastMessage,
+            sizeof(gui.state.toastMessage), "%s", "Save failed");
+        gui.state.SHOW_MENU = false;
+        gui.state.SHOW_MSG = true;
+        gX_GUI_Focus_Clear();
+    }
+    gX_TraceLog(gX_LOG_NOTICE,
+        "CONSOLE_MENU: save slot=1 result=%d", Result);
+}
+
+gX_I0 gX_Widget_OnClick_ConsolePauseLoad(gX_I0 *arg) {
+    (void)arg;
+    if (!gX_ConsoleState_Exists(1)) {
+        gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_MENU: load slot=1 empty");
+        return;
+    }
+    gX_I32 Result = gX_ConsoleState_Load(1);
+    if (Result == 0) {
+        gui.state.SHOW_MENU = false;
+        gX_GUI_Focus_Clear();
+    } else {
+        snprintf((char *)gui.state.toastMessage,
+            sizeof(gui.state.toastMessage), "%s", "Load failed");
+        gui.state.SHOW_MENU = false;
+        gui.state.SHOW_MSG = true;
+        gX_GUI_Focus_Clear();
+    }
+    gX_TraceLog(gX_LOG_NOTICE,
+        "CONSOLE_MENU: load slot=1 result=%d", Result);
+}
+
+gX_I0 gX_Widget_OnClick_ConsolePauseVideo(gX_I0 *arg) {
+    (void)arg;
+    gX_I32 Mode = 0;
+    if (settings.screenWidth == 320 && settings.screenHeight == 240) {
+        Mode = settings.presentFilter ? 1 : 2;
+    }
+    gX_Widget_OnClick_ConsoleVideo(
+        (gX_I0 *)(gX_U64)(uintptr_t)Mode);
+    if (gui.menuCanvas) gui.menuCanvas->refresh = true;
+    gui.focusFirstPending = true;
+}
+
+gX_I0 gX_Widget_OnClick_ConsoleExitShell(gX_I0 *arg) {
+    (void)arg;
+    arguments.consoleShell = true;
+    arguments.cartridgeY2K = false;
+    arguments.showcase = false;
+    arguments.showcaseY2K = false;
+    gui.state.SHOW_MENU = false;
+    gui.state.SHOW_MSG = false;
+    gui.state.toastMessage[0] = '\0';
+    gX_GUI_Focus_Clear();
+    gX_GUI_Template_TitleGX_SetView(6);
+    gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: exit=shell");
+    gX_MainData_Switch(gX_SCENE_TITLE);
 }
 
 //opencode: v0.6.5 — in-app tool openers (EXTRAS buttons). Runtime API in

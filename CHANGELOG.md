@@ -68,6 +68,12 @@ Release-Class: minor
   loads them. `GX_CONSOLE_SAVE_DIR` redirects the folder for probes and the
   harness guard refuses writes. `gX_Showcase_CameraGet/Set` provide the
   serializable orbit state; the console gate round-trips it.
+- <!-- //ai: in-cartridge ESC menu addition. --> **Cartridge system menu**:
+  ESC opens the native-resolution pause overlay
+  with Resume, Save Slot 1, Load Slot 1, Video and Exit to Shell. The video
+  action cycles Soft/Sharp/Native; save and load match F5/F8, and a successful
+  save refreshes the slot label in place. The console gate drives the menu
+  through keyboard focus navigation and checks all routes.
 - **Y2K CGI cartridge**: `--cartridge-y2k` boots a fixed console profile — the
   Y2K composition at a 320x240 Soft scene target, the authored 128 px
   brushed-metal albedo/normal/ORM set on the low-poly floor and ring, Max

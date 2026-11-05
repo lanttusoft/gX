@@ -30,6 +30,7 @@
 
 #include "template_header.h"
 #include "../binding.h"
+#include "../console_state.h"
 
 #if gX_ENABLE_RENDERER == 1
     #include "../../renderer/renderer.h"
@@ -240,10 +241,15 @@ gX_I0 gX_GUI_Template_SDFT(gX_I32 canvasindex) {
 //   are dropped per the pivot (engine-only). Consumes the gui.style.escape.*
 //   tokens that the theme schema already carried (previously unused) and
 //   the gui.ping blur machinery.
+//ai: cartridge playback specializes this canvas as the compact gX-240 menu.
 gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex);
 gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     gX_GUI_Canvas *canvas = gX_GUI_Canvas_FromIndex(canvasindex);
     gX_GUI_Builder b = gX_GUI_Builder_New(canvas, "EscapeMenu", "escape menu", gX_GUI_TEMPLATE_ESCAPEMENU);
+    gX_I1 ConsoleMenu = arguments.cartridgeY2K
+        || (arguments.consoleShell && maindata.masterIndex != gX_SCENE_TITLE);
+    if (ConsoleMenu)
+        gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_MENU: active");
 
     canvas->canvasBox = (gX_Rectangle){0, 0, (gX_F32)maindata.screenWidth, (gX_F32)maindata.screenHeight};
 
@@ -289,7 +295,8 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
         gX_GUI_Builder_Color(&b, gui.style.escape.titleBarBg.r, gui.style.escape.titleBarBg.g,
             gui.style.escape.titleBarBg.b, gui.style.escape.titleBarBg.a);
         gX_GUI_Builder_Text_Begin(&b);
-            gX_GUI_Builder_Text_Set(&b, "Pause");
+            gX_GUI_Builder_Text_Set(&b,
+                ConsoleMenu ? "gX-240" : "Pause");
             gX_GUI_Builder_Text_Color(&b, gui.style.escape.titleText);
         gX_GUI_Builder_Text_End(&b);
         gX_GUI_Builder_Class(&b, "pause-title");
@@ -326,25 +333,43 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
             gX_GUI_OnClick(b.currentElement, clickFn, (gX_I0*)(gX_U64)(uintptr_t)arg); \
         gX_GUI_Builder_Element_End(&b)
 
-    GX_PAUSE_BTN("Resume",     2.35f, gX_Widget_OnClick_CloseEscapeMenu, 0);
-    GX_PAUSE_BTN("Settings",   3.00f, gX_Widget_OnClick_OpenSettings, 0);
-    GX_PAUSE_BTN("Back to Title", 3.65f, gX_Widget_OnClick_SwitchToTitle, 0);
+    if (ConsoleMenu) {
+        const gX_I8 *VideoLabel = settings.screenWidth == 320
+            && settings.screenHeight == 240
+            ? (settings.presentFilter ? "Video: Soft" : "Video: Sharp")
+            : "Video: Native";
+        const gX_I8 *LoadLabel = gX_ConsoleState_Exists(1)
+            ? "Load Slot 1" : "Load Slot 1 (empty)";
+        GX_PAUSE_BTN("Resume", 2.35f,
+            gX_Widget_OnClick_CloseEscapeMenu, 0);
+        GX_PAUSE_BTN("Save Slot 1 (F5)", 3.00f,
+            gX_Widget_OnClick_ConsolePauseSave, 0);
+        GX_PAUSE_BTN(LoadLabel, 3.65f,
+            gX_Widget_OnClick_ConsolePauseLoad, 0);
+        GX_PAUSE_BTN(VideoLabel, 4.30f,
+            gX_Widget_OnClick_ConsolePauseVideo, 0);
+        GX_PAUSE_BTN("Exit to Shell", 4.95f,
+            gX_Widget_OnClick_ConsoleExitShell, 0);
+    } else {
+        GX_PAUSE_BTN("Resume", 2.35f,
+            gX_Widget_OnClick_CloseEscapeMenu, 0);
+        GX_PAUSE_BTN("Settings", 3.00f,
+            gX_Widget_OnClick_OpenSettings, 0);
+        GX_PAUSE_BTN("Back to Title", 3.65f,
+            gX_Widget_OnClick_SwitchToTitle, 0);
+
+        gX_GUI_Builder_Widget_Slider(&b, 2.3f, 4.55f, 3.4f, 0.34f,
+            "Master", &settings.masterVolume, 0.0f, 2.0f);
+        gX_GUI_Builder_Widget_Slider(&b, 2.3f, 4.92f, 3.4f, 0.34f,
+            "Music", &settings.musicVolume, 0.0f, 1.0f);
+        gX_GUI_Builder_Widget_Slider(&b, 2.3f, 5.29f, 3.4f, 0.34f,
+            "Effects", &settings.sfxVolume, 0.0f, 1.0f);
+        gX_GUI_Builder_Widget_Slider(&b, 2.3f, 5.66f, 3.4f, 0.34f,
+            "Synth", &settings.synthVolume, 0.0f, 1.0f);
+    }
+
 
     #undef GX_PAUSE_BTN
-
-    //ai: pause mixer — master/music/effects/synth bus volumes. The settings
-    //   fields are the persisted surface; gX_Settings_Update pushes a change
-    //   to the audio buses the same frame, so a drag is live and Save in the
-    //   settings view keeps it. Single column: the pixel fonts need the full
-    //   panel width for "label: 1.000" (two columns truncated).
-    gX_GUI_Builder_Widget_Slider(&b, 2.3f, 4.55f, 3.4f, 0.34f,
-        "Master", &settings.masterVolume, 0.0f, 2.0f);
-    gX_GUI_Builder_Widget_Slider(&b, 2.3f, 4.92f, 3.4f, 0.34f,
-        "Music", &settings.musicVolume, 0.0f, 1.0f);
-    gX_GUI_Builder_Widget_Slider(&b, 2.3f, 5.29f, 3.4f, 0.34f,
-        "Effects", &settings.sfxVolume, 0.0f, 1.0f);
-    gX_GUI_Builder_Widget_Slider(&b, 2.3f, 5.66f, 3.4f, 0.34f,
-        "Synth", &settings.synthVolume, 0.0f, 1.0f);
 
     //close button (top-right of panel)
     gX_GUI_Builder_Element_Begin(&b);
@@ -368,7 +393,8 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     //ai: hint chip — a quiet dark backing keeps the light hint legible on the
     //   Aero glass panel (the bare panel can composite light scene pixels).
     gX_GUI_Builder_Element_Begin(&b);
-        gX_GUI_Builder_RectGrid(&b, 2.65f, 6.30f, 2.7f, 0.55f);
+        gX_GUI_Builder_RectGrid(&b, ConsoleMenu ? 1.6f : 2.65f, 6.30f,
+            ConsoleMenu ? 4.8f : 2.7f, 0.55f);
         gX_GUI_Builder_Color(&b, 8, 10, 18, 250);
         b.currentElement->cornerRadius = gui.style.cornerRadius;
     gX_GUI_Builder_Element_End(&b);
@@ -376,11 +402,13 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
         //opencode: the hint was 1.5 grid units wide for a 254px label (layout
         //   pass); widen the box and keep a shrink guard for themes with
         //   wider type.
-        gX_GUI_Builder_RectGrid(&b, 2.8f, 6.35f, 2.4f, 0.4f);
+        gX_GUI_Builder_RectGrid(&b, ConsoleMenu ? 1.7f : 2.8f, 6.35f,
+            ConsoleMenu ? 4.6f : 2.4f, 0.4f);
         gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
         b.currentElement->stateRendering.RECT_NO_DRAW = true;
         gX_GUI_Builder_Text_Begin(&b);
-            gX_GUI_Builder_Text_Set(&b, "ESC to close");
+            gX_GUI_Builder_Text_Set(&b,
+                ConsoleMenu ? "ESC RESUME  F5 SAVE  F8 LOAD" : "ESC to close");
             gX_GUI_Builder_Text_Color(&b, gui.style.escape.hintText);
             gX_GUI_Builder_Text_CenterX(&b);
             if (b.curText) b.curText->autoShrink = true;

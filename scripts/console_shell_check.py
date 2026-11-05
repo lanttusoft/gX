@@ -95,6 +95,30 @@ def main():
                 extra={"GX_CONSOLE_SAVE_DIR": str(save_dir),
                     "GX_NO_SETTINGS_SAVE": "0"},
                 scene="--cartridge-y2k")
+            _menu_saved, menu_save_log = capture("menu_save",
+                "1.0 key 256;2.0 key 264;2.5 key 257", 220, 200, out,
+                extra={"GX_CONSOLE_SAVE_DIR": str(save_dir),
+                    "GX_NO_SETTINGS_SAVE": "0"},
+                scene="--cartridge-y2k")
+            _menu_resumed, menu_resume_log = capture("menu_resume",
+                "1.0 key 256;2.0 key 257", 180, 160, out,
+                scene="--cartridge-y2k")
+            _menu_video, menu_video_log = capture("menu_video",
+                "1.0 key 256;2.0 key 264;2.25 key 264;2.5 key 264;"
+                "3.0 key 257", 240, 220, out,
+                extra={"GX_NO_SETTINGS_SAVE": "1"},
+                scene="--cartridge-y2k")
+            _menu_loaded, menu_load_log = capture("menu_load",
+                "1.0 key 256;2.0 key 264;2.25 key 264;3.0 key 257",
+                240, 220, out,
+                extra={"GX_CONSOLE_SAVE_DIR": str(save_dir),
+                    "GX_NO_SETTINGS_SAVE": "1"},
+                scene="--cartridge-y2k")
+            menu_exit, menu_exit_log = capture("menu_exit",
+                "1.0 key 256;2.0 key 264;2.25 key 264;2.5 key 264;"
+                "2.75 key 264;3.25 key 257", 300, 280, out,
+                extra={"GX_NO_SETTINGS_SAVE": "1"},
+                scene="--cartridge-y2k")
             loaded, load_log = capture("load_state",
                 "2.5 move 512 584 200;3.0 click 512 584;"
                 "4.0 move 742 216 200;4.5 click 742 216", 320, 300, out,
@@ -168,6 +192,22 @@ def main():
         require("CONSOLE_STATE: load slot=1 cartridge=y2k "
             "camera=-32.0/19.0/14.5" in state_save_log,
             "cartridge F8 load/camera restore failed")
+        require("CONSOLE_MENU: active" in menu_save_log
+            and "CONSOLE_MENU: save slot=1 result=0" in menu_save_log,
+            "ESC system menu did not save slot 1")
+        require("CONSOLE_MENU: resume" in menu_resume_log,
+            "system menu Resume button did not close the overlay")
+        require("CONSOLE: video=sharp" in menu_video_log,
+            "system menu video route did not select Sharp")
+        require("CONSOLE_MENU: load slot=1 result=0" in menu_load_log
+            and "CONSOLE_STATE: load slot=1 cartridge=y2k" in menu_load_log,
+            "system menu did not load slot 1")
+        require("CONSOLE: exit=shell" in menu_exit_log
+            and "CONSOLE: view=shell boot=1" in menu_exit_log,
+            "system menu did not return to the shell")
+        exit_mean, exit_std = image_stats(menu_exit)
+        require(exit_mean > 5.0 and exit_std > 8.0,
+            f"system menu exit did not show the shell ({exit_mean:.1f}/{exit_std:.1f})")
         require("CONSOLE: load_slot=1" in load_log
             and "CONSOLE_STATE: load slot=1 cartridge=y2k" in load_log,
             "shell LOAD slot route failed")
@@ -190,7 +230,8 @@ def main():
         return 1
     print("CONSOLE_SHELL: PASS boot view, sharp video route, save slots, "
           "CRT-safe idle blank/wake (input swallowed), cartridge OSD + cold "
-          "boot at 320x240 Soft + 4x MSAA + diffraction, save/load slots")
+          "boot at 320x240 Soft + 4x MSAA + diffraction, save/load slots, "
+          "ESC system menu save/load/video/exit")
     return 0
 
 
