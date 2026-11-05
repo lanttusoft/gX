@@ -429,6 +429,7 @@ gX_I0 gX_Widget_OnClick_ConsolePauseSave(gX_I0 *arg) {
 gX_I0 gX_Widget_OnClick_ConsolePauseLoad(gX_I0 *arg) {
     (void)arg;
     if (!gX_ConsoleState_Exists(1)) {
+        gX_GUI_ConsoleOSD_Notify(1, "EMPTY");
         gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_MENU: load slot=1 empty");
         return;
     }

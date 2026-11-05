@@ -28,6 +28,7 @@
 //   cartridge profile, so no object graph is stored.
 
 #include "console_state.h"
+#include "gui.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,7 +76,7 @@ static const gX_I8 *console_state_cartridge(gX_I0) {
     return NULL;
 }
 
-gX_I32 gX_ConsoleState_Save(gX_I32 slot) {
+static gX_I32 console_state_save(gX_I32 slot) {
     gX_I8 path[512];
     if (!console_state_path(slot, path, sizeof(path))) {
         gX_TraceLog(gX_LOG_ERROR, "CONSOLE_STATE: invalid slot %d", slot);
@@ -173,7 +174,7 @@ static gX_F64 console_state_number(struct json_object *object,
     return json_object_get_double(value);
 }
 
-gX_I32 gX_ConsoleState_Load(gX_I32 slot) {
+static gX_I32 console_state_load(gX_I32 slot) {
     gX_I8 path[512];
     if (!console_state_path(slot, path, sizeof(path))) return -1;
     struct json_object *root = json_object_from_file((const char *)path);
@@ -250,6 +251,21 @@ gX_I32 gX_ConsoleState_Load(gX_I32 slot) {
         gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_STATE: load slot=%d cartridge=%s",
             slot, (const char *)cartridge);
     return 0;
+}
+
+//ai: all save/load callers, including hotkeys, share success and failure OSD feedback.
+gX_I32 gX_ConsoleState_Save(gX_I32 slot)
+{
+    gX_I32 Result = console_state_save(slot);
+    gX_GUI_ConsoleOSD_Notify(slot, Result == 0 ? "SAVED" : "SAVE FAILED");
+    return Result;
+}
+
+gX_I32 gX_ConsoleState_Load(gX_I32 slot)
+{
+    gX_I32 Result = console_state_load(slot);
+    gX_GUI_ConsoleOSD_Notify(slot, Result == 0 ? "LOADED" : "LOAD FAILED");
+    return Result;
 }
 
 gX_I0 gX_ConsoleState_Describe(gX_I32 slot, gX_I8 *out, gX_I32 size) {

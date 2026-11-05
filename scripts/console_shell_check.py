@@ -126,8 +126,16 @@ def assert_focus_walk(log, rows, directions, canvas=0):
             f"controller {direction} focus order/wrap is wrong")
 
 
+#ai: fault probes may allow only their explicit expected diagnostic, never unrelated errors.
+def check_errors(log, allowed=()):
+    for line in log.splitlines():
+        if re.search(r"\[\s*ERROR\s*\]", line):
+            require(any(re.search(pattern, line) for pattern in allowed),
+                f"unexpected engine error: {line}")
+
+
 def capture(tag, actions, frames, shot_frame, out, extra=None,
-        scene="--console-shell", width=1024, height=768):
+        scene="--console-shell", width=1024, height=768, allowed_errors=()):
     directory = out / tag
     directory.mkdir(parents=True, exist_ok=True)
     for old in directory.glob("gXss_*.png"):
@@ -148,8 +156,7 @@ def capture(tag, actions, frames, shot_frame, out, extra=None,
     log = audit.strip_ansi(result.stdout or "")
     (directory / "run.log").write_text(log, encoding="utf-8")
     require(result.returncode == 0, f"{tag}: exited {result.returncode}; {directory}/run.log")
-    require(not re.search(r"\[\s*ERROR\s*\]", log),
-        f"{tag}: error in {directory}/run.log")
+    check_errors(log, allowed_errors)
     shot = audit.newest_shot(directory)
     require(shot is not None, f"{tag}: no screenshot")
     image = audit.load_rgb(shot)
@@ -373,6 +380,11 @@ def main():
         require("CONSOLE_MENU: active" in menu_save_log
             and "CONSOLE_MENU: save slot=1 result=0" in menu_save_log,
             "ESC system menu did not save slot 1")
+        for label, log in (("save", menu_save_log), ("resume", menu_resume_log),
+                           ("video", menu_video_log), ("controller", controller_menu_log)):
+            require(not any(event["type"] == "respond" and event["canvas"] == 1
+                for event in interaction.parse_events(log)),
+                f"pause {label} unexpectedly switched the cartridge to the title scene")
         require("CONSOLE_MENU: resume" in menu_resume_log,
             "system menu Resume button did not close the overlay")
         require("CONSOLE: video=sharp" in menu_video_log,

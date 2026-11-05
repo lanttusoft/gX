@@ -360,6 +360,7 @@ def row_menu_continue(rows):
     return ok, "RESUME switches the scene and rebuilds the GUI canvas"
 
 
+#ai: Resume must not inherit a standard button's implicit title-scene switch.
 def row_escape_resume(rows):
     code, log = trace_run("--gfx", {"GX_GUI_SHOW_MENU": "1"}, 60)
     if code != 0:
@@ -373,8 +374,9 @@ def row_escape_resume(rows):
     events = parse_events(log)
     ok = code == 0 and ordered(events, [
         {"type": "click", "detail": "Resume"},
-    ])
-    return ok, "escape-menu Resume click dispatches through the canvas"
+    ]) and not any(event["type"] == "respond" and event["canvas"] == TITLE_SCENE_CANVAS
+                   for event in events)
+    return ok, "escape-menu Resume dispatches and keeps the current scene"
 
 
 def row_guitester_checkbox(rows):

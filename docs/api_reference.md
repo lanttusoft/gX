@@ -421,6 +421,10 @@ It is inactive by default; paths outside `/tmp/` and faces larger than
 
 - `gX_GUI_Load/Unload/Update/Draw`, `gX_GUI_Handle_Back` — lifecycle,
   canvas system, and keyboard/gamepad Back routing
+<!-- //ai: shared native console feedback used by save/load callers. -->
+- `gX_GUI_ConsoleOSD_Notify(slot, message)` — transient gX-240 slot feedback;
+  ignored outside console/cartridge sessions. Native status draws actual render
+  dimensions and presentation mode, auto-hides, and respects idle blanking.
 - `gX_GUI_Builder_*` — immediate widgets (Rect, Color, Text, Button,
   Slider, CheckBox, DropDown, Radio, Scroll, Toggle...)
 - `gX_GUI_Element_*` — 15 element sub-modules (rect, color, text, texture,

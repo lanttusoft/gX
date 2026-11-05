@@ -709,13 +709,6 @@ static gX_I1 cartridge_osd(gX_RendererGFX *gfx, gX_RenderTexture *overlayTgt) {
         0.0f, 12.0f, 1.0f, (gX_Color){90, 220, 240, a});
     gX_RawString_Draw("CARTRIDGE 01  Y2K CGI", font, (gX_F32v2){10, 27},
         (gX_F32v2){0,0}, 0.0f, 10.0f, 1.0f, (gX_Color){235, 240, 255, a});
-    const gX_I8 *status = "320x240  4x MSAA  PRISM-1";
-    gX_F32v2 size = gX_RawString_Measure(status, font, 9.0f, 1.0f);
-    gX_RawString_Draw(status, font,
-        (gX_F32v2){(gX_F32)maindata.renderWidth - size.x - 8.0f,
-            (gX_F32)maindata.renderHeight - 14.0f},
-        (gX_F32v2){0,0}, 0.0f, 9.0f, 1.0f,
-        (gX_Color){150, 180, 210, (gX_U8)(220.0f * alpha)});
     return 1;
 }
 

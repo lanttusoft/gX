@@ -212,8 +212,25 @@ only the scene render target is 320x240.
   black screen with a dim drifting gX mark; the first input is swallowed so
   it wakes the display without activating a hidden control.
   `GX_CONSOLE_IDLE_SECONDS` shortens the timeout for probes. Cartridge boot
-  shows a short OSD banner (gX-240 / CARTRIDGE 01 Y2K CGI / 320x240 4x MSAA
-  PRISM-1) that fades after seven seconds; `GX_T_CARTRIDGE_OSD=0` disables it.
+  shows a short boot banner (gX-240 / CARTRIDGE 01 Y2K CGI) that fades after
+  seven seconds; `GX_T_CARTRIDGE_OSD=0` disables that scene-rendered banner.
+- <!-- //ai: GX-I010 live status slice; timing controls remain separate work. -->
+  **Live console OSD** — a native-resolution status chip shows actual scene
+  render dimensions, Soft/Sharp or Native presentation, current cartridge and
+  last operated slot (slot 1 on entry). Loading another slot from the shell
+  displays that slot; F5/F8 and pause actions still target slot 1. READY means
+  a slot file exists, not that it has been
+  validated; EMPTY means no file exists. Save/load hotkeys and menu actions
+  share SAVED, LOADED, SAVE FAILED and LOAD FAILED feedback.
+  Status appears for four seconds on entry, video changes and idle wake, stays
+  visible while the pause menu is open, and fades over the final half-second.
+  Action feedback also lasts four seconds, then returns to READY/EMPTY if the
+  menu remains open. The chip is hidden throughout idle fading/blanking;
+  renderer-path blanking covers the cartridge and overlays too. It never
+  changes the display mode or claims a nominal FPS is a monitor refresh rate.
+  `GX_CONSOLE_OSD=0` disables this native chip independently of the boot banner.
+  Pause controls own only their explicit callbacks: Resume, Save and Video
+  must not inherit a legacy switch-to-title action.
 - <!-- //ai: ESC system-menu behavior and its focused gate are session additions. -->
   **Cartridge system menu** — ESC opens the native-resolution pause overlay
   during cartridge playback. Resume/ESC closes it; Save Slot 1 and Load Slot 1
@@ -289,6 +306,14 @@ only the scene render target is 320x240.
   hooks leaking back into the subprocess environment. They also run
   in `make check-fast` and `make check`. This is focused console coverage, not
   physical-controller, CRT, every-theme or arbitrary-window-size validation.
+- <!-- //ai: OSD draw/effect and intentional-fault coverage. -->
+  Native OSD: three-size text/bounds and visible-pixel A/B checks, disable and
+  auto-hide, live Soft → Sharp → Native changes, hotkey save/load and explicit
+  failure feedback, renderer idle blank/wake, and a slot-3 shell load
+  (`scripts/console_osd_check.py`, included by `make console-check` and
+  `make check`). Five display-free rejection tests cover missing/wrong OSD
+  evidence, clipped/tiny/off-screen text and narrow expected-error allowlists;
+  they also run in `make check-fast`.
 - No UI clipping with native tool panels at window resolution.
 
 ## Follow-up
@@ -298,8 +323,8 @@ The [idea ledger](ideas.md) records decisions and completed/deferred variants
 (`GX-I001`–`GX-I014`). Check it before proposing these items again; this section
 remains the console's detailed open-work list.
 
-- OSD status such as `320x240 · SOFT · 60Hz` and save-slot state, plus
-  frame-advance/fast-forward controls with defined simulation timing semantics.
+- Frame-advance/fast-forward controls with defined simulation timing semantics
+  (the remaining part of `GX-I010`); live status/slot feedback is implemented.
 - Supersampled render/output split, separately specified from the current
   320x240 scene render followed by window upscale.
 - PRISM-1 presentation work: choose 16-bit quantization semantics and validate

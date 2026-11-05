@@ -33,6 +33,7 @@
 #include "css.h"
 #include "style.h"
 #include "markup.h"
+#include "console_state.h"
 #include "widgetsdf.h"
 #include "../ui/layout_debug.h"
 #include "../tools/editor_host.h"
@@ -1374,7 +1375,9 @@ static gX_F32v2 s_consoleIdleMouse;
 static gX_I1 s_consoleIdleMouseInit;
 
 static gX_I1 console_idle_enabled(gX_I0) {
-    return (arguments.consoleShell && maindata.masterIndex == gX_SCENE_TITLE)
+    return (arguments.consoleShell && (maindata.masterIndex == gX_SCENE_TITLE
+            || maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH
+            || maindata.masterIndex == gX_SCENE_PHYSICS))
         || (arguments.cartridgeY2K
             && maindata.masterIndex == gX_SCENE_RENDERER_GFX);
 }
@@ -1479,10 +1482,10 @@ static gX_I0 console_idle_assets(gX_I0) {
     s_consoleIdleAssets = 1;
 }
 
-static gX_I0 console_idle_draw(gX_I0) {
-    if (s_consoleIdleAlpha <= 0.001f) return;
-    console_idle_assets();
-    if (s_consoleIdleWhite.id == 0) return;
+//ai: native console overlays share a screen-space projection, independent of the scene RT.
+static gX_I0 console_overlay_begin(gX_I0)
+{
+    gX_Drawing_Flush();
     gX_RHI_Disable(gX_RHI_SCISSOR_TEST);
     gX_RHI_Viewport(0, 0, (gX_I32)maindata.screenWidth,
         (gX_I32)maindata.screenHeight);
@@ -1492,6 +1495,119 @@ static gX_I0 console_idle_draw(gX_I0) {
         (gX_F64)maindata.screenHeight, 0, 0.0, 1.0);
     gX_RHI_Matrix_Mode(GX_RHI_MATRIX_MODELVIEW);
     gX_RHI_Matrix_LoadIdentity();
+}
+
+//ai: live console status is event-driven, auto-hides, and never draws over idle blanking.
+static gX_F64 s_consoleOsdUntil;
+static gX_F64 s_consoleOsdEventUntil;
+static gX_I8 s_consoleOsdEvent[24];
+static gX_I32 s_consoleOsdSlot = 1;
+static gX_I32 s_consoleOsdScene = -1;
+static gX_U16 s_consoleOsdWidth, s_consoleOsdHeight;
+static gX_I32 s_consoleOsdFilter = -1;
+static gX_I1 s_consoleOsdReady, s_consoleOsdVisible, s_consoleOsdEventShown;
+static gX_I1 s_consoleOsdMenu, s_consoleOsdIdle, s_consoleOsdDirty;
+
+gX_I0 gX_GUI_ConsoleOSD_Notify(gX_I32 slot, const gX_I8 *message)
+{
+    if ((!arguments.consoleShell && !arguments.cartridgeY2K) || !message) return;
+    s_consoleOsdSlot = slot;
+    snprintf(s_consoleOsdEvent, sizeof(s_consoleOsdEvent), "%s", message);
+    s_consoleOsdReady = gX_ConsoleState_Exists(slot);
+    s_consoleOsdEventUntil = maindata.timeElapsed + 4.0;
+    s_consoleOsdDirty = true;
+}
+
+static gX_I0 console_osd_draw(gX_I0)
+{
+    const gX_I8 *Disabled = getenv("GX_CONSOLE_OSD");
+    const gX_I8 *Cartridge = NULL;
+    if (arguments.cartridgeY2K && maindata.masterIndex == gX_SCENE_RENDERER_GFX)
+        Cartridge = "Y2K CGI";
+    else if (arguments.consoleShell)
+    {
+        if (maindata.masterIndex == gX_SCENE_TITLE) Cartridge = "SHELL";
+        if (maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH) Cartridge = "RAY-1";
+        if (maindata.masterIndex == gX_SCENE_PHYSICS) Cartridge = "PARTICLE SANDBOX";
+    }
+    gX_F64 Now = maindata.timeElapsed;
+    gX_I1 Idle = s_consoleIdleAlpha > 0.001f;
+    gX_I1 Changed = s_consoleOsdScene != maindata.masterIndex
+        || s_consoleOsdWidth != maindata.renderWidth
+        || s_consoleOsdHeight != maindata.renderHeight
+        || s_consoleOsdFilter != maindata.presentFilter;
+    if (Cartridge && (Changed || (s_consoleOsdIdle && !Idle)
+        || (!s_consoleOsdMenu && gui.state.SHOW_MENU)))
+    {
+        s_consoleOsdScene = maindata.masterIndex;
+        s_consoleOsdWidth = maindata.renderWidth;
+        s_consoleOsdHeight = maindata.renderHeight;
+        s_consoleOsdFilter = maindata.presentFilter;
+        s_consoleOsdReady = gX_ConsoleState_Exists(s_consoleOsdSlot);
+        s_consoleOsdUntil = Now + 4.0;
+        s_consoleOsdDirty = true;
+    }
+    s_consoleOsdMenu = gui.state.SHOW_MENU;
+    s_consoleOsdIdle = Idle;
+    const gX_I8 *Hidden = !Cartridge ? "inactive"
+        : (Disabled && Disabled[0] == '0' ? "disabled"
+        : (s_consoleOsdIdle ? "idle"
+        : (!gui.state.SHOW_MENU && Now >= s_consoleOsdUntil
+            && Now >= s_consoleOsdEventUntil ? "expired" : NULL)));
+    if (Hidden)
+    {
+        if (s_consoleOsdVisible && gX_GUI_Trace_Enabled())
+            gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_OSD: hidden=%s", Hidden);
+        s_consoleOsdVisible = false;
+        if (!Cartridge)
+        {
+            s_consoleOsdScene = -1;
+            s_consoleOsdEventUntil = 0.0;
+            s_consoleOsdSlot = 1;
+        }
+        return;
+    }
+    gX_I1 Event = Now < s_consoleOsdEventUntil;
+    const gX_I8 *State = Event ? s_consoleOsdEvent : (s_consoleOsdReady ? "READY" : "EMPTY");
+    const gX_I8 *Mode = maindata.renderWidth == maindata.windowWidth
+        && maindata.renderHeight == maindata.windowHeight ? "NATIVE"
+        : (maindata.presentFilter == 1 ? "SOFT" : "SHARP");
+    gX_I8 Header[80], Detail[96];
+    snprintf(Header, sizeof(Header), "gX-240  %ux%u  %s",
+        maindata.renderWidth, maindata.renderHeight, Mode);
+    snprintf(Detail, sizeof(Detail), "%s  |  SLOT %d  %s", Cartridge, s_consoleOsdSlot, State);
+    gX_F32 Scale = fminf((gX_F32)maindata.screenWidth / 1024.0f,
+        (gX_F32)maindata.screenHeight / 768.0f);
+    gX_Font Font = gX_Font_GetDefault();
+    gX_F32v2 HeaderSize = gX_RawString_Measure(Header, Font, 28.0f * Scale, Scale);
+    gX_F32v2 DetailSize = gX_RawString_Measure(Detail, Font, 28.0f * Scale, Scale);
+    gX_Rectangle Rect = {16.0f * Scale, (gX_F32)maindata.screenHeight - 72.0f * Scale,
+        fmaxf(HeaderSize.x, DetailSize.x) + 24.0f * Scale, 56.0f * Scale};
+    gX_F32 Alpha = gui.state.SHOW_MENU ? 1.0f
+        : fminf(1.0f, (gX_F32)(fmax(s_consoleOsdUntil, s_consoleOsdEventUntil) - Now) * 2.0f);
+    console_overlay_begin();
+    gX_Rectangle_Draw(Rect, (gX_Color){8, 10, 18, (gX_U8)(230.0f * Alpha)});
+    gX_RawString_Draw(Header, Font, (gX_F32v2){Rect.x + 12.0f * Scale, Rect.y + 8.0f * Scale},
+        (gX_F32v2){0}, 0, 28.0f * Scale, Scale, (gX_Color){90, 220, 240, (gX_U8)(255.0f * Alpha)});
+    gX_RawString_Draw(Detail, Font, (gX_F32v2){Rect.x + 12.0f * Scale, Rect.y + 30.0f * Scale},
+        (gX_F32v2){0}, 0, 28.0f * Scale, Scale, (gX_Color){235, 240, 255, (gX_U8)(255.0f * Alpha)});
+    gX_Drawing_Flush();
+    if (gX_GUI_Trace_Enabled() && (s_consoleOsdDirty || !s_consoleOsdVisible || Event != s_consoleOsdEventShown))
+        gX_TraceLog(gX_LOG_NOTICE,
+            "CONSOLE_OSD: show render=%ux%u mode=%s cart=%s slot=%d state=%s rect=%.0f,%.0f,%.0f,%.0f textfit=%.0f,%.0f",
+            maindata.renderWidth, maindata.renderHeight, Mode, Cartridge, s_consoleOsdSlot, State,
+            Rect.x, Rect.y, Rect.width, Rect.height,
+            fmaxf(HeaderSize.x, DetailSize.x), fmaxf(HeaderSize.y, DetailSize.y));
+    s_consoleOsdVisible = true;
+    s_consoleOsdEventShown = Event;
+    s_consoleOsdDirty = false;
+}
+
+static gX_I0 console_idle_draw(gX_I0) {
+    if (s_consoleIdleAlpha <= 0.001f) return;
+    console_idle_assets();
+    if (s_consoleIdleWhite.id == 0) return;
+    console_overlay_begin();
     gX_Texture_Draw(s_consoleIdleWhite, (gX_Texture_Draw_Params){
         .dst = {0, 0, (gX_F32)maindata.screenWidth,
             (gX_F32)maindata.screenHeight},
@@ -1610,7 +1726,9 @@ gX_I0 gX_GUI_Draw(gX_I0) {    //opencode: full-frame GL state diff gated behind 
         //opencode: tools overlay on renderer scenes (GFX editor lives
         //   here) — same gate as the compositing-path call below; without
         //   this the early return skips ImGui entirely on 3D scenes.
+        console_osd_draw();
         gX_GUI_Draw_ToolsOverlay();
+        console_idle_draw();
         gX_GUI_Draw_Diagnostics_End(&guiDrawBefore, guiDiagState, "gui_draw_renderer");
         return;
     }
@@ -1737,6 +1855,7 @@ gX_I0 gX_GUI_Draw(gX_I0) {    //opencode: full-frame GL state diff gated behind 
     gX_GUI_Transition_DrawOverlay();
 
     //ai: CRT-safe blanking rides above every canvas/transition layer.
+    console_osd_draw();
     console_idle_draw();
 
     //opencode: generic layout debug — validate + overlay + ruler for every

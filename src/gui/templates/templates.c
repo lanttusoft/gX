@@ -254,6 +254,7 @@ static gX_I0 console_pause_rect(gX_GUI_Builder *b,
 }
 
 //ai: cartridge playback specializes this canvas as the compact gX-240 menu.
+//   Callback-owned pause controls must not inherit Button_Standard's legacy title-scene writes.
 gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex);
 gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     gX_GUI_Canvas *canvas = gX_GUI_Canvas_FromIndex(canvasindex);
@@ -333,8 +334,9 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
                 100.0f + ((y) - 2.35f) * (68.0f / 0.65f), 512, 56); \
             gX_GUI_Builder_Color(&b, gui.style.escape.buttonBg.r, gui.style.escape.buttonBg.g, \
                 gui.style.escape.buttonBg.b, gui.style.escape.buttonBg.a); \
-            gX_GUI_Element_Template_Button_Standard(b.currentElement); \
+            gX_GUI_Element_Template_Button(b.currentElement); \
             gX_GUI_Builder_ColorV(&b, gui.style.escape.buttonBg); \
+            gX_GUI_Builder_Widget_AddHoverColor(&b, (gX_Color){127, 255, 127, 191}, 0.1f); \
             gX_GUI_Builder_Class(&b, "pause-btn"); \
             b.currentElement->state.FOCUSABLE = true; \
             gX_GUI_Builder_Sound_Begin(&b); \
@@ -352,6 +354,8 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
             gX_GUI_Builder_Text_Begin(&b); \
                 gX_GUI_Builder_Text_Set(&b, label); \
                 gX_GUI_Builder_Text_CenterX(&b); \
+                gX_GUI_Builder_Text_FontSize(&b, 42.0f); \
+                gX_GUI_Builder_Text_Spacing(&b, 5); \
                 if (b.curText) b.curText->autoShrink = true; \
                 if (ConsoleMenu) \
                 { \
@@ -406,7 +410,8 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
         if (ConsoleMenu) console_pause_rect(&b, 492, 20, 44, 44);
         gX_GUI_Builder_Color(&b, gui.style.escape.closeBg.r, gui.style.escape.closeBg.g,
             gui.style.escape.closeBg.b, gui.style.escape.closeBg.a);
-        gX_GUI_Element_Template_Button_Standard(b.currentElement);
+        gX_GUI_Element_Template_Button(b.currentElement);
+        gX_GUI_Builder_Widget_AddHoverColor(&b, (gX_Color){127, 255, 127, 191}, 0.1f);
         gX_GUI_Builder_Class(&b, "pause-close");
         b.currentElement->state.FOCUSABLE = true;
         gX_GUI_Builder_Text_Begin(&b);
