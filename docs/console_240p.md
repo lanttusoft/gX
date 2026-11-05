@@ -92,21 +92,35 @@ The first implementation adds:
 - `GX_VIRTUAL_WIDTH/HEIGHT` and `GX_PRESENT_FILTER` audit hooks.
 - A persisted `presentFilter` settings row and an Accessibility **Console
   display** submenu with 320x240 scene Soft/Sharp and Native.
-- A **Console Max** button in the GFX Features panel: full feature template +
-  Ultra quality (16x AF, high shader, 4x MSAA, occlusion culling, 4 CSM
-  cascades, 64-sample SSAO/GTAO + SSGI, full-res SSR, auto exposure, layered
-  point shadows on 4.3, raymarch quality 3 when a module is active). The
-  `GX_CONSOLE_MAX=1` audit hook applies the same preset for demos and gates.
+- A **Console Max** button in the GFX Features panel: Ultra quality
+  (16x AF, high shader, 4x MSAA, occlusion culling) applied to the scene's
+  **authored** feature set. It raises 4 CSM cascades when shadows exist,
+  64-sample SSAO/GTAO when AO exists, full-res SSR when SSR exists, auto
+  exposure when bloom exists, layered point shadows on 4.3 and raymarch
+  quality 3 when active. It does **not** force SSR, TAA, DOF, motion blur,
+  volumetrics or parallax.
+- The existing **Full** template remains the experimental all-effects path.
+  `GX_CONSOLE_MAX=1` applies the quality tier; `GX_CONSOLE_MAX_FULL=1` applies
+  Full + quality for demos and the budget gate.
 - The editor-host gate pins the virtual/render/window trace, the
-  Soft-vs-Sharp high-frequency difference, and the Console Max 320-vs-1024
-  frame budget.
+  Soft-vs-Sharp high-frequency difference, the quality mask (planar + FXAA +
+  gfx-scene only, no forced SSR/TAA/DOF), the quality tier, and the Full
+  320-vs-1024 frame budget.
 
-`editor-host-check` runs Console Max at 320x240 and 1024x768 with the same
-scene and requires the 320 run to beat the 1024 average by at least 10%. On
-the reference GTX 1060 it measures **10.6 ms vs 26.3 ms** (120-frame
-post-warmup averages). This is a relative headroom check, not a 60 fps
-guarantee; a maxed 320 frame can still be above 16.6 ms depending on the scene
-and GPU.
+Peer review found why the old Max looked broken: the default scene declares
+only **planar reflections + FXAA**, while Full forced 18 features. SSR
+reflected the studio geometry into the floor (screen-space ghosts), TAA then
+accumulated those reflections (tails), and DOF/motion blur softened the frame.
+On the default scene: default mean luma **123**, old full Max **173**,
+Max-without-SSR/TAA/DOF/SSGI/volumetrics **138**. Max Quality now preserves
+the scene mask, so that artifact chain is gone; Full is still available for
+scenes authored around those effects.
+
+`editor-host-check` measures quality Max at **~4.7 ms at either resolution**
+— the default scene is fixed-cost-bound, so quality Max makes no
+resolution-speed claim. The **Full** path is the headroom proof:
+**9.8 ms at 320x240 vs 22.9 ms at 1024x768** (120-frame post-warmup averages
+on the reference GTX 1060), and the gate requires at least 10% headroom.
 
 The console shell, cartridge browser, OSD, save states, a compact 320x240
 native GUI, supersampled render/output split, dither and CRT filters are
@@ -135,9 +149,12 @@ only the scene render target is 320x240.
 
 - **Console 240p — Sharp**: 320x240 scene render, point upscale.
 - **Console 240p — Soft**: 320x240 scene render, bilinear upscale.
-- **Console 240p — Max**: 320x240 scene render, full feature closure, Ultra
-  quality (4x MSAA), Soft/Sharp present filter. Current: GFX Features panel
-  button and `GX_CONSOLE_MAX=1`.
+- **Console 240p — Max**: 320x240 scene render, Ultra quality applied to the
+  scene's authored features, Soft/Sharp present filter. Current: GFX Features
+  panel button and `GX_CONSOLE_MAX=1`.
+- **Console 240p — Full** (experimental): all effects + Ultra quality; use
+  only for scenes authored around SSR/TAA/DOF/volumetrics. `GX_CONSOLE_MAX_FULL=1`
+  for demos/gates.
 - **Console 240p — Dither/CRT** (later): 16-bit quantization, Bayer dither,
   scanlines/CRT mask.
 
@@ -153,10 +170,13 @@ only the scene render target is 320x240.
 - Virtual screen trace: `virtual=320x240`, `window=1024x768`,
   `render=320x240`, `filter=soft|sharp`.
 - Soft vs Sharp high-frequency-energy difference.
-- Console Max 320x240 vs 1024x768 relative frame budget (>=10% faster).
+- Max quality preserves the authored mask (planar/FXAA/gfx-scene, no forced
+  SSR/TAA/DOF) and applies shader 2 + 4x MSAA.
+- Full Max 320x240 vs 1024x768 relative frame budget (>=10% faster).
 - Input mapping round-trip at the virtual scale.
-- Max-effects frame budget at 320x240.
 - Retro asset budget (texture dimensions, triangle/material counts).
+- Resolution/buffer audit: screen-sized targets reload after a virtual
+  resolution change; no stale dimensions (planned).
 - No UI clipping with native tool panels at window resolution.
 
 ## Follow-up

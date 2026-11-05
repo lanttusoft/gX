@@ -165,9 +165,12 @@ MAX_PLAN_RE = re.compile(
 MAX_PROFILE_RE = re.compile(
     r"GX_PROFILE: frame=(\d+) total_ms=([\d.]+) min_ms=([\d.]+) "
     r"avg_ms=([\d.]+) max_ms=([\d.]+)")
+MAX_QUALITY_RE = re.compile(
+    r"Quality preset 3 applied \(filter=(\d+) shader=(\d+) msaa=(\d+) "
+    r"lod=([-+.\d]+)\)")
 
 
-def check_console_max(tag, virtual):
+def check_console_max(tag, virtual, full=False):
     environment = {
         "GX_FIXED_DT": "0.0166666667",
         "GX_FRAMES": "240",
@@ -178,6 +181,8 @@ def check_console_max(tag, virtual):
         "GX_PROFILE_DUMP": "120",
         "GX_PRESENT_FILTER": "soft",
     }
+    if full:
+        environment["GX_CONSOLE_MAX_FULL"] = "1"
     if virtual:
         environment["GX_VIRTUAL_WIDTH"] = "320"
         environment["GX_VIRTUAL_HEIGHT"] = "240"
@@ -191,17 +196,42 @@ def check_console_max(tag, virtual):
     if not plan:
         raise RuntimeError(f"console max {tag}: GFX_PLAN missing")
     mask, count, needHdr, effects, missing = plan.groups()
-    if int(mask, 16) & 0x1FFFF != 0x1FFFF:
+    maskValue = int(mask, 16)
+    required = (1 << 15) | (1 << 16) | (1 << 20)
+    forbidden = ((1 << 4) | (1 << 5) | (1 << 10) | (1 << 11)
+                 | (1 << 12) | (1 << 13))
+    if full:
+        required = 0x1FFFF | (1 << 20)
+        forbidden = 0
+    if maskValue & required != required or maskValue & forbidden:
         raise RuntimeError(f"console max {tag}: feature mask 0x{mask}")
-    if int(count) < 17 or needHdr != "1" or effects != "1" \
-            or int(missing, 16) != 0:
+    expectedCount = 18 if full else 3
+    expectedEffects = "1" if full else "0"
+    if int(count) != expectedCount or needHdr != "1" \
+            or effects != expectedEffects or int(missing, 16) != 0:
         raise RuntimeError(
             f"console max {tag}: plan count={count} hdr={needHdr} "
             f"effects={effects} missing=0x{missing}")
-    for feature in ("ssgi", "planar-reflections", "volume-fog", "dof",
-                    "taa", "fxaa"):
+    requiredFeatures = (("ssgi", "planar-reflections", "volume-fog", "dof",
+                         "taa", "fxaa") if full
+                        else ("planar-reflections", "fxaa", "gfx-scene"))
+    for feature in requiredFeatures:
         if f"GFX_PLAN feature={feature} " not in log:
-            raise RuntimeError(f"console max {tag}: {feature} not enabled")
+            raise RuntimeError(f"console max {tag}: {feature} missing")
+    if not full:
+        for feature in ("ssgi", "ssr", "taa", "dof", "motion-blur",
+                        "volume-fog"):
+            if f"GFX_PLAN feature={feature} " in log:
+                raise RuntimeError(
+                    f"console max {tag}: forced experimental {feature}")
+    expectedTrace = ("Console Max Full applied: all features + quality"
+                     if full
+                     else "Console Max quality applied (scene features preserved)")
+    if expectedTrace not in log:
+        raise RuntimeError(f"console max {tag}: Max trace missing")
+    if not any(shader == "2" and msaa == "4"
+               for _, shader, msaa, _ in MAX_QUALITY_RE.findall(log)):
+        raise RuntimeError(f"console max {tag}: quality tier not applied")
     trace = CONSOLE_RE.search(log)
     expected = ((320, 240, WIDTH, HEIGHT, 320, 240, 1) if virtual
                 else (WIDTH, HEIGHT, WIDTH, HEIGHT, WIDTH, HEIGHT, 1))
@@ -460,16 +490,27 @@ def main():
                 f"console 240p filter split weak "
                 f"(soft {consoleSoft:.3f}, sharp {consoleSharp:.3f})")
 
-        #ai: Console Max closure at 320 must beat the same preset at 1024.
+        #ai: quality Max preserves the scene mask and must not be slower at
+        #   320; the experimental Full path carries the resolution budget.
         consoleMax320 = check_console_max("console-max-320", True)
         consoleMax1024 = check_console_max("console-max-1024", False)
         if consoleMax320 <= 0.0 or consoleMax1024 <= 0.0 \
-                or consoleMax320 >= consoleMax1024 * 0.9:
+                or consoleMax320 > 100.0 or consoleMax1024 > 100.0:
             raise RuntimeError(
-                f"console max budget weak "
+                f"console quality max frame time implausible "
                 f"(320 {consoleMax320:.2f} ms, 1024 {consoleMax1024:.2f} ms)")
-        print(f"CONSOLE_MAX: 320x240 {consoleMax320:.2f} ms vs "
-              f"1024x768 {consoleMax1024:.2f} ms")
+        consoleFull320 = check_console_max("console-full-320", True,
+                                           full=True)
+        consoleFull1024 = check_console_max("console-full-1024", False,
+                                            full=True)
+        if consoleFull320 <= 0.0 or consoleFull1024 <= 0.0 \
+                or consoleFull320 >= consoleFull1024 * 0.9:
+            raise RuntimeError(
+                f"console full max budget weak "
+                f"(320 {consoleFull320:.2f} ms, 1024 {consoleFull1024:.2f} ms)")
+        print(f"CONSOLE_MAX: quality 320x240 {consoleMax320:.2f} ms vs "
+              f"1024x768 {consoleMax1024:.2f} ms; full 320x240 "
+              f"{consoleFull320:.2f} ms vs 1024x768 {consoleFull1024:.2f} ms")
 
         #ai: the preset browser root is env-overridable for authoring outside
         #   the shipped resource tree.
@@ -537,7 +578,7 @@ def main():
           "renderer lab panels summonable without moving the dock, "
           "Basic/Advanced/Expert lab and section coverage, "
           "320x240 virtual screen Soft/Sharp split, "
-          "Console Max 320<1024 frame budget, "
+          "Console Max quality mask + Full 320<1024 budget, "
           "preset-dir override")
     return 0
 

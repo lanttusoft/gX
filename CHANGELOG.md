@@ -16,12 +16,16 @@ Release-Class: minor
   GUI stays at window resolution. The editor-host gate pins the
   virtual/render/window trace and the Soft-vs-Sharp high-frequency
   difference.
-- **Console 240p Max**: a GFX Features panel one-click full feature closure +
-  Ultra quality (4x MSAA, 4 CSM cascades, 64-sample SSAO/SSGI, full-res SSR,
-  auto exposure, layered point shadows on 4.3, raymarch quality 3), plus the
-  `GX_CONSOLE_MAX=1` hook for demos and gates. `editor-host-check` requires
-  the 320x240 Max run to beat the 1024x768 Max run by at least 10%
-  (10.6 ms vs 26.3 ms on the reference GTX 1060).
+- **Console 240p Max**: a GFX Features panel quality tier applied to the
+  scene's authored feature set (4x MSAA, 16x AF, high shader, 4 CSM cascades
+  when shadows, 64-sample SSAO/GTAO when AO, full-res SSR when SSR, auto
+  exposure when bloom, layered point shadows on 4.3, raymarch quality 3). It
+  deliberately does not force SSR/TAA/DOF/volumetrics; peer review showed
+  those on an unauthored scene produce SSR floor ghosts and TAA tails. The
+  existing Full template remains the experimental all-effects path. Hooks:
+  `GX_CONSOLE_MAX=1` (quality) and `GX_CONSOLE_MAX_FULL=1` (full+quality).
+  `editor-host-check` pins the quality mask and the Full 320x240-vs-1024x768
+  budget (9.8 ms vs 22.9 ms on the reference GTX 1060).
 - **UI maturity in the GFX editor**: Basic/Advanced/Expert now gate whole
   renderer labs and the fine-tuning sections (shader tuning, GL level, raw
   toggles, texture tools, map tuning, SSGI, aux targets, CSM, decals, volumes,

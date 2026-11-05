@@ -290,45 +290,47 @@ gX_I0 gX_RendererGFX_Feature_ApplyTemplate(gX_RendererGFX *gfx,
             gX_RendererGFX_Feature_Set(gfx, i, 1);
 }
 
-//ai: the "fewer, better pixels" preset — every user feature plus ultra
-//   quality. MSAA follows the Ultra preset (4x); at 320x240 that is cheap and
-//   the present filter still owns the soft/sharp look.
+//ai: the "fewer, better pixels" preset — raise the quality tier of the
+//   scene's authored feature set. It must not force SSR/TAA/DOF/volumetrics
+//   onto a scene that was not authored for them (the primitive studio scene
+//   only declares planar reflections + FXAA, and a forced full mask produces
+//   SSR floor ghosts plus TAA tails). Use the Full template for that
+//   experimental all-effects look.
 gX_I0 gX_RendererGFX_ConsoleMax_Apply(gX_RendererGFX *gfx)
 {
     if (!gfx) return;
-    gX_RendererGFX_Feature_ApplyTemplate(gfx, "full");
     gfx->state.qualityPreset = 3;
     gX_RendererGFX_ApplyQualityPreset(gfx);
-    gfx->state.ENABLE_REFLECTIONS = 1;
-    gfx->state.ENABLE_DECALS = 1;
-    gfx->state.ENABLE_MAP_ALBEDO = 1;
-    gfx->state.ENABLE_MAP_METALNESS = 1;
-    gfx->state.ENABLE_MAP_NORMAL = 1;
-    gfx->state.ENABLE_MAP_PARALLAX = 1;
-    gfx->state.ENABLE_LIGHTING_AMBIENT = 1;
-    gfx->state.ENABLE_LIGHTING_DIFFUSE = 1;
-    gfx->state.ENABLE_LIGHTING_SPECULAR = 1;
-    gfx->state.ENABLE_CLUSTERED = 1;
-    gfx->state.ENABLE_RIM = 1;
-    gfx->state.ENABLE_ENV_AMBIENT = 1;
     gfx->state.ENABLE_FRUSTUM_CULLING = 1;
     gfx->state.ENABLE_OCCLUSION_CULLING = 1;
     gfx->state.ENABLE_RT_DIET = 0;
-    gfx->csm.cascadeCount = 4;
-    gfx->ssao.kernelSize = 64;
-    gfx->ssao.useGTAO = 1;
-    gfx->ssao.useSSGI = 1;
-    gfx->ssr.resolutionDivisor = 1;
-    gfx->bloom.autoExposure = 1;
-    if (gX_GL.hasLayeredShadows && gX_GL.hasInstancing)
-        gfx->state.ENABLE_LAYERED_SHADOWS = 1;
+    if (gfx->state.ENABLE_SHADOWS) {
+        gfx->csm.cascadeCount = 4;
+        if (gX_GL.hasLayeredShadows && gX_GL.hasInstancing)
+            gfx->state.ENABLE_LAYERED_SHADOWS = 1;
+    }
+    if (gfx->state.ENABLE_SSAO) {
+        gfx->ssao.kernelSize = 64;
+        gfx->ssao.useGTAO = 1;
+    }
+    if (gfx->state.ENABLE_SSR) gfx->ssr.resolutionDivisor = 1;
+    if (gfx->state.ENABLE_BLOOM) gfx->bloom.autoExposure = 1;
     if (renderer.raymarch.amount > 0 && renderer.raymarch.data) {
         gX_RendererRaymarch *raymarch =
             (gX_RendererRaymarch *)renderer.raymarch.data;
         gX_RendererRaymarch_Quality_Set(raymarch, 3);
     }
     gX_TraceLog_GFX(gX_LOG_NOTICE,
-        "Console Max applied: features=full quality=ultra");
+        "Console Max quality applied (scene features preserved)");
+}
+
+gX_I0 gX_RendererGFX_ConsoleMaxFull_Apply(gX_RendererGFX *gfx)
+{
+    if (!gfx) return;
+    gX_RendererGFX_Feature_ApplyTemplate(gfx, "full");
+    gX_RendererGFX_ConsoleMax_Apply(gfx);
+    gX_TraceLog_GFX(gX_LOG_NOTICE,
+        "Console Max Full applied: all features + quality");
 }
 
 gX_I0 gX_RendererGFX_Feature_PlanLog(gX_RendererGFX *gfx)

@@ -8200,7 +8200,8 @@ static gX_I0 gfx_features_panel(gX_RendererGFX *gfx) {
         gX_TraceLog(gX_LOG_INFO, "GfxEd: Console Max preset applied");
     }
     ImGui::SameLine();
-    ImGui::TextDisabled("320 scene + all features + ultra quality");
+    ImGui::TextDisabled("quality tier; Full adds experimental effects");
+    ImGui::TextDisabled("SSR/TAA/DOF need an authored scene; Full may ghost.");
     ImGui::Separator();
     gX_U32 count = gX_RendererGFX_Feature_Count();
     for (gX_U32 i = 0; i < count; i++) {

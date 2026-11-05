@@ -238,7 +238,11 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         static gX_I1 consoleMaxApplied = 0;
         const gX_I8 *consoleMax = getenv("GX_CONSOLE_MAX");
         if (consoleMax && consoleMax[0] == '1' && !consoleMaxApplied) {
-            gX_RendererGFX_ConsoleMax_Apply(gfx);
+            const gX_I8 *full = getenv("GX_CONSOLE_MAX_FULL");
+            if (full && full[0] == '1')
+                gX_RendererGFX_ConsoleMaxFull_Apply(gfx);
+            else
+                gX_RendererGFX_ConsoleMax_Apply(gfx);
             consoleMaxApplied = 1;
             gX_TraceLog_GFX(gX_LOG_NOTICE,
                 "GX_CONSOLE_MAX: max preset applied");
