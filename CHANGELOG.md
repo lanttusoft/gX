@@ -40,6 +40,14 @@ Release-Class: minor
   feature depends on bloom/HDR and is exposed in the FX panel. The new
   `diffraction-check` gate pins six/eight-ray shape, threshold/midtone
   rejection and chromatic centroid order.
+- **Procedural material sets**: Texture tools generate a tileable brushed-metal
+  set — albedo, height, roughness, metalness, AO, normal and packed ORM — from
+  six presets (brushed steel, anodized aluminum, gunmetal, chrome, copper,
+  painted metal) with editable tint, streak stretch, contrast, roughness,
+  metalness and seed. Periodic value noise makes albedo/height/ORM tile without
+  seams, and the material path bakes its normal with wrapped sampling.
+  `GX_GFX_TEXTURE_CHECK` and `gfx_texture_check.py` pin seam continuity, the
+  streak axis, exact ORM channels, unit-length normals and byte determinism.
 - **UI maturity in the GFX editor**: Basic/Advanced/Expert now gate whole
   renderer labs and the fine-tuning sections (shader tuning, GL level, raw
   toggles, texture tools, map tuning, SSGI, aux targets, CSM, decals, volumes,

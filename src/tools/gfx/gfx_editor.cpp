@@ -662,6 +662,17 @@ static gX_I1 s_headlessTextureCheckDone = 0;
 //   Texture tools panel and reloaded only when the path changes.
 static Texture2D s_texPreview = {0};
 static gX_I8 s_texPreviewPath[640] = {0};
+//ai: procedural material sets — one preset selects tint/streak/ORM defaults,
+//   every value stays editable, and the set exports albedo/height/roughness/
+//   metalness/AO/normal/ORM through the same writer as the texture tools.
+static gX_I32 s_materialPreset = 0;
+static gX_F32 s_materialStretch = 6.0f;
+static gX_F32 s_materialRoughness = 0.30f;
+static gX_F32 s_materialMetalness = 1.0f;
+static gX_F32 s_materialContrast = 0.45f;
+static gX_I32 s_materialSeed = 1;
+static gX_Color s_materialTint = { 196, 200, 206, 255 };
+static gX_I8 s_materialName[128] = "brushed";
 
 //opencode: scene export (tooling scope): OBJ prefix + status and the headless
 //   gate flag. The output folder is overridable through GX_GFX_EXPORT_DIR.
@@ -1581,6 +1592,38 @@ static gX_F32 gfx_texture_value_noise(gX_F32 x, gX_F32 y) {
     return nx0 + (nx1 - nx0) * sy;
 }
 
+//ai: periodic value noise for tileable procedural material sets. The lattice
+//   wraps exactly at the period, so brushed streaks repeat without a seam.
+static gX_F32 gfx_texture_value_hash_periodic(gX_I32 x, gX_I32 y,
+    gX_I32 periodX, gX_I32 periodY, gX_I32 seed) {
+    if (periodX < 1) periodX = 1;
+    if (periodY < 1) periodY = 1;
+    x = ((x % periodX) + periodX) % periodX;
+    y = ((y % periodY) + periodY) % periodY;
+    return gfx_texture_value_hash(x + seed * 101, y + seed * 211);
+}
+
+static gX_F32 gfx_texture_value_noise_periodic(gX_F32 x, gX_F32 y,
+    gX_I32 periodX, gX_I32 periodY, gX_I32 seed) {
+    gX_I32 xi = (gX_I32)floorf(x);
+    gX_I32 yi = (gX_I32)floorf(y);
+    gX_F32 fx = x - (gX_F32)xi;
+    gX_F32 fy = y - (gX_F32)yi;
+    gX_F32 sx = fx * fx * (3.0f - 2.0f * fx);
+    gX_F32 sy = fy * fy * (3.0f - 2.0f * fy);
+    gX_F32 n00 = gfx_texture_value_hash_periodic(xi, yi,
+        periodX, periodY, seed);
+    gX_F32 n10 = gfx_texture_value_hash_periodic(xi + 1, yi,
+        periodX, periodY, seed);
+    gX_F32 n01 = gfx_texture_value_hash_periodic(xi, yi + 1,
+        periodX, periodY, seed);
+    gX_F32 n11 = gfx_texture_value_hash_periodic(xi + 1, yi + 1,
+        periodX, periodY, seed);
+    gX_F32 nx0 = n00 + (n10 - n00) * sx;
+    gX_F32 nx1 = n01 + (n11 - n01) * sx;
+    return nx0 + (nx1 - nx0) * sy;
+}
+
 //opencode: preview loader for the Texture tools panel (and the headless
 //   texture gate). Reloads only when the path changes.
 static gX_I0 gfx_texture_preview_load(const gX_I8 *path) {
@@ -1678,18 +1721,25 @@ static gX_I1 gfx_texture_generate(gX_I32 kind, gX_I32 width, gX_I32 height,
 }
 
 static gX_F32 gfx_texture_luminance(const gX_U8 *pixels, gX_I32 x, gX_I32 y,
-    gX_I32 width, gX_I32 height)
+    gX_I32 width, gX_I32 height, gX_I1 wrap)
 {
-    if (x < 0) x = 0;
-    if (y < 0) y = 0;
-    if (x >= width) x = width - 1;
-    if (y >= height) y = height - 1;
+    if (wrap) {
+        x = ((x % width) + width) % width;
+        y = ((y % height) + height) % height;
+    } else {
+        if (x < 0) x = 0;
+        if (y < 0) y = 0;
+        if (x >= width) x = width - 1;
+        if (y >= height) y = height - 1;
+    }
     const gX_U8 *p = pixels + ((size_t)y * (size_t)width + (size_t)x) * 4;
     return (0.299f * p[0] + 0.587f * p[1] + 0.114f * p[2]) / 255.0f;
 }
 
-static gX_I1 gfx_texture_normal_from_height(const gX_I8 *source,
-    gX_F32 strength, const gX_I8 *name, gX_I8 *outPath, gX_I32 outSize)
+//ai: wrap bakes a seam-free tangent-space normal for tileable material sets;
+//   the public tool keeps clamp sampling for framed source images.
+static gX_I1 gfx_texture_normal_bake(const gX_I8 *source, gX_F32 strength,
+    const gX_I8 *name, gX_I8 *outPath, gX_I32 outSize, gX_I1 wrap)
 {
     Image input = LoadImage((const char *)source);
     if (!input.data || input.width < 2 || input.height < 2) {
@@ -1707,17 +1757,21 @@ static gX_I1 gfx_texture_normal_from_height(const gX_I8 *source,
     for (gX_I32 y = 0; y < height; y++) {
         for (gX_I32 x = 0; x < width; x++) {
             gX_F32 tl = gfx_texture_luminance(pixels, x - 1, y - 1, width,
-                height);
-            gX_F32 tc = gfx_texture_luminance(pixels, x, y - 1, width, height);
+                height, wrap);
+            gX_F32 tc = gfx_texture_luminance(pixels, x, y - 1, width,
+                height, wrap);
             gX_F32 tr = gfx_texture_luminance(pixels, x + 1, y - 1, width,
-                height);
-            gX_F32 ml = gfx_texture_luminance(pixels, x - 1, y, width, height);
-            gX_F32 mr = gfx_texture_luminance(pixels, x + 1, y, width, height);
+                height, wrap);
+            gX_F32 ml = gfx_texture_luminance(pixels, x - 1, y, width,
+                height, wrap);
+            gX_F32 mr = gfx_texture_luminance(pixels, x + 1, y, width,
+                height, wrap);
             gX_F32 bl = gfx_texture_luminance(pixels, x - 1, y + 1, width,
-                height);
-            gX_F32 bc = gfx_texture_luminance(pixels, x, y + 1, width, height);
+                height, wrap);
+            gX_F32 bc = gfx_texture_luminance(pixels, x, y + 1, width,
+                height, wrap);
             gX_F32 br = gfx_texture_luminance(pixels, x + 1, y + 1, width,
-                height);
+                height, wrap);
             gX_F32 dx = (tr + 2.0f * mr + br) - (tl + 2.0f * ml + bl);
             gX_F32 dy = (bl + 2.0f * bc + br) - (tl + 2.0f * tc + tr);
             gX_F32 nx = -dx * strength;
@@ -1739,6 +1793,12 @@ static gX_I1 gfx_texture_normal_from_height(const gX_I8 *source,
     UnloadImage(output);
     UnloadImage(input);
     return ok;
+}
+
+static gX_I1 gfx_texture_normal_from_height(const gX_I8 *source,
+    gX_F32 strength, const gX_I8 *name, gX_I8 *outPath, gX_I32 outSize)
+{
+    return gfx_texture_normal_bake(source, strength, name, outPath, outSize, 0);
 }
 
 static gX_U8 gfx_texture_channel(const gX_U8 *pixels, gX_I32 srcWidth,
@@ -1800,6 +1860,127 @@ static gX_I1 gfx_texture_pack_orm(const gX_I8 *aoPath, const gX_I8 *roughPath,
     UnloadImage(ao);
     UnloadImage(rough);
     UnloadImage(metal);
+    return ok;
+}
+
+//ai: procedural material set — brushed metal. Generates tileable albedo,
+//   height, roughness, metalness and AO, then reuses the normal bake and ORM
+//   pack so the set round-trips through the same PNG writer as the other
+//   texture utilities.
+static gX_I1 gfx_texture_material_brushed(gX_I32 width, gX_I32 height,
+    gX_F32 stretch, gX_F32 roughness, gX_F32 metalness, gX_F32 contrast,
+    gX_I32 seed, gX_Color tint, const gX_I8 *name, gX_I8 *outPath,
+    gX_I32 outSize)
+{
+    if (width < 8) width = 8;
+    if (height < 8) height = 8;
+    if (width > 2048) width = 2048;
+    if (height > 2048) height = 2048;
+    if (stretch < 1.0f) stretch = 1.0f;
+    if (stretch > 24.0f) stretch = 24.0f;
+    if (roughness < 0.0f) roughness = 0.0f;
+    if (roughness > 1.0f) roughness = 1.0f;
+    if (metalness < 0.0f) metalness = 0.0f;
+    if (metalness > 1.0f) metalness = 1.0f;
+    if (contrast < 0.0f) contrast = 0.0f;
+    if (contrast > 1.0f) contrast = 1.0f;
+    Color base = gfx_texture_color(tint);
+    Image albedo = GenImageColor(width, height, BLANK);
+    Image heightImage = GenImageColor(width, height, BLANK);
+    Image roughImage = GenImageColor(width, height, BLANK);
+    Image metalImage = GenImageColor(width, height, BLANK);
+    Image aoImage = GenImageColor(width, height, BLANK);
+    if (!albedo.data || !heightImage.data || !roughImage.data
+        || !metalImage.data || !aoImage.data) {
+        if (albedo.data) UnloadImage(albedo);
+        if (heightImage.data) UnloadImage(heightImage);
+        if (roughImage.data) UnloadImage(roughImage);
+        if (metalImage.data) UnloadImage(metalImage);
+        if (aoImage.data) UnloadImage(aoImage);
+        return 0;
+    }
+    gX_U8 *a = (gX_U8 *)albedo.data;
+    gX_U8 *h = (gX_U8 *)heightImage.data;
+    gX_U8 *r = (gX_U8 *)roughImage.data;
+    gX_U8 *m = (gX_U8 *)metalImage.data;
+    gX_U8 *o = (gX_U8 *)aoImage.data;
+    gX_I32 cellsX = 2;
+    gX_I32 cellsY = (gX_I32)(6.0f + stretch * 3.0f);
+    if (cellsY < 6) cellsY = 6;
+    if (cellsY > 64) cellsY = 64;
+    for (gX_I32 y = 0; y < height; y++) {
+        for (gX_I32 x = 0; x < width; x++) {
+            gX_F32 u = ((gX_F32)x + 0.5f) / (gX_F32)width;
+            gX_F32 v = ((gX_F32)y + 0.5f) / (gX_F32)height;
+            gX_F32 n1 = gfx_texture_value_noise_periodic(
+                u * (gX_F32)cellsX, v * (gX_F32)cellsY,
+                cellsX, cellsY, seed);
+            gX_F32 n2 = gfx_texture_value_noise_periodic(
+                u * (gX_F32)cellsX * 2.0f, v * (gX_F32)cellsY * 2.0f,
+                cellsX * 2, cellsY * 2, seed + 17);
+            gX_F32 streak = n1 * 0.65f + n2 * 0.35f;
+            gX_F32 shade = 0.80f + 0.20f * streak;
+            gX_I32 pi = (y * width + x) * 4;
+            a[pi + 0] = (gX_U8)(base.r * shade);
+            a[pi + 1] = (gX_U8)(base.g * shade);
+            a[pi + 2] = (gX_U8)(base.b * shade);
+            a[pi + 3] = 255;
+            gX_U8 heightValue = (gX_U8)floorf(128.0f
+                + (streak - 0.5f) * contrast * 220.0f);
+            gX_F32 roughValue = roughness + (streak - 0.5f) * 0.30f;
+            gX_F32 metalValue = metalness + (streak - 0.5f) * 0.06f;
+            if (roughValue < 0.0f) roughValue = 0.0f;
+            if (roughValue > 1.0f) roughValue = 1.0f;
+            if (metalValue < 0.0f) metalValue = 0.0f;
+            if (metalValue > 1.0f) metalValue = 1.0f;
+            gX_U8 roughByte = (gX_U8)(255.0f * roughValue);
+            gX_U8 metalByte = (gX_U8)(255.0f * metalValue);
+            gX_U8 aoValue = (gX_U8)(225.0f + streak * 30.0f);
+            h[pi + 0] = h[pi + 1] = h[pi + 2] = heightValue;
+            r[pi + 0] = r[pi + 1] = r[pi + 2] = roughByte;
+            m[pi + 0] = m[pi + 1] = m[pi + 2] = metalByte;
+            o[pi + 0] = o[pi + 1] = o[pi + 2] = aoValue;
+            h[pi + 3] = r[pi + 3] = m[pi + 3] = o[pi + 3] = 255;
+        }
+    }
+    const gX_I8 *stem = (name && name[0]) ? name : (const gX_I8 *)"brushed";
+    gX_I8 albedoName[160], heightName[160], roughName[160], metalName[160],
+        aoName[160], normalName[160], ormName[160];
+    gX_I8 albedoPath[640], heightPath[640], roughPath[640], metalPath[640],
+        aoPath[640], normalPath[640], ormPath[640];
+    snprintf((char *)albedoName, sizeof(albedoName), "%s_albedo", stem);
+    snprintf((char *)heightName, sizeof(heightName), "%s_height", stem);
+    snprintf((char *)roughName, sizeof(roughName), "%s_roughness", stem);
+    snprintf((char *)metalName, sizeof(metalName), "%s_metalness", stem);
+    snprintf((char *)aoName, sizeof(aoName), "%s_ao", stem);
+    snprintf((char *)normalName, sizeof(normalName), "%s_normal", stem);
+    snprintf((char *)ormName, sizeof(ormName), "%s_orm", stem);
+    gX_I1 ok = gfx_texture_export(albedo, albedoName, albedoPath,
+        sizeof(albedoPath));
+    ok = gfx_texture_export(heightImage, heightName, heightPath,
+        sizeof(heightPath)) && ok;
+    ok = gfx_texture_export(roughImage, roughName, roughPath,
+        sizeof(roughPath)) && ok;
+    ok = gfx_texture_export(metalImage, metalName, metalPath,
+        sizeof(metalPath)) && ok;
+    ok = gfx_texture_export(aoImage, aoName, aoPath, sizeof(aoPath)) && ok;
+    gX_I1 normalOK = gfx_texture_normal_bake(heightPath, 2.0f,
+        normalName, normalPath, sizeof(normalPath), 1);
+    gX_I1 ormOK = gfx_texture_pack_orm(aoPath, roughPath, metalPath,
+        ormName, ormPath, sizeof(ormPath));
+    ok = ok && normalOK && ormOK;
+    if (ok && outPath && outSize > 0)
+        snprintf((char *)outPath, (size_t)outSize, "%s", (const char *)albedoPath);
+    gX_TraceLog(ok ? gX_LOG_INFO : gX_LOG_ERROR,
+        "GfxEd: material brushed name=%s size=%dx%d albedo=%s normal=%s orm=%s",
+        (const char *)stem, width, height,
+        (const char *)albedoPath, (const char *)normalPath,
+        (const char *)ormPath);
+    UnloadImage(albedo);
+    UnloadImage(heightImage);
+    UnloadImage(roughImage);
+    UnloadImage(metalImage);
+    UnloadImage(aoImage);
     return ok;
 }
 
@@ -7743,11 +7924,19 @@ static gX_I0 gfx_preset_headless_hooks(gX_RendererGFX *gfx) {
             "checker_n", texNormal, sizeof(texNormal));
         gX_I1 ormOK = gfx_texture_pack_orm(texChecker, texNoise, texSolid,
             "packed_orm", texOrm, sizeof(texOrm));
+        gX_Color brushedTint = { 196, 200, 206, 255 };
+        gX_I8 texBrushed[640];
+        gX_I1 materialOK = gfx_texture_material_brushed(64, 64, 6.0f, 0.30f,
+            0.92f, 0.45f, 1, brushedTint, "brushed", texBrushed,
+            sizeof(texBrushed));
         gX_I1 previewOK = (s_texPreview.id > 0) ? 1 : 0;
-        gX_I1 pass = (made == 5 && normalOK && ormOK && previewOK) ? 1 : 0;
+        gX_I1 pass = (made == 5 && normalOK && ormOK && materialOK
+            && previewOK) ? 1 : 0;
         gX_TraceLog(pass ? gX_LOG_NOTICE : gX_LOG_ERROR,
-            "GFX_TEXTURE_CHECK: %s generated=%d normal=%d orm=%d preview=%d",
-            pass ? "PASS" : "FAIL", made, normalOK, ormOK, previewOK);
+            "GFX_TEXTURE_CHECK: %s generated=%d normal=%d orm=%d preview=%d "
+            "material=%d",
+            pass ? "PASS" : "FAIL", made, normalOK, ormOK, previewOK,
+            materialOK);
         s_headlessTextureCheckDone = 1;
     }
     const char *exportCheck = getenv("GX_GFX_EXPORT_CHECK");
@@ -10050,6 +10239,63 @@ static gX_I0 gfx_scene_texture_panel(gX_RendererGFX *gfx) {
             gfx_texture_status("pack failed (need three loadable images)",
                 NULL, 0);
     }
+    ImGui::Spacing();
+    ImGui::TextDisabled("Material set: tileable brushed metal");
+    static const gX_I8 *materialPresets[] = {
+        "brushed steel", "anodized aluminum", "gunmetal", "chrome",
+        "copper", "painted metal" };
+    static const gX_Color materialTints[] = {
+        { 196, 200, 206, 255 }, { 158, 166, 178, 255 },
+        { 92, 98, 108, 255 }, { 232, 236, 242, 255 },
+        { 196, 124, 84, 255 }, { 70, 110, 140, 255 } };
+    static const gX_F32 materialDefaults[][4] = {
+        { 6.0f, 0.30f, 1.00f, 0.45f }, { 5.0f, 0.38f, 0.90f, 0.35f },
+        { 7.0f, 0.32f, 0.95f, 0.40f }, { 8.0f, 0.08f, 1.00f, 0.25f },
+        { 5.0f, 0.26f, 1.00f, 0.50f }, { 4.0f, 0.55f, 0.25f, 0.30f } };
+    ImGui::SetNextItemWidth(-1.0f);
+    if (ImGui::Combo("##materialPreset", &s_materialPreset, materialPresets,
+            6)) {
+        s_materialTint = materialTints[s_materialPreset];
+        s_materialStretch = materialDefaults[s_materialPreset][0];
+        s_materialRoughness = materialDefaults[s_materialPreset][1];
+        s_materialMetalness = materialDefaults[s_materialPreset][2];
+        s_materialContrast = materialDefaults[s_materialPreset][3];
+    }
+    gfx_color_edit("tint##material", &s_materialTint);
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+    ImGui::DragFloat("stretch##material", &s_materialStretch, 0.1f,
+        1.0f, 24.0f);
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(-1.0f);
+    ImGui::DragFloat("contrast##material", &s_materialContrast, 0.01f,
+        0.0f, 1.0f);
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+    ImGui::DragFloat("roughness##material", &s_materialRoughness, 0.01f,
+        0.0f, 1.0f);
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(-1.0f);
+    ImGui::DragFloat("metalness##material", &s_materialMetalness, 0.01f,
+        0.0f, 1.0f);
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+    ImGui::InputTextWithHint("##materialName", "material name",
+        s_materialName, sizeof(s_materialName));
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(-1.0f);
+    ImGui::SliderInt("seed##material", &s_materialSeed, 0, 999);
+    if (ImGui::Button("Generate material set##tex")) {
+        gX_I8 outgoing[640];
+        const gX_I8 *stem = s_materialName[0] ? s_materialName
+            : (const gX_I8 *)"brushed";
+        if (gfx_texture_material_brushed(s_texWidth, s_texHeight,
+                s_materialStretch, s_materialRoughness, s_materialMetalness,
+                s_materialContrast, s_materialSeed, s_materialTint, stem,
+                outgoing, sizeof(outgoing)))
+            gfx_texture_status("saved set", outgoing, 1);
+        else
+            gfx_texture_status("material set failed", NULL, 0);
+    }
+    ImGui::TextDisabled("%s_albedo/height/roughness/metalness/ao/normal/orm",
+        s_materialName[0] ? (const char *)s_materialName : "brushed");
     if (s_texPreview.id > 0) {
         ImGui::SeparatorText("Preview");
         ImGui::Image((ImTextureID)(intptr_t)s_texPreview.id,

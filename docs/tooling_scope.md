@@ -29,6 +29,9 @@ camera rail, background and sky/physics follow).
    generator panel for project-owned textures:
    solid/checker/gradient/value noise, normal-from-height, and PBR channel
    packing (roughness/metalness/AO -> ORM), exported through `ExportImage`.
+   The material-set mode builds a complete tileable brushed-metal set
+   (albedo/height/roughness/metalness/AO/normal/ORM) from presets with
+   editable tint, streak stretch, contrast, roughness, metalness and seed.
    These directly serve the AI-assisted asset pipeline by normalizing and
    packing generated maps.
 4. **Scene-space painting** *(implemented, `make gfx-decal-bake-check`)*.
