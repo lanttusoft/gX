@@ -62,6 +62,12 @@ Release-Class: minor
   PRISM-1) inside the 240p frame; `GX_T_CARTRIDGE_OSD=0` disables it.
   `make console-check` drives the boot view, sharp video route, save slots,
   idle blank/wake, OSD banner and cartridge boot.
+- **Console save states**: three `save/console_slot_N.json` slots store the
+  cartridge id, video profile and orbit camera. F5 saves slot 1 and F8 loads
+  it while a cartridge runs; the shell's Save states view lists the slots and
+  loads them. `GX_CONSOLE_SAVE_DIR` redirects the folder for probes and the
+  harness guard refuses writes. `gX_Showcase_CameraGet/Set` provide the
+  serializable orbit state; the console gate round-trips it.
 - **Y2K CGI cartridge**: `--cartridge-y2k` boots a fixed console profile — the
   Y2K composition at a 320x240 Soft scene target, the authored 128 px
   brushed-metal albedo/normal/ORM set on the low-poly floor and ring, Max

@@ -412,7 +412,9 @@ It is inactive by default; paths outside `/tmp/` and faces larger than
   load/next/jump, `SelectChoice` jumps; TXT load/save with the shipped-text
   harness guard)
 - `gX_Showcase_*` — interactive demo controller (--showcase): orbit camera,
-  effect hotkeys, model focus, HUD legend
+  effect hotkeys, model focus, HUD legend, serializable camera state
+- `gX_ConsoleState_*` — gX-240 save slots (cartridge id, video profile and
+  orbit camera in `save/console_slot_N.json`; save/describe/load)
 - `gX_Compositor_*` — layer compositing (blend modes per layer)
 
 ## gui

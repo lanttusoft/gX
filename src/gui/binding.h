@@ -86,6 +86,7 @@ gX_I0 gX_Widget_OnClick_TitleConsole(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_ConsoleVideo(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_ConsoleSaves(gX_I0 *arg);
+gX_I0 gX_Widget_OnClick_ConsoleLoadSlot(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_OpenEditor(gX_I0 *arg);            // extras: open GUI editor over current scene
 gX_I0 gX_Widget_OnClick_OpenTheme(gX_I0 *arg);             // extras: open theme editor over current scene
 gX_I0 gX_Widget_OnClick_OpenThemLab(gX_I0 *arg);           // extras: open theme lab preview + theme editor

@@ -44,6 +44,7 @@
 #include "../../rhi/rhi.h"
 
 #include "../binding.h"
+#include "../console_state.h"
 
 //opencode: v0.2.0-pre4 — exclusive sub-views (0 = main menu, 1 = save slots).
 //   The builder branches on this state so exactly one view renders per build;
@@ -172,6 +173,105 @@ static gX_I0 titlegx_MenuUseTitleFont(gX_GUI_Builder *b) {
     gX_GUI_Builder_Text_Font(b, &gui.style.titleFont);
 }
 
+//ai: console save slots — LOAD-only in the shell; F5/F8 save and load while a
+//   cartridge is running. Slot labels come from the JSON state files.
+static gX_I0 titlegx_console_saves(gX_GUI_Builder *b) {
+    gX_GUI_Builder_Element_Begin(b);
+        gX_GUI_Builder_RectGrid(b, 0.5f, 0.5f, 7.0f, 7.0f);
+        gX_GUI_Builder_Color(b, 8, 10, 18, 255);
+
+        gX_GUI_Builder_Element_Begin(b);
+            gX_GUI_Builder_RectGrid(b, 1.2f, 0.9f, 5.6f, 0.6f);
+            gX_GUI_Builder_Color(b, 0, 0, 0, 0);
+            b->currentElement->stateRendering.RECT_NO_DRAW = true;
+            gX_GUI_Builder_Text_Begin(b);
+                gX_GUI_Builder_Text_Set(b, "SAVE STATES");
+                b->currentElement->stateRendering.TEXT_CENTER_X = true;
+                if (b->curText) {
+                    b->curText->fontSize = 20;
+                    b->curText->color = (gX_Color){90, 220, 240, 255};
+                }
+            gX_GUI_Builder_Text_End(b);
+        gX_GUI_Builder_Element_End(b);
+
+        for (gX_I32 slot = 1; slot <= GX_CONSOLE_SAVE_SLOTS; slot++) {
+            gX_I8 label[160];
+            gX_I8 detail[128] = "";
+            if (gX_ConsoleState_Exists(slot)) {
+                gX_ConsoleState_Describe(slot, detail, sizeof(detail));
+                snprintf((char *)label, sizeof(label), "SLOT %d - %s",
+                    slot, (const char *)detail);
+            } else {
+                snprintf((char *)label, sizeof(label), "SLOT %d - EMPTY", slot);
+            }
+            gX_F32 y = 1.8f + (gX_F32)(slot - 1) * 1.3f;
+            gX_GUI_Builder_Element_Begin(b);
+                gX_GUI_Builder_RectGrid(b, 1.2f, y, 5.6f, 0.9f);
+                gX_GUI_Builder_ColorV(b, gui.style.title2.saveSlotBg);
+                gX_GUI_Element_Template_Button(b->currentElement);
+                gX_GUI_Builder_Text_Begin(b);
+                    gX_GUI_Builder_Text_Set(b, label);
+                    if (b->curText) {
+                        b->curText->fontSize = 13;
+                        b->curText->color = gui.style.title2.saveSlotText;
+                    }
+                gX_GUI_Builder_Text_End(b);
+            gX_GUI_Builder_Element_End(b);
+
+            if (gX_ConsoleState_Exists(slot)) {
+                gX_GUI_Builder_Element_Begin(b);
+                    gX_GUI_Builder_RectGrid(b, 5.0f, y + 0.12f, 1.6f, 0.66f);
+                    gX_GUI_Builder_ColorV(b, gui.style.title2.saveSlotBg);
+                    gX_GUI_Element_Template_Button(b->currentElement);
+                    gX_GUI_Builder_Text_Begin(b);
+                        gX_GUI_Builder_Text_Set(b, "LOAD");
+                        b->currentElement->stateRendering.TEXT_CENTER_X = true;
+                        b->currentElement->stateRendering.TEXT_CENTER_Y = true;
+                        if (b->curText) {
+                            b->curText->fontSize = 13;
+                            b->curText->color = gui.style.title2.saveSlotText;
+                        }
+                    gX_GUI_Builder_Text_End(b);
+                    gX_GUI_OnClick(b->currentElement,
+                        gX_Widget_OnClick_ConsoleLoadSlot,
+                        (gX_I0*)(gX_U64)(uintptr_t)slot);
+                gX_GUI_Builder_Element_End(b);
+            }
+        }
+
+        gX_GUI_Builder_Element_Begin(b);
+            gX_GUI_Builder_RectGrid(b, 1.2f, 5.85f, 5.6f, 0.4f);
+            gX_GUI_Builder_Color(b, 0, 0, 0, 0);
+            b->currentElement->stateRendering.RECT_NO_DRAW = true;
+            gX_GUI_Builder_Text_Begin(b);
+                gX_GUI_Builder_Text_Set(b, "In a cartridge: F5 saves slot 1, F8 loads it");
+                b->currentElement->stateRendering.TEXT_CENTER_X = true;
+                if (b->curText) {
+                    b->curText->fontSize = 11;
+                    b->curText->color = (gX_Color){150, 180, 210, 255};
+                }
+            gX_GUI_Builder_Text_End(b);
+        gX_GUI_Builder_Element_End(b);
+
+        gX_GUI_Builder_Element_Begin(b);
+            gX_GUI_Builder_RectGrid(b, 3.0f, 6.55f, 2.0f, 0.55f);
+            gX_GUI_Builder_ColorV(b, gui.style.title2.backBg);
+            gX_GUI_Element_Template_Button(b->currentElement);
+            gX_GUI_Builder_Text_Begin(b);
+                gX_GUI_Builder_Text_Set(b, "BACK");
+                b->currentElement->stateRendering.TEXT_CENTER_X = true;
+                b->currentElement->stateRendering.TEXT_CENTER_Y = true;
+                if (b->curText) {
+                    b->curText->fontSize = 14;
+                    b->curText->color = gui.style.title2.backText;
+                }
+            gX_GUI_Builder_Text_End(b);
+            gX_GUI_OnClick(b->currentElement, gX_Widget_OnClick_TitleBack, 0);
+        gX_GUI_Builder_Element_End(b);
+
+    gX_GUI_Builder_Element_End(b);
+}
+
 //ai: title template owns Battle and renderer routes in the Demos view.
 gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex);
 gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
@@ -247,6 +347,9 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
         gX_GUI_Canvas_Add_TemplateID(canvas, gX_GUI_TEMPLATE_TITLEGX);
         gX_GUI_Canvas_Add_Name(canvas, "TitleGX");
     } else if (titleView == TITLEGX_VIEW_SAVES) {
+        if (arguments.consoleShell) {
+            titlegx_console_saves(&b);
+        } else {
         //opencode: v0.2.0-pre4 — save-slot sub-screen (LOAD GAME target):
         //   centered panel over dimmed gradient; BACK returns to the menu view
         gX_GUI_Builder_Element_Begin(&b);
@@ -308,6 +411,7 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
             gX_GUI_Builder_Element_End(&b);
 
         gX_GUI_Builder_Element_End(&b);
+        }
     } else if (titleView == TITLEGX_VIEW_DEMOS) {
         gX_GUI_Builder_Element_Begin(&b);
             gX_GUI_Builder_RectGrid(&b, 0.5f, 0.5f, 7.0f, 7.0f);

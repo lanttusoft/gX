@@ -34,7 +34,8 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
-def capture(tag, actions, frames, shot_frame, out, extra=None):
+def capture(tag, actions, frames, shot_frame, out, extra=None,
+        scene="--console-shell"):
     directory = out / tag
     directory.mkdir(parents=True, exist_ok=True)
     for old in directory.glob("gXss_*.png"):
@@ -47,7 +48,7 @@ def capture(tag, actions, frames, shot_frame, out, extra=None):
     if actions:
         environment["GX_AI_INPUT"] = actions
     result = audit.run_scene(
-        "--console-shell", environment, width=1024, height=768,
+        scene, environment, width=1024, height=768,
         frames=frames, shot_frame=shot_frame, screenshot_dir=directory,
         timeout=180, check=True)
     log = audit.strip_ansi(result.stdout or "")
@@ -85,6 +86,19 @@ def main():
                 extra={"GX_CONSOLE_IDLE_SECONDS": "2"})
             woke, wake_log = capture("wake", "7.5 move 100 700 200",
                 540, 520, out, extra={"GX_CONSOLE_IDLE_SECONDS": "2"})
+            save_dir = out / "save_states"
+            save_dir.mkdir(parents=True, exist_ok=True)
+            for stale in save_dir.glob("console_slot_*.json"):
+                stale.unlink()
+            _saved, state_save_log = capture("save_state",
+                "2.0 key 294;3.0 key 297", 260, 240, out,
+                extra={"GX_CONSOLE_SAVE_DIR": str(save_dir),
+                    "GX_NO_SETTINGS_SAVE": "0"},
+                scene="--cartridge-y2k")
+            loaded, load_log = capture("load_state",
+                "2.5 move 512 584 200;3.0 click 512 584;"
+                "4.0 move 742 216 200;4.5 click 742 216", 320, 300, out,
+                extra={"GX_CONSOLE_SAVE_DIR": str(save_dir)})
 
         require(VIEW_RE.search(shell_log), "shell boot trace missing")
         require("gX_Scene: switched to masterIndex 1 [TITLE]" in shell_log,
@@ -147,6 +161,22 @@ def main():
         require(wake_mean > 5.0 and wake_std > 8.0,
             f"wake did not restore the shell ({wake_mean:.1f}/{wake_std:.1f})")
 
+        require("CONSOLE_STATE: save slot=1 cartridge=y2k" in state_save_log,
+            "cartridge F5 save failed")
+        require((save_dir / "console_slot_1.json").is_file(),
+            "save slot file missing")
+        require("CONSOLE_STATE: load slot=1 cartridge=y2k "
+            "camera=-32.0/19.0/14.5" in state_save_log,
+            "cartridge F8 load/camera restore failed")
+        require("CONSOLE: load_slot=1" in load_log
+            and "CONSOLE_STATE: load slot=1 cartridge=y2k" in load_log,
+            "shell LOAD slot route failed")
+        require("CARTRIDGE: y2k" in load_log,
+            "shell LOAD slot did not boot the cartridge")
+        loaded_mean, loaded_std = image_stats(loaded)
+        require(loaded_mean > 5.0 and loaded_std > 8.0,
+            f"loaded state is not visible ({loaded_mean:.1f}/{loaded_std:.1f})")
+
         boot_mean, boot_std = image_stats(boot)
         require(5.0 < boot_mean < 100.0,
             f"cartridge mean luma {boot_mean:.1f}")
@@ -160,7 +190,7 @@ def main():
         return 1
     print("CONSOLE_SHELL: PASS boot view, sharp video route, save slots, "
           "CRT-safe idle blank/wake (input swallowed), cartridge OSD + cold "
-          "boot at 320x240 Soft + 4x MSAA + diffraction")
+          "boot at 320x240 Soft + 4x MSAA + diffraction, save/load slots")
     return 0
 
 

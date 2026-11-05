@@ -33,9 +33,19 @@ extern "C" {
 
 #include "../gfx.h"
 
+//ai: serializable orbit-camera state for console save slots.
+typedef struct gX_Showcase_CameraState {
+    gX_F32   yaw;
+    gX_F32   pitch;
+    gX_F32   dist;
+    gX_F32v3 target;
+} gX_Showcase_CameraState;
+
 //opencode: interactive GFX demo (--showcase) — orbit camera, effect hotkeys,
 //   model focus, and a HUD legend. Pure scene controller; no new state.
 gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx);
+gX_I0 gX_Showcase_CameraGet(gX_Showcase_CameraState *out);
+gX_I0 gX_Showcase_CameraSet(const gX_Showcase_CameraState *in);
 gX_I0 gX_Showcase_ResetDefaults(gX_I0);
 gX_I0 gX_Showcase_DrawHUD(gX_RendererGFX *gfx, gX_RenderTexture *overlayTgt);
 

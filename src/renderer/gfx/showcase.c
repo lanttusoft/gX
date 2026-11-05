@@ -38,6 +38,7 @@
 #include "../../wrappers/wrappers.h"
 #include "load.h"
 #include "features.h"
+#include "../../gui/console_state.h"
 #include "../../rhi/rhi_state.h"
 //opencode: hunt - implicit-decl sweep
 #include "../../gxmath/gxmath.h"
@@ -49,6 +50,12 @@
 static gX_I1  s_defaultsApplied = false;
 static gX_I1  s_cartridgeOsdLogged;
 static gX_F64 s_cartridgeOsdBoot = -1.0;
+static gX_I1  s_cameraPending;
+static gX_Showcase_CameraState s_cameraRequest;
+static gX_F32 s_yaw = 45.0f;
+static gX_F32 s_pitch = 25.0f;
+static gX_F32 s_dist = 9.0f;
+static gX_F32v3 s_target = {0, 0, 0};
 
 //ai: cartridge boot after a prior GFX visit restores the one-shot showcase
 //   defaults and replays the boot OSD so the selected profile can take effect.
@@ -57,10 +64,22 @@ gX_I0 gX_Showcase_ResetDefaults(gX_I0) {
     s_cartridgeOsdLogged = 0;
     s_cartridgeOsdBoot = -1.0;
 }
-static gX_F32 s_yaw = 45.0f;
-static gX_F32 s_pitch = 25.0f;
-static gX_F32 s_dist = 9.0f;
-static gX_F32v3 s_target = {0, 0, 0};
+
+gX_I0 gX_Showcase_CameraGet(gX_Showcase_CameraState *out) {
+    if (!out) return;
+    out->yaw = s_yaw;
+    out->pitch = s_pitch;
+    out->dist = s_dist;
+    out->target = s_target;
+}
+
+//ai: queued until after the one-shot showcase defaults so a loaded save slot
+//   wins over the scene's pinned cartridge camera.
+gX_I0 gX_Showcase_CameraSet(const gX_Showcase_CameraState *in) {
+    if (!in) return;
+    s_cameraRequest = *in;
+    s_cameraPending = 1;
+}
 static gX_I32 s_focus = -1;
 static gX_I1  s_hudVisible = true;
 static gX_I1  s_flyMode = false;
@@ -512,6 +531,14 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
         }
     }
 
+    if (s_cameraPending) {
+        s_yaw = s_cameraRequest.yaw;
+        s_pitch = s_cameraRequest.pitch;
+        s_dist = s_cameraRequest.dist;
+        s_target = s_cameraRequest.target;
+        s_cameraPending = 0;
+    }
+
     //opencode: orbit camera — LMB drag rotates, wheel zooms. C toggles free-fly
     //   (WASD + mouse-look via the camera system's FREE mode) vs orbit.
     //opencode: run header - one-shot state dump (frame 0, after hooks+pins):
@@ -589,6 +616,17 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
                     camera.camera3D.fovy, s_dist);
             }
         }
+    }
+
+    //ai: console save states — F5 saves slot 1, F8 loads it. Only the
+    //   cartridge profile owns these keys; other showcases are untouched.
+    //   Unlike effect hotkeys they stay live in capture runs so the save-state
+    //   gate can drive them headlessly.
+    if (arguments.cartridgeY2K) {
+        if (input.keyboard.keys[gX_KEY_F5].state.PRESSED)
+            gX_ConsoleState_Save(1);
+        if (input.keyboard.keys[gX_KEY_F8].state.PRESSED)
+            gX_ConsoleState_Load(1);
     }
 
     //opencode: effect/camera hotkeys are ignored during screenshot captures;

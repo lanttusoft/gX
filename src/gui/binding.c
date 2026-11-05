@@ -45,6 +45,7 @@
 #include "../audio.h"
 #include "../input.h"
 #include "../settings.h"
+#include "console_state.h"
 
 extern gX_I32 gX_MainData_Switch(gX_I32 masterIndex);
 extern gX_I0 gX_Renderer_GFX_ColdBoot(gX_I0);
@@ -392,6 +393,14 @@ gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
 gX_I0 gX_Widget_OnClick_ConsoleSaves(gX_I0 *arg) {
     gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: save=slots");
     gX_Widget_OnClick_TitleSaves(arg);
+}
+
+//ai: load a console save slot from the shell; the state module owns the
+//   cartridge/video/camera restore and the scene switch.
+gX_I0 gX_Widget_OnClick_ConsoleLoadSlot(gX_I0 *arg) {
+    gX_I32 slot = (gX_I32)(gX_U64)(uintptr_t)arg;
+    gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: load_slot=%d", slot);
+    gX_ConsoleState_Load(slot);
 }
 
 //opencode: v0.6.5 — in-app tool openers (EXTRAS buttons). Runtime API in
