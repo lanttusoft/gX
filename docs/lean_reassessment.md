@@ -177,3 +177,41 @@ The offline reporter has author real-use evidence from two local JSON/PNG
 reports. The author also confirmed the SSGI fix is stripe-free in the live scene.
 After capacity reclamation, investigate the 3D-label-position and lens-flare
 reports, then resume the proposed SSR proof batch.
+
+### GX-I017 capacity recovery (2026-11-06)
+
+<!-- //ai: measured reclamation after the OSD slice; caps and baseline unchanged. -->
+
+After the gX-240 live OSD local commit (`d9eb892`), the production Release
+measured 4,192,955 B payload (cap 4,194,304; 1,349 B headroom) and 2,700,960 B
+BSS (cap 2,705,000; 4,040 B headroom). This pass keeps that metric, cap and
+stored baseline; it does not adopt a new reserve or remove a capability.
+
+Scratch relinks measured isolated Release `-Os` candidates without replacing
+production objects. The savings are relink deltas, not sums of symbol sizes:
+
+| Candidate | Payload saved |
+| --- | ---: |
+| `src/tools/editor/editor.cpp` (GUI editor) | 13,120 |
+| `src/tools/theme/theme_editor.cpp` (theme editor) | 3,136 |
+| `src/main_parse.c` (startup CLI parser) | 1,440 |
+| GUI editor + theme editor + CLI parser | 17,728 |
+| `src/gui/templates/templates.c` | 2,208 |
+| `src/settings.c` | 6,912 |
+| `src/tools/editor_host.cpp` | 3,136 |
+
+The adopted set is the GUI editor, theme editor and CLI parser. The editors
+are pointer-driven tool UIs already documented as size-favored; CLI parsing
+runs once at startup. `templates.c`, `settings.c` and `editor_host.cpp` were
+measured but not selected: they contain live or always-available paths (the
+debug-display template, the per-frame audio sync and the always-summonable host
+chrome). Their measurements remain candidates for a later reviewed pass.
+
+The production change is Release-only (`COMPILE_OPTIONS` with
+`$<$<CONFIG:Release>:-Os>`), so Debug code generation is unchanged. The
+post-change Release measured **4,175,227 B** payload (**19,077 B** headroom)
+and **2,700,960 B** BSS (4,040 B headroom). Validation: `make lean`,
+`make payload-audit`, `make check-fast`, `make ui-audit`,
+`make gui-interaction-check`, `make check`, and Release captures of the GUI
+editor (`--tools`, temporary markup copy) and theme editor
+(`GX_TOOLS_OPEN=theme`). Shipped resource hashes were unchanged.

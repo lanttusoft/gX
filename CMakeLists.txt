@@ -678,6 +678,11 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         src/scene/battle_runtime.c src/renderer/raymarch.c src/gui/style.c
         src/tools/gfx/gfx_editor.cpp src/common/shader_compiler.c
         src/tools/gfx/water_panel.cpp src/tools/gfx/glass_panel.cpp
+        #ai: GUI/theme editors are pointer-driven tool UIs; Release favors
+        #   size for the same reason as gfx_editor.cpp.
+        src/tools/editor/editor.cpp src/tools/theme/theme_editor.cpp
+        #ai: CLI parsing runs once at startup, never on the frame path.
+        src/main_parse.c
         src/renderer/gfx/schema.c
         #ai: physics demo cold paths — sandbox/ragdoll/EM/element code is not
         #   frame-critical math (the shared world module in src/physics/physics.c
