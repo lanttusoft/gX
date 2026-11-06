@@ -407,7 +407,8 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     if (ConsoleMenu) {
         const gX_I8 *VideoLabel = settings.screenWidth == 320
             && settings.screenHeight == 240
-            ? (settings.presentFilter ? "Video: Soft" : "Video: Sharp")
+            ? (settings.consoleSSAA2x ? "Video: SSAA 2x"
+                : (settings.presentFilter ? "Video: Soft" : "Video: Sharp"))
             : "Video: Native";
         const gX_I8 *LoadLabel = gX_ConsoleState_Exists(1)
             ? "Load Slot 1" : "Load Slot 1 (empty)";

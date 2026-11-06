@@ -288,6 +288,9 @@ It is inactive by default; paths outside `/tmp/` and faces larger than
 
 - `gX_Renderer_Load/Unload/Update/Draw` — module dispatch via the
   GX_RENDERER_MODULES X-macro table (heaps, scene configs, compositor layers)
+- `gX_Renderer_GetPresentTextureId/Width/Height` — presented scene target:
+  the 320x240 console resolve when 2x SSAA is active, otherwise the renderer
+  canvas and render dimensions.
 - `gX_RendererGFX_Feature_*` — shared scene-feature closure predicates
   (`HasEffects`, `NeedHdr`, `HasSsgi`, `Trace`) used by the pass table, the
   render-target lifecycle and `GX_GFX_FEATURE_TRACE=1`.

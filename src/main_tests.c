@@ -3831,10 +3831,14 @@ static gX_I32 gX_Tests_SettingsUI(void) {
         gX_U16 savedOverrideW = maindata.renderOverrideWidth;
         gX_U16 savedOverrideH = maindata.renderOverrideHeight;
         gX_I32 savedFilter = maindata.presentFilter;
+        gX_I32 savedConsoleSSAA = maindata.consoleSSAA;
+        gX_U16 savedConsoleOutW = maindata.consoleOutputWidth;
+        gX_U16 savedConsoleOutH = maindata.consoleOutputHeight;
         gX_F32 savedRenderScale = maindata.renderScale;
         gX_U32 savedSetW = settings.screenWidth;
         gX_U32 savedSetH = settings.screenHeight;
         gX_I32 savedSetFilter = settings.presentFilter;
+        gX_I1 savedSetSSAA = settings.consoleSSAA2x;
         gX_F32 savedSetScale = settings.renderScale;
         settings.screenWidth = 320;
         settings.screenHeight = 240;
@@ -3853,10 +3857,29 @@ static gX_I32 gX_Tests_SettingsUI(void) {
                 "SETTINGS_UI_TEST FAIL: virtual screen apply");
             errors++;
         }
+        settings.screenWidth = 320;
+        settings.screenHeight = 240;
+        settings.presentFilter = 1;
+        settings.consoleSSAA2x = 1;
+        gX_Settings_Apply_VirtualScreen();
+        if (maindata.renderWidth != 640 || maindata.renderHeight != 480
+            || maindata.consoleSSAA != 2
+            || maindata.consoleOutputWidth != 320
+            || maindata.consoleOutputHeight != 240
+            || maindata.renderOverrideWidth != 640
+            || maindata.renderOverrideHeight != 480) {
+            gX_TraceLog(gX_LOG_ERROR,
+                "SETTINGS_UI_TEST FAIL: console SSAA split apply");
+            errors++;
+        }
         settings.screenWidth = savedSetW;
         settings.screenHeight = savedSetH;
         settings.presentFilter = savedSetFilter;
+        settings.consoleSSAA2x = savedSetSSAA;
         settings.renderScale = savedSetScale;
+        maindata.consoleSSAA = savedConsoleSSAA;
+        maindata.consoleOutputWidth = savedConsoleOutW;
+        maindata.consoleOutputHeight = savedConsoleOutH;
         maindata.screenWidth = savedScreenW;
         maindata.screenHeight = savedScreenH;
         maindata.renderWidth = savedRenderW;

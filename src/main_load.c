@@ -158,6 +158,24 @@ gX_I32 gX_MainData_Reset(gX_I0) {
     if (arguments.hasRenderScale) maindata.renderScale = arguments.renderScale;
     else maindata.renderScale = 1.0f; //opencode: full-res default — 0.25 made the demo a 384x288 blocky upscale
 
+    maindata.consoleSSAA = 0;
+    maindata.consoleOutputWidth = maindata.renderOverride
+        ? maindata.renderOverrideWidth : maindata.screenWidth;
+    maindata.consoleOutputHeight = maindata.renderOverride
+        ? maindata.renderOverrideHeight : maindata.screenHeight;
+    //ai: probe hook for matched 320x240 vs 640x480 performance runs; the
+    //   product path remains the console video mode.
+    {
+        const gX_I8 *ssaaEnv = getenv("GX_CONSOLE_SSAA");
+        if (ssaaEnv && ssaaEnv[0] == '1' && maindata.renderOverride
+            && maindata.consoleOutputWidth == 320
+            && maindata.consoleOutputHeight == 240) {
+            maindata.consoleSSAA = 2;
+            maindata.renderOverrideWidth = 640;
+            maindata.renderOverrideHeight = 480;
+        }
+    }
+
     gX_MainData_Refresh();
     {
         const gX_I8 *windowTrace = getenv("GX_WINDOW_TRACE");

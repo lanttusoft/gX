@@ -195,6 +195,11 @@ only the scene render target is 320x240.
 - **Console 240p — Max**: 320x240 scene render, Ultra quality applied to the
   scene's authored features, Soft/Sharp present filter. Current: GFX Features
   panel button and `GX_CONSOLE_MAX=1`.
+- **Console 240p — SSAA 2x** (opt-in): 640x480 scene render, resolved to a
+  320x240 output, then Soft-upscaled to the window. The native GUI/OSD stay
+  window-sized. Available in the shell video column and the pause Video cycle;
+  this slice covers Y2K and RAY-1. The particle sandbox's GUI-composite route
+  falls back to standard 240p until its follow-up.
 - **Console 240p — Full** (experimental): all effects + Ultra quality; use
   only for scenes authored around SSR/TAA/DOF/volumetrics. `GX_CONSOLE_MAX_FULL=1`
   for demos/gates.
@@ -205,9 +210,10 @@ only the scene render target is 320x240.
   effects opt-in and independently testable.
 - **gX-240 console shell** — `--console-shell` opens the boot view: cartridge
   select (Y2K CGI, RAY-1, particle sandbox, empty slot), video output
-  (320x240 Soft/Sharp, Native) and save-state slots. Booting Y2K from the
-  shell applies the 320x240 Soft profile, cold-boots the GFX renderer and
-  rebuilds the authored scene; the shell keeps the native GUI at window size.
+  (320x240 Soft/Sharp/SSAA 2x, Native) and save-state slots. Booting Y2K from
+  the shell honors the selected 240p filter/SSAA (native falls back to Soft),
+  cold-boots the GFX renderer and rebuilds the authored scene; the shell keeps
+  the native GUI at window size.
   After 120 s without input the shell (and cartridge playback) fades to a
   black screen with a dim drifting gX mark; the first input is swallowed so
   it wakes the display without activating a hidden control.
@@ -216,7 +222,8 @@ only the scene render target is 320x240.
   seven seconds; `GX_T_CARTRIDGE_OSD=0` disables that scene-rendered banner.
 - <!-- //ai: GX-I010 live status slice; timing controls remain separate work. -->
   **Live console OSD** — a native-resolution status chip shows actual scene
-  render dimensions, Soft/Sharp or Native presentation, current cartridge and
+  render dimensions (and, for SSAA, the 320x240 output), Soft/Sharp/Native or
+  SSAA 2x presentation, current cartridge and
   last operated slot (slot 1 on entry). Loading another slot from the shell
   displays that slot; F5/F8 and pause actions still target slot 1. READY means
   a slot file exists, not that it has been
@@ -332,6 +339,17 @@ only the scene render target is 320x240.
   reject missing/malformed traces, wrong step counts/deltas, wrong FF
   multipliers and missing OSD playback state; they also run in
   `make check-fast`.
+- <!-- //ai: approved 2x SSAA slice; particle/4x remain follow-up. -->
+  SSAA 2x: the pause menu and shell select the mode; the OSD reports
+  `render=640x480 out=320x240 mode=SSAA2x`; Y2K and RAY-1 use the resolved
+  direct-blit path; the particle sandbox falls back to standard 320x240; save
+  state stores and restores `ssaa=2`; a matched 60 Hz `--gfx-profile` run must
+  stay at or below **3x** the 320x240 GPU frame cost (about 1.5x on the
+  current host; `scripts/console_ssaa_check.py`, included by
+  `make console-check` and `make check`). Five display-free tests reject wrong
+  OSD splits, bad save factors, malformed profiles and over-budget ratios; they
+  also run in `make check-fast`. `GX_CONSOLE_SSAA=1` is an automation hook for
+  matched performance runs, not a second product default.
 - No UI clipping with native tool panels at window resolution.
 
 ## Follow-up
@@ -344,8 +362,9 @@ remains the console's detailed open-work list.
 - GX-I010 live status, save feedback and playback timing are implemented
   locally (real pause, 1/60 step, 2x/4x/8x); no further timing controls are
   planned in this slice.
-- Supersampled render/output split, separately specified from the current
-  320x240 scene render followed by window upscale.
+- GX-I008 2x SSAA is implemented for Y2K and RAY-1. Extending the 320x240
+  resolve to the particle sandbox's GUI-composite path and evaluating a 4x
+  factor remain follow-ups; they are not part of this slice.
 - PRISM-1 presentation work: choose 16-bit quantization semantics and validate
   scanline/composite/phosphor-mask variants. Reuse the generic dither,
   quantization and interlace hooks where appropriate; keep each effect

@@ -1487,9 +1487,17 @@ static gX_I0 console_idle_assets(gX_I0) {
 static gX_I0 console_overlay_begin(gX_I0)
 {
     gX_Drawing_Flush();
+    //ai: sync the capability cache before disabling; a renderer pass may
+    //   have changed scissor state through raw GL.
+    (void)gX_RHI_IsEnabled(gX_RHI_SCISSOR_TEST);
     gX_RHI_Disable(gX_RHI_SCISSOR_TEST);
     gX_RHI_Viewport(0, 0, (gX_I32)maindata.screenWidth,
         (gX_I32)maindata.screenHeight);
+    //ai: native overlays must not inherit the last render-target viewport.
+    drawinfo.vpX = 0;
+    drawinfo.vpY = 0;
+    drawinfo.vpW = (gX_I32)maindata.screenWidth;
+    drawinfo.vpH = (gX_I32)maindata.screenHeight;
     gX_RHI_Matrix_Mode(GX_RHI_MATRIX_PROJECTION);
     gX_RHI_Matrix_LoadIdentity();
     gX_RHI_Matrix_Ortho(0, (gX_F64)maindata.screenWidth,
@@ -1505,7 +1513,9 @@ static gX_I8 s_consoleOsdEvent[24];
 static gX_I32 s_consoleOsdSlot = 1;
 static gX_I32 s_consoleOsdScene = -1;
 static gX_U16 s_consoleOsdWidth, s_consoleOsdHeight;
+static gX_U16 s_consoleOsdOutWidth, s_consoleOsdOutHeight;
 static gX_I32 s_consoleOsdFilter = -1;
+static gX_I32 s_consoleOsdSSAA = -1;
 static gX_I1 s_consoleOsdReady, s_consoleOsdVisible, s_consoleOsdEventShown;
 static gX_I1 s_consoleOsdMenu, s_consoleOsdIdle, s_consoleOsdDirty;
 static gX_I8 s_consoleOsdPlay[24];
@@ -1546,14 +1556,20 @@ static gX_I0 console_osd_draw(gX_I0)
     gX_I1 Changed = s_consoleOsdScene != maindata.masterIndex
         || s_consoleOsdWidth != maindata.renderWidth
         || s_consoleOsdHeight != maindata.renderHeight
-        || s_consoleOsdFilter != maindata.presentFilter;
+        || s_consoleOsdOutWidth != maindata.consoleOutputWidth
+        || s_consoleOsdOutHeight != maindata.consoleOutputHeight
+        || s_consoleOsdFilter != maindata.presentFilter
+        || s_consoleOsdSSAA != maindata.consoleSSAA;
     if (Cartridge && (Changed || (s_consoleOsdIdle && !Idle)
         || (!s_consoleOsdMenu && gui.state.SHOW_MENU)))
     {
         s_consoleOsdScene = maindata.masterIndex;
         s_consoleOsdWidth = maindata.renderWidth;
         s_consoleOsdHeight = maindata.renderHeight;
+        s_consoleOsdOutWidth = maindata.consoleOutputWidth;
+        s_consoleOsdOutHeight = maindata.consoleOutputHeight;
         s_consoleOsdFilter = maindata.presentFilter;
+        s_consoleOsdSSAA = maindata.consoleSSAA;
         s_consoleOsdReady = gX_ConsoleState_Exists(s_consoleOsdSlot);
         s_consoleOsdUntil = Now + 4.0;
         s_consoleOsdDirty = true;
@@ -1581,12 +1597,21 @@ static gX_I0 console_osd_draw(gX_I0)
     }
     gX_I1 Event = Now < s_consoleOsdEventUntil;
     const gX_I8 *State = Event ? s_consoleOsdEvent : (s_consoleOsdReady ? "READY" : "EMPTY");
-    const gX_I8 *Mode = maindata.renderWidth == maindata.windowWidth
-        && maindata.renderHeight == maindata.windowHeight ? "NATIVE"
-        : (maindata.presentFilter == 1 ? "SOFT" : "SHARP");
-    gX_I8 Header[80], Detail[128];
-    snprintf(Header, sizeof(Header), "gX-240  %ux%u  %s",
-        maindata.renderWidth, maindata.renderHeight, Mode);
+    const gX_I8 *Mode = maindata.consoleSSAA > 1 ? "SSAA2x"
+        : (maindata.renderWidth == maindata.windowWidth
+            && maindata.renderHeight == maindata.windowHeight ? "NATIVE"
+            : (maindata.presentFilter == 1 ? "SOFT" : "SHARP"));
+    gX_U32 OutW = maindata.consoleOutputWidth
+        ? maindata.consoleOutputWidth : maindata.renderWidth;
+    gX_U32 OutH = maindata.consoleOutputHeight
+        ? maindata.consoleOutputHeight : maindata.renderHeight;
+    gX_I8 Header[96], Detail[128];
+    if (maindata.consoleSSAA > 1)
+        snprintf(Header, sizeof(Header), "gX-240  %ux%u -> %ux%u  %s",
+            maindata.renderWidth, maindata.renderHeight, OutW, OutH, Mode);
+    else
+        snprintf(Header, sizeof(Header), "gX-240  %ux%u  %s",
+            maindata.renderWidth, maindata.renderHeight, Mode);
     if (Playback[0])
         snprintf(Detail, sizeof(Detail), "%s  |  SLOT %d  %s  |  %s",
             Cartridge, s_consoleOsdSlot, State, Playback);
@@ -1611,9 +1636,10 @@ static gX_I0 console_osd_draw(gX_I0)
     gX_Drawing_Flush();
     if (gX_GUI_Trace_Enabled() && (s_consoleOsdDirty || !s_consoleOsdVisible || Event != s_consoleOsdEventShown))
         gX_TraceLog(gX_LOG_NOTICE,
-            "CONSOLE_OSD: show render=%ux%u mode=%s cart=%s slot=%d state=%s play=%s rect=%.0f,%.0f,%.0f,%.0f textfit=%.0f,%.0f",
-            maindata.renderWidth, maindata.renderHeight, Mode, Cartridge, s_consoleOsdSlot, State,
-            Playback, Rect.x, Rect.y, Rect.width, Rect.height,
+            "CONSOLE_OSD: show render=%ux%u out=%ux%u mode=%s cart=%s slot=%d state=%s play=%s rect=%.0f,%.0f,%.0f,%.0f textfit=%.0f,%.0f",
+            maindata.renderWidth, maindata.renderHeight, OutW, OutH, Mode,
+            Cartridge, s_consoleOsdSlot, State, Playback,
+            Rect.x, Rect.y, Rect.width, Rect.height,
             fmaxf(HeaderSize.x, DetailSize.x), fmaxf(HeaderSize.y, DetailSize.y));
     s_consoleOsdVisible = true;
     s_consoleOsdEventShown = Event;
@@ -1689,7 +1715,10 @@ gX_I0 gX_GUI_Draw(gX_I0) {    //opencode: full-frame GL state diff gated behind 
          maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH)) {
         gX_RHI_FBO prevReadFbo = gX_RHI_GetReadFBO(), prevDrawFbo = gX_RHI_GetDrawFBO();
         gX_Rectangle viewport = gui.viewportBox;
-        if (renderer.canvas.texture.id > 0) {
+        gX_U32 PresentId = gX_Renderer_GetPresentTextureId();
+        gX_U32 PresentW = gX_Renderer_GetPresentWidth();
+        gX_U32 PresentH = gX_Renderer_GetPresentHeight();
+        if (PresentId > 0) {
             //opencode: renderer-scene direct blit follows the GUI viewport so
             //   docked tools do not leave a fixed-size black pillar on the side.
             extern gX_I32 gX_GetScreenHeight(gX_I0);
@@ -1697,9 +1726,10 @@ gX_I0 gX_GUI_Draw(gX_I0) {    //opencode: full-frame GL state diff gated behind 
             if (targetHeight <= 0) targetHeight = (gX_I32)maindata.windowHeight;
             gX_U32 viewportY = (gX_U32)targetHeight
                 - (gX_U32)(viewport.y + viewport.height);
-            gX_RHI_Blit(renderer.canvas.id, 0,
-                0, 0,
-                (gX_U32)maindata.renderWidth, (gX_U32)maindata.renderHeight,
+            (void)gX_RHI_IsEnabled(gX_RHI_SCISSOR_TEST);
+            gX_RHI_Disable(gX_RHI_SCISSOR_TEST);
+            gX_RHI_Blit(PresentId, 0,
+                0, 0, PresentW, PresentH,
                 (gX_U32)viewport.x, viewportY,
                 (gX_U32)viewport.width, (gX_U32)viewport.height,
                 gX_RHI_COLOR_BUFFER_BIT,
@@ -1713,12 +1743,13 @@ gX_I0 gX_GUI_Draw(gX_I0) {    //opencode: full-frame GL state diff gated behind 
         //   frame's renderer target before drawing the menu so the overlay
         //   never blurs stale content from an earlier scene.
         if (gui.state.SHOW_MENU && gui.ping.loadingState.loaded &&
-            renderer.canvas.texture.id > 0) {
+            PresentId > 0) {
             gX_Drawing_BeginTexture(gui.ping.rt);
                 gX_Drawing_ClearBG((gX_Color){0,0,0,255});
-                gX_RHI_Blit(renderer.canvas.id, gui.ping.rt.id,
-                    0, 0,
-                    (gX_U32)maindata.renderWidth, (gX_U32)maindata.renderHeight,
+                (void)gX_RHI_IsEnabled(gX_RHI_SCISSOR_TEST);
+                gX_RHI_Disable(gX_RHI_SCISSOR_TEST);
+                gX_RHI_Blit(PresentId, gui.ping.rt.id,
+                    0, 0, PresentW, PresentH,
                     0, 0,
                     (gX_U32)gui.ping.width, (gX_U32)gui.ping.height,
                     gX_RHI_COLOR_BUFFER_BIT, gX_RHI_LINEAR);

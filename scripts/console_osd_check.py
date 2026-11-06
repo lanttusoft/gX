@@ -18,17 +18,19 @@ import console_shell_check as console
 
 
 SHOW_RE = re.compile(
-    r"CONSOLE_OSD: show render=(\d+)x(\d+) mode=(SOFT|SHARP|NATIVE) "
+    r"CONSOLE_OSD: show render=(\d+)x(\d+) out=(\d+)x(\d+) "
+    r"mode=(SOFT|SHARP|NATIVE|SSAA2x) "
     r"cart=(.*?) slot=(-?\d+) state=(.*?) play=(.*?) "
     r"rect=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+) textfit=([\d.]+),([\d.]+)")
 
 
 def rows(log):
-    return [{"render": (int(match[1]), int(match[2])), "mode": match[3],
-             "cart": match[4], "slot": int(match[5]), "state": match[6],
-             "play": match[7],
-             "rect": tuple(float(match[i]) for i in range(8, 12)),
-             "fit": (float(match[12]), float(match[13]))}
+    return [{"render": (int(match[1]), int(match[2])),
+             "out": (int(match[3]), int(match[4])), "mode": match[5],
+             "cart": match[6], "slot": int(match[7]), "state": match[8],
+             "play": match[9],
+             "rect": tuple(float(match[i]) for i in range(10, 14)),
+             "fit": (float(match[14]), float(match[15]))}
             for match in SHOW_RE.finditer(log)]
 
 
@@ -90,9 +92,14 @@ def main():
             _, video_log = capture("video",
                 "1.0 key 256;2.0 key 264;2.25 key 264;2.5 key 264;3.0 key 257;"
                 "3.5 pad 0 start;4.0 pad 0 start;4.75 key 264;5.0 key 264;"
-                "5.25 key 264;5.75 key 257", frames=430, shot=410)
-            assert_osd(video_log, 1024, 768, render=(320, 240), mode="SHARP")
-            assert_osd(video_log, 1024, 768, render=(1024, 768), mode="NATIVE")
+                "5.25 key 264;5.75 key 257;6.5 key 264;6.75 key 264;"
+                "7.0 key 264;7.5 key 257", frames=520, shot=500)
+            assert_osd(video_log, 1024, 768, render=(320, 240),
+                out=(320, 240), mode="SHARP")
+            assert_osd(video_log, 1024, 768, render=(640, 480),
+                out=(320, 240), mode="SSAA2x")
+            assert_osd(video_log, 1024, 768, render=(1024, 768),
+                out=(1024, 768), mode="NATIVE")
 
             save_dir = out / "slots"
             _, saved_log = capture("saved", "2.0 key 294",
@@ -142,8 +149,9 @@ def main():
     except (OSError, ValueError, RuntimeError, KeyError, subprocess.SubprocessError) as error:
         print(f"CONSOLE_OSD: FAIL — {error}; evidence {out}", file=sys.stderr)
         return 1
-    print("CONSOLE_OSD: PASS three-size draw/bounds, disable/auto-hide, live Soft/Sharp/Native, "
-          "save/load/failure feedback, cartridge idle/wake and slot-3 shell load")
+    print("CONSOLE_OSD: PASS three-size draw/bounds, disable/auto-hide, live "
+          "Soft/Sharp/SSAA 2x/Native, save/load/failure feedback, cartridge "
+          "idle/wake and slot-3 shell load")
     print(f"CONSOLE_OSD: evidence {out}")
     return 0
 

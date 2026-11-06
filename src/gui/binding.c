@@ -355,18 +355,23 @@ gX_I0 gX_Widget_OnClick_ConsoleVideo(gX_I0 *arg) {
         settings.screenWidth = maindata.windowWidth;
         settings.screenHeight = maindata.windowHeight;
         settings.presentFilter = 0;
+        settings.consoleSSAA2x = false;
     } else {
         settings.screenWidth = 320;
         settings.screenHeight = 240;
-        settings.presentFilter = mode == 0 ? 1 : 0;
+        settings.presentFilter = mode == 1 ? 0 : 1;
+        settings.consoleSSAA2x = mode == 3;
     }
     gX_Settings_Apply_VirtualScreen();
     settings.dirtyFlag = 1;
     gX_TraceLog(gX_LOG_NOTICE,
-        "CONSOLE: video=%s window=%ux%u render=%ux%u filter=%d",
-        mode == 2 ? "native" : (mode == 0 ? "soft" : "sharp"),
+        "CONSOLE: video=%s window=%ux%u render=%ux%u out=%ux%u filter=%d",
+        mode == 2 ? "native" : (mode == 3 ? "ssaa2x"
+            : (mode == 0 ? "soft" : "sharp")),
         maindata.windowWidth, maindata.windowHeight,
-        maindata.renderWidth, maindata.renderHeight, maindata.presentFilter);
+        maindata.renderWidth, maindata.renderHeight,
+        maindata.consoleOutputWidth, maindata.consoleOutputHeight,
+        maindata.presentFilter);
     console_refresh_view();
 }
 
@@ -377,7 +382,12 @@ gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
         arguments.showcase = true;
         arguments.showcaseY2K = true;
         arguments.cartridgeY2K = true;
-        gX_Widget_OnClick_ConsoleVideo((gX_I0*)(gX_U64)0);
+        //ai: honor the shell's selected 240p filter/SSAA; native falls back
+        //   to the cartridge's soft 240p default.
+        if (settings.screenWidth != 320 || settings.screenHeight != 240)
+            gX_Widget_OnClick_ConsoleVideo((gX_I0*)(gX_U64)0);
+        else
+            gX_Settings_Apply_VirtualScreen();
         gX_Renderer_GFX_ColdBoot();
     } else if (cartridge == 1) {
         arguments.showcase = false;
@@ -388,8 +398,21 @@ gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
         arguments.showcase = false;
         arguments.showcaseY2K = false;
         arguments.cartridgeY2K = false;
+        //ai: the particle sandbox's GUI-composite route is a later SSAA slice.
+        settings.consoleSSAA2x = false;
+        gX_Settings_Apply_VirtualScreen();
         scene = gX_SCENE_PHYSICS;
     }
+    gX_TraceLog(gX_LOG_NOTICE,
+        "CONSOLE: video=%s window=%ux%u render=%ux%u out=%ux%u filter=%d",
+        settings.consoleSSAA2x ? "ssaa2x"
+            : (settings.screenWidth == maindata.windowWidth
+                && settings.screenHeight == maindata.windowHeight ? "native"
+                : (settings.presentFilter ? "soft" : "sharp")),
+        maindata.windowWidth, maindata.windowHeight,
+        maindata.renderWidth, maindata.renderHeight,
+        maindata.consoleOutputWidth, maindata.consoleOutputHeight,
+        maindata.presentFilter);
     gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: boot=%d scene=%d", cartridge, scene);
     gX_MainData_Switch(scene);
 }
@@ -453,7 +476,9 @@ gX_I0 gX_Widget_OnClick_ConsolePauseVideo(gX_I0 *arg) {
     (void)arg;
     gX_I32 Mode = 0;
     if (settings.screenWidth == 320 && settings.screenHeight == 240) {
-        Mode = settings.presentFilter ? 1 : 2;
+        if (settings.consoleSSAA2x) Mode = 2;
+        else if (settings.presentFilter) Mode = 1;
+        else Mode = 3;
     }
     gX_Widget_OnClick_ConsoleVideo(
         (gX_I0 *)(gX_U64)(uintptr_t)Mode);

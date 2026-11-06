@@ -567,18 +567,20 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
                 gX_Widget_OnClick_ConsoleBoot, (gX_I0 *)(gX_U64)(uintptr_t)Cart);
             b.currentElement->state.DISABLED = Cart == 3;
         }
-        static const gX_I8 *VideoLabels[3] = {
-            "320x240 SOFT", "320x240 SHARP", "NATIVE"
+        static const gX_I8 *VideoLabels[4] = {
+            "320x240 SOFT", "320x240 SHARP", "320x240 SSAA 2x", "NATIVE"
         };
-        for (gX_I32 Video = 0; Video < 3; Video++)
+        static const gX_I32 VideoModes[4] = { 0, 1, 3, 2 };
+        for (gX_I32 Video = 0; Video < 4; Video++)
         {
-            titlegx_console_item(&b, 448, 136.0f + (gX_F32)Video * 68.0f,
-                248, 56, VideoLabels[Video], 18, gui.style.title2.saveSlotText,
-                gX_Widget_OnClick_ConsoleVideo, (gX_I0 *)(gX_U64)(uintptr_t)Video);
+            titlegx_console_item(&b, 448, 136.0f + (gX_F32)Video * 60.0f,
+                248, 48, VideoLabels[Video], 18, gui.style.title2.saveSlotText,
+                gX_Widget_OnClick_ConsoleVideo,
+                (gX_I0 *)(gX_U64)(uintptr_t)VideoModes[Video]);
         }
-        titlegx_console_item(&b, 448, 340, 248, 56, "SAVE STATES", 18,
+        titlegx_console_item(&b, 448, 376, 248, 44, "SAVE STATES", 18,
             gui.style.title2.saveSlotText, gX_Widget_OnClick_ConsoleSaves, NULL);
-        titlegx_console_item(&b, 24, 416, 672, 32,
+        titlegx_console_item(&b, 24, 428, 672, 28,
             "PAD NAVIGATE  SOUTH SELECT  EAST BACK", 16,
             (gX_Color){150, 180, 210, 255}, NULL, NULL);
         titlegx_console_item(&b, 240, 472, 240, 52, "BACK", 20,

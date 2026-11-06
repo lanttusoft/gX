@@ -463,6 +463,11 @@ typedef struct gX_MainData {
     gX_I1       renderOverride;
     gX_U16      renderOverrideWidth;
     gX_U16      renderOverrideHeight;
+    //ai: console SSAA split — scene renders at 2x this output, then resolves
+    //   to the 240p output before the native GUI/window upscale.
+    gX_I32      consoleSSAA;
+    gX_U16      consoleOutputWidth;
+    gX_U16      consoleOutputHeight;
     //render: rendering resolution for a framebuffer (renderer resolution [2D/3D])
     gX_F32      renderScale;
     gX_U16      renderWidth;

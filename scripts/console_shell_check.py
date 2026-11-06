@@ -25,7 +25,8 @@ import gui_layout_check as layout
 SCRATCH = audit.SCRATCH / "console_shell_check"
 VIEW_RE = re.compile(r"CONSOLE: view=shell boot=(\d)")
 VIDEO_RE = re.compile(
-    r"CONSOLE: video=(\w+) window=(\d+)x(\d+) render=(\d+)x(\d+) filter=(\d)")
+    r"CONSOLE: video=(\w+) window=(\d+)x(\d+) render=(\d+)x(\d+) "
+    r"out=(\d+)x(\d+) filter=(\d)")
 BOOT_RE = re.compile(r"CONSOLE: boot=(\d+) scene=(\d+)")
 CARTRIDGE_RE = re.compile(
     r"CARTRIDGE: y2k diffraction=(\d+) blades=(\d+) quality=(\d+)")
@@ -274,7 +275,8 @@ def main():
                 "nonprimary gamepad activated the console menu")
 
             shell_focus = ["Y2K CGI DEMO", "RAY-1 TECH DEMO", "PARTICLE SANDBOX",
-                "320x240 SOFT", "320x240 SHARP", "NATIVE", "SAVE STATES", "BACK"]
+                "320x240 SOFT", "320x240 SHARP", "320x240 SSAA 2x", "NATIVE",
+                "SAVE STATES", "BACK"]
             assert_layout(shell_log, 1024, 768, shell_focus)
             assert_layout(save_log, 1024, 768, ["BACK"])
             for width, height in ((640, 480), (1024, 768), (1280, 720)):
@@ -322,11 +324,11 @@ def main():
 
         video = VIDEO_RE.findall(sharp_log)
         require(video, "video profile trace missing")
-        mode, ww, wh, rw, rh, filter_value = video[-1]
+        mode, ww, wh, rw, rh, ow, oh, filter_value = video[-1]
         require(mode == "sharp", f"video mode {mode}")
         require((ww, wh) == ("1024", "768") and (rw, rh) == ("320", "240")
-            and filter_value == "0",
-            f"sharp profile {rw}x{rh} filter={filter_value}")
+            and (ow, oh) == ("320", "240") and filter_value == "0",
+            f"sharp profile {rw}x{rh} out={ow}x{oh} filter={filter_value}")
         _sharp_mean, sharp_std = image_stats(sharp)
         require(sharp_std > 12.0, "video route lost the shell frame")
 
@@ -342,7 +344,8 @@ def main():
         video = VIDEO_RE.findall(boot_log)
         require(video and video[-1][0] == "soft"
             and video[-1][3:5] == ("320", "240")
-            and video[-1][5] == "1", f"cartridge video profile: {video}")
+            and video[-1][5:7] == ("320", "240")
+            and video[-1][7] == "1", f"cartridge video profile: {video}")
         require("RENDERER: GFX cold boot" in boot_log,
             "cartridge did not cold boot the GFX renderer")
         require("CARTRIDGE_OSD: banner" in boot_log,

@@ -108,6 +108,8 @@ typedef struct gX_Settings {
     gX_F32 renderScale;
     //ai: virtual-screen upscale filter — 0 = sharp/nearest, 1 = soft/linear.
     gX_I32 presentFilter;
+    //ai: opt-in 320x240 profile renders at 640x480 then resolves to 320x240.
+    gX_I1  consoleSSAA2x;
     //opencode: user scale for ImGui tool text, spacing, and hit targets.
     gX_F32 toolUiScale;
     //opencode: full Tab/arrow/Enter navigation in ImGui tools.

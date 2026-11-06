@@ -47,6 +47,7 @@
 #include "../rhi/gl_state.h"
 #include "../rhi/rhi.h"
 #include "../rhi/rhi_fbo.h"
+#include "../rhi/rhi_state.h"
 
 //opencode: scene config — maps scene enums to which renderers update/draw
 typedef enum {
@@ -237,6 +238,14 @@ static gX_I0 gX_Renderer_Canvas_Load(gX_I0) {
         gX_Drawing_EndTexture();
         renderer.state.CANVAS_LOADED = true;
     }
+    //ai: console SSAA resolves the 2x canvas to the 240p output; recreate it
+    //   with the canvas on every virtual-screen refresh.
+    if (maindata.consoleSSAA > 1 && !renderer.state.CONSOLE_RESOLVE_LOADED
+        && maindata.consoleOutputWidth > 0 && maindata.consoleOutputHeight > 0) {
+        renderer.consoleResolve = gX_RenderTexture_Load_HDR(
+            maindata.consoleOutputWidth, maindata.consoleOutputHeight);
+        renderer.state.CONSOLE_RESOLVE_LOADED = true;
+    }
     //opencode: reset the per-frame "canvas was drawn" flag at load time too,
     //   in case Load is called mid-frame (e.g. on window resize).
     renderer.canvasDrawnThisFrame = 0;
@@ -279,6 +288,24 @@ gX_U32 gX_Renderer_GetCanvasTextureId(gX_I0) {
     return renderer.canvas.id;
 }
 
+gX_U32 gX_Renderer_GetPresentTextureId(gX_I0) {
+    if (maindata.consoleSSAA > 1 && renderer.state.CONSOLE_RESOLVE_LOADED)
+        return renderer.consoleResolve.id;
+    return renderer.canvas.id;
+}
+
+gX_U32 gX_Renderer_GetPresentWidth(gX_I0) {
+    if (maindata.consoleSSAA > 1 && renderer.state.CONSOLE_RESOLVE_LOADED)
+        return maindata.consoleOutputWidth;
+    return maindata.renderWidth;
+}
+
+gX_U32 gX_Renderer_GetPresentHeight(gX_I0) {
+    if (maindata.consoleSSAA > 1 && renderer.state.CONSOLE_RESOLVE_LOADED)
+        return maindata.consoleOutputHeight;
+    return maindata.renderHeight;
+}
+
 gX_I0 gX_Renderer_BeginFrame(gX_I0) {
     //opencode: clear the per-frame "canvas was drawn" flags. gX_glfw_Drawing_End
     //   reads canvasDrawnThisFrame to decide whether to composite the canvas
@@ -304,6 +331,10 @@ static gX_I32 gX_Renderer_Canvas_Unload(gX_I0) {
     if (renderer.state.CANVAS_LOADED) {
         gX_RenderTexture_Unload(renderer.canvas);
         renderer.state.CANVAS_LOADED = false;
+    }
+    if (renderer.state.CONSOLE_RESOLVE_LOADED) {
+        gX_RenderTexture_Unload(renderer.consoleResolve);
+        renderer.state.CONSOLE_RESOLVE_LOADED = false;
     }
     
     return 0;
@@ -702,6 +733,21 @@ gX_I0 gX_Renderer_Draw(gX_I0) {
                      gX_RHI_COLOR_BUFFER_BIT, gX_RHI_NEAREST);
         gX_GL_State_Pop();
         GX_PROFILE_ZONE_END("renderer:postprocess");
+    }
+
+    //ai: resolve the 2x console canvas to the 320x240 presentation target.
+    if (maindata.consoleSSAA > 1 && renderer.state.CONSOLE_RESOLVE_LOADED
+        && renderer.canvas.texture.id > 0) {
+        gX_RHI_FBO prevReadFbo = gX_RHI_GetReadFBO();
+        gX_RHI_FBO prevDrawFbo = gX_RHI_GetDrawFBO();
+        (void)gX_RHI_IsEnabled(gX_RHI_SCISSOR_TEST);
+        gX_RHI_Disable(gX_RHI_SCISSOR_TEST);
+        gX_RHI_Blit(renderer.canvas.id, renderer.consoleResolve.id,
+            0, 0, maindata.renderWidth, maindata.renderHeight,
+            0, 0, maindata.consoleOutputWidth, maindata.consoleOutputHeight,
+            gX_RHI_COLOR_BUFFER_BIT, gX_RHI_LINEAR);
+        gX_RHI_BindReadFBO(prevReadFbo);
+        gX_RHI_BindDrawFBO(prevDrawFbo);
     }
 
 }

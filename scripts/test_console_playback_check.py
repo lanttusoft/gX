@@ -49,8 +49,9 @@ class PlaybackGateTests(unittest.TestCase):
             playback.require_ff(log.replace("0.066666667", "0.033333333"), 4)
 
     def test_osd_state_is_required(self):
-        osd = ("CONSOLE_OSD: show render=320x240 mode=SOFT cart=Y2K CGI slot=1 "
-               "state=EMPTY play=PAUSED rect=10,435,200,35 textfit=185,13")
+        osd = ("CONSOLE_OSD: show render=320x240 out=320x240 mode=SOFT "
+               "cart=Y2K CGI slot=1 state=EMPTY play=PAUSED "
+               "rect=10,435,200,35 textfit=185,13")
         playback.require_osd_play(osd, "PAUSED")
         with self.assertRaises(RuntimeError):
             playback.require_osd_play(osd, "STEP")

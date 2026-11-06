@@ -132,6 +132,8 @@ static gX_I32 console_state_save(gX_I32 slot) {
             json_object_new_int((gX_I32)settings.screenHeight));
         json_object_object_add(video, "filter",
             json_object_new_int(settings.presentFilter));
+        json_object_object_add(video, "ssaa",
+            json_object_new_int(settings.consoleSSAA2x ? 2 : 0));
         json_object_object_add(root, "video", video);
     }
     {
@@ -196,10 +198,14 @@ static gX_I32 console_state_load(gX_I32 slot) {
         gX_U32 width = (gX_U32)console_state_number(value, "width", 320.0);
         gX_U32 height = (gX_U32)console_state_number(value, "height", 240.0);
         gX_F32 filter = (gX_F32)console_state_number(value, "filter", 1.0);
+        gX_F32 ssaa = (gX_F32)console_state_number(value, "ssaa", 0.0);
+        //ai: particle sandbox SSAA is a follow-up; load it at standard 240p.
+        if (strcmp((const char *)cartridge, "particle") == 0) ssaa = 0.0f;
         if (width >= 64 && width <= 4096 && height >= 64 && height <= 4096) {
             settings.screenWidth = width;
             settings.screenHeight = height;
             settings.presentFilter = filter != 0.0f ? 1 : 0;
+            settings.consoleSSAA2x = ssaa >= 2.0f ? 1 : 0;
             gX_Settings_Apply_VirtualScreen();
             settings.dirtyFlag = 1;
         }

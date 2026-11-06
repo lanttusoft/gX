@@ -104,6 +104,7 @@ typedef struct gX_Renderer_State {
     gX_I1 FEEDBACK_LOADED;
     gX_I1 GLOW_LOADED;
     gX_I1 CANVAS_LOADED;
+    gX_I1 CONSOLE_RESOLVE_LOADED;
     
     gX_I1 FEEDBACK_LOAD_ASAP;
     gX_I1 GLOW_LOAD_ASAP;
@@ -149,6 +150,8 @@ typedef struct gX_Renderer {
     gX_RenderTexture feedback;
     gX_RenderTexture glow;
     gX_RenderTexture canvas;
+    //ai: 320x240 console resolve of the 2x supersampled canvas.
+    gX_RenderTexture consoleResolve;
 
     //opencode: set by gX_Drawing_BeginTexture when binding the canvas FBO,
     //   cleared in gX_Renderer_BeginFrame (called from gX_Drawing_Begin).
@@ -201,6 +204,11 @@ gX_I1 gX_Renderer_GetCanvasDrawn(gX_I0);
 gX_I0 gX_Renderer_SetCanvasDrawnByGUI(gX_I1 drawn);
 gX_I1 gX_Renderer_GetCanvasDrawnByGUI(gX_I0);
 gX_U32 gX_Renderer_GetCanvasTextureId(gX_I0);
+//ai: presented console texture — the 320x240 resolve when 2x SSAA is active,
+//   otherwise the normal renderer canvas.
+gX_U32 gX_Renderer_GetPresentTextureId(gX_I0);
+gX_U32 gX_Renderer_GetPresentWidth(gX_I0);
+gX_U32 gX_Renderer_GetPresentHeight(gX_I0);
 gX_I0 gX_Renderer_BeginFrame(gX_I0);
 
 //opencode: compositor-drawn-this-frame tracking — a scene that composites

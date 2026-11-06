@@ -71,6 +71,7 @@ static const gX_Settings_FieldInfo gX_Settings_Fields[] = {
     GX_FIELD_F32("synthVolume", "Synth volume", synthVolume, GX_SETTINGS_UI_ADVANCED, 0.0f, 2.0f, 1.0f, ""),
     GX_FIELD_F32("renderScale", "Render scale", renderScale, GX_SETTINGS_UI_EXPERT, 0.25f, 1.0f, 1.0f, "x"),
     GX_FIELD_I32("presentFilter", "Present filter", presentFilter, GX_SETTINGS_UI_BASIC, 0.0f, 1.0f, 0.0f),
+    GX_FIELD_BOOL("consoleSSAA2x", "Console 2x SSAA", consoleSSAA2x, GX_SETTINGS_UI_EXPERT),
     GX_FIELD_I32("toolGlLevel", "GL level request", toolGlLevel, GX_SETTINGS_UI_EXPERT, 0.0f, 430.0f, 0.0f),
     GX_FIELD_I32("uiLevel", "UI level", uiLevel, GX_SETTINGS_UI_EXPERT, 0.0f, 2.0f, 1.0f),
     GX_FIELD_U32("screenWidth", "Virtual render width", screenWidth, GX_SETTINGS_UI_EXPERT, 320.0f, 3840.0f, 1024.0f, "px"),
@@ -331,6 +332,7 @@ static gX_I32 gX_Settings_Schema_Init(gX_I0) {
     
     GX_SCHEMAJSON_ADDOBJECT_TERM(renderScale,(settings.renderScale),F32)
     GX_SCHEMAJSON_ADDOBJECT_TERM(presentFilter,(settings.presentFilter),I32)
+    GX_SCHEMAJSON_ADDOBJECT_TERM(consoleSSAA2x,(settings.consoleSSAA2x),I1)
     //opencode: persist the tool accessibility preferences with ordinary settings.
     GX_SCHEMAJSON_ADDOBJECT_TERM(toolUiScale,(settings.toolUiScale),F32)
     //opencode: persisted GL feature-level request (0 = auto).
@@ -368,14 +370,17 @@ gX_I32 gX_Settings_Init(gX_I0) {
     settings.masterFilterCutoff = 0.8f;
     settings.masterFilterResonance = 0.0f;
     
-    settings.screenWidth = maindata.renderOverride
-        ? maindata.renderOverrideWidth : maindata.screenWidth;
-    settings.screenHeight = maindata.renderOverride
-        ? maindata.renderOverrideHeight : maindata.screenHeight;
+    settings.screenWidth = maindata.consoleOutputWidth
+        ? maindata.consoleOutputWidth
+        : (maindata.renderOverride ? maindata.renderOverrideWidth : maindata.screenWidth);
+    settings.screenHeight = maindata.consoleOutputHeight
+        ? maindata.consoleOutputHeight
+        : (maindata.renderOverride ? maindata.renderOverrideHeight : maindata.screenHeight);
     settings.windowWidth = maindata.windowWidth;
     settings.windowHeight = maindata.windowHeight;
     settings.renderScale = maindata.renderScale;
     settings.presentFilter = maindata.presentFilter;
+    settings.consoleSSAA2x = (maindata.consoleSSAA > 1) ? 1 : 0;
     //opencode: initialize accessible defaults for the editor tools.
     //  125% keeps the 13px base readable at 1024x768 and 1920x1080.
     settings.toolUiScale = 1.25f;
@@ -419,14 +424,17 @@ gX_I32 gX_Settings_Reset(gX_I0) {
     settings.masterFilterMode = GX_AUDIO_FILTER_LP;
     settings.masterFilterCutoff = 0.8f;
     settings.masterFilterResonance = 0.0f;
-    settings.screenWidth  = maindata.renderOverride
-        ? maindata.renderOverrideWidth : maindata.screenWidth;
-    settings.screenHeight = maindata.renderOverride
-        ? maindata.renderOverrideHeight : maindata.screenHeight;
+    settings.screenWidth  = maindata.consoleOutputWidth
+        ? maindata.consoleOutputWidth
+        : (maindata.renderOverride ? maindata.renderOverrideWidth : maindata.screenWidth);
+    settings.screenHeight = maindata.consoleOutputHeight
+        ? maindata.consoleOutputHeight
+        : (maindata.renderOverride ? maindata.renderOverrideHeight : maindata.screenHeight);
     settings.windowWidth  = maindata.windowWidth;
     settings.windowHeight = maindata.windowHeight;
     settings.renderScale  = maindata.renderScale;
     settings.presentFilter = 0;
+    settings.consoleSSAA2x = false;
     //opencode: reset tool readability and navigation preferences with settings.
     settings.toolUiScale  = 1.25f;
     settings.toolAssetRoots[0] = 0;
@@ -465,6 +473,12 @@ gX_I32 gX_Settings_Load(gX_I0) {
         || settings.uiLevel >= GX_SETTINGS_UI_LEVEL_COUNT)
         settings.uiLevel = GX_SETTINGS_UI_ADVANCED;
     settings.presentFilter = settings.presentFilter != 0 ? 1 : 0;
+    settings.consoleSSAA2x = settings.consoleSSAA2x ? 1 : 0;
+    {
+        const gX_I8 *ssaaEnv = getenv("GX_CONSOLE_SSAA");
+        if (ssaaEnv && ssaaEnv[0] == '1' && maindata.consoleSSAA > 1)
+            settings.consoleSSAA2x = 1;
+    }
     //ai: a CLI/env filter wins over the persisted value; otherwise the saved
     //   preference applies to the blit immediately. The virtual screen stays
     //   a per-session override unless the console shell owns the layout.
@@ -475,8 +489,10 @@ gX_I32 gX_Settings_Load(gX_I0) {
         if (filterOverride) settings.presentFilter = maindata.presentFilter;
         else maindata.presentFilter = settings.presentFilter;
         if (maindata.virtualScreen) {
-            settings.screenWidth = maindata.renderOverrideWidth;
-            settings.screenHeight = maindata.renderOverrideHeight;
+            settings.screenWidth = maindata.consoleOutputWidth
+                ? maindata.consoleOutputWidth : maindata.renderOverrideWidth;
+            settings.screenHeight = maindata.consoleOutputHeight
+                ? maindata.consoleOutputHeight : maindata.renderOverrideHeight;
         }
     }
     settings.uiThemePreset = gX_Settings_UITheme_Clamp(settings.uiThemePreset);
@@ -512,21 +528,31 @@ gX_I32 gX_Settings_Save(gX_I0) {
 
 gX_I0 gX_Settings_Apply_VirtualScreen(gX_I0) {
     settings.presentFilter = settings.presentFilter != 0 ? 1 : 0;
+    settings.consoleSSAA2x = settings.consoleSSAA2x ? 1 : 0;
     maindata.presentFilter = settings.presentFilter;
-    //ai: the persisted screen size is the virtual scene render target; the
-    //   GUI screen stays window-sized so the native menus remain readable.
-    gX_U32 applyW = settings.screenWidth;
-    gX_U32 applyH = settings.screenHeight;
-    if (applyW >= 64 && applyW <= 4096
-        && applyH >= 64 && applyH <= 4096
-        && (applyW != maindata.windowWidth
-            || applyH != maindata.windowHeight)) {
+    //ai: the persisted screen size is the 240p output; 2x SSAA renders the
+    //   scene at twice that size. The GUI screen stays window-sized.
+    gX_U32 outW = settings.screenWidth;
+    gX_U32 outH = settings.screenHeight;
+    gX_I1 SSAA = (settings.consoleSSAA2x && outW == 320 && outH == 240) ? 1 : 0;
+    gX_U32 applyW = outW * (SSAA ? 2u : 1u);
+    gX_U32 applyH = outH * (SSAA ? 2u : 1u);
+    if (outW >= 64 && outW <= 4096
+        && outH >= 64 && outH <= 4096
+        && (outW != maindata.windowWidth
+            || outH != maindata.windowHeight)) {
         maindata.renderOverride = 1;
         maindata.renderOverrideWidth = (gX_U16)applyW;
         maindata.renderOverrideHeight = (gX_U16)applyH;
+        maindata.consoleSSAA = SSAA ? 2 : 0;
+        maindata.consoleOutputWidth = (gX_U16)outW;
+        maindata.consoleOutputHeight = (gX_U16)outH;
         maindata.virtualScreen = 1;
     } else {
         maindata.renderOverride = 0;
+        maindata.consoleSSAA = 0;
+        maindata.consoleOutputWidth = maindata.windowWidth;
+        maindata.consoleOutputHeight = maindata.windowHeight;
         maindata.virtualScreen = 0;
     }
     gX_MainData_Refresh();
