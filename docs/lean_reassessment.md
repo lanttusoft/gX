@@ -220,7 +220,8 @@ The subsequent GX-I010 playback slice added 3,552 B payload and 128 B BSS;
 the GX-I008 2x SSAA slice added 2,368 B payload and 96 B BSS; the GX-I009
 PRISM-1 slice added 2,016 B payload and 64 B BSS; the particle composite
 follow-up added 224 B payload and 32 B BSS; the RAY-1 profile added 2,560 B
-payload and 64 B BSS; the particle cartridge profile added 1,024 B payload.
-Current Release: **4,186,971 B** payload (**7,333 B** headroom) and
-**2,701,344 B** BSS (3,656 B headroom). Caps and baseline remain unchanged; the
-focused playback, SSAA, PRISM-1, RAY-1, particle and console gates pass.
+payload and 64 B BSS; the particle cartridge profile added 1,024 B payload; the
+hidden 4x SSAA probe hook added 64 B. Current Release: **4,187,035 B** payload
+(**7,269 B** headroom) and **2,701,344 B** BSS (3,656 B headroom). Caps and
+baseline remain unchanged; the focused playback, SSAA/4x probe, PRISM-1, RAY-1,
+particle and console gates pass.

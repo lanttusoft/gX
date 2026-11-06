@@ -382,7 +382,7 @@ gX_I32 gX_Settings_Init(gX_I0) {
     settings.windowHeight = maindata.windowHeight;
     settings.renderScale = maindata.renderScale;
     settings.presentFilter = maindata.presentFilter;
-    settings.consoleSSAA2x = (maindata.consoleSSAA > 1) ? 1 : 0;
+    settings.consoleSSAA2x = (maindata.consoleSSAA == 2) ? 1 : 0;
     settings.consolePRISM1 = maindata.consolePRISM1 ? 1 : 0;
     //opencode: initialize accessible defaults for the editor tools.
     //  125% keeps the 13px base readable at 1024x768 and 1920x1080.
@@ -480,8 +480,10 @@ gX_I32 gX_Settings_Load(gX_I0) {
     settings.consoleSSAA2x = settings.consoleSSAA2x ? 1 : 0;
     {
         const gX_I8 *ssaaEnv = getenv("GX_CONSOLE_SSAA");
-        if (ssaaEnv && ssaaEnv[0] == '1' && maindata.consoleSSAA > 1)
-            settings.consoleSSAA2x = 1;
+        if (ssaaEnv && (ssaaEnv[0] == '0' || ssaaEnv[0] == '1'
+                || ssaaEnv[0] == '4'))
+            settings.consoleSSAA2x = (ssaaEnv[0] == '1'
+                && maindata.consoleSSAA == 2) ? 1 : 0;
     }
     settings.consolePRISM1 = settings.consolePRISM1 ? 1 : 0;
     {

@@ -19,7 +19,7 @@ import console_shell_check as console
 
 SHOW_RE = re.compile(
     r"CONSOLE_OSD: show render=(\d+)x(\d+) out=(\d+)x(\d+) "
-    r"mode=(SOFT|SHARP|NATIVE|SSAA2x) prism=(on|off) "
+    r"mode=(SOFT|SHARP|NATIVE|SSAA2x|SSAA4x) prism=(on|off) "
     r"cart=(.*?) slot=(-?\d+) state=(.*?) play=(.*?) "
     r"rect=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+) textfit=([\d.]+),([\d.]+)")
 

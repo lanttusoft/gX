@@ -1633,10 +1633,11 @@ static gX_I0 console_osd_draw(gX_I0)
     }
     gX_I1 Event = Now < s_consoleOsdEventUntil;
     const gX_I8 *State = Event ? s_consoleOsdEvent : (s_consoleOsdReady ? "READY" : "EMPTY");
-    const gX_I8 *Mode = maindata.consoleSSAA > 1 ? "SSAA2x"
-        : (maindata.renderWidth == maindata.windowWidth
-            && maindata.renderHeight == maindata.windowHeight ? "NATIVE"
-            : (maindata.presentFilter == 1 ? "SOFT" : "SHARP"));
+    const gX_I8 *Mode = maindata.consoleSSAA >= 4 ? "SSAA4x"
+        : (maindata.consoleSSAA > 1 ? "SSAA2x"
+            : (maindata.renderWidth == maindata.windowWidth
+                && maindata.renderHeight == maindata.windowHeight ? "NATIVE"
+                : (maindata.presentFilter == 1 ? "SOFT" : "SHARP")));
     gX_U32 OutW = maindata.consoleOutputWidth
         ? maindata.consoleOutputWidth : maindata.renderWidth;
     gX_U32 OutH = maindata.consoleOutputHeight

@@ -370,6 +370,13 @@ only the scene render target is 320x240.
   OSD splits, bad save factors, malformed profiles and over-budget ratios; they
   also run in `make check-fast`. `GX_CONSOLE_SSAA=1` is an automation hook for
   matched performance runs, not a second product default.
+- <!-- //ai: 4x probe measured, not a product mode. -->
+  4x SSAA probe: `GX_CONSOLE_SSAA=4` renders 1280x960 and resolves to 320x240
+  through the same path, but remains hidden from shell/pause/save states.
+  `make ssaa4x-probe` requires deterministic 4x output and records the cost.
+  Measured **3.507x** the 320x240 frame (2.229x the 2x frame) on the current
+  host, above the 3x product cap; 4x is declined as a product mode. The hook
+  stays for future hardware/quality re-evaluation.
 - <!-- //ai: approved PRISM-1 output slice; composite/particle remain follow-up. -->
   PRISM-1: the shell and pause menu toggle it independently of the video mode;
   the OSD reports `prism=on/off` and appends `PRISM-1` to the header. A
@@ -416,7 +423,8 @@ remains the console's detailed open-work list.
   locally (real pause, 1/60 step, 2x/4x/8x); no further timing controls are
   planned in this slice.
 - GX-I008 2x SSAA is implemented for Y2K, RAY-1 and the particle sandbox.
-  Evaluating a 4x factor remains a follow-up; it is not part of this slice.
+  The 4x probe measured 3.507x the 320x240 frame cost, above the 3x cap, and is
+  declined as a product mode; only the hidden re-evaluation hook remains.
 - PRISM-1 RGB565, fixed Bayer, scanlines and the subtle RGB triad are
   implemented for Y2K, RAY-1 and the particle sandbox in standard 240p and 2x
   SSAA. NTSC composite smear was not part of the approved contract.

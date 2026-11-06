@@ -39,6 +39,12 @@ class OSDGateTests(unittest.TestCase):
         osd.assert_osd(log, 640, 480, render=(640, 480), out=(320, 240),
             mode="SSAA2x")
 
+    def test_ssaa4x_render_output_split_is_parsed(self):
+        log = self.log.replace("render=320x240 out=320x240 mode=SOFT",
+            "render=1280x960 out=320x240 mode=SSAA4x")
+        osd.assert_osd(log, 640, 480, render=(1280, 960), out=(320, 240),
+            mode="SSAA4x")
+
     def test_prism_state_is_parsed(self):
         log = self.log.replace("prism=off", "prism=on")
         osd.assert_osd(log, 640, 480, prism=True)

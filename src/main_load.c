@@ -165,16 +165,20 @@ gX_I32 gX_MainData_Reset(gX_I0) {
         ? maindata.renderOverrideWidth : maindata.screenWidth;
     maindata.consoleOutputHeight = maindata.renderOverride
         ? maindata.renderOverrideHeight : maindata.screenHeight;
-    //ai: probe hook for matched 320x240 vs 640x480 performance runs; the
+    //ai: probe hook for matched 320x240 vs 640x480 vs 1280x960 runs; the
     //   product path remains the console video mode.
     {
         const gX_I8 *ssaaEnv = getenv("GX_CONSOLE_SSAA");
-        if (ssaaEnv && ssaaEnv[0] == '1' && maindata.renderOverride
+        if (ssaaEnv && (ssaaEnv[0] == '1' || ssaaEnv[0] == '4')
+            && maindata.renderOverride
             && maindata.consoleOutputWidth == 320
             && maindata.consoleOutputHeight == 240) {
-            maindata.consoleSSAA = 2;
-            maindata.renderOverrideWidth = 640;
-            maindata.renderOverrideHeight = 480;
+            gX_I32 ssaa = ssaaEnv[0] == '4' ? 4 : 2;
+            maindata.consoleSSAA = ssaa;
+            maindata.renderOverrideWidth =
+                (gX_U16)(maindata.consoleOutputWidth * (gX_U32)ssaa);
+            maindata.renderOverrideHeight =
+                (gX_U16)(maindata.consoleOutputHeight * (gX_U32)ssaa);
         }
     }
     //ai: probe hook for deterministic PRISM-1 A/B and cost runs; the product
