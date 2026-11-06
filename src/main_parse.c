@@ -52,6 +52,7 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
         "      --presentFilter <s>    Virtual-screen upscale: sharp (nearest) or soft (linear)\n"
         "      --cartridge-y2k       Boot the Y2K CGI cartridge (320x240 soft, Max quality)\n"
         "      --cartridge-ray1      Boot the RAY-1 raymarch cartridge (320x240 soft, Full quality)\n"
+        "      --cartridge-particle  Boot the particle sandbox cartridge (320x240 soft)\n"
         "      --console-shell       Boot into the gX-240 shell menu\n"
         "      --targetFPS <n>        Target framerate\n"
         "      --seed <n>             Fixed random seed\n"
@@ -208,6 +209,7 @@ gX_I32 gX_Parse(int argc, char **argv) {
         {"presentFilter", required_argument, NULL, 0},
         {"cartridge-y2k",no_argument,       NULL, 0},
         {"cartridge-ray1",no_argument,      NULL, 0},
+        {"cartridge-particle",no_argument,  NULL, 0},
         {"console-shell",no_argument,       NULL, 0},
         {"targetFPS",   required_argument,  NULL, 0},
         {"seed",        required_argument,  NULL, 0},
@@ -621,6 +623,7 @@ if (!strcmp(long_options[option_index].name,"guest-model")) {
                     arguments.showcaseY2K = true;
                     arguments.cartridgeY2K = true;
                     arguments.cartridgeRay1 = false;
+                    arguments.cartridgeParticle = false;
                 }
                 //ai: bootable RAY-1 raymarch cartridge — Full quality and a
                 //   fixed authored camera over the 320x240 console profile.
@@ -631,6 +634,18 @@ if (!strcmp(long_options[option_index].name,"guest-model")) {
                     arguments.showcaseY2K = false;
                     arguments.cartridgeY2K = false;
                     arguments.cartridgeRay1 = true;
+                    arguments.cartridgeParticle = false;
+                }
+                //ai: bootable particle/physics cartridge — deterministic
+                //   sandbox entry with an authored overview camera.
+                if (!strcmp(long_options[option_index].name,"cartridge-particle")) {
+                    arguments.masterIndex = gX_SCENE_PHYSICS;
+                    arguments.hasMasterIndex = true;
+                    arguments.showcase = false;
+                    arguments.showcaseY2K = false;
+                    arguments.cartridgeY2K = false;
+                    arguments.cartridgeRay1 = false;
+                    arguments.cartridgeParticle = true;
                 }
                 //ai: gX-240 shell boot route — the title template opens the
                 //   console view instead of the main menu.

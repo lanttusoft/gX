@@ -72,6 +72,7 @@ typedef struct gX_MainArguments {
     gX_I1   showcaseY2K;        //opencode: --showcase-y2k — opt-in Bryce/Y2K abstract terrain style study
     gX_I1   cartridgeY2K;       //ai: --cartridge-y2k — bootable Y2K CGI cartridge (320x240 soft, Max quality, diffraction)
     gX_I1   cartridgeRay1;      //ai: --cartridge-ray1 — bootable RAY-1 raymarch cartridge (320x240 soft, Full quality, authored camera)
+    gX_I1   cartridgeParticle;  //ai: --cartridge-particle — bootable particle/physics sandbox cartridge (320x240 soft, authored camera)
     gX_I1   consoleShell;       //ai: --console-shell — boot into the gX-240 shell menu
     gX_I1   showcaseForest;     //opencode: --forest dead-forest testbed: ~36 guest trees (guest fallback) + thick fog
     gX_I1   showcaseLake;       //opencode: --lake forest-ringed lake testbed: water plane + banks + tree ring + thin fog

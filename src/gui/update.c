@@ -754,6 +754,7 @@ gX_I0 gX_GUI_Update(gX_I0) {
         if (gpCancel) {
             gX_I1 consolePauseMenu = gui.state.SHOW_MENU
                 && (arguments.cartridgeY2K || arguments.cartridgeRay1
+                    || arguments.cartridgeParticle
                     || (arguments.consoleShell
                         && maindata.masterIndex != gX_SCENE_TITLE));
             if (gX_GUI_Dialog_IsOpen()) {

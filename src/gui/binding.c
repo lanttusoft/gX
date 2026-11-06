@@ -172,6 +172,7 @@ gX_I0 gX_Widget_OnClick_CloseEscapeMenu(gX_I0 *arg) {
     gui.state.SHOW_MENU = false;
     gX_GUI_Focus_Clear();
     if (arguments.cartridgeY2K || arguments.cartridgeRay1
+        || arguments.cartridgeParticle
         || (arguments.consoleShell && maindata.masterIndex != gX_SCENE_TITLE))
         gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_MENU: resume");
 }
@@ -378,12 +379,13 @@ gX_I0 gX_Widget_OnClick_ConsoleVideo(gX_I0 *arg) {
 
 gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
     gX_I32 cartridge = (gX_I32)(gX_U64)(uintptr_t)arg;
-    gX_I32 scene = gX_SCENE_RENDERER_GFX;
+    gX_I32 sceneIndex = gX_SCENE_RENDERER_GFX;
     if (cartridge == 0) {
         arguments.showcase = true;
         arguments.showcaseY2K = true;
         arguments.cartridgeY2K = true;
         arguments.cartridgeRay1 = false;
+        arguments.cartridgeParticle = false;
         //ai: honor the shell's selected 240p filter/SSAA; native falls back
         //   to the cartridge's soft 240p default.
         if (settings.screenWidth != 320 || settings.screenHeight != 240)
@@ -396,21 +398,25 @@ gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
         arguments.showcaseY2K = false;
         arguments.cartridgeY2K = false;
         arguments.cartridgeRay1 = true;
+        arguments.cartridgeParticle = false;
         //ai: honor the shell's 240p/SSAA/PRISM selection, reset the module and
         //   apply Full quality before the scene switch; the camera response
         //   installs the authored RAY-1 view.
         gX_Settings_Apply_VirtualScreen();
         gX_RendererRaymarch_Cartridge_Apply();
-        scene = gX_SCENE_RENDERER_RAYMARCH;
+        sceneIndex = gX_SCENE_RENDERER_RAYMARCH;
     } else {
         arguments.showcase = false;
         arguments.showcaseY2K = false;
         arguments.cartridgeY2K = false;
         arguments.cartridgeRay1 = false;
-        //ai: the particle sandbox's GUI-composite background now consumes the
-        //   same resolved/PRISM present target, so keep the selected profile.
+        arguments.cartridgeParticle = true;
+        //ai: the particle sandbox's GUI-composite background consumes the
+        //   same resolved/PRISM present target; reset to the authored entry
+        //   view while keeping the selected video profile.
         gX_Settings_Apply_VirtualScreen();
-        scene = gX_SCENE_PHYSICS;
+        gX_ScenePhysics_Cartridge_Apply(&scene.physicsScene);
+        sceneIndex = gX_SCENE_PHYSICS;
     }
     gX_TraceLog(gX_LOG_NOTICE,
         "CONSOLE: video=%s window=%ux%u render=%ux%u out=%ux%u filter=%d",
@@ -422,8 +428,9 @@ gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
         maindata.renderWidth, maindata.renderHeight,
         maindata.consoleOutputWidth, maindata.consoleOutputHeight,
         maindata.presentFilter);
-    gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: boot=%d scene=%d", cartridge, scene);
-    gX_MainData_Switch(scene);
+    gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: boot=%d scene=%d", cartridge,
+        sceneIndex);
+    gX_MainData_Switch(sceneIndex);
 }
 
 //ai: PRISM-1 is an independent 240p output toggle layered over Soft/Sharp/
@@ -538,6 +545,7 @@ gX_I0 gX_Widget_OnClick_ConsoleExitShell(gX_I0 *arg) {
     arguments.consoleShell = true;
     arguments.cartridgeY2K = false;
     arguments.cartridgeRay1 = false;
+    arguments.cartridgeParticle = false;
     arguments.showcase = false;
     arguments.showcaseY2K = false;
     gui.state.SHOW_MENU = false;

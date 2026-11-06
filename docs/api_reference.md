@@ -640,6 +640,9 @@ It is inactive by default; paths outside `/tmp/` and faces larger than
   (create/destroy, T-pose reset, enable/disable, bone/joint queries; bones
   run at tonne-convention sim mass with the nominal kg kept for the thermal
   and impact-FX registries)
+- `gX_ScenePhysics_Cartridge_Apply` — deterministic particle cartridge entry:
+  rewinds sandbox content, installs the authored overview camera and marks
+  camera ownership before the scene response.
 - `masterIndex` switch via `gX_MainData_Switch`, subsystem
   `masterIndexSwitchResponse`
 - `gX_SceneSynthVis_*` — playable synth visualizer scene (`--synthvis`,

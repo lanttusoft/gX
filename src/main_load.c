@@ -108,7 +108,8 @@ gX_I32 gX_MainData_Reset(gX_I0) {
     maindata.renderOverride = 0;
     //ai: cartridge profiles own their presentation: 320x240 scene, soft
     //   upscale, unless explicit CLI flags override the profile.
-    if (arguments.cartridgeY2K || arguments.cartridgeRay1) {
+    if (arguments.cartridgeY2K || arguments.cartridgeRay1
+        || arguments.cartridgeParticle) {
         if (!arguments.hasVirtualWidth) {
             arguments.virtualWidth = 320;
             arguments.hasVirtualWidth = 1;
@@ -541,6 +542,8 @@ gX_I32 gX_Load(gX_I0) {
 #endif
 #if gX_ENABLE_SCENE == 1
     errors = gX_Scene_Load();
+    if (arguments.cartridgeParticle)
+        gX_ScenePhysics_Cartridge_Apply(&scene.physicsScene);
 #endif
     errors = gX_Audio_Load();
 

@@ -43,6 +43,9 @@
 #include "../renderer/renderer.h"
 #include "../renderer/gfx.h"
 #include "../renderer/gfx/showcase.h"
+#if gX_ENABLE_SCENE == 1
+#include "../scene/scene.h"
+#endif
 #include "../common/log.h"
 #include "../common/marshal/json_impl.h"
 #include "../wrappers/wrappers.h"
@@ -159,8 +162,10 @@ static gX_I32 console_state_save(gX_I32 slot) {
         json_object_object_add(camera, "target", target);
         json_object_object_add(root, "camera", camera);
     }
-    if (strcmp((const char *)cartridge, "ray-1") == 0) {
-        //ai: RAY-1 uses the free global camera, not the Y2K orbit request.
+    if (strcmp((const char *)cartridge, "ray-1") == 0
+        || strcmp((const char *)cartridge, "particle") == 0) {
+        //ai: RAY-1 and the particle sandbox use the free global camera, not
+        //   the Y2K orbit request.
         struct json_object *camera3d = json_object_new_object();
         struct json_object *position = json_object_new_array();
         struct json_object *target = json_object_new_array();
@@ -270,7 +275,8 @@ static gX_I32 console_state_load(gX_I32 slot) {
     }
     gX_Camera3D camera3d = {0};
     gX_I1 hasCamera3d = 0;
-    if (strcmp((const char *)cartridge, "ray-1") == 0
+    if ((strcmp((const char *)cartridge, "ray-1") == 0
+            || strcmp((const char *)cartridge, "particle") == 0)
         && json_object_object_get_ex(root, "camera3d", &value)
         && console_state_vec3(value, "position", &camera3d.position)
         && console_state_vec3(value, "target", &camera3d.target)) {
@@ -284,25 +290,30 @@ static gX_I32 console_state_load(gX_I32 slot) {
 
     arguments.cartridgeY2K = 0;
     arguments.cartridgeRay1 = 0;
+    arguments.cartridgeParticle = 0;
     arguments.showcaseY2K = 0;
     arguments.showcase = 0;
-    gX_I32 scene = gX_SCENE_TITLE;
+    gX_I32 sceneIndex = gX_SCENE_TITLE;
     if (strcmp((const char *)cartridge, "y2k") == 0) {
         arguments.showcase = 1;
         arguments.showcaseY2K = 1;
         arguments.cartridgeY2K = 1;
-        scene = gX_SCENE_RENDERER_GFX;
+        sceneIndex = gX_SCENE_RENDERER_GFX;
         gX_Renderer_GFX_ColdBoot();
     } else if (strcmp((const char *)cartridge, "ray-1") == 0) {
         arguments.cartridgeRay1 = 1;
         gX_RendererRaymarch_Cartridge_Apply();
-        scene = gX_SCENE_RENDERER_RAYMARCH;
+        sceneIndex = gX_SCENE_RENDERER_RAYMARCH;
     } else if (strcmp((const char *)cartridge, "particle") == 0) {
-        scene = gX_SCENE_PHYSICS;
+        arguments.cartridgeParticle = 1;
+#if gX_ENABLE_SCENE == 1
+        gX_ScenePhysics_Cartridge_Apply(&scene.physicsScene);
+#endif
+        sceneIndex = gX_SCENE_PHYSICS;
     }
     if (hasCamera) gX_Showcase_CameraSet(&camera);
     if (hasCamera3d) gX_Camera_Request_View(&camera3d);
-    gX_MainData_Switch(scene);
+    gX_MainData_Switch(sceneIndex);
     if (hasCamera3d)
         gX_TraceLog(gX_LOG_NOTICE,
             "CONSOLE_STATE: load slot=%d cartridge=%s camera=%.1f/%.1f/%.1f "

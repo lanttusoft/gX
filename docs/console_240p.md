@@ -63,7 +63,9 @@ A cartridge is a gX scene preset plus an asset set and a settings profile:
   4 bounces), an authored three-quarter overview camera, free-camera movement,
   the console pause menu and save-state camera restore. Defaults to 320x240
   Soft; shell selection can layer SSAA and PRISM-1.
-- **Particle/physics sandbox** — uses the fast CPU and cheap low-res overdraw.
+- **Particle/physics sandbox** — bootable `--cartridge-particle` profile:
+  deterministic sandbox rebuild, authored overview camera, console pause menu
+  and save-state camera restore. Uses the fast CPU and cheap low-res overdraw.
 - **Console shell** — boot menu, cartridge select, video options, save states,
   controller mapping, emulator-style OSD. First slice: `--console-shell` opens
   the gX-240 boot view (cartridge slot, video output, save states); the Y2K
@@ -217,14 +219,18 @@ only the scene render target is 320x240.
   quality with a fixed authored camera, boots with `--cartridge-ray1` or the
   shell RAY-1 card. F5/F8 and the pause menu save/load the video profile and
   free-camera view.
+- **Console 240p — Particle Sandbox** (cartridge): boots with
+  `--cartridge-particle` or the shell card, rebuilds the deterministic
+  rigid-body sandbox and installs the authored overview camera. F5/F8 and the
+  pause menu save/load the video profile and free-camera view.
 - **gX-240 console shell** — `--console-shell` opens the boot view: cartridge
   select (Y2K CGI, RAY-1, particle sandbox, empty slot), video output
   (320x240 Soft/Sharp/SSAA 2x, Native), a PRISM-1 output toggle and save-state
   slots. Booting Y2K from the shell honors the selected 240p filter/SSAA
   (native falls back to Soft), cold-boots the GFX renderer and rebuilds the
-  authored scene; booting RAY-1 applies the same video selection and resets
-  the authored raymarch scene/camera. The shell keeps the native GUI at window
-  size.
+  authored scene; booting RAY-1 applies the same video selection and resets the
+  authored raymarch scene/camera; booting the particle sandbox resets its
+  authored content/camera. The shell keeps the native GUI at window size.
   After 120 s without input the shell (and cartridge playback) fades to a
   black screen with a dim drifting gX mark; the first input is swallowed so
   it wakes the display without activating a hidden control.
@@ -389,6 +395,14 @@ only the scene render target is 320x240.
   profile plus `camera3d` (`scripts/console_ray1_check.py`, included by
   `make console-check` and `make check`). Three display-free tests reject wrong
   quality/camera traces and save JSON; they also run in `make check-fast`.
+- <!-- //ai: GX-I011 particle authored profile and save-camera gate. -->
+  Particle sandbox: `--cartridge-particle` and shell boot rebuild the sandbox,
+  install the authored camera and report `cart=PARTICLE SANDBOX`; a
+  byte-identical repeat must hold, the pause menu must freeze/report PAUSED,
+  and F5/F8 must persist/restore the video profile plus `camera3d`
+  (`scripts/console_particle_check.py`, included by `make console-check` and
+  `make check`). Three display-free tests reject wrong camera/content traces
+  and save JSON; they also run in `make check-fast`.
 - No UI clipping with native tool panels at window resolution.
 
 ## Follow-up
@@ -408,7 +422,8 @@ remains the console's detailed open-work list.
   SSAA. NTSC composite smear was not part of the approved contract.
 - Film grain remains an optional experiment, not a decided console
   requirement.
-- RAY-1 now has an authored Full-quality profile and save-state camera
-  restore. The particle sandbox still needs its authored profile treatment.
+- Y2K, RAY-1 and the particle sandbox now have authored cartridge profiles
+  with save-state camera restore. Further work is optional content expansion,
+  not a missing console integration.
 - Validate on a physical CRT across supported modes, checking monitor limits
   before testing.

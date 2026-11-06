@@ -1408,7 +1408,9 @@ static gX_I1 console_idle_enabled(gX_I0) {
         || (arguments.cartridgeY2K
             && maindata.masterIndex == gX_SCENE_RENDERER_GFX)
         || (arguments.cartridgeRay1
-            && maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH);
+            && maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH)
+        || (arguments.cartridgeParticle
+            && maindata.masterIndex == gX_SCENE_PHYSICS);
 }
 
 static gX_I1 console_idle_input(gX_I0) {
@@ -1552,7 +1554,8 @@ static gX_I8 s_consoleOsdPlay[24];
 gX_I0 gX_GUI_ConsoleOSD_Notify(gX_I32 slot, const gX_I8 *message)
 {
     if ((!arguments.consoleShell && !arguments.cartridgeY2K
-            && !arguments.cartridgeRay1) || !message) return;
+            && !arguments.cartridgeRay1 && !arguments.cartridgeParticle)
+        || !message) return;
     s_consoleOsdSlot = slot;
     snprintf(s_consoleOsdEvent, sizeof(s_consoleOsdEvent), "%s", message);
     s_consoleOsdReady = gX_ConsoleState_Exists(slot);
@@ -1566,7 +1569,8 @@ static gX_I0 console_osd_draw(gX_I0)
     const gX_I8 *Cartridge = NULL;
     if (arguments.cartridgeY2K && maindata.masterIndex == gX_SCENE_RENDERER_GFX)
         Cartridge = "Y2K CGI";
-    else if (arguments.consoleShell || arguments.cartridgeRay1)
+    else if (arguments.consoleShell || arguments.cartridgeRay1
+        || arguments.cartridgeParticle)
     {
         if (maindata.masterIndex == gX_SCENE_TITLE) Cartridge = "SHELL";
         if (maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH) Cartridge = "RAY-1";

@@ -643,6 +643,9 @@ gX_I0  gX_ScenePhysics_BuildRover(gX_ScenePhysics *scene);
 gX_I0  gX_ScenePhysics_BuildBreakTarget(gX_ScenePhysics *scene);
 gX_I0  gX_ScenePhysics_UpdateBreakTarget(gX_ScenePhysics *scene);
 gX_I0  gX_ScenePhysics_ResetContent(gX_ScenePhysics *scene);
+//ai: deterministic particle-sandbox cartridge entry — rewind content and
+//   install the authored overview camera before the scene response.
+gX_I0  gX_ScenePhysics_Cartridge_Apply(gX_ScenePhysics *scene);
 //ai: piston pump and terrain mound (exported for the headless tests).
 gX_I0  gX_ScenePhysics_BuildPump(gX_ScenePhysics *scene);
 gX_I0  gX_ScenePhysics_DrivePump(gX_ScenePhysics *scene, gX_F32 dt);

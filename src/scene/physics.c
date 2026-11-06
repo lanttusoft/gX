@@ -3224,6 +3224,26 @@ gX_I0 gX_ScenePhysics_ResetContent(gX_ScenePhysics *scene) {
     gX_ScenePhysics_Snapshot(scene);
 }
 
+gX_I0 gX_ScenePhysics_Cartridge_Apply(gX_ScenePhysics *scene) {
+    if (!scene) return;
+    //ai: the authored entry view replaces any previous free-camera position;
+    //   Ensure must not overwrite it with the generic sandbox camera.
+    scene->cameraSet = 1;
+    scene->toolMode = 0;
+    scene->debugDraw = 0;
+    gX_ScenePhysics_ResetContent(scene);
+    gX_Camera3D view = {
+        .position = {10.5f, 6.0f, 8.5f},
+        .target = {2.0f, 1.0f, -1.5f},
+        .up = {0.0f, 1.0f, 0.0f},
+        .fovy = 60.0f,
+        .projection = gX_CAMERA_PERSPECTIVE,
+    };
+    gX_Camera_Request_View(&view);
+    gX_TraceLog(gX_LOG_NOTICE,
+        "CARTRIDGE: particle camera=10.5/6.0/8.5 target=2.0/1.0/-1.5 fovy=60");
+}
+
 //ai: body transforms → GFX model params. The renderer draws what we write.
 //   Positions/quaternions blend from the pre-step snapshot by the module's
 //   accumulator alpha so motion stays smooth when the display rate is not
