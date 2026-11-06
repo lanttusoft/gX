@@ -179,6 +179,9 @@ gX_I32 gX_Camera_GiveTarget(gX_F32v3 *target);
 gX_I32 gX_Camera_RemoveTarget(gX_I0);
 
 gX_I0 gX_Camera_Update(gX_I0);
+//ai: request a one-shot authored/save-state view; the next scene response
+//   applies it after the per-scene camera reset.
+gX_I0 gX_Camera_Request_View(const gX_Camera3D *view);
 const gX_I8 *gX_Camera_Modes_String(gX_I32 cameramode);
 
 // Camera math operations (implemented in stubs.c)

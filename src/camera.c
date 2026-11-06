@@ -32,11 +32,28 @@
 #include "main.h"
 
 #include "common/enum.h"
+#include "common/log.h"
 #include "gxmath/gxmath.h"
 
 #include "wrappers/wrappers.h"
 
 gX_Camera camera;
+
+static gX_Camera3D s_requestedView;
+static gX_I1 s_requestedViewPending;
+
+//ai: save-state/profile view request. Applying immediately keeps a same-scene
+//   request visible; the pending copy survives the scene-switch reset.
+gX_I0 gX_Camera_Request_View(const gX_Camera3D *view) {
+    if (!view) {
+        s_requestedViewPending = 0;
+        return;
+    }
+    s_requestedView = *view;
+    s_requestedViewPending = 1;
+    camera.camera3D = *view;
+    camera.state.MODE = gX_CAMERAMODE_FREE;
+}
 
 //ai: camera mode names — the declaration had drifted to a void return and no
 //   definition existed; the enum coverage gate now scans the whole tree.
@@ -264,6 +281,25 @@ static gX_I0 gX_Camera_Respond(gX_I0) {
             camera.masterIndexSwitchResponse = true;
             break;
         }
+        case gX_SCENE_RENDERER_RAYMARCH: {
+            if (arguments.cartridgeRay1) {
+                //ai: RAY-1 cartridge view — three-quarter overview of the
+                //   default terrain/water/torus SDF scene.
+                camera.state.MODE = gX_CAMERAMODE_FREE;
+                camera.camera3D.position = (gX_F32v3){6.0f, 2.0f, 14.0f};
+                camera.camera3D.target = (gX_F32v3){0.0f, -0.5f, 6.0f};
+                camera.camera3D.up = (gX_F32v3){0.0f, 1.0f, 0.0f};
+                camera.camera3D.fovy = 55.0f;
+                gX_TraceLog(gX_LOG_NOTICE,
+                    "CARTRIDGE: ray1 camera=%.1f/%.1f/%.1f target=%.1f/%.1f/%.1f fovy=%.0f",
+                    camera.camera3D.position.x, camera.camera3D.position.y,
+                    camera.camera3D.position.z, camera.camera3D.target.x,
+                    camera.camera3D.target.y, camera.camera3D.target.z,
+                    camera.camera3D.fovy);
+            }
+            camera.masterIndexSwitchResponse = true;
+            break;
+        }
         case gX_SCENE_RENDERER_PP: {
             camera.masterIndexSwitchResponse = true;
             break;
@@ -290,6 +326,17 @@ static gX_I0 gX_Camera_Respond(gX_I0) {
             break;
         }
         default: break;
+    }
+    if (s_requestedViewPending) {
+        camera.camera3D = s_requestedView;
+        camera.state.MODE = gX_CAMERAMODE_FREE;
+        s_requestedViewPending = 0;
+        gX_TraceLog(gX_LOG_NOTICE,
+            "CONSOLE_CAMERA: restore=%.1f/%.1f/%.1f target=%.1f/%.1f/%.1f fovy=%.0f",
+            camera.camera3D.position.x, camera.camera3D.position.y,
+            camera.camera3D.position.z, camera.camera3D.target.x,
+            camera.camera3D.target.y, camera.camera3D.target.z,
+            camera.camera3D.fovy);
     }
 }
 

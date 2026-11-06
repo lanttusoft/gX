@@ -38,7 +38,6 @@
 #include "../../wrappers/wrappers.h"
 #include "load.h"
 #include "features.h"
-#include "../../gui/console_state.h"
 #include "../../gui/console_playback.h"
 #include "../../rhi/rhi_state.h"
 //opencode: hunt - implicit-decl sweep
@@ -618,17 +617,6 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
                     camera.camera3D.fovy, s_dist);
             }
         }
-    }
-
-    //ai: console save states — F5 saves slot 1, F8 loads it. Only the
-    //   cartridge profile owns these keys; other showcases are untouched.
-    //   Unlike effect hotkeys they stay live in capture runs so the save-state
-    //   gate can drive them headlessly.
-    if (arguments.cartridgeY2K && !gX_ConsolePlayback_InputBlocked()) {
-        if (input.keyboard.keys[gX_KEY_F5].state.PRESSED)
-            gX_ConsoleState_Save(1);
-        if (input.keyboard.keys[gX_KEY_F8].state.PRESSED)
-            gX_ConsoleState_Load(1);
     }
 
     //opencode: effect/camera hotkeys are ignored during screenshot captures;

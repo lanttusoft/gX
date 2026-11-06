@@ -106,9 +106,9 @@ gX_I32 gX_MainData_Reset(gX_I0) {
     maindata.virtualScreen = 0;
     maindata.presentFilter = 0;
     maindata.renderOverride = 0;
-    //ai: the cartridge profile owns its presentation: 320x240 scene, soft
+    //ai: cartridge profiles own their presentation: 320x240 scene, soft
     //   upscale, unless explicit CLI flags override the profile.
-    if (arguments.cartridgeY2K) {
+    if (arguments.cartridgeY2K || arguments.cartridgeRay1) {
         if (!arguments.hasVirtualWidth) {
             arguments.virtualWidth = 320;
             arguments.hasVirtualWidth = 1;
@@ -529,6 +529,10 @@ gX_I32 gX_Load(gX_I0) {
 #endif
 #if gX_ENABLE_RENDERER == 1
     errors = gX_Renderer_Load();
+    //ai: direct RAY-1 boot needs the authored module profile after the
+    //   renderer heap exists and before the first scene update.
+    if (arguments.cartridgeRay1)
+        gX_RendererRaymarch_Cartridge_Apply();
 #endif
 #if gX_ENABLE_PHYSICS == 1
     //ai: shared physics world — before the scene loads so scene-owned

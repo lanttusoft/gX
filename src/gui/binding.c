@@ -51,6 +51,7 @@
 
 extern gX_I32 gX_MainData_Switch(gX_I32 masterIndex);
 extern gX_I0 gX_Renderer_GFX_ColdBoot(gX_I0);
+extern gX_I0 gX_RendererRaymarch_Cartridge_Apply(gX_I0);
 extern gX_MainArguments arguments;
 extern gX_GUI gui;
 
@@ -170,7 +171,7 @@ gX_I0 gX_Widget_OnClick_CloseEscapeMenu(gX_I0 *arg) {
     (void)arg;
     gui.state.SHOW_MENU = false;
     gX_GUI_Focus_Clear();
-    if (arguments.cartridgeY2K
+    if (arguments.cartridgeY2K || arguments.cartridgeRay1
         || (arguments.consoleShell && maindata.masterIndex != gX_SCENE_TITLE))
         gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_MENU: resume");
 }
@@ -382,6 +383,7 @@ gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
         arguments.showcase = true;
         arguments.showcaseY2K = true;
         arguments.cartridgeY2K = true;
+        arguments.cartridgeRay1 = false;
         //ai: honor the shell's selected 240p filter/SSAA; native falls back
         //   to the cartridge's soft 240p default.
         if (settings.screenWidth != 320 || settings.screenHeight != 240)
@@ -393,11 +395,18 @@ gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
         arguments.showcase = false;
         arguments.showcaseY2K = false;
         arguments.cartridgeY2K = false;
+        arguments.cartridgeRay1 = true;
+        //ai: honor the shell's 240p/SSAA/PRISM selection, reset the module and
+        //   apply Full quality before the scene switch; the camera response
+        //   installs the authored RAY-1 view.
+        gX_Settings_Apply_VirtualScreen();
+        gX_RendererRaymarch_Cartridge_Apply();
         scene = gX_SCENE_RENDERER_RAYMARCH;
     } else {
         arguments.showcase = false;
         arguments.showcaseY2K = false;
         arguments.cartridgeY2K = false;
+        arguments.cartridgeRay1 = false;
         //ai: the particle sandbox's GUI-composite background now consumes the
         //   same resolved/PRISM present target, so keep the selected profile.
         gX_Settings_Apply_VirtualScreen();
@@ -528,6 +537,7 @@ gX_I0 gX_Widget_OnClick_ConsoleExitShell(gX_I0 *arg) {
     gX_ConsolePlayback_Reset();
     arguments.consoleShell = true;
     arguments.cartridgeY2K = false;
+    arguments.cartridgeRay1 = false;
     arguments.showcase = false;
     arguments.showcaseY2K = false;
     gui.state.SHOW_MENU = false;

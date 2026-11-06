@@ -58,8 +58,11 @@ A cartridge is a gX scene preset plus an asset set and a settings profile:
   fog, diffraction spikes, 320x240 Soft output and Max quality. Boots with
   `--cartridge-y2k` (the same composition as `--showcase-y2k` plus the
   authored 128 px brushed-metal set, diffraction and the console profile).
-- **RAY-1 tech demo** — raymarched SDF scene at full quality, reflections and
-  shadows through the ray path.
+- **RAY-1 tech demo** — bootable raymarch profile (`--cartridge-ray1` or the
+  shell): the default SDF scene at Full quality (render scale 1.0, 256 steps,
+  4 bounces), an authored three-quarter overview camera, free-camera movement,
+  the console pause menu and save-state camera restore. Defaults to 320x240
+  Soft; shell selection can layer SSAA and PRISM-1.
 - **Particle/physics sandbox** — uses the fast CPU and cheap low-res overdraw.
 - **Console shell** — boot menu, cartridge select, video options, save states,
   controller mapping, emulator-style OSD. First slice: `--console-shell` opens
@@ -210,12 +213,18 @@ only the scene render target is 320x240.
   resolve, leaves the native GUI/OSD at window size, and adds no NTSC composite
   smear. Available in the shell and pause menu; this slice covers Y2K, RAY-1
   and the particle sandbox.
+- **Console 240p — RAY-1** (cartridge): the raymarch tech demo at Full
+  quality with a fixed authored camera, boots with `--cartridge-ray1` or the
+  shell RAY-1 card. F5/F8 and the pause menu save/load the video profile and
+  free-camera view.
 - **gX-240 console shell** — `--console-shell` opens the boot view: cartridge
   select (Y2K CGI, RAY-1, particle sandbox, empty slot), video output
   (320x240 Soft/Sharp/SSAA 2x, Native), a PRISM-1 output toggle and save-state
   slots. Booting Y2K from the shell honors the selected 240p filter/SSAA
   (native falls back to Soft), cold-boots the GFX renderer and rebuilds the
-  authored scene; the shell keeps the native GUI at window size.
+  authored scene; booting RAY-1 applies the same video selection and resets
+  the authored raymarch scene/camera. The shell keeps the native GUI at window
+  size.
   After 120 s without input the shell (and cartridge playback) fades to a
   black screen with a dim drifting gX mark; the first input is swallowed so
   it wakes the display without activating a hidden control.
@@ -371,6 +380,15 @@ only the scene render target is 320x240.
   budgets, scanline/triad/level fixtures and unquantized gradients; they also
   run in `make check-fast`. `GX_CONSOLE_PRISM=0/1` is an automation hook for
   deterministic A/B runs, not a second product default.
+- <!-- //ai: GX-I011 RAY-1 authored profile and save-camera gate. -->
+  RAY-1 profile: `--cartridge-ray1` and shell boot trace Full quality
+  (`renderScale 1.00`, 256 steps, 4 bounces) and the authored camera; the OSD
+  reports `cart=RAY-1` at 320x240 Soft by default. The raw `--raymarch` scene
+  is the visual baseline, the profile frame must be deterministic, the pause
+  menu must freeze/report PAUSED, and F5/F8 must persist/restore the video
+  profile plus `camera3d` (`scripts/console_ray1_check.py`, included by
+  `make console-check` and `make check`). Three display-free tests reject wrong
+  quality/camera traces and save JSON; they also run in `make check-fast`.
 - No UI clipping with native tool panels at window resolution.
 
 ## Follow-up
@@ -390,6 +408,7 @@ remains the console's detailed open-work list.
   SSAA. NTSC composite smear was not part of the approved contract.
 - Film grain remains an optional experiment, not a decided console
   requirement.
-- Complete or add bootable cartridge profiles beyond the Y2K path.
+- RAY-1 now has an authored Full-quality profile and save-state camera
+  restore. The particle sandbox still needs its authored profile treatment.
 - Validate on a physical CRT across supported modes, checking monitor limits
   before testing.

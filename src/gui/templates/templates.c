@@ -307,6 +307,7 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     gX_GUI_Canvas *canvas = gX_GUI_Canvas_FromIndex(canvasindex);
     gX_GUI_Builder b = gX_GUI_Builder_New(canvas, "EscapeMenu", "escape menu", gX_GUI_TEMPLATE_ESCAPEMENU);
     gX_I1 ConsoleMenu = arguments.cartridgeY2K
+        || arguments.cartridgeRay1
         || (arguments.consoleShell && maindata.masterIndex != gX_SCENE_TITLE);
     gX_F32 ConsoleTextScale = fminf(1.0f,
         (gX_F32)b.height * 4.0f / (3.0f * (gX_F32)b.width));

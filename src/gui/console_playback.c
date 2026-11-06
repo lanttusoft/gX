@@ -29,6 +29,7 @@
 //   changes reset playback so a transient speed never leaks across cartridges.
 
 #include "console_playback.h"
+#include "console_state.h"
 #include "gui.h"
 
 #include "../main.h"
@@ -55,6 +56,7 @@ static gX_I8 s_label[24] = { 0 };
 static gX_I1 console_playback_scene(gX_I0)
 {
     if (arguments.cartridgeY2K) return 1;
+    if (arguments.cartridgeRay1 && maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH) return 1;
     if (arguments.consoleShell && maindata.masterIndex != gX_SCENE_TITLE) return 1;
     return 0;
 }
@@ -159,6 +161,16 @@ const gX_I8 *gX_ConsolePlayback_Label(gX_I0)
 
 gX_I0 gX_ConsolePlayback_Update(gX_I0)
 {
+    //ai: cartridge save hotkeys share the console input path so Y2K and RAY-1
+    //   behave the same; the pause menu owns its own explicit save/load rows.
+    if (!gX_ConsolePlayback_InputBlocked()
+        && (arguments.cartridgeY2K || arguments.cartridgeRay1)) {
+        if (input.keyboard.keys[gX_KEY_F5].state.PRESSED)
+            gX_ConsoleState_Save(1);
+        if (input.keyboard.keys[gX_KEY_F8].state.PRESSED)
+            gX_ConsoleState_Load(1);
+    }
+
     gX_I1 Active = console_playback_scene();
     if (Active != s_active || maindata.masterIndex != s_scene)
     {

@@ -445,6 +445,9 @@ gX_I0 gX_RendererRaymarch_Unload(gX_RendererRaymarch *rm);
 gX_I0 gX_RendererRaymarch_LoadClear(gX_RendererRaymarch *rm);
 gX_I0 gX_RendererRaymarch_LoadDefault(gX_RendererRaymarch *rm);
 gX_I0 gX_RendererRaymarch_LoadRandom(gX_RendererRaymarch *rm);
+//ai: deterministic RAY-1 cartridge profile — reset the module scene and set
+//   Full quality; the camera view is owned by the camera scene response.
+gX_I0 gX_RendererRaymarch_Cartridge_Apply(gX_I0);
 gX_I0 gX_RendererRaymarch_Preset_BuiltIn(gX_RendererRaymarch *rm, gX_I32 index);
 gX_I0 gX_RendererRaymarch_Preset_Load(gX_RendererRaymarch *rm, const gX_I8 *path);
 gX_I0 gX_RendererRaymarch_Preset_Save(gX_RendererRaymarch *rm, const gX_I8 *path);

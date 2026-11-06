@@ -39,6 +39,7 @@
 
 #include "../main.h"
 #include "../settings.h"
+#include "../camera.h"
 #include "../renderer/renderer.h"
 #include "../renderer/gfx.h"
 #include "../renderer/gfx/showcase.h"
@@ -158,6 +159,30 @@ static gX_I32 console_state_save(gX_I32 slot) {
         json_object_object_add(camera, "target", target);
         json_object_object_add(root, "camera", camera);
     }
+    if (strcmp((const char *)cartridge, "ray-1") == 0) {
+        //ai: RAY-1 uses the free global camera, not the Y2K orbit request.
+        struct json_object *camera3d = json_object_new_object();
+        struct json_object *position = json_object_new_array();
+        struct json_object *target = json_object_new_array();
+        struct json_object *up = json_object_new_array();
+        gX_F32 pos[3] = { camera.camera3D.position.x,
+            camera.camera3D.position.y, camera.camera3D.position.z };
+        gX_F32 tgt[3] = { camera.camera3D.target.x,
+            camera.camera3D.target.y, camera.camera3D.target.z };
+        gX_F32 upv[3] = { camera.camera3D.up.x,
+            camera.camera3D.up.y, camera.camera3D.up.z };
+        for (gX_I32 i = 0; i < 3; i++) {
+            json_object_array_add(position, json_object_new_double((gX_F64)pos[i]));
+            json_object_array_add(target, json_object_new_double((gX_F64)tgt[i]));
+            json_object_array_add(up, json_object_new_double((gX_F64)upv[i]));
+        }
+        json_object_object_add(camera3d, "position", position);
+        json_object_object_add(camera3d, "target", target);
+        json_object_object_add(camera3d, "up", up);
+        json_object_object_add(camera3d, "fovy",
+            json_object_new_double((gX_F64)camera.camera3D.fovy));
+        json_object_object_add(root, "camera3d", camera3d);
+    }
     gX_I32 result = json_object_to_file_ext((const char *)path, root,
         JSON_C_TO_STRING_PRETTY_TAB);
     json_object_put(root);
@@ -177,6 +202,17 @@ static gX_F64 console_state_number(struct json_object *object,
     if (!object || !json_object_object_get_ex(object, (const char *)key,
             &value)) return fallback;
     return json_object_get_double(value);
+}
+
+static gX_I1 console_state_vec3(struct json_object *object, const gX_I8 *key,
+    gX_F32v3 *out) {
+    struct json_object *value = NULL;
+    if (!object || !out || !json_object_object_get_ex(object, (const char *)key,
+            &value) || json_object_array_length(value) < 3) return 0;
+    out->x = (gX_F32)json_object_get_double(json_object_array_get_idx(value, 0));
+    out->y = (gX_F32)json_object_get_double(json_object_array_get_idx(value, 1));
+    out->z = (gX_F32)json_object_get_double(json_object_array_get_idx(value, 2));
+    return 1;
 }
 
 static gX_I32 console_state_load(gX_I32 slot) {
@@ -232,9 +268,22 @@ static gX_I32 console_state_load(gX_I32 slot) {
         }
         hasCamera = 1;
     }
+    gX_Camera3D camera3d = {0};
+    gX_I1 hasCamera3d = 0;
+    if (strcmp((const char *)cartridge, "ray-1") == 0
+        && json_object_object_get_ex(root, "camera3d", &value)
+        && console_state_vec3(value, "position", &camera3d.position)
+        && console_state_vec3(value, "target", &camera3d.target)) {
+        if (!console_state_vec3(value, "up", &camera3d.up))
+            camera3d.up = (gX_F32v3){0.0f, 1.0f, 0.0f};
+        camera3d.fovy = (gX_F32)console_state_number(value, "fovy", 50.0);
+        camera3d.projection = gX_CAMERA_PERSPECTIVE;
+        hasCamera3d = 1;
+    }
     json_object_put(root);
 
     arguments.cartridgeY2K = 0;
+    arguments.cartridgeRay1 = 0;
     arguments.showcaseY2K = 0;
     arguments.showcase = 0;
     gX_I32 scene = gX_SCENE_TITLE;
@@ -245,13 +294,23 @@ static gX_I32 console_state_load(gX_I32 slot) {
         scene = gX_SCENE_RENDERER_GFX;
         gX_Renderer_GFX_ColdBoot();
     } else if (strcmp((const char *)cartridge, "ray-1") == 0) {
+        arguments.cartridgeRay1 = 1;
+        gX_RendererRaymarch_Cartridge_Apply();
         scene = gX_SCENE_RENDERER_RAYMARCH;
     } else if (strcmp((const char *)cartridge, "particle") == 0) {
         scene = gX_SCENE_PHYSICS;
     }
     if (hasCamera) gX_Showcase_CameraSet(&camera);
+    if (hasCamera3d) gX_Camera_Request_View(&camera3d);
     gX_MainData_Switch(scene);
-    if (hasCamera)
+    if (hasCamera3d)
+        gX_TraceLog(gX_LOG_NOTICE,
+            "CONSOLE_STATE: load slot=%d cartridge=%s camera=%.1f/%.1f/%.1f "
+            "target=%.1f/%.1f/%.1f fovy=%.0f",
+            slot, (const char *)cartridge, camera3d.position.x,
+            camera3d.position.y, camera3d.position.z, camera3d.target.x,
+            camera3d.target.y, camera3d.target.z, camera3d.fovy);
+    else if (hasCamera)
         gX_TraceLog(gX_LOG_NOTICE,
             "CONSOLE_STATE: load slot=%d cartridge=%s camera=%.1f/%.1f/%.1f",
             slot, (const char *)cartridge, camera.yaw, camera.pitch,

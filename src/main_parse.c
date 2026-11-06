@@ -51,6 +51,7 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
         "      --renderScale <0-1>    Render resolution scale\n"
         "      --presentFilter <s>    Virtual-screen upscale: sharp (nearest) or soft (linear)\n"
         "      --cartridge-y2k       Boot the Y2K CGI cartridge (320x240 soft, Max quality)\n"
+        "      --cartridge-ray1      Boot the RAY-1 raymarch cartridge (320x240 soft, Full quality)\n"
         "      --console-shell       Boot into the gX-240 shell menu\n"
         "      --targetFPS <n>        Target framerate\n"
         "      --seed <n>             Fixed random seed\n"
@@ -206,6 +207,7 @@ gX_I32 gX_Parse(int argc, char **argv) {
         {"renderScale", required_argument,  NULL, 0},
         {"presentFilter", required_argument, NULL, 0},
         {"cartridge-y2k",no_argument,       NULL, 0},
+        {"cartridge-ray1",no_argument,      NULL, 0},
         {"console-shell",no_argument,       NULL, 0},
         {"targetFPS",   required_argument,  NULL, 0},
         {"seed",        required_argument,  NULL, 0},
@@ -618,6 +620,17 @@ if (!strcmp(long_options[option_index].name,"guest-model")) {
                     arguments.showcase = true;
                     arguments.showcaseY2K = true;
                     arguments.cartridgeY2K = true;
+                    arguments.cartridgeRay1 = false;
+                }
+                //ai: bootable RAY-1 raymarch cartridge — Full quality and a
+                //   fixed authored camera over the 320x240 console profile.
+                if (!strcmp(long_options[option_index].name,"cartridge-ray1")) {
+                    arguments.masterIndex = gX_SCENE_RENDERER_RAYMARCH;
+                    arguments.hasMasterIndex = true;
+                    arguments.showcase = false;
+                    arguments.showcaseY2K = false;
+                    arguments.cartridgeY2K = false;
+                    arguments.cartridgeRay1 = true;
                 }
                 //ai: gX-240 shell boot route — the title template opens the
                 //   console view instead of the main menu.

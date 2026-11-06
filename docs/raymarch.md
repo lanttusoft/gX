@@ -162,6 +162,10 @@ mouse looks. Press **F1** or the editor hotkey to open the GFX editor.
 
 Useful CLI flags:
 
+- `--cartridge-ray1` — boot the gX-240 RAY-1 cartridge profile: the default
+  SDF scene at Full quality (render scale 1.0, 256 steps, 4 bounces) with the
+  authored three-quarter camera, 320x240 Soft console output, pause menu and
+  F5/F8 save-state camera restore. The shell RAY-1 card uses the same profile.
 - `--raymarch-profile[=path.csv]` — per-frame module GPU timers
   (`frame,draw_ms,total_ms,render_scale`).
 - `--hw-report` — capability report + hardware tier (see `docs/hardware.md`).

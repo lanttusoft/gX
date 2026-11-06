@@ -2108,6 +2108,24 @@ gX_I0 gX_RendererRaymarch_LoadDefault(gX_RendererRaymarch *rm) {
     gX_RendererRaymarch_Load(rm);
 }
 
+gX_I0 gX_RendererRaymarch_Cartridge_Apply(gX_I0) {
+    gX_RendererRaymarch *rm = renderer.raymarch.data;
+    if (!rm) {
+        gX_TraceLog(gX_LOG_ERROR, "CARTRIDGE: ray1 module unavailable");
+        return;
+    }
+    //ai: reset fresh so a previous RAY-1 visit cannot leak edits into the
+    //   authored cartridge profile; Full is the RAY-1 quality identity.
+    gX_RendererRaymarch_Preset_BuiltIn(rm, 0);
+    gX_RendererRaymarch_Quality_Set(rm, 3);
+    rm->state.useInternalCamera = 0;
+    rm->state.useInternalTime = 0;
+    gX_TraceLog(gX_LOG_NOTICE,
+        "CARTRIDGE: ray1 quality=%d renderScale=%.2f steps=%d bounces=%d",
+        gX_RendererRaymarch_Quality_Get(rm), rm->parameters.renderScale,
+        rm->parameters.steps, rm->parameters.bounces);
+}
+
 //opencode: randomize raymarch parameters for exploration
 gX_I0 gX_RendererRaymarch_LoadRandom(gX_RendererRaymarch *rm) {
     gX_RendererRaymarch_LoadDefault(rm); //opencode: start from valid defaults (was LoadClear-only — empty scene bug)

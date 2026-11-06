@@ -377,6 +377,9 @@ It is inactive by default; paths outside `/tmp/` and faces larger than
   teletext, wireframe, generate, oscillo/lissajous/spectrum, ws2d
 - `gX_RendererRaymarch_Quality_Set/Get` — pure Draft/Balanced/High/Full tuning;
   Get returns -1 for Custom. Scene flags/geometry/materials are untouched.
+- `gX_RendererRaymarch_Cartridge_Apply` — reset the RAY-1 cartridge profile to
+  the default authored scene at Full quality; the camera is installed by the
+  scene response.
 - `gX_RendererRaymarch_DrawHybrid` — opt-in full-resolution opaque SDF overlay
   against current GFX raster depth, using the external perspective camera.
 - `gX_RendererRaymarch_DrawSharedDepth` — opaque HDR color plus projected depth
@@ -532,6 +535,8 @@ It is inactive by default; paths outside `/tmp/` and faces larger than
 
 - `gX_Camera_*` — camera modes (FREE/FIRSTPERSON/THIRDPERSON/TOP/ORTHO),
   orbit, shake (`gX_Camera_ShakeStart`, settings-togglable)
+- `gX_Camera_Request_View` — one-shot authored/save-state view request; the
+  next scene response applies it after the per-scene camera reset.
 - `gX_Bind_*` — per-scene input binds; `gX_Input_*` — raw
   keyboard/mouse/gamepad state (input.c); F4 exit + ESC-cancel handling;
   `gX_AI_Input_Synth` feeds scripted keyboard/mouse events to ImGui
