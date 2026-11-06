@@ -12,8 +12,8 @@ import console_osd_check as osd
 class OSDGateTests(unittest.TestCase):
     def setUp(self):
         self.log = ("CONSOLE_OSD: show render=320x240 out=320x240 mode=SOFT "
-            "prism=off cart=Y2K CGI slot=1 state=EMPTY play= rect=10,435,200,35 "
-            "textfit=185,13")
+            "prism=off grain=off cart=Y2K CGI slot=1 state=EMPTY play= "
+            "rect=10,435,200,35 textfit=185,13")
 
     def test_valid_trace(self):
         osd.assert_osd(self.log, 640, 480, render=(320, 240), mode="SOFT", state="EMPTY")
@@ -49,6 +49,11 @@ class OSDGateTests(unittest.TestCase):
         log = self.log.replace("prism=off", "prism=on")
         osd.assert_osd(log, 640, 480, prism=True)
         osd.assert_osd(self.log, 640, 480, prism=False)
+
+    def test_grain_state_is_parsed(self):
+        log = self.log.replace("grain=off", "grain=on")
+        osd.assert_osd(log, 640, 480, grain=True)
+        osd.assert_osd(self.log, 640, 480, grain=False)
 
     def test_playback_label_is_parsed(self):
         log = self.log.replace("play= ", "play=PAUSED ")

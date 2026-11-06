@@ -296,7 +296,7 @@ static gX_I0 console_pause_button_at(gX_GUI_Builder *b, const gX_I8 *label,
 static gX_I0 console_playback_button(gX_GUI_Builder *b, const gX_I8 *label,
     gX_F32 x, gX_F32 width, gX_I0 (*clickFn)(gX_I0 *), gX_F32 textScale)
 {
-    console_pause_button_at(b, label, x, 440.0f, width, 44.0f, clickFn,
+    console_pause_button_at(b, label, x, 432.0f, width, 44.0f, clickFn,
         textScale);
 }
 
@@ -423,25 +423,31 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
             : "Video: Native";
         const gX_I8 *LoadLabel = gX_ConsoleState_Exists(1)
             ? "Load Slot 1" : "Load Slot 1 (empty)";
-        GX_PAUSE_BTN("Resume", 2.35f,
-            gX_Widget_OnClick_CloseEscapeMenu, 0);
-        GX_PAUSE_BTN("Save Slot 1 (F5)", 3.00f,
-            gX_Widget_OnClick_ConsolePauseSave, 0);
-        GX_PAUSE_BTN(LoadLabel, 3.65f,
-            gX_Widget_OnClick_ConsolePauseLoad, 0);
-        console_pause_button_at(&b, VideoLabel, 24.0f, 304.0f, 292.0f, 56.0f,
+        console_pause_button_at(&b, "Resume", 24.0f, 96.0f, 512.0f, 48.0f,
+            gX_Widget_OnClick_CloseEscapeMenu, ConsoleTextScale);
+        console_pause_button_at(&b, "Save Slot 1 (F5)", 24.0f, 152.0f,
+            512.0f, 48.0f, gX_Widget_OnClick_ConsolePauseSave,
+            ConsoleTextScale);
+        console_pause_button_at(&b, LoadLabel, 24.0f, 208.0f, 512.0f, 48.0f,
+            gX_Widget_OnClick_ConsolePauseLoad, ConsoleTextScale);
+        console_pause_button_at(&b, VideoLabel, 24.0f, 264.0f, 512.0f, 48.0f,
             gX_Widget_OnClick_ConsolePauseVideo, ConsoleTextScale);
         {
             gX_I1 Native = settings.screenWidth != 320
                 || settings.screenHeight != 240;
             const gX_I8 *PrismLabel = Native ? "PRISM-1: N/A"
                 : (settings.consolePRISM1 ? "PRISM-1: ON" : "PRISM-1: OFF");
-            console_pause_button_at(&b, PrismLabel, 324.0f, 304.0f, 212.0f,
-                56.0f, gX_Widget_OnClick_ConsolePRISM, ConsoleTextScale);
+            const gX_I8 *GrainLabel = Native ? "GRAIN: N/A"
+                : (settings.consoleGrain ? "GRAIN: ON" : "GRAIN: OFF");
+            console_pause_button_at(&b, PrismLabel, 24.0f, 320.0f, 248.0f,
+                48.0f, gX_Widget_OnClick_ConsolePRISM, ConsoleTextScale);
+            if (Native) b.currentElement->state.DISABLED = true;
+            console_pause_button_at(&b, GrainLabel, 288.0f, 320.0f, 248.0f,
+                48.0f, gX_Widget_OnClick_ConsoleGrain, ConsoleTextScale);
             if (Native) b.currentElement->state.DISABLED = true;
         }
-        GX_PAUSE_BTN("Exit to Shell", 4.95f,
-            gX_Widget_OnClick_ConsoleExitShell, 0);
+        console_pause_button_at(&b, "Exit to Shell", 24.0f, 376.0f, 512.0f,
+            48.0f, gX_Widget_OnClick_ConsoleExitShell, ConsoleTextScale);
         {
             gX_I8 FastForward[24];
             gX_I32 Multiplier = gX_ConsolePlayback_FastForward();
@@ -505,7 +511,7 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     //   Aero glass panel (the bare panel can composite light scene pixels).
     gX_GUI_Builder_Element_Begin(&b);
         gX_GUI_Builder_RectGrid(&b, 2.65f, 6.30f, 2.7f, 0.55f);
-        if (ConsoleMenu) console_pause_rect(&b, 24, 496, 512, 52);
+        if (ConsoleMenu) console_pause_rect(&b, 24, 482, 512, 48);
         gX_GUI_Builder_Color(&b, 8, 10, 18, 250);
         b.currentElement->cornerRadius = gui.style.cornerRadius;
     gX_GUI_Builder_Element_End(&b);
@@ -514,7 +520,7 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
         //   pass); widen the box and keep a shrink guard for themes with
         //   wider type.
         gX_GUI_Builder_RectGrid(&b, 2.8f, 6.35f, 2.4f, 0.4f);
-        if (ConsoleMenu) console_pause_rect(&b, 36, 502, 488, 44);
+        if (ConsoleMenu) console_pause_rect(&b, 36, 488, 488, 36);
         gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
         b.currentElement->stateRendering.RECT_NO_DRAW = true;
         gX_GUI_Builder_Text_Begin(&b);

@@ -69,6 +69,7 @@ check: all
 	python3 -m unittest discover -s scripts -p test_console_ray1_check.py
 	python3 -m unittest discover -s scripts -p test_console_particle_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa4x_probe.py
+	python3 -m unittest discover -s scripts -p test_console_grain_check.py
 	python3 -m unittest discover -s scripts -p test_evidence_stamp.py
 	#ai: local inventory must preserve notes and never confuse worktree identities.
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
@@ -118,6 +119,7 @@ check: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_prism_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_ray1_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_particle_check.py
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_grain_check.py
 	@echo "== [gX CI] compressed texture sidecars =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/texture_assets_check.py
 	#ai: ambient-only Phong shading must preserve albedo texture variation.
@@ -247,6 +249,7 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_console_ray1_check.py
 	python3 -m unittest discover -s scripts -p test_console_particle_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa4x_probe.py
+	python3 -m unittest discover -s scripts -p test_console_grain_check.py
 	python3 -m unittest discover -s scripts -p test_evidence_stamp.py
 	#ai: inventory regressions use owned disposable repositories, not real worktrees.
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
@@ -848,6 +851,7 @@ console-check: all
 	python3 -m unittest discover -s scripts -p test_console_ray1_check.py
 	python3 -m unittest discover -s scripts -p test_console_particle_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa4x_probe.py
+	python3 -m unittest discover -s scripts -p test_console_grain_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_shell_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_osd_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_playback_check.py
@@ -855,6 +859,7 @@ console-check: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_prism_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_ray1_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_particle_check.py
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_grain_check.py
 
 #ai: one-off GX-I008 4x SSAA probe; never part of the admission matrix.
 .PHONY: ssaa4x-probe

@@ -246,21 +246,31 @@ static gX_I0 gX_Renderer_Canvas_Load(gX_I0) {
             maindata.consoleOutputWidth, maindata.consoleOutputHeight);
         renderer.state.CONSOLE_RESOLVE_LOADED = true;
     }
-    //ai: PRISM-1 loads lazily with the product toggle. The HDR-format present
-    //   target receives RGB565/scanline/triad output at the 240p console size;
-    //   matching the GUI composite targets keeps the format-compatible blits.
-    if (maindata.consolePRISM1 && !renderer.state.CONSOLE_PRISM_LOADED) {
+    //ai: the console output shader serves PRISM-1 and/or film grain. The
+    //   HDR-format present target receives the 240p treatment; matching the
+    //   GUI composite targets keeps the format-compatible blits.
+    if ((maindata.consolePRISM1 || maindata.consoleGrain)
+        && !renderer.state.CONSOLE_PRISM_LOADED) {
         renderer.consolePrismShader = gX_Shader_Load(0,
             GX_PATH("shader", "gfx_prism1.frag"));
         if (renderer.consolePrismShader.id > 0) {
             renderer.consolePrismSceneLoc = gX_RHI_GetUniformLocation(
                 renderer.consolePrismShader.id, "sceneTex");
+            renderer.consoleOutputPrismLoc = gX_RHI_GetUniformLocation(
+                renderer.consolePrismShader.id, "prismEnabled");
+            renderer.consoleOutputGrainLoc = gX_RHI_GetUniformLocation(
+                renderer.consolePrismShader.id, "grainEnabled");
+            renderer.consoleOutputGrainSeedLoc = gX_RHI_GetUniformLocation(
+                renderer.consolePrismShader.id, "grainSeed");
+            renderer.consoleOutputGrainStrengthLoc = gX_RHI_GetUniformLocation(
+                renderer.consolePrismShader.id, "grainStrength");
             renderer.state.CONSOLE_PRISM_LOADED = true;
         } else {
-            gX_TraceLog(gX_LOG_ERROR, "RENDERER: PRISM-1 shader load failed");
+            gX_TraceLog(gX_LOG_ERROR, "RENDERER: console output shader load failed");
         }
     }
-    if (maindata.consolePRISM1 && renderer.state.CONSOLE_PRISM_LOADED
+    if ((maindata.consolePRISM1 || maindata.consoleGrain)
+        && renderer.state.CONSOLE_PRISM_LOADED
         && !renderer.state.CONSOLE_PRESENT_LOADED
         && maindata.consoleOutputWidth > 0 && maindata.consoleOutputHeight > 0) {
         renderer.consolePresent = gX_RenderTexture_Load_HDR(
@@ -310,7 +320,8 @@ gX_U32 gX_Renderer_GetCanvasTextureId(gX_I0) {
 }
 
 gX_U32 gX_Renderer_GetPresentTextureId(gX_I0) {
-    if (maindata.consolePRISM1 && renderer.state.CONSOLE_PRESENT_LOADED)
+    if ((maindata.consolePRISM1 || maindata.consoleGrain)
+        && renderer.state.CONSOLE_PRESENT_LOADED)
         return renderer.consolePresent.id;
     if (maindata.consoleSSAA > 1 && renderer.state.CONSOLE_RESOLVE_LOADED)
         return renderer.consoleResolve.id;
@@ -318,7 +329,8 @@ gX_U32 gX_Renderer_GetPresentTextureId(gX_I0) {
 }
 
 gX_U32 gX_Renderer_GetPresentWidth(gX_I0) {
-    if (maindata.consolePRISM1 && renderer.state.CONSOLE_PRESENT_LOADED)
+    if ((maindata.consolePRISM1 || maindata.consoleGrain)
+        && renderer.state.CONSOLE_PRESENT_LOADED)
         return maindata.consoleOutputWidth;
     if (maindata.consoleSSAA > 1 && renderer.state.CONSOLE_RESOLVE_LOADED)
         return maindata.consoleOutputWidth;
@@ -326,7 +338,8 @@ gX_U32 gX_Renderer_GetPresentWidth(gX_I0) {
 }
 
 gX_U32 gX_Renderer_GetPresentHeight(gX_I0) {
-    if (maindata.consolePRISM1 && renderer.state.CONSOLE_PRESENT_LOADED)
+    if ((maindata.consolePRISM1 || maindata.consoleGrain)
+        && renderer.state.CONSOLE_PRESENT_LOADED)
         return maindata.consoleOutputHeight;
     if (maindata.consoleSSAA > 1 && renderer.state.CONSOLE_RESOLVE_LOADED)
         return maindata.consoleOutputHeight;
@@ -785,16 +798,31 @@ gX_I0 gX_Renderer_Draw(gX_I0) {
         gX_RHI_BindDrawFBO(prevDrawFbo);
     }
 
-    //ai: PRISM-1 runs after the 320x240 resolve (or on the standard 240p
-    //   canvas) and writes a separate LDR present target. The native GUI is
-    //   not part of this pass, so it keeps its window-sized text.
-    if (maindata.consolePRISM1 && renderer.state.CONSOLE_PRISM_LOADED
+    //ai: the console output pass runs after the 320x240 resolve (or on the
+    //   standard 240p canvas) and writes a separate present target. It applies
+    //   PRISM-1 and/or film grain; the native GUI stays outside the pass.
+    if ((maindata.consolePRISM1 || maindata.consoleGrain)
+        && renderer.state.CONSOLE_PRISM_LOADED
         && renderer.state.CONSOLE_PRESENT_LOADED
         && maindata.consoleOutputWidth > 0 && maindata.consoleOutputHeight > 0) {
-        gX_RenderTexture *prismSource = &renderer.canvas;
+        gX_RenderTexture *outputSource = &renderer.canvas;
         if (maindata.consoleSSAA > 1 && renderer.state.CONSOLE_RESOLVE_LOADED)
-            prismSource = &renderer.consoleResolve;
-        if (prismSource->texture.id > 0) {
+            outputSource = &renderer.consoleResolve;
+        if (outputSource->texture.id > 0) {
+            gX_F32 grainSeed = 0.0f;
+            const gX_I8 *grainAnimate = getenv("GX_CONSOLE_GRAIN_ANIMATE");
+            if (!grainAnimate || grainAnimate[0] != '0') {
+                //ai: frame-indexed 24 Hz grain keeps captures deterministic.
+                grainSeed = (gX_F32)((maindata.frameCount * 24u) / 60u);
+            }
+            gX_F32 grainStrength = 0.04f;
+            const gX_I8 *grainStrengthHook =
+                getenv("GX_CONSOLE_GRAIN_STRENGTH");
+            if (grainStrengthHook && grainStrengthHook[0]) {
+                grainStrength = (gX_F32)atof((const char *)grainStrengthHook);
+                if (grainStrength < 0.0f) grainStrength = 0.0f;
+                if (grainStrength > 0.2f) grainStrength = 0.2f;
+            }
             gX_GL_State_Push();
             gX_Drawing_BeginTexture(renderer.consolePresent);
                 (void)gX_RHI_IsEnabled(gX_RHI_SCISSOR_TEST);
@@ -807,8 +835,21 @@ gX_I0 gX_Renderer_Draw(gX_I0) {
                     if (renderer.consolePrismSceneLoc >= 0)
                         gX_Shader_SetValue_TextureSlot(
                             renderer.consolePrismShader,
-                            renderer.consolePrismSceneLoc, prismSource->texture,
-                            gX_GFX_TEXUNIT_SCENE);
+                            renderer.consolePrismSceneLoc,
+                            outputSource->texture, gX_GFX_TEXUNIT_SCENE);
+                    if (renderer.consoleOutputPrismLoc >= 0)
+                        gX_RHI_UniformInt(renderer.consoleOutputPrismLoc,
+                            maindata.consolePRISM1 ? 1 : 0);
+                    if (renderer.consoleOutputGrainLoc >= 0)
+                        gX_RHI_UniformInt(renderer.consoleOutputGrainLoc,
+                            maindata.consoleGrain ? 1 : 0);
+                    if (renderer.consoleOutputGrainSeedLoc >= 0)
+                        gX_RHI_Uniform_Float(
+                            renderer.consoleOutputGrainSeedLoc, grainSeed);
+                    if (renderer.consoleOutputGrainStrengthLoc >= 0)
+                        gX_RHI_Uniform_Float(
+                            renderer.consoleOutputGrainStrengthLoc,
+                            grainStrength);
                     gX_Drawing_DrawScreenQuad(0, 0,
                         (gX_F32)maindata.consoleOutputWidth,
                         (gX_F32)maindata.consoleOutputHeight);

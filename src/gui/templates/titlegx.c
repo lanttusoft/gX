@@ -573,7 +573,7 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
         static const gX_I32 VideoModes[4] = { 0, 1, 3, 2 };
         for (gX_I32 Video = 0; Video < 4; Video++)
         {
-            titlegx_console_item(&b, 448, 136.0f + (gX_F32)Video * 52.0f,
+            titlegx_console_item(&b, 448, 136.0f + (gX_F32)Video * 48.0f,
                 248, 44, VideoLabels[Video], 18, gui.style.title2.saveSlotText,
                 gX_Widget_OnClick_ConsoleVideo,
                 (gX_I0 *)(gX_U64)(uintptr_t)VideoModes[Video]);
@@ -583,17 +583,23 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
                 || settings.screenHeight != 240;
             const gX_I8 *PrismLabel = Native ? "PRISM-1: N/A"
                 : (settings.consolePRISM1 ? "PRISM-1: ON" : "PRISM-1: OFF");
-            titlegx_console_item(&b, 448, 344, 248, 44, PrismLabel, 18,
+            const gX_I8 *GrainLabel = Native ? "GRAIN: N/A"
+                : (settings.consoleGrain ? "GRAIN: ON" : "GRAIN: OFF");
+            titlegx_console_item(&b, 448, 328, 248, 44, PrismLabel, 18,
                 gui.style.title2.saveSlotText, gX_Widget_OnClick_ConsolePRISM,
                 NULL);
             if (Native) b.currentElement->state.DISABLED = true;
+            titlegx_console_item(&b, 448, 376, 248, 44, GrainLabel, 18,
+                gui.style.title2.saveSlotText, gX_Widget_OnClick_ConsoleGrain,
+                NULL);
+            if (Native) b.currentElement->state.DISABLED = true;
         }
-        titlegx_console_item(&b, 448, 396, 248, 44, "SAVE STATES", 18,
+        titlegx_console_item(&b, 448, 424, 248, 44, "SAVE STATES", 18,
             gui.style.title2.saveSlotText, gX_Widget_OnClick_ConsoleSaves, NULL);
-        titlegx_console_item(&b, 24, 448, 672, 28,
+        titlegx_console_item(&b, 24, 474, 672, 24,
             "PAD NAVIGATE  SOUTH SELECT  EAST BACK", 16,
             (gX_Color){150, 180, 210, 255}, NULL, NULL);
-        titlegx_console_item(&b, 240, 484, 240, 48, "BACK", 20,
+        titlegx_console_item(&b, 240, 506, 240, 44, "BACK", 20,
             gui.style.title2.backText, gX_Widget_OnClick_TitleBack, NULL);
         gX_GUI_Builder_ColorV(&b, gui.style.title2.backBg);
     } else if (titleView == TITLEGX_VIEW_EXTRAS) {

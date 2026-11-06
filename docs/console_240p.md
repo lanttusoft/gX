@@ -223,10 +223,15 @@ only the scene render target is 320x240.
   `--cartridge-particle` or the shell card, rebuilds the deterministic
   rigid-body sandbox and installs the authored overview camera. F5/F8 and the
   pause menu save/load the video profile and free-camera view.
+- **Console 240p — Film grain** (opt-in): subtle animated monochrome grain on
+  the 320x240 console output, independent of PRISM-1 and available with
+  Soft/Sharp/SSAA and the particle composite route. The frame-indexed 24 Hz
+  pattern is deterministic for fixed captures; `GX_CONSOLE_GRAIN_ANIMATE=0`
+  freezes it for stills.
 - **gX-240 console shell** — `--console-shell` opens the boot view: cartridge
   select (Y2K CGI, RAY-1, particle sandbox, empty slot), video output
-  (320x240 Soft/Sharp/SSAA 2x, Native), a PRISM-1 output toggle and save-state
-  slots. Booting Y2K from the shell honors the selected 240p filter/SSAA
+  (320x240 Soft/Sharp/SSAA 2x, Native), PRISM-1 and film-grain toggles and
+  save-state slots. Booting Y2K from the shell honors the selected 240p filter/SSAA
   (native falls back to Soft), cold-boots the GFX renderer and rebuilds the
   authored scene; booting RAY-1 applies the same video selection and resets the
   authored raymarch scene/camera; booting the particle sandbox resets its
@@ -240,7 +245,7 @@ only the scene render target is 320x240.
 - <!-- //ai: GX-I010 live status slice; timing controls remain separate work. -->
   **Live console OSD** — a native-resolution status chip shows actual scene
   render dimensions (and, for SSAA, the 320x240 output), Soft/Sharp/Native or
-  SSAA 2x presentation, PRISM-1 on/off, current cartridge and
+  SSAA 2x presentation, PRISM-1/film-grain on/off, current cartridge and
   last operated slot (slot 1 on entry). Loading another slot from the shell
   displays that slot; F5/F8 and pause actions still target slot 1. READY means
   a slot file exists, not that it has been
@@ -263,8 +268,8 @@ only the scene render target is 320x240.
   simulation freezes while it is open; UI, OSD and audio feedback keep real
   time. Resume/ESC closes it; Save Slot 1 and Load Slot 1 mirror F5/F8, a
   successful save refreshes the slot label in place, Video cycles
-  Soft → Sharp → SSAA 2x → Native, a separate PRISM-1 row toggles the output
-  treatment, and Exit to Shell returns to the gX-240 boot view.
+  Soft → Sharp → SSAA 2x → Native, separate PRISM-1 and GRAIN rows toggle
+  the output treatments, and Exit to Shell returns to the gX-240 boot view.
   Step advances exactly one 1/60 s simulation tick and keeps the menu open.
   Fast Forward cycles Off → 2x → 4x → 8x while paused; Resume runs at the
   selected speed. F6 and F7 mirror Step and Fast Forward while the menu is
@@ -402,6 +407,19 @@ only the scene render target is 320x240.
   profile plus `camera3d` (`scripts/console_ray1_check.py`, included by
   `make console-check` and `make check`). Three display-free tests reject wrong
   quality/camera traces and save JSON; they also run in `make check-fast`.
+- <!-- //ai: GX-I013 opt-in animated film grain. -->
+  Film grain: the shell and pause menu toggle a subtle animated monochrome
+  grain independently of PRISM; the OSD reports `grain=on/off` and appends
+  `GRAIN` to the header. A fixed-frame repeat must be byte-identical, a flat
+  showcase crop must gain high-frequency texture, and a later frame must
+  change while the grain-free control stays closer. The gate also covers
+  shell boot, pause toggle labels, save/load of `video.grain=1`, the particle
+  SSAA composite route and native-mode disablement
+  (`scripts/console_grain_check.py`, included by `make console-check` and
+  `make check`).
+  Three display-free tests cover flat-field separation and save fields; they
+  also run in `make check-fast`. `GX_CONSOLE_GRAIN=0/1` is an automation hook;
+  `GX_CONSOLE_GRAIN_ANIMATE=0` freezes the pattern for stills.
 - <!-- //ai: GX-I011 particle authored profile and save-camera gate. -->
   Particle sandbox: `--cartridge-particle` and shell boot rebuild the sandbox,
   install the authored camera and report `cart=PARTICLE SANDBOX`; a
@@ -428,8 +446,8 @@ remains the console's detailed open-work list.
 - PRISM-1 RGB565, fixed Bayer, scanlines and the subtle RGB triad are
   implemented for Y2K, RAY-1 and the particle sandbox in standard 240p and 2x
   SSAA. NTSC composite smear was not part of the approved contract.
-- Film grain remains an optional experiment, not a decided console
-  requirement.
+- Film grain is implemented as an opt-in experiment, not a required PRISM-1
+  feature. It can be disabled by default and is persisted only when selected.
 - Y2K, RAY-1 and the particle sandbox now have authored cartridge profiles
   with save-state camera restore. Further work is optional content expansion,
   not a missing console integration.

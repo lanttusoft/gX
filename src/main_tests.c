@@ -3833,6 +3833,7 @@ static gX_I32 gX_Tests_SettingsUI(void) {
         gX_I32 savedFilter = maindata.presentFilter;
         gX_I32 savedConsoleSSAA = maindata.consoleSSAA;
         gX_I1 savedConsolePRISM = maindata.consolePRISM1;
+        gX_I1 savedConsoleGrain = maindata.consoleGrain;
         gX_U16 savedConsoleOutW = maindata.consoleOutputWidth;
         gX_U16 savedConsoleOutH = maindata.consoleOutputHeight;
         gX_F32 savedRenderScale = maindata.renderScale;
@@ -3841,12 +3842,14 @@ static gX_I32 gX_Tests_SettingsUI(void) {
         gX_I32 savedSetFilter = settings.presentFilter;
         gX_I1 savedSetSSAA = settings.consoleSSAA2x;
         gX_I1 savedSetPRISM = settings.consolePRISM1;
+        gX_I1 savedSetGrain = settings.consoleGrain;
         gX_F32 savedSetScale = settings.renderScale;
         settings.screenWidth = 320;
         settings.screenHeight = 240;
         settings.presentFilter = 1;
         settings.consoleSSAA2x = 0;
         settings.consolePRISM1 = 0;
+        settings.consoleGrain = 0;
         settings.renderScale = 1.0f;
         maindata.renderScale = 1.0f;
         gX_Settings_Apply_VirtualScreen();
@@ -3866,9 +3869,11 @@ static gX_I32 gX_Tests_SettingsUI(void) {
         settings.presentFilter = 1;
         settings.consoleSSAA2x = 1;
         settings.consolePRISM1 = 1;
+        settings.consoleGrain = 1;
         gX_Settings_Apply_VirtualScreen();
         if (maindata.renderWidth != 640 || maindata.renderHeight != 480
             || maindata.consoleSSAA != 2 || maindata.consolePRISM1 != 1
+            || maindata.consoleGrain != 1
             || maindata.consoleOutputWidth != 320
             || maindata.consoleOutputHeight != 240
             || maindata.renderOverrideWidth != 640
@@ -3879,20 +3884,24 @@ static gX_I32 gX_Tests_SettingsUI(void) {
         }
         settings.consoleSSAA2x = 0;
         settings.consolePRISM1 = 1;
+        settings.consoleGrain = 1;
         gX_Settings_Apply_VirtualScreen();
         if (maindata.renderWidth != 320 || maindata.renderHeight != 240
-            || maindata.consoleSSAA != 0 || maindata.consolePRISM1 != 1) {
+            || maindata.consoleSSAA != 0 || maindata.consolePRISM1 != 1
+            || maindata.consoleGrain != 1) {
             gX_TraceLog(gX_LOG_ERROR,
-                "SETTINGS_UI_TEST FAIL: console PRISM apply");
+                "SETTINGS_UI_TEST FAIL: console PRISM/grain apply");
             errors++;
         }
         settings.screenWidth = maindata.windowWidth;
         settings.screenHeight = maindata.windowHeight;
         settings.consolePRISM1 = 1;
+        settings.consoleGrain = 1;
         gX_Settings_Apply_VirtualScreen();
-        if (maindata.virtualScreen || maindata.consolePRISM1 != 0) {
+        if (maindata.virtualScreen || maindata.consolePRISM1 != 0
+            || maindata.consoleGrain != 0) {
             gX_TraceLog(gX_LOG_ERROR,
-                "SETTINGS_UI_TEST FAIL: native mode kept PRISM active");
+                "SETTINGS_UI_TEST FAIL: native mode kept output effects active");
             errors++;
         }
         settings.screenWidth = savedSetW;
@@ -3900,9 +3909,11 @@ static gX_I32 gX_Tests_SettingsUI(void) {
         settings.presentFilter = savedSetFilter;
         settings.consoleSSAA2x = savedSetSSAA;
         settings.consolePRISM1 = savedSetPRISM;
+        settings.consoleGrain = savedSetGrain;
         settings.renderScale = savedSetScale;
         maindata.consoleSSAA = savedConsoleSSAA;
         maindata.consolePRISM1 = savedConsolePRISM;
+        maindata.consoleGrain = savedConsoleGrain;
         maindata.consoleOutputWidth = savedConsoleOutW;
         maindata.consoleOutputHeight = savedConsoleOutH;
         maindata.screenWidth = savedScreenW;

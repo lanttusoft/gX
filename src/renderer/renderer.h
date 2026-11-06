@@ -158,6 +158,10 @@ typedef struct gX_Renderer {
     gX_RenderTexture consolePresent;
     gX_Shader consolePrismShader;
     gX_I32 consolePrismSceneLoc;
+    gX_I32 consoleOutputPrismLoc;
+    gX_I32 consoleOutputGrainLoc;
+    gX_I32 consoleOutputGrainSeedLoc;
+    gX_I32 consoleOutputGrainStrengthLoc;
 
     //opencode: set by gX_Drawing_BeginTexture when binding the canvas FBO,
     //   cleared in gX_Renderer_BeginFrame (called from gX_Drawing_Begin).

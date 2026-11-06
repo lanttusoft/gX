@@ -87,6 +87,7 @@ gX_I0 gX_Widget_OnClick_ConsoleVideo(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_ConsoleSaves(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_ConsolePRISM(gX_I0 *arg);
+gX_I0 gX_Widget_OnClick_ConsoleGrain(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_ConsoleLoadSlot(gX_I0 *arg);
 //ai: cartridge pause overlay routes save/load, video cycling and shell exit.
 gX_I0 gX_Widget_OnClick_ConsolePauseSave(gX_I0 *arg);

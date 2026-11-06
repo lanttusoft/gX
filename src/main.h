@@ -472,6 +472,8 @@ typedef struct gX_MainData {
     gX_U16      consoleOutputHeight;
     //ai: PRISM-1 16-bit/CRT treatment applied to the 320x240 console output.
     gX_I1       consolePRISM1;
+    //ai: optional animated film-grain treatment on the 320x240 console output.
+    gX_I1       consoleGrain;
     //render: rendering resolution for a framebuffer (renderer resolution [2D/3D])
     gX_F32      renderScale;
     gX_U16      renderWidth;

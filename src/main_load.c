@@ -161,6 +161,7 @@ gX_I32 gX_MainData_Reset(gX_I0) {
 
     maindata.consoleSSAA = 0;
     maindata.consolePRISM1 = 0;
+    maindata.consoleGrain = 0;
     maindata.consoleOutputWidth = maindata.renderOverride
         ? maindata.renderOverrideWidth : maindata.screenWidth;
     maindata.consoleOutputHeight = maindata.renderOverride

@@ -453,6 +453,24 @@ gX_I0 gX_Widget_OnClick_ConsolePRISM(gX_I0 *arg) {
         maindata.consoleOutputWidth, maindata.consoleOutputHeight);
 }
 
+//ai: film grain is an independent 240p output toggle; it shares the PRISM
+//   label-refresh/focus-restore path but never changes the scene targets.
+gX_I0 gX_Widget_OnClick_ConsoleGrain(gX_I0 *arg) {
+    (void)arg;
+    settings.consoleGrain = settings.consoleGrain ? 0 : 1;
+    gX_Settings_Apply_ConsoleGrain();
+    if (gui.menuCanvas) {
+        gui.focusRestoreCanvasID = gui.focusCanvasID;
+        gui.focusRestoreElementID = gui.focusElementID;
+        gui.menuCanvas->refresh = true;
+    }
+    console_refresh_view();
+    gX_TraceLog(gX_LOG_NOTICE,
+        "CONSOLE: grain=%d render=%ux%u out=%ux%u",
+        maindata.consoleGrain, maindata.renderWidth, maindata.renderHeight,
+        maindata.consoleOutputWidth, maindata.consoleOutputHeight);
+}
+
 //ai: the console shell routes save-state management through the existing
 //   save-slot view and traces the intent for the shell gate.
 gX_I0 gX_Widget_OnClick_ConsoleSaves(gX_I0 *arg) {

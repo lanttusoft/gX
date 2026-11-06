@@ -221,6 +221,18 @@ Y2K/RAY-1/particle coverage. `GX_CONSOLE_PRISM=0/1` is the
 deterministic A/B hook. Keep the effect opt-in and deterministic; do not
 conflate it with the generic dither/palette/interlace experiments above.
 
+### P2 — Console film grain (optional)
+
+An opt-in animated monochrome grain runs in the same 320x240 console output
+pass as PRISM-1 but has its own toggle, settings field and save-state bit. It
+is frame-indexed at 24 Hz, so fixed captures are deterministic; setting
+`GX_CONSOLE_GRAIN_ANIMATE=0` freezes the pattern. It composes with Soft/Sharp,
+2x SSAA and the particle composite route and never affects the native GUI/OSD.
+`GX_CONSOLE_GRAIN=0/1` is the A/B hook; `scripts/console_grain_check.py`
+covers flat-field gain, fixed-frame repeat, animation, product controls,
+save/load and native fallback. Film grain remains optional, not a required
+PRISM-1 property.
+
 ### P2 — Interactive low-resolution path-tracing comparison (prototype)
 
 The GFX editor now exposes optional `Raster`, `Ray preview`, and synchronized

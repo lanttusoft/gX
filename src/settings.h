@@ -112,6 +112,8 @@ typedef struct gX_Settings {
     gX_I1  consoleSSAA2x;
     //ai: opt-in PRISM-1 RGB565 dither + scanline/triad output treatment.
     gX_I1  consolePRISM1;
+    //ai: optional animated monochrome film grain on the 240p output.
+    gX_I1  consoleGrain;
     //opencode: user scale for ImGui tool text, spacing, and hit targets.
     gX_F32 toolUiScale;
     //opencode: full Tab/arrow/Enter navigation in ImGui tools.
@@ -166,6 +168,7 @@ gX_I32 gX_Settings_Save(gX_I0);
 gX_I32 gX_Settings_Apply(gX_I0);
 //ai: re-evaluate the PRISM-1 output toggle without reloading scene targets.
 gX_I0 gX_Settings_Apply_ConsolePRISM(gX_I0);
+gX_I0 gX_Settings_Apply_ConsoleGrain(gX_I0);
 //ai: apply the persisted virtual screen / present filter without touching
 //   window, audio or camera state (unit-tested; Apply calls it).
 gX_I0 gX_Settings_Apply_VirtualScreen(gX_I0);

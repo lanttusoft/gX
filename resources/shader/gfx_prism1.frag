@@ -3,8 +3,19 @@
 in vec2 fragTexCoord;
 
 uniform sampler2D sceneTex;
+uniform int prismEnabled = 1;
+uniform int grainEnabled = 0;
+uniform float grainSeed = 0.0;
+uniform float grainStrength = 0.04;
 
 out vec4 finalColor;
+
+//ai: deterministic monochrome film grain; seed changes at 24 Hz.
+float grainNoise(vec2 pixel) {
+    vec3 q = fract(vec3(pixel.xyx) * vec3(0.1031, 0.1030, 0.0973));
+    q += dot(q, q.yzx + 33.33);
+    return fract((q.x + q.y) * q.z);
+}
 
 //ai: PRISM-1 fixed 4x4 Bayer threshold, evaluated in 320x240 output pixels.
 float bayer4x4(vec2 pixel) {
@@ -32,19 +43,28 @@ float bayer4x4(vec2 pixel) {
 void main() {
     vec2 uv = vec2(fragTexCoord.x, 1.0 - fragTexCoord.y);
     vec3 color = clamp(texture(sceneTex, uv).rgb, 0.0, 1.0);
-    //ai: RGB565 output — 5 red, 6 green, 5 blue levels after ordered dither.
-    vec3 levels = vec3(31.0, 63.0, 31.0);
-    float threshold = (bayer4x4(gl_FragCoord.xy) + 0.5) / 16.0;
-    vec3 dithered = clamp(color + (threshold - 0.5) / levels, 0.0, 1.0);
-    vec3 quantized = floor(dithered * levels + 0.5) / levels;
-    //ai: horizontal scanlines plus a subtle RGB phosphor triad; no composite
-    //   video/colour-bleed path is applied.
-    float scan = mod(floor(gl_FragCoord.y), 2.0);
-    float scanGain = 1.0 - scan * 0.28;
-    float triad = mod(floor(gl_FragCoord.x), 3.0);
-    vec3 mask = vec3(1.0);
-    if (triad < 1.0) mask = vec3(1.0, 0.88, 0.88);
-    else if (triad < 2.0) mask = vec3(0.88, 1.0, 0.88);
-    else mask = vec3(0.88, 0.88, 1.0);
-    finalColor = vec4(quantized * scanGain * mask, 1.0);
+    if (prismEnabled != 0) {
+        //ai: RGB565 output — 5 red, 6 green, 5 blue levels after ordered dither.
+        vec3 levels = vec3(31.0, 63.0, 31.0);
+        float threshold = (bayer4x4(gl_FragCoord.xy) + 0.5) / 16.0;
+        vec3 dithered = clamp(color + (threshold - 0.5) / levels, 0.0, 1.0);
+        vec3 quantized = floor(dithered * levels + 0.5) / levels;
+        //ai: horizontal scanlines plus a subtle RGB phosphor triad; no composite
+        //   video/colour-bleed path is applied.
+        float scan = mod(floor(gl_FragCoord.y), 2.0);
+        float scanGain = 1.0 - scan * 0.28;
+        float triad = mod(floor(gl_FragCoord.x), 3.0);
+        vec3 mask = vec3(1.0);
+        if (triad < 1.0) mask = vec3(1.0, 0.88, 0.88);
+        else if (triad < 2.0) mask = vec3(0.88, 1.0, 0.88);
+        else mask = vec3(0.88, 0.88, 1.0);
+        color = quantized * scanGain * mask;
+    }
+    if (grainEnabled != 0) {
+        vec2 grainPixel = gl_FragCoord.xy
+            + vec2(grainSeed * 17.0, grainSeed * 31.0);
+        float grain = grainNoise(grainPixel) - 0.5;
+        color = clamp(color + grain * grainStrength, 0.0, 1.0);
+    }
+    finalColor = vec4(color, 1.0);
 }

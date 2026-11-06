@@ -20,6 +20,7 @@ import console_shell_check as console
 SHOW_RE = re.compile(
     r"CONSOLE_OSD: show render=(\d+)x(\d+) out=(\d+)x(\d+) "
     r"mode=(SOFT|SHARP|NATIVE|SSAA2x|SSAA4x) prism=(on|off) "
+    r"grain=(on|off) "
     r"cart=(.*?) slot=(-?\d+) state=(.*?) play=(.*?) "
     r"rect=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+) textfit=([\d.]+),([\d.]+)")
 
@@ -27,11 +28,11 @@ SHOW_RE = re.compile(
 def rows(log):
     return [{"render": (int(match[1]), int(match[2])),
              "out": (int(match[3]), int(match[4])), "mode": match[5],
-             "prism": match[6] == "on",
-             "cart": match[7], "slot": int(match[8]), "state": match[9],
-             "play": match[10],
-             "rect": tuple(float(match[i]) for i in range(11, 15)),
-             "fit": (float(match[15]), float(match[16]))}
+             "prism": match[6] == "on", "grain": match[7] == "on",
+             "cart": match[8], "slot": int(match[9]), "state": match[10],
+             "play": match[11],
+             "rect": tuple(float(match[i]) for i in range(12, 16)),
+             "fit": (float(match[16]), float(match[17]))}
             for match in SHOW_RE.finditer(log)]
 
 
