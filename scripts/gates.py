@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 import audit_cache
+import evidence_stamp
 import gate_manifest
 
 
@@ -91,7 +92,14 @@ def command_run(manifest, arguments):
     if arguments.no_cache:
         command += ["--no-cache"]
     print(f"GATES: running {len(names)} gate(s)")
-    return subprocess.call(command, cwd=ROOT)
+    result = subprocess.call(command, cwd=ROOT)
+    if arguments.evidence:
+        stamp = evidence_stamp.make_stamp("c",
+            "PASS" if result == 0 else "FAIL",
+            {"tier": arguments.tier, "jobs": arguments.jobs, "gates": names})
+        evidence_stamp.write_stamp(arguments.evidence, stamp)
+        print(f"EVIDENCE_STAMP: wrote {arguments.evidence}")
+    return result
 
 
 def command_explain(manifest, arguments):
@@ -157,6 +165,8 @@ def main():
                             help="comma-separated changed paths")
     run_parser.add_argument("--jobs", type=int, default=1)
     run_parser.add_argument("--no-cache", action="store_true")
+    run_parser.add_argument("--evidence", type=Path,
+        help="Write an observational C gate evidence stamp.")
 
     explain_parser = sub.add_parser("explain", help="explain one gate")
     explain_parser.add_argument("gate")

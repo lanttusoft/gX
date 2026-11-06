@@ -12,6 +12,8 @@ import re
 import subprocess
 import tempfile
 
+import evidence_stamp
+
 PROOFS = Path(__file__).resolve().parents[2] / "proofs"
 FAMILIES = ("GxProofs", "GxProofsGfx", "GxMath")
 STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
@@ -120,6 +122,8 @@ def main():
     parser.add_argument("--full", action="store_true", help="Include both Mathlib tiers; cache is required.")
     parser.add_argument("--no-build", action="store_true", help="Use immediately preceding gate builds.")
     parser.add_argument("--report", type=Path, help="Retain the complete theorem/axiom ledger as JSON.")
+    parser.add_argument("--evidence", type=Path,
+        help="Write an observational Lean evidence stamp beside the report.")
     args = parser.parse_args()
     families = FAMILIES if args.full else FAMILIES[:1]
     count, missing = coverage(PROOFS, families)
@@ -151,6 +155,12 @@ def main():
               "implementation_correspondence_certified": False}
     if args.report:
         args.report.write_text(json.dumps(report, indent=2)+"\n")
+    if args.evidence:
+        stamp = evidence_stamp.make_stamp("lean", "PASS" if passed else "FAIL",
+            {"families": families, "modules": count,
+             "theorem_declarations": len(rows)})
+        evidence_stamp.write_stamp(args.evidence, stamp)
+        print(f"EVIDENCE_STAMP: wrote {args.evidence}")
     if not passed:
         if result.returncode:
             print(result.stdout)

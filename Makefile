@@ -35,6 +35,10 @@ AUDIT_JOBS ?= 2
 #ai: opt-in math soak size; admission remains at the script default (64).
 MATH_SOAK_PROBES ?= 1024
 
+#ai: GX-I018 observational evidence sidecars; set paths to write them.
+PROOF_EVIDENCE ?=
+GATE_EVIDENCE ?=
+
 #opencode: GPU audit targets run with an unmapped window (GX_AUDIT_WINDOW=hidden):
 #   nothing appears on the desktop, no focus steal, no pointer grab, and the
 #   captures are pixel-identical to visible runs. Override for interactive
@@ -65,6 +69,7 @@ check: all
 	python3 -m unittest discover -s scripts -p test_console_ray1_check.py
 	python3 -m unittest discover -s scripts -p test_console_particle_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa4x_probe.py
+	python3 -m unittest discover -s scripts -p test_evidence_stamp.py
 	#ai: local inventory must preserve notes and never confuse worktree identities.
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
 	@if [ ! -d ../proofs ]; then \
@@ -242,6 +247,7 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_console_ray1_check.py
 	python3 -m unittest discover -s scripts -p test_console_particle_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa4x_probe.py
+	python3 -m unittest discover -s scripts -p test_evidence_stamp.py
 	#ai: inventory regressions use owned disposable repositories, not real worktrees.
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
 	@echo "== [gX fast] unit tests =="
@@ -1113,10 +1119,16 @@ audit-summary-full: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/audit_summary.py --full --jobs $(AUDIT_JOBS)
 
 #opencode: gate manifest contract and changed-only planner.
-.PHONY: gates-check gates-list gates-plan gates-run
+.PHONY: gates-check gates-list gates-plan gates-run evidence-check
 gates-check:
 	@echo "== [gX CI] gate manifest =="
 	python3 -m unittest discover -s scripts -p test_gate_manifest.py
+
+#ai: GX-I018 stamp/freshness controls; no timestamp enters the repository.
+evidence-check:
+	@echo "== [gX CI] evidence stamps =="
+	python3 -m unittest discover -s scripts -p test_evidence_stamp.py
+	python3 scripts/evidence_stamp.py self-test
 
 gates-list:
 	python3 scripts/gates.py list --tier "$${TIER:-all}"
@@ -1125,7 +1137,7 @@ gates-plan:
 	python3 scripts/gates.py plan --tier "$${TIER:-quick}" --changed "$${CHANGED:-HEAD}"
 
 gates-run: all
-	python3 scripts/gates.py run --tier "$${TIER:-quick}" --changed "$${CHANGED:-HEAD}" --jobs "$${AUDIT_JOBS:-1}"
+	python3 scripts/gates.py run --tier "$${TIER:-quick}" --changed "$${CHANGED:-HEAD}" --jobs "$${AUDIT_JOBS:-1}" $(if $(GATE_EVIDENCE),--evidence $(GATE_EVIDENCE),)
 
 #opencode: existing scene presets require an explicit Cancel/Overwrite choice.
 gfx-preset-overwrite-check: all
@@ -1714,7 +1726,7 @@ proofs:
 	python3 -m unittest discover -s scripts -p test_reflection_contract.py
 	#ai: pin the selected SSR auxiliary-route clauses used by the coverage proofs.
 	python3 -m unittest discover -s scripts -p test_ssr_coverage_contract.py
-	python3 scripts/proof_audit.py --no-build
+	python3 scripts/proof_audit.py --no-build $(if $(PROOF_EVIDENCE),--evidence $(PROOF_EVIDENCE),)
 
 #ai: regenerate or check the generated proof catalog.
 .PHONY: proof-inventory proof-inventory-check
@@ -1745,7 +1757,7 @@ proofs-full:
 	  echo "proofs-full: failed (no Mathlib cache; run 'lake update' in proofs/)" >&2; exit 1; \
 	else \
 	  cd ../proofs && lake build GxProofs GxProofsGfx GxMath && \
-	    python3 scripts/proof_audit.py --full --no-build; \
+	    python3 scripts/proof_audit.py --full --no-build $(if $(PROOF_EVIDENCE),--evidence $(PROOF_EVIDENCE),); \
 	fi
 	#ai: keep the generated proof catalog in sync with the source modules.
 	python3 scripts/proof_inventory.py --check

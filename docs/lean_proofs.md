@@ -154,6 +154,36 @@ current C sources. This is a source-drift guard, not a translation proof.
 levels are static evidence labels; the kernel audit remains the authority on
 transitive axioms and the C/Lean correspondence remains unproved.
 
+## Evidence freshness stamps
+
+`scripts/evidence_stamp.py` writes optional sidecar JSON for a Lean proof audit
+or a C contract-gate run. A stamp records:
+
+- an observational UTC timestamp and the result;
+- the current Git revision plus a dirty-worktree fingerprint;
+- SHA-256 hashes of `proofs.lock.json`, `gates.toml`, `.lean_baseline`,
+  `.lean_budget.json` and the audit/gate harness scripts;
+- audit details (families/modules/theorem count, or tier/gate names).
+
+```bash
+make proofs PROOF_EVIDENCE=/tmp/opencode/evidence/lean.json
+make gates-run TIER=full GATE_EVIDENCE=/tmp/opencode/evidence/c.json \
+  CHANGED=HEAD~1
+python3 scripts/evidence_stamp.py check \
+  --lean /tmp/opencode/evidence/lean.json \
+  --c /tmp/opencode/evidence/c.json
+```
+
+The check requires two PASS stamps from the same revision/worktree and the same
+core input hashes. Timestamps order the runs and show their age, but freshness
+is decided by revision and content hashes; an older stamp is not stale if its
+inputs still match. A mismatch means rerun the affected audit, not that the
+timestamp itself invalidated anything.
+
+Stamps are evidence sidecars only. They are never embedded in the executable,
+the deterministic source archive or release artifacts, so reproducible builds
+are unchanged. `make evidence-check` runs the stamp unit/self-tests.
+
 ## Findings from the existing corpus
 
 <!-- //ai: current SSR routing vs optional-camera design are distinct proof claims. -->
