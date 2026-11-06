@@ -12,7 +12,7 @@ import console_osd_check as osd
 class OSDGateTests(unittest.TestCase):
     def setUp(self):
         self.log = ("CONSOLE_OSD: show render=320x240 out=320x240 mode=SOFT "
-            "cart=Y2K CGI slot=1 state=EMPTY play= rect=10,435,200,35 "
+            "prism=off cart=Y2K CGI slot=1 state=EMPTY play= rect=10,435,200,35 "
             "textfit=185,13")
 
     def test_valid_trace(self):
@@ -38,6 +38,11 @@ class OSDGateTests(unittest.TestCase):
             "render=640x480 out=320x240 mode=SSAA2x")
         osd.assert_osd(log, 640, 480, render=(640, 480), out=(320, 240),
             mode="SSAA2x")
+
+    def test_prism_state_is_parsed(self):
+        log = self.log.replace("prism=off", "prism=on")
+        osd.assert_osd(log, 640, 480, prism=True)
+        osd.assert_osd(self.log, 640, 480, prism=False)
 
     def test_playback_label_is_parsed(self):
         log = self.log.replace("play= ", "play=PAUSED ")

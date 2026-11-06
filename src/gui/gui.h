@@ -547,6 +547,9 @@ gX_U32  makeAmount;
     gX_I1  toolsInputCaptured;
     gX_I32 focusCanvasID;   // -1 if no focus
     gX_I32 focusElementID;  // -1 if no focus
+    //ai: deferred focus restore across a label refresh (same canvas/slot).
+    gX_I32 focusRestoreCanvasID;
+    gX_I32 focusRestoreElementID;
     //opencode: interaction scope — one modal canvas owns pointer and keyboard
     //   input while open; the previous focus is restored when it closes.
     //   A shallow stack (menu + dialog) lets a confirm dialog open over the

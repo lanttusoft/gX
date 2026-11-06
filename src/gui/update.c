@@ -183,9 +183,12 @@ static gX_I32 gX_GUI_Update_Refresh(gX_I0) {
             gX_GUI_Make(canvas->templateID,(gX_I32)i);
             
             canvas->refresh = false;
-            //opencode: rebuild invalidates element slots — clear stale focus
+            //opencode: rebuild invalidates element slots — clear stale focus.
+            //   Do not use Focus_Clear here: it would discard the deferred
+            //   restore that the toggle callback scheduled for this refresh.
             if (gui.focusCanvasID == (gX_I32)i) {
-                gX_GUI_Focus_Clear();
+                gui.focusCanvasID = -1;
+                gui.focusElementID = -1;
             }
             if (gui.modalCanvasID == (gX_I32)i) gui.focusFirstPending = true;
             if (gui.pointerCaptureCanvasID == (gX_I32)i) gX_GUI_PointerCapture_Clear();
@@ -656,6 +659,15 @@ gX_I0 gX_GUI_Update(gX_I0) {
         gX_GUI_Canvas_Transition_Update(&gui.transition);
     }
 
+    //ai: a label refresh restores its own row before the first-focus fallback.
+    if (gui.focusRestoreCanvasID >= 0 && gui.focusRestoreElementID >= 0) {
+        gX_I32 restoreCanvas = gui.focusRestoreCanvasID;
+        gX_I32 restoreElement = gui.focusRestoreElementID;
+        gui.focusRestoreCanvasID = -1;
+        gui.focusRestoreElementID = -1;
+        if (gX_GUI_Focus_Set(restoreCanvas, restoreElement))
+            gui.focusFirstPending = false;
+    }
     if (gui.focusFirstPending) {
         gX_GUI_Focus_First();
         gui.focusFirstPending = false;

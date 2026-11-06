@@ -72,6 +72,7 @@ static const gX_Settings_FieldInfo gX_Settings_Fields[] = {
     GX_FIELD_F32("renderScale", "Render scale", renderScale, GX_SETTINGS_UI_EXPERT, 0.25f, 1.0f, 1.0f, "x"),
     GX_FIELD_I32("presentFilter", "Present filter", presentFilter, GX_SETTINGS_UI_BASIC, 0.0f, 1.0f, 0.0f),
     GX_FIELD_BOOL("consoleSSAA2x", "Console 2x SSAA", consoleSSAA2x, GX_SETTINGS_UI_EXPERT),
+    GX_FIELD_BOOL("consolePRISM1", "Console PRISM-1", consolePRISM1, GX_SETTINGS_UI_EXPERT),
     GX_FIELD_I32("toolGlLevel", "GL level request", toolGlLevel, GX_SETTINGS_UI_EXPERT, 0.0f, 430.0f, 0.0f),
     GX_FIELD_I32("uiLevel", "UI level", uiLevel, GX_SETTINGS_UI_EXPERT, 0.0f, 2.0f, 1.0f),
     GX_FIELD_U32("screenWidth", "Virtual render width", screenWidth, GX_SETTINGS_UI_EXPERT, 320.0f, 3840.0f, 1024.0f, "px"),
@@ -333,6 +334,7 @@ static gX_I32 gX_Settings_Schema_Init(gX_I0) {
     GX_SCHEMAJSON_ADDOBJECT_TERM(renderScale,(settings.renderScale),F32)
     GX_SCHEMAJSON_ADDOBJECT_TERM(presentFilter,(settings.presentFilter),I32)
     GX_SCHEMAJSON_ADDOBJECT_TERM(consoleSSAA2x,(settings.consoleSSAA2x),I1)
+    GX_SCHEMAJSON_ADDOBJECT_TERM(consolePRISM1,(settings.consolePRISM1),I1)
     //opencode: persist the tool accessibility preferences with ordinary settings.
     GX_SCHEMAJSON_ADDOBJECT_TERM(toolUiScale,(settings.toolUiScale),F32)
     //opencode: persisted GL feature-level request (0 = auto).
@@ -381,6 +383,7 @@ gX_I32 gX_Settings_Init(gX_I0) {
     settings.renderScale = maindata.renderScale;
     settings.presentFilter = maindata.presentFilter;
     settings.consoleSSAA2x = (maindata.consoleSSAA > 1) ? 1 : 0;
+    settings.consolePRISM1 = maindata.consolePRISM1 ? 1 : 0;
     //opencode: initialize accessible defaults for the editor tools.
     //  125% keeps the 13px base readable at 1024x768 and 1920x1080.
     settings.toolUiScale = 1.25f;
@@ -435,6 +438,7 @@ gX_I32 gX_Settings_Reset(gX_I0) {
     settings.renderScale  = maindata.renderScale;
     settings.presentFilter = 0;
     settings.consoleSSAA2x = false;
+    settings.consolePRISM1 = false;
     //opencode: reset tool readability and navigation preferences with settings.
     settings.toolUiScale  = 1.25f;
     settings.toolAssetRoots[0] = 0;
@@ -478,6 +482,18 @@ gX_I32 gX_Settings_Load(gX_I0) {
         const gX_I8 *ssaaEnv = getenv("GX_CONSOLE_SSAA");
         if (ssaaEnv && ssaaEnv[0] == '1' && maindata.consoleSSAA > 1)
             settings.consoleSSAA2x = 1;
+    }
+    settings.consolePRISM1 = settings.consolePRISM1 ? 1 : 0;
+    {
+        //ai: the automation hook wins over the persisted toggle so A/B gates
+        //   are deterministic; the product route remains the shell/pause row.
+        const gX_I8 *prismHook = getenv("GX_CONSOLE_PRISM");
+        if (prismHook && (prismHook[0] == '0' || prismHook[0] == '1'))
+            settings.consolePRISM1 = prismHook[0] == '1' ? 1 : 0;
+        maindata.consolePRISM1 = (settings.consolePRISM1
+            && maindata.virtualScreen
+            && maindata.consoleOutputWidth == 320
+            && maindata.consoleOutputHeight == 240) ? 1 : 0;
     }
     //ai: a CLI/env filter wins over the persisted value; otherwise the saved
     //   preference applies to the blit immediately. The virtual screen stays
@@ -555,10 +571,23 @@ gX_I0 gX_Settings_Apply_VirtualScreen(gX_I0) {
         maindata.consoleOutputHeight = maindata.windowHeight;
         maindata.virtualScreen = 0;
     }
+    //ai: PRISM-1 is meaningful only on the 320x240 console output; Native and
+    //   non-240p virtual sizes keep the stored preference but bypass the pass.
+    maindata.consolePRISM1 = (settings.consolePRISM1 && maindata.virtualScreen
+        && maindata.consoleOutputWidth == 320
+        && maindata.consoleOutputHeight == 240) ? 1 : 0;
     gX_MainData_Refresh();
     //ai: a runtime virtual-screen change must reload the renderer canvas and
     //   scene targets, not just the maindata dimensions (black frame otherwise).
     maindata.refresh = true;
+}
+
+gX_I0 gX_Settings_Apply_ConsolePRISM(gX_I0) {
+    settings.consolePRISM1 = settings.consolePRISM1 ? 1 : 0;
+    maindata.consolePRISM1 = (settings.consolePRISM1 && maindata.virtualScreen
+        && maindata.consoleOutputWidth == 320
+        && maindata.consoleOutputHeight == 240) ? 1 : 0;
+    settings.dirtyFlag = 1;
 }
 
 gX_I32 gX_Settings_Apply(gX_I0) {

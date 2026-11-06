@@ -147,6 +147,8 @@ def capture(tag, actions, frames, shot_frame, out, extra=None,
         "GX_EDITOR_DEFAULT_SCENE": "0", "GX_CARTRIDGE_DIFFRACTION": "1",
         "GX_AI_INPUT": actions or "",
         "GX_CONSOLE_SAVE_DIR": str(out / "empty_slots"),
+        #ai: default gates exercise the untransformed path; PRISM runs opt in.
+        "GX_CONSOLE_PRISM": "0",
     }
     if extra:
         environment.update(extra)
@@ -244,7 +246,7 @@ def main():
                 scene="--cartridge-y2k")
             menu_exit, menu_exit_log = capture("menu_exit",
                 "1.0 key 256;2.0 key 264;2.25 key 264;2.5 key 264;"
-                "2.75 key 264;3.25 key 257", 300, 280, out,
+                "2.75 key 264;3.0 key 264;3.5 key 257", 320, 300, out,
                 extra={"GX_NO_SETTINGS_SAVE": "1"},
                 scene="--cartridge-y2k")
             controller_save_dir = out / "controller_save_states"
@@ -276,7 +278,7 @@ def main():
 
             shell_focus = ["Y2K CGI DEMO", "RAY-1 TECH DEMO", "PARTICLE SANDBOX",
                 "320x240 SOFT", "320x240 SHARP", "320x240 SSAA 2x", "NATIVE",
-                "SAVE STATES", "BACK"]
+                "PRISM-1: OFF", "SAVE STATES", "BACK"]
             assert_layout(shell_log, 1024, 768, shell_focus)
             assert_layout(save_log, 1024, 768, ["BACK"])
             for width, height in ((640, 480), (1024, 768), (1280, 720)):
@@ -285,8 +287,8 @@ def main():
                     ("saves", ["LOAD", "BACK"], 0, "--console-shell",
                         {"GX_GUI_TITLE_VIEW": "1", "GX_CONSOLE_SAVE_DIR": str(save_dir)}),
                     ("pause", ["Resume", "Save Slot 1 (F5)", "Load Slot 1",
-                        "Video: Soft", "Exit to Shell", "Step (F6)",
-                        "FF: Off", "X"], 5, "--cartridge-y2k",
+                        "Video: Soft", "PRISM-1: OFF", "Exit to Shell",
+                        "Step (F6)", "FF: Off", "X"], 5, "--cartridge-y2k",
                         {"GX_CONSOLE_SAVE_DIR": str(save_dir)}),
                 ):
                     script, directions = focus_actions(len(focus),

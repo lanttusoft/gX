@@ -217,7 +217,8 @@ editor (`--tools`, temporary markup copy) and theme editor
 (`GX_TOOLS_OPEN=theme`). Shipped resource hashes were unchanged.
 
 The subsequent GX-I010 playback slice added 3,552 B payload and 128 B BSS;
-the GX-I008 2x SSAA slice added 2,368 B payload and 96 B BSS. Current Release:
-**4,181,147 B** payload (**13,157 B** headroom) and **2,701,184 B** BSS
-(3,816 B headroom). Caps and baseline remain unchanged; the focused playback,
-SSAA and console gates pass.
+the GX-I008 2x SSAA slice added 2,368 B payload and 96 B BSS; the GX-I009
+PRISM-1 slice added 2,016 B payload and 64 B BSS. Current Release:
+**4,183,163 B** payload (**11,141 B** headroom) and **2,701,248 B** BSS
+(3,752 B headroom). Caps and baseline remain unchanged; the focused playback,
+SSAA, PRISM-1 and console gates pass.

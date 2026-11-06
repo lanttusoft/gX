@@ -254,13 +254,13 @@ static gX_I0 console_pause_rect(gX_GUI_Builder *b,
         width * Scale, height * Scale);
 }
 
-//ai: the half-width playback row keeps Step and Fast Forward inside the
-//   existing 560x560 console panel, below the five primary actions.
-static gX_I0 console_playback_button(gX_GUI_Builder *b, const gX_I8 *label,
-    gX_F32 x, gX_F32 width, gX_I0 (*clickFn)(gX_I0 *), gX_F32 textScale)
+//ai: explicit-size console button for split rows (video/output, playback).
+static gX_I0 console_pause_button_at(gX_GUI_Builder *b, const gX_I8 *label,
+    gX_F32 x, gX_F32 y, gX_F32 width, gX_F32 height,
+    gX_I0 (*clickFn)(gX_I0 *), gX_F32 textScale)
 {
     gX_GUI_Builder_Element_Begin(b);
-        console_pause_rect(b, x, 440.0f, width, 44.0f);
+        console_pause_rect(b, x, y, width, height);
         gX_GUI_Builder_Color(b, gui.style.escape.buttonBg.r, gui.style.escape.buttonBg.g,
             gui.style.escape.buttonBg.b, gui.style.escape.buttonBg.a);
         gX_GUI_Element_Template_Button(b->currentElement);
@@ -289,6 +289,15 @@ static gX_I0 console_playback_button(gX_GUI_Builder *b, const gX_I8 *label,
         gX_GUI_Builder_Text_End(b);
         gX_GUI_OnClick(b->currentElement, clickFn, 0);
     gX_GUI_Builder_Element_End(b);
+}
+
+//ai: the half-width playback row keeps Step and Fast Forward inside the
+//   existing 560x560 console panel, below the five primary actions.
+static gX_I0 console_playback_button(gX_GUI_Builder *b, const gX_I8 *label,
+    gX_F32 x, gX_F32 width, gX_I0 (*clickFn)(gX_I0 *), gX_F32 textScale)
+{
+    console_pause_button_at(b, label, x, 440.0f, width, 44.0f, clickFn,
+        textScale);
 }
 
 //ai: cartridge playback specializes this canvas as the compact gX-240 menu.
@@ -418,8 +427,17 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
             gX_Widget_OnClick_ConsolePauseSave, 0);
         GX_PAUSE_BTN(LoadLabel, 3.65f,
             gX_Widget_OnClick_ConsolePauseLoad, 0);
-        GX_PAUSE_BTN(VideoLabel, 4.30f,
-            gX_Widget_OnClick_ConsolePauseVideo, 0);
+        console_pause_button_at(&b, VideoLabel, 24.0f, 304.0f, 292.0f, 56.0f,
+            gX_Widget_OnClick_ConsolePauseVideo, ConsoleTextScale);
+        {
+            gX_I1 Native = settings.screenWidth != 320
+                || settings.screenHeight != 240;
+            const gX_I8 *PrismLabel = Native ? "PRISM-1: N/A"
+                : (settings.consolePRISM1 ? "PRISM-1: ON" : "PRISM-1: OFF");
+            console_pause_button_at(&b, PrismLabel, 324.0f, 304.0f, 212.0f,
+                56.0f, gX_Widget_OnClick_ConsolePRISM, ConsoleTextScale);
+            if (Native) b.currentElement->state.DISABLED = true;
+        }
         GX_PAUSE_BTN("Exit to Shell", 4.95f,
             gX_Widget_OnClick_ConsoleExitShell, 0);
         {

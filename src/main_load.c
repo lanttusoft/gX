@@ -159,6 +159,7 @@ gX_I32 gX_MainData_Reset(gX_I0) {
     else maindata.renderScale = 1.0f; //opencode: full-res default — 0.25 made the demo a 384x288 blocky upscale
 
     maindata.consoleSSAA = 0;
+    maindata.consolePRISM1 = 0;
     maindata.consoleOutputWidth = maindata.renderOverride
         ? maindata.renderOverrideWidth : maindata.screenWidth;
     maindata.consoleOutputHeight = maindata.renderOverride
@@ -174,6 +175,15 @@ gX_I32 gX_MainData_Reset(gX_I0) {
             maindata.renderOverrideWidth = 640;
             maindata.renderOverrideHeight = 480;
         }
+    }
+    //ai: probe hook for deterministic PRISM-1 A/B and cost runs; the product
+    //   path remains the shell/pause output toggle.
+    {
+        const gX_I8 *prismEnv = getenv("GX_CONSOLE_PRISM");
+        if (prismEnv && prismEnv[0] == '1' && maindata.renderOverride
+            && maindata.consoleOutputWidth == 320
+            && maindata.consoleOutputHeight == 240)
+            maindata.consolePRISM1 = 1;
     }
 
     gX_MainData_Refresh();

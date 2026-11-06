@@ -110,6 +110,8 @@ typedef struct gX_Settings {
     gX_I32 presentFilter;
     //ai: opt-in 320x240 profile renders at 640x480 then resolves to 320x240.
     gX_I1  consoleSSAA2x;
+    //ai: opt-in PRISM-1 RGB565 dither + scanline/triad output treatment.
+    gX_I1  consolePRISM1;
     //opencode: user scale for ImGui tool text, spacing, and hit targets.
     gX_F32 toolUiScale;
     //opencode: full Tab/arrow/Enter navigation in ImGui tools.
@@ -162,6 +164,8 @@ gX_I1 gX_Settings_UILevelOverrideActive(gX_I0);
 gX_I1 gX_Settings_UILevelAllows(gX_Settings_UILevel level);
 gX_I32 gX_Settings_Save(gX_I0);
 gX_I32 gX_Settings_Apply(gX_I0);
+//ai: re-evaluate the PRISM-1 output toggle without reloading scene targets.
+gX_I0 gX_Settings_Apply_ConsolePRISM(gX_I0);
 //ai: apply the persisted virtual screen / present filter without touching
 //   window, audio or camera state (unit-tested; Apply calls it).
 gX_I0 gX_Settings_Apply_VirtualScreen(gX_I0);

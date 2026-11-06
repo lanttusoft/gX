@@ -246,6 +246,26 @@ static gX_I0 gX_Renderer_Canvas_Load(gX_I0) {
             maindata.consoleOutputWidth, maindata.consoleOutputHeight);
         renderer.state.CONSOLE_RESOLVE_LOADED = true;
     }
+    //ai: PRISM-1 loads lazily with the product toggle. The LDR present target
+    //   receives RGB565/scanline/triad output at the 240p console size.
+    if (maindata.consolePRISM1 && !renderer.state.CONSOLE_PRISM_LOADED) {
+        renderer.consolePrismShader = gX_Shader_Load(0,
+            GX_PATH("shader", "gfx_prism1.frag"));
+        if (renderer.consolePrismShader.id > 0) {
+            renderer.consolePrismSceneLoc = gX_RHI_GetUniformLocation(
+                renderer.consolePrismShader.id, "sceneTex");
+            renderer.state.CONSOLE_PRISM_LOADED = true;
+        } else {
+            gX_TraceLog(gX_LOG_ERROR, "RENDERER: PRISM-1 shader load failed");
+        }
+    }
+    if (maindata.consolePRISM1 && renderer.state.CONSOLE_PRISM_LOADED
+        && !renderer.state.CONSOLE_PRESENT_LOADED
+        && maindata.consoleOutputWidth > 0 && maindata.consoleOutputHeight > 0) {
+        renderer.consolePresent = gX_RenderTexture_Load(
+            maindata.consoleOutputWidth, maindata.consoleOutputHeight);
+        renderer.state.CONSOLE_PRESENT_LOADED = true;
+    }
     //opencode: reset the per-frame "canvas was drawn" flag at load time too,
     //   in case Load is called mid-frame (e.g. on window resize).
     renderer.canvasDrawnThisFrame = 0;
@@ -289,18 +309,24 @@ gX_U32 gX_Renderer_GetCanvasTextureId(gX_I0) {
 }
 
 gX_U32 gX_Renderer_GetPresentTextureId(gX_I0) {
+    if (maindata.consolePRISM1 && renderer.state.CONSOLE_PRESENT_LOADED)
+        return renderer.consolePresent.id;
     if (maindata.consoleSSAA > 1 && renderer.state.CONSOLE_RESOLVE_LOADED)
         return renderer.consoleResolve.id;
     return renderer.canvas.id;
 }
 
 gX_U32 gX_Renderer_GetPresentWidth(gX_I0) {
+    if (maindata.consolePRISM1 && renderer.state.CONSOLE_PRESENT_LOADED)
+        return maindata.consoleOutputWidth;
     if (maindata.consoleSSAA > 1 && renderer.state.CONSOLE_RESOLVE_LOADED)
         return maindata.consoleOutputWidth;
     return maindata.renderWidth;
 }
 
 gX_U32 gX_Renderer_GetPresentHeight(gX_I0) {
+    if (maindata.consolePRISM1 && renderer.state.CONSOLE_PRESENT_LOADED)
+        return maindata.consoleOutputHeight;
     if (maindata.consoleSSAA > 1 && renderer.state.CONSOLE_RESOLVE_LOADED)
         return maindata.consoleOutputHeight;
     return maindata.renderHeight;
@@ -335,6 +361,10 @@ static gX_I32 gX_Renderer_Canvas_Unload(gX_I0) {
     if (renderer.state.CONSOLE_RESOLVE_LOADED) {
         gX_RenderTexture_Unload(renderer.consoleResolve);
         renderer.state.CONSOLE_RESOLVE_LOADED = false;
+    }
+    if (renderer.state.CONSOLE_PRESENT_LOADED) {
+        gX_RenderTexture_Unload(renderer.consolePresent);
+        renderer.state.CONSOLE_PRESENT_LOADED = false;
     }
     
     return 0;
@@ -403,6 +433,10 @@ gX_I32 gX_Renderer_Unload(gX_I0) {
 #undef X
     
     gX_Renderer_Canvas_Unload();
+    if (renderer.state.CONSOLE_PRISM_LOADED) {
+        gX_Shader_Unload(renderer.consolePrismShader);
+        renderer.state.CONSOLE_PRISM_LOADED = false;
+    }
     
     gX_Compositor_DeInit(&renderer.compositor);
 
@@ -748,6 +782,39 @@ gX_I0 gX_Renderer_Draw(gX_I0) {
             gX_RHI_COLOR_BUFFER_BIT, gX_RHI_LINEAR);
         gX_RHI_BindReadFBO(prevReadFbo);
         gX_RHI_BindDrawFBO(prevDrawFbo);
+    }
+
+    //ai: PRISM-1 runs after the 320x240 resolve (or on the standard 240p
+    //   canvas) and writes a separate LDR present target. The native GUI is
+    //   not part of this pass, so it keeps its window-sized text.
+    if (maindata.consolePRISM1 && renderer.state.CONSOLE_PRISM_LOADED
+        && renderer.state.CONSOLE_PRESENT_LOADED
+        && maindata.consoleOutputWidth > 0 && maindata.consoleOutputHeight > 0) {
+        gX_RenderTexture *prismSource = &renderer.canvas;
+        if (maindata.consoleSSAA > 1 && renderer.state.CONSOLE_RESOLVE_LOADED)
+            prismSource = &renderer.consoleResolve;
+        if (prismSource->texture.id > 0) {
+            gX_GL_State_Push();
+            gX_Drawing_BeginTexture(renderer.consolePresent);
+                (void)gX_RHI_IsEnabled(gX_RHI_SCISSOR_TEST);
+                gX_RHI_Disable(gX_RHI_SCISSOR_TEST);
+                gX_RHI_Disable(gX_RHI_BLEND);
+                gX_RHI_Disable(gX_RHI_DEPTH_TEST);
+                gX_RHI_Disable(gX_RHI_CULL_FACE);
+                gX_Drawing_ClearBG((gX_Color){0, 0, 0, 255});
+                gX_Drawing_BeginShader(renderer.consolePrismShader);
+                    if (renderer.consolePrismSceneLoc >= 0)
+                        gX_Shader_SetValue_TextureSlot(
+                            renderer.consolePrismShader,
+                            renderer.consolePrismSceneLoc, prismSource->texture,
+                            gX_GFX_TEXUNIT_SCENE);
+                    gX_Drawing_DrawScreenQuad(0, 0,
+                        (gX_F32)maindata.consoleOutputWidth,
+                        (gX_F32)maindata.consoleOutputHeight);
+                gX_Drawing_EndShader();
+            gX_Drawing_EndTexture();
+            gX_GL_State_Pop();
+        }
     }
 
 }

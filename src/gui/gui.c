@@ -834,6 +834,8 @@ gX_I32 gX_GUI_Load(gX_I0) {
     gui.focusEnabled = true;
     gui.focusCanvasID = -1;
     gui.focusElementID = -1;
+    gui.focusRestoreCanvasID = -1;
+    gui.focusRestoreElementID = -1;
     gui.modalCanvasID = -1;
     gui.modalPreviousFocusCanvasID = -1;
     gui.modalPreviousFocusElementID = -1;
@@ -1516,6 +1518,7 @@ static gX_U16 s_consoleOsdWidth, s_consoleOsdHeight;
 static gX_U16 s_consoleOsdOutWidth, s_consoleOsdOutHeight;
 static gX_I32 s_consoleOsdFilter = -1;
 static gX_I32 s_consoleOsdSSAA = -1;
+static gX_I32 s_consoleOsdPRISM = -1;
 static gX_I1 s_consoleOsdReady, s_consoleOsdVisible, s_consoleOsdEventShown;
 static gX_I1 s_consoleOsdMenu, s_consoleOsdIdle, s_consoleOsdDirty;
 static gX_I8 s_consoleOsdPlay[24];
@@ -1559,7 +1562,8 @@ static gX_I0 console_osd_draw(gX_I0)
         || s_consoleOsdOutWidth != maindata.consoleOutputWidth
         || s_consoleOsdOutHeight != maindata.consoleOutputHeight
         || s_consoleOsdFilter != maindata.presentFilter
-        || s_consoleOsdSSAA != maindata.consoleSSAA;
+        || s_consoleOsdSSAA != maindata.consoleSSAA
+        || s_consoleOsdPRISM != maindata.consolePRISM1;
     if (Cartridge && (Changed || (s_consoleOsdIdle && !Idle)
         || (!s_consoleOsdMenu && gui.state.SHOW_MENU)))
     {
@@ -1570,6 +1574,7 @@ static gX_I0 console_osd_draw(gX_I0)
         s_consoleOsdOutHeight = maindata.consoleOutputHeight;
         s_consoleOsdFilter = maindata.presentFilter;
         s_consoleOsdSSAA = maindata.consoleSSAA;
+        s_consoleOsdPRISM = maindata.consolePRISM1;
         s_consoleOsdReady = gX_ConsoleState_Exists(s_consoleOsdSlot);
         s_consoleOsdUntil = Now + 4.0;
         s_consoleOsdDirty = true;
@@ -1605,13 +1610,16 @@ static gX_I0 console_osd_draw(gX_I0)
         ? maindata.consoleOutputWidth : maindata.renderWidth;
     gX_U32 OutH = maindata.consoleOutputHeight
         ? maindata.consoleOutputHeight : maindata.renderHeight;
-    gX_I8 Header[96], Detail[128];
+    gX_I8 Header[112], Detail[128];
+    const gX_I8 *Prism = maindata.consolePRISM1 ? "PRISM-1" : "";
     if (maindata.consoleSSAA > 1)
-        snprintf(Header, sizeof(Header), "gX-240  %ux%u -> %ux%u  %s",
-            maindata.renderWidth, maindata.renderHeight, OutW, OutH, Mode);
+        snprintf(Header, sizeof(Header), "gX-240  %ux%u -> %ux%u  %s%s%s",
+            maindata.renderWidth, maindata.renderHeight, OutW, OutH, Mode,
+            Prism[0] ? "  " : "", Prism);
     else
-        snprintf(Header, sizeof(Header), "gX-240  %ux%u  %s",
-            maindata.renderWidth, maindata.renderHeight, Mode);
+        snprintf(Header, sizeof(Header), "gX-240  %ux%u  %s%s%s",
+            maindata.renderWidth, maindata.renderHeight, Mode,
+            Prism[0] ? "  " : "", Prism);
     if (Playback[0])
         snprintf(Detail, sizeof(Detail), "%s  |  SLOT %d  %s  |  %s",
             Cartridge, s_consoleOsdSlot, State, Playback);
@@ -1636,8 +1644,11 @@ static gX_I0 console_osd_draw(gX_I0)
     gX_Drawing_Flush();
     if (gX_GUI_Trace_Enabled() && (s_consoleOsdDirty || !s_consoleOsdVisible || Event != s_consoleOsdEventShown))
         gX_TraceLog(gX_LOG_NOTICE,
-            "CONSOLE_OSD: show render=%ux%u out=%ux%u mode=%s cart=%s slot=%d state=%s play=%s rect=%.0f,%.0f,%.0f,%.0f textfit=%.0f,%.0f",
+            "CONSOLE_OSD: show render=%ux%u out=%ux%u mode=%s prism=%s "
+            "cart=%s slot=%d state=%s play=%s rect=%.0f,%.0f,%.0f,%.0f "
+            "textfit=%.0f,%.0f",
             maindata.renderWidth, maindata.renderHeight, OutW, OutH, Mode,
+            maindata.consolePRISM1 ? "on" : "off",
             Cartridge, s_consoleOsdSlot, State, Playback,
             Rect.x, Rect.y, Rect.width, Rect.height,
             fmaxf(HeaderSize.x, DetailSize.x), fmaxf(HeaderSize.y, DetailSize.y));

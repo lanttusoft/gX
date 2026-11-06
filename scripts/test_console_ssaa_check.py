@@ -40,7 +40,7 @@ class SSAAGateChecks(unittest.TestCase):
 
     def test_osd_split_is_required(self):
         log = ("CONSOLE_OSD: show render=640x480 out=320x240 mode=SSAA2x "
-               "cart=Y2K CGI slot=1 state=EMPTY play=PAUSED "
+               "prism=off cart=Y2K CGI slot=1 state=EMPTY play=PAUSED "
                "rect=10,435,200,35 textfit=185,13")
         ssaa.osd_has(log, render=(640, 480), out=(320, 240), mode="SSAA2x")
         with self.assertRaises(RuntimeError):

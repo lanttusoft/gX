@@ -398,9 +398,11 @@ gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
         arguments.showcase = false;
         arguments.showcaseY2K = false;
         arguments.cartridgeY2K = false;
-        //ai: the particle sandbox's GUI-composite route is a later SSAA slice.
+        //ai: the particle sandbox's GUI-composite route is outside both the
+        //   SSAA and PRISM slices; it falls back to standard 240p.
         settings.consoleSSAA2x = false;
         gX_Settings_Apply_VirtualScreen();
+        maindata.consolePRISM1 = 0;
         scene = gX_SCENE_PHYSICS;
     }
     gX_TraceLog(gX_LOG_NOTICE,
@@ -415,6 +417,26 @@ gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
         maindata.presentFilter);
     gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: boot=%d scene=%d", cartridge, scene);
     gX_MainData_Switch(scene);
+}
+
+//ai: PRISM-1 is an independent 240p output toggle layered over Soft/Sharp/
+//   SSAA; toggling it does not reload the scene targets.
+gX_I0 gX_Widget_OnClick_ConsolePRISM(gX_I0 *arg) {
+    (void)arg;
+    settings.consolePRISM1 = settings.consolePRISM1 ? 0 : 1;
+    gX_Settings_Apply_ConsolePRISM();
+    //ai: both the shell and pause templates cache their labels; refresh the
+    //   owning canvas and restore the same focused row after the rebuild.
+    if (gui.menuCanvas) {
+        gui.focusRestoreCanvasID = gui.focusCanvasID;
+        gui.focusRestoreElementID = gui.focusElementID;
+        gui.menuCanvas->refresh = true;
+    }
+    console_refresh_view();
+    gX_TraceLog(gX_LOG_NOTICE,
+        "CONSOLE: prism=%d render=%ux%u out=%ux%u",
+        maindata.consolePRISM1, maindata.renderWidth, maindata.renderHeight,
+        maindata.consoleOutputWidth, maindata.consoleOutputHeight);
 }
 
 //ai: the console shell routes save-state management through the existing

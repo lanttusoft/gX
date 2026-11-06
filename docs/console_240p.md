@@ -160,15 +160,16 @@ order. It runs as part of `make check`.
 <!-- //ai: backlog reconciled against the generic rendering experiments. -->
 The console shell boot view, Y2K cartridge, save states, CRT-safe idle blanking,
 boot OSD and ESC system menu now exist. The native GUI remains window-sized;
-only the scene is 320x240. The current render-then-upscale path is not a
-supersampled render/output split.
+only the scene is 320x240. Standard 240p renders directly at 320x240; the
+opt-in 2x SSAA path renders at 640x480 and resolves back to 320x240.
 
 Generic deterministic dither, palette quantization and interlace experiments
-already have opt-in hooks and gates in `docs/rendering_backlog.md`:
-`make dither-check`, `make palette-check` and `make interlace-check`. They are
-not yet wired as a gX-240/PRISM-1 profile. The existing EGA16/RGB332 modes are
-not 16-bit output quantization, and interlace patterns do not provide a full
-CRT mask or scanline treatment.
+remain available through `docs/rendering_backlog.md`: `make dither-check`,
+`make palette-check` and `make interlace-check`. PRISM-1 is a separate
+console-specific output pass after the 320x240 resolve. It does not map the
+EGA16/RGB332 palette modes onto 16-bit output and does not treat the generic
+interlace pass as a CRT mask; it uses a fixed 4x4 Bayer threshold, RGB565
+quantization, horizontal scanlines and a subtle RGB phosphor triad.
 
 ## CRT notes
 
@@ -203,17 +204,19 @@ only the scene render target is 320x240.
 - **Console 240p — Full** (experimental): all effects + Ultra quality; use
   only for scenes authored around SSR/TAA/DOF/volumetrics. `GX_CONSOLE_MAX_FULL=1`
   for demos/gates.
-- **Console 240p — Dither/CRT** (later): expose the existing deterministic
-  dither/interlace experiments through the console profile, then define the
-  PRISM-1 output format and any composite/scanline/phosphor-mask treatment.
-  The generic palette modes are reduced palettes, not 16-bit output. Keep the
-  effects opt-in and independently testable.
+- **Console 240p — PRISM-1** (opt-in toggle): RGB565 (5:6:5) quantization with
+  fixed 4x4 Bayer dither, horizontal scanlines and a subtle RGB phosphor triad
+  on the 320x240 output. It layers over Soft/Sharp and 2x SSAA after the
+  resolve, leaves the native GUI/OSD at window size, and adds no NTSC composite
+  smear. Available in the shell and pause menu; this slice covers Y2K and
+  RAY-1. The particle sandbox falls back to standard 240p until its
+  GUI-composite follow-up.
 - **gX-240 console shell** — `--console-shell` opens the boot view: cartridge
   select (Y2K CGI, RAY-1, particle sandbox, empty slot), video output
-  (320x240 Soft/Sharp/SSAA 2x, Native) and save-state slots. Booting Y2K from
-  the shell honors the selected 240p filter/SSAA (native falls back to Soft),
-  cold-boots the GFX renderer and rebuilds the authored scene; the shell keeps
-  the native GUI at window size.
+  (320x240 Soft/Sharp/SSAA 2x, Native), a PRISM-1 output toggle and save-state
+  slots. Booting Y2K from the shell honors the selected 240p filter/SSAA
+  (native falls back to Soft), cold-boots the GFX renderer and rebuilds the
+  authored scene; the shell keeps the native GUI at window size.
   After 120 s without input the shell (and cartridge playback) fades to a
   black screen with a dim drifting gX mark; the first input is swallowed so
   it wakes the display without activating a hidden control.
@@ -223,7 +226,7 @@ only the scene render target is 320x240.
 - <!-- //ai: GX-I010 live status slice; timing controls remain separate work. -->
   **Live console OSD** — a native-resolution status chip shows actual scene
   render dimensions (and, for SSAA, the 320x240 output), Soft/Sharp/Native or
-  SSAA 2x presentation, current cartridge and
+  SSAA 2x presentation, PRISM-1 on/off, current cartridge and
   last operated slot (slot 1 on entry). Loading another slot from the shell
   displays that slot; F5/F8 and pause actions still target slot 1. READY means
   a slot file exists, not that it has been
@@ -246,7 +249,8 @@ only the scene render target is 320x240.
   simulation freezes while it is open; UI, OSD and audio feedback keep real
   time. Resume/ESC closes it; Save Slot 1 and Load Slot 1 mirror F5/F8, a
   successful save refreshes the slot label in place, Video cycles
-  Soft → Sharp → Native, and Exit to Shell returns to the gX-240 boot view.
+  Soft → Sharp → SSAA 2x → Native, a separate PRISM-1 row toggles the output
+  treatment, and Exit to Shell returns to the gX-240 boot view.
   Step advances exactly one 1/60 s simulation tick and keeps the menu open.
   Fast Forward cycles Off → 2x → 4x → 8x while paused; Resume runs at the
   selected speed. F6 and F7 mirror Step and Fast Forward while the menu is
@@ -327,9 +331,9 @@ only the scene render target is 320x240.
   auto-hide, live Soft → Sharp → Native changes, hotkey save/load and explicit
   failure feedback, renderer idle blank/wake, and a slot-3 shell load
   (`scripts/console_osd_check.py`, included by `make console-check` and
-  `make check`). Five display-free rejection tests cover missing/wrong OSD
-  evidence, clipped/tiny/off-screen text and narrow expected-error allowlists;
-  they also run in `make check-fast`.
+  `make check`). Eight display-free rejection tests cover missing/wrong OSD
+  evidence, clipped/tiny/off-screen text, the PRISM flag and narrow
+  expected-error allowlists; they also run in `make check-fast`.
 - <!-- //ai: GX-I010 playback timing and control coverage. -->
   Playback: the pause menu freezes simulation; F6 and the menu Step button
   advance exactly 1/60 s; F7 cycles 2x/4x/8x/off; 4x playback advances 4/60
@@ -350,6 +354,21 @@ only the scene render target is 320x240.
   OSD splits, bad save factors, malformed profiles and over-budget ratios; they
   also run in `make check-fast`. `GX_CONSOLE_SSAA=1` is an automation hook for
   matched performance runs, not a second product default.
+- <!-- //ai: approved PRISM-1 output slice; composite/particle remain follow-up. -->
+  PRISM-1: the shell and pause menu toggle it independently of the video mode;
+  the OSD reports `prism=on/off` and appends `PRISM-1` to the header. A
+  deterministic screenshot differential on the smooth showcase fixture requires
+  RGB565 channel-level counts (red/blue ≤40, green ≤72 in the measured phase
+  band), a 1.15..1.9 scanline ratio, the expected red/green/blue triad phase,
+  full-viewport coverage and a byte-identical repeat. The gate also covers Y2K
+  Soft and SSAA, RAY-1, the particle fallback, save/load of `video.prism=1`,
+  native-mode disablement and label bounds. A matched full-frame CPU run must
+  stay at or below **1.25x** the baseline (about 1.0x measured; the GPU pass is
+  one 320x240 fullscreen shade) (`scripts/console_prism_check.py`, included by
+  `make console-check` and `make check`). Five display-free tests reject bad
+  budgets, scanline/triad/level fixtures and unquantized gradients; they also
+  run in `make check-fast`. `GX_CONSOLE_PRISM=0/1` is an automation hook for
+  deterministic A/B runs, not a second product default.
 - No UI clipping with native tool panels at window resolution.
 
 ## Follow-up
@@ -365,11 +384,12 @@ remains the console's detailed open-work list.
 - GX-I008 2x SSAA is implemented for Y2K and RAY-1. Extending the 320x240
   resolve to the particle sandbox's GUI-composite path and evaluating a 4x
   factor remain follow-ups; they are not part of this slice.
-- PRISM-1 presentation work: choose 16-bit quantization semantics and validate
-  scanline/composite/phosphor-mask variants. Reuse the generic dither,
-  quantization and interlace hooks where appropriate; keep each effect
-  deterministic, opt-in and independently gated. Film grain remains an
-  optional experiment, not a decided console requirement.
+- PRISM-1 RGB565, fixed Bayer, scanlines and the subtle RGB triad are
+  implemented for Y2K/RAY-1 in standard 240p and 2x SSAA. NTSC composite smear
+  was not part of the approved contract. Extending the post-resolve treatment
+  to the particle sandbox's GUI-composite route remains a follow-up.
+- Film grain remains an optional experiment, not a decided console
+  requirement.
 - Complete or add bootable cartridge profiles beyond the Y2K path.
 - Validate on a physical CRT across supported modes, checking monitor limits
   before testing.

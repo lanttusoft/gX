@@ -163,10 +163,11 @@ def main():
             # Controller: Start, D-pad to Step, South, D-pad to FF, South,
             # Start resumes at 2x.
             _, controller = capture("controller",
-                "1.0 pad 0 start;2.0 pad 0 dpad-down;2.3 pad 0 dpad-down;"
-                "2.6 pad 0 dpad-down;2.9 pad 0 dpad-down;3.2 pad 0 dpad-down;"
-                "3.7 pad 0 south;4.1 pad 0 dpad-down;4.5 pad 0 south;"
-                "5.3 pad 0 start", frames=370, shot=350, extra=trace)
+                "1.0 pad 0 start;2.0 pad 0 dpad-down;2.25 pad 0 dpad-down;"
+                "2.5 pad 0 dpad-down;2.75 pad 0 dpad-down;3.0 pad 0 dpad-down;"
+                "3.25 pad 0 dpad-down;3.8 pad 0 south;4.2 pad 0 dpad-down;"
+                "4.6 pad 0 south;5.4 pad 0 start", frames=390, shot=370,
+                extra=trace)
             require_step(controller, 1)
             require_ff(controller, 2)
             require_osd_play(controller, "PAUSED 2x")

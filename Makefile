@@ -61,6 +61,7 @@ check: all
 	python3 -m unittest discover -s scripts -p test_console_osd_check.py
 	python3 -m unittest discover -s scripts -p test_console_playback_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa_check.py
+	python3 -m unittest discover -s scripts -p test_console_prism_check.py
 	#ai: local inventory must preserve notes and never confuse worktree identities.
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
 	@if [ ! -d ../proofs ]; then \
@@ -106,6 +107,7 @@ check: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_osd_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_playback_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_ssaa_check.py
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_prism_check.py
 	@echo "== [gX CI] compressed texture sidecars =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/texture_assets_check.py
 	#ai: ambient-only Phong shading must preserve albedo texture variation.
@@ -231,6 +233,7 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_console_osd_check.py
 	python3 -m unittest discover -s scripts -p test_console_playback_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa_check.py
+	python3 -m unittest discover -s scripts -p test_console_prism_check.py
 	#ai: inventory regressions use owned disposable repositories, not real worktrees.
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
 	@echo "== [gX fast] unit tests =="
@@ -827,10 +830,12 @@ console-check: all
 	python3 -m unittest discover -s scripts -p test_console_osd_check.py
 	python3 -m unittest discover -s scripts -p test_console_playback_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa_check.py
+	python3 -m unittest discover -s scripts -p test_console_prism_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_shell_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_osd_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_playback_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_ssaa_check.py
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_prism_check.py
 
 .PHONY: gfx-authoring-check lensflare-check
 

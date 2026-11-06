@@ -205,6 +205,22 @@ checks; benchmark rows are `interlace_h`, `interlace_v`, and `interlace_dot`.
 - Use a deterministic scanline fixture plus an explicit strength/phase control;
   animated phase is interactive-only until temporal artifacts are characterized.
 
+### P1 — Console PRISM-1 output
+
+The gX-240 console layers an opt-in PRISM-1 treatment over the 320x240 output
+after the 2x SSAA resolve (or the standard 240p canvas). It is an RGB565
+(5:6:5) quantizer with a fixed 4x4 Bayer threshold, horizontal scanline
+attenuation and a subtle RGB phosphor triad; it does not add an NTSC composite
+or chroma-bleed path. The native GUI/OSD and window upscale stay outside the
+pass. Shell and pause controls toggle it independently of Soft/Sharp/SSAA, and
+save states persist `video.prism`.
+
+`scripts/console_prism_check.py` verifies the channel-level counts, scanline
+cadence, triad phase, deterministic repeat, product controls, save/load,
+Y2K/RAY-1 coverage and the particle fallback. `GX_CONSOLE_PRISM=0/1` is the
+deterministic A/B hook. Keep the effect opt-in and deterministic; do not
+conflate it with the generic dither/palette/interlace experiments above.
+
 ### P2 — Interactive low-resolution path-tracing comparison (prototype)
 
 The GFX editor now exposes optional `Raster`, `Ray preview`, and synchronized
