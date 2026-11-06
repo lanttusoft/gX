@@ -398,11 +398,9 @@ gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
         arguments.showcase = false;
         arguments.showcaseY2K = false;
         arguments.cartridgeY2K = false;
-        //ai: the particle sandbox's GUI-composite route is outside both the
-        //   SSAA and PRISM slices; it falls back to standard 240p.
-        settings.consoleSSAA2x = false;
+        //ai: the particle sandbox's GUI-composite background now consumes the
+        //   same resolved/PRISM present target, so keep the selected profile.
         gX_Settings_Apply_VirtualScreen();
-        maindata.consolePRISM1 = 0;
         scene = gX_SCENE_PHYSICS;
     }
     gX_TraceLog(gX_LOG_NOTICE,

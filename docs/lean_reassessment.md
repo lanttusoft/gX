@@ -218,7 +218,8 @@ editor (`--tools`, temporary markup copy) and theme editor
 
 The subsequent GX-I010 playback slice added 3,552 B payload and 128 B BSS;
 the GX-I008 2x SSAA slice added 2,368 B payload and 96 B BSS; the GX-I009
-PRISM-1 slice added 2,016 B payload and 64 B BSS. Current Release:
-**4,183,163 B** payload (**11,141 B** headroom) and **2,701,248 B** BSS
-(3,752 B headroom). Caps and baseline remain unchanged; the focused playback,
-SSAA, PRISM-1 and console gates pass.
+PRISM-1 slice added 2,016 B payload and 64 B BSS; the particle composite
+follow-up added 224 B payload and 32 B BSS. Current Release: **4,183,387 B**
+payload (**10,917 B** headroom) and **2,701,280 B** BSS (3,720 B headroom).
+Caps and baseline remain unchanged; the focused playback, SSAA, PRISM-1 and
+console gates pass.

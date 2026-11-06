@@ -202,11 +202,6 @@ static gX_I32 console_state_load(gX_I32 slot) {
         gX_F32 filter = (gX_F32)console_state_number(value, "filter", 1.0);
         gX_F32 ssaa = (gX_F32)console_state_number(value, "ssaa", 0.0);
         gX_F32 prism = (gX_F32)console_state_number(value, "prism", 0.0);
-        //ai: particle sandbox SSAA/PRISM are follow-ups; load it at 240p.
-        if (strcmp((const char *)cartridge, "particle") == 0) {
-            ssaa = 0.0f;
-            prism = 0.0f;
-        }
         if (width >= 64 && width <= 4096 && height >= 64 && height <= 4096) {
             settings.screenWidth = width;
             settings.screenHeight = height;

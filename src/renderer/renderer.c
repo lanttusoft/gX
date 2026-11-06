@@ -246,8 +246,9 @@ static gX_I0 gX_Renderer_Canvas_Load(gX_I0) {
             maindata.consoleOutputWidth, maindata.consoleOutputHeight);
         renderer.state.CONSOLE_RESOLVE_LOADED = true;
     }
-    //ai: PRISM-1 loads lazily with the product toggle. The LDR present target
-    //   receives RGB565/scanline/triad output at the 240p console size.
+    //ai: PRISM-1 loads lazily with the product toggle. The HDR-format present
+    //   target receives RGB565/scanline/triad output at the 240p console size;
+    //   matching the GUI composite targets keeps the format-compatible blits.
     if (maindata.consolePRISM1 && !renderer.state.CONSOLE_PRISM_LOADED) {
         renderer.consolePrismShader = gX_Shader_Load(0,
             GX_PATH("shader", "gfx_prism1.frag"));
@@ -262,7 +263,7 @@ static gX_I0 gX_Renderer_Canvas_Load(gX_I0) {
     if (maindata.consolePRISM1 && renderer.state.CONSOLE_PRISM_LOADED
         && !renderer.state.CONSOLE_PRESENT_LOADED
         && maindata.consoleOutputWidth > 0 && maindata.consoleOutputHeight > 0) {
-        renderer.consolePresent = gX_RenderTexture_Load(
+        renderer.consolePresent = gX_RenderTexture_Load_HDR(
             maindata.consoleOutputWidth, maindata.consoleOutputHeight);
         renderer.state.CONSOLE_PRESENT_LOADED = true;
     }

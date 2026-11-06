@@ -199,8 +199,8 @@ only the scene render target is 320x240.
 - **Console 240p — SSAA 2x** (opt-in): 640x480 scene render, resolved to a
   320x240 output, then Soft-upscaled to the window. The native GUI/OSD stay
   window-sized. Available in the shell video column and the pause Video cycle;
-  this slice covers Y2K and RAY-1. The particle sandbox's GUI-composite route
-  falls back to standard 240p until its follow-up.
+  this slice covers Y2K, RAY-1 and the particle sandbox (the last through its
+  GUI-composite background capture).
 - **Console 240p — Full** (experimental): all effects + Ultra quality; use
   only for scenes authored around SSR/TAA/DOF/volumetrics. `GX_CONSOLE_MAX_FULL=1`
   for demos/gates.
@@ -208,9 +208,8 @@ only the scene render target is 320x240.
   fixed 4x4 Bayer dither, horizontal scanlines and a subtle RGB phosphor triad
   on the 320x240 output. It layers over Soft/Sharp and 2x SSAA after the
   resolve, leaves the native GUI/OSD at window size, and adds no NTSC composite
-  smear. Available in the shell and pause menu; this slice covers Y2K and
-  RAY-1. The particle sandbox falls back to standard 240p until its
-  GUI-composite follow-up.
+  smear. Available in the shell and pause menu; this slice covers Y2K, RAY-1
+  and the particle sandbox.
 - **gX-240 console shell** — `--console-shell` opens the boot view: cartridge
   select (Y2K CGI, RAY-1, particle sandbox, empty slot), video output
   (320x240 Soft/Sharp/SSAA 2x, Native), a PRISM-1 output toggle and save-state
@@ -343,11 +342,13 @@ only the scene render target is 320x240.
   reject missing/malformed traces, wrong step counts/deltas, wrong FF
   multipliers and missing OSD playback state; they also run in
   `make check-fast`.
-- <!-- //ai: approved 2x SSAA slice; particle/4x remain follow-up. -->
+- <!-- //ai: approved 2x SSAA slice; 4x remains follow-up. -->
   SSAA 2x: the pause menu and shell select the mode; the OSD reports
   `render=640x480 out=320x240 mode=SSAA2x`; Y2K and RAY-1 use the resolved
-  direct-blit path; the particle sandbox falls back to standard 320x240; save
-  state stores and restores `ssaa=2`; a matched 60 Hz `--gfx-profile` run must
+  direct-blit path and the particle sandbox consumes the resolve through its
+  GUI-composite background capture (`CONSOLE_COMPOSITE: present=320x240
+  source=640x480`); save state stores and restores `ssaa=2`; a matched 60 Hz
+  `--gfx-profile` run must
   stay at or below **3x** the 320x240 GPU frame cost (about 1.5x on the
   current host; `scripts/console_ssaa_check.py`, included by
   `make console-check` and `make check`). Five display-free tests reject wrong
@@ -361,7 +362,8 @@ only the scene render target is 320x240.
   RGB565 channel-level counts (red/blue ≤40, green ≤72 in the measured phase
   band), a 1.15..1.9 scanline ratio, the expected red/green/blue triad phase,
   full-viewport coverage and a byte-identical repeat. The gate also covers Y2K
-  Soft and SSAA, RAY-1, the particle fallback, save/load of `video.prism=1`,
+  Soft and SSAA, RAY-1, the particle composite route (`CONSOLE_COMPOSITE:
+  present=320x240 source=320x240 prism=1`), save/load of `video.prism=1`,
   native-mode disablement and label bounds. A matched full-frame CPU run must
   stay at or below **1.25x** the baseline (about 1.0x measured; the GPU pass is
   one 320x240 fullscreen shade) (`scripts/console_prism_check.py`, included by
@@ -381,13 +383,11 @@ remains the console's detailed open-work list.
 - GX-I010 live status, save feedback and playback timing are implemented
   locally (real pause, 1/60 step, 2x/4x/8x); no further timing controls are
   planned in this slice.
-- GX-I008 2x SSAA is implemented for Y2K and RAY-1. Extending the 320x240
-  resolve to the particle sandbox's GUI-composite path and evaluating a 4x
-  factor remain follow-ups; they are not part of this slice.
+- GX-I008 2x SSAA is implemented for Y2K, RAY-1 and the particle sandbox.
+  Evaluating a 4x factor remains a follow-up; it is not part of this slice.
 - PRISM-1 RGB565, fixed Bayer, scanlines and the subtle RGB triad are
-  implemented for Y2K/RAY-1 in standard 240p and 2x SSAA. NTSC composite smear
-  was not part of the approved contract. Extending the post-resolve treatment
-  to the particle sandbox's GUI-composite route remains a follow-up.
+  implemented for Y2K, RAY-1 and the particle sandbox in standard 240p and 2x
+  SSAA. NTSC composite smear was not part of the approved contract.
 - Film grain remains an optional experiment, not a decided console
   requirement.
 - Complete or add bootable cartridge profiles beyond the Y2K path.

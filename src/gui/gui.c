@@ -977,7 +977,32 @@ gX_I0 gX_GUI_Composite_CaptureBackground(gX_I0) {
     if (!gui.composite.background.loadingState.loaded) return;
 
 #if gX_ENABLE_RENDERER == 1
-    gX_I1 useCanvas = (gX_Renderer_GetCanvasDrawn() && renderer.canvas.texture.id > 0);
+    gX_U32 PresentId = gX_Renderer_GetPresentTextureId();
+    gX_U32 PresentW = gX_Renderer_GetPresentWidth();
+    gX_U32 PresentH = gX_Renderer_GetPresentHeight();
+    gX_I1 useCanvas = (gX_Renderer_GetCanvasDrawn() && PresentId > 0);
+    //ai: particle-sandbox composite route consumes the same resolved/PRISM
+    //   present target as the direct console blit.
+    {
+        static gX_U32 s_lastPresentW, s_lastPresentH, s_lastCanvasW, s_lastCanvasH;
+        static gX_I32 s_lastPrism = -1;
+        gX_U32 CanvasW = renderer.canvas.texture.width;
+        gX_U32 CanvasH = renderer.canvas.texture.height;
+        if (gX_GUI_Trace_Enabled()
+            && (s_lastPresentW != PresentW || s_lastPresentH != PresentH
+                || s_lastCanvasW != CanvasW || s_lastCanvasH != CanvasH
+                || s_lastPrism != maindata.consolePRISM1)) {
+            gX_TraceLog(gX_LOG_NOTICE,
+                "CONSOLE_COMPOSITE: present=%ux%u source=%ux%u prism=%d",
+                PresentW, PresentH, CanvasW, CanvasH,
+                maindata.consolePRISM1);
+            s_lastPresentW = PresentW;
+            s_lastPresentH = PresentH;
+            s_lastCanvasW = CanvasW;
+            s_lastCanvasH = CanvasH;
+            s_lastPrism = maindata.consolePRISM1;
+        }
+    }
 #else
     gX_I1 useCanvas = 0;
 #endif
@@ -995,14 +1020,13 @@ gX_I0 gX_GUI_Composite_CaptureBackground(gX_I0) {
             gX_RHI_FBO prevReadFbo = gX_RHI_GetReadFBO();
 #if gX_ENABLE_RENDERER == 1
             if (useCanvas) {
-                gX_RHI_Blit(renderer.canvas.id, gui.composite.background.rt.id,
-                    0, 0,
-                    (gX_U32)renderer.canvas.texture.width,
-                    (gX_U32)renderer.canvas.texture.height,
+                gX_RHI_Blit(PresentId, gui.composite.background.rt.id,
+                    0, 0, PresentW, PresentH,
                     0, 0,
                     (gX_U32)gui.composite.background.width,
                     (gX_U32)gui.composite.background.height,
-                    gX_RHI_COLOR_BUFFER_BIT, gX_RHI_NEAREST);
+                    gX_RHI_COLOR_BUFFER_BIT,
+                    maindata.presentFilter == 1 ? gX_RHI_LINEAR : gX_RHI_NEAREST);
             } else {
 #endif
                 gX_RHI_Blit(0, gui.composite.background.rt.id,
@@ -1804,16 +1828,20 @@ gX_I0 gX_GUI_Draw(gX_I0) {    //opencode: full-frame GL state diff gated behind 
     //   Uses gX_RHI_Blit for Y-flip-safe RT-to-RT copy — avoids
     //   DrawTexturePro invertY fragility when both source and dest are FBOs.
 #if gX_ENABLE_RENDERER == 1
-    if (gui.buffer.loadingState.loaded && renderer.canvas.texture.id > 0) {
-        gX_Drawing_BeginTexture(gui.buffer.rt);
-            gX_Drawing_ClearBG((gX_Color){0,0,0,255});
-            gX_RHI_Blit(renderer.canvas.id, gui.buffer.rt.id,
-                0, 0,
-                (gX_U32)gui.buffer.width, (gX_U32)gui.buffer.height,
-                0, 0,
-                (gX_U32)gui.buffer.width, (gX_U32)gui.buffer.height,
-                gX_RHI_COLOR_BUFFER_BIT, gX_RHI_LINEAR);
-        gX_Drawing_EndTexture();
+    if (gui.buffer.loadingState.loaded) {
+        gX_U32 BufferPresentId = gX_Renderer_GetPresentTextureId();
+        gX_U32 BufferPresentW = gX_Renderer_GetPresentWidth();
+        gX_U32 BufferPresentH = gX_Renderer_GetPresentHeight();
+        if (BufferPresentId > 0) {
+            gX_Drawing_BeginTexture(gui.buffer.rt);
+                gX_Drawing_ClearBG((gX_Color){0,0,0,255});
+                gX_RHI_Blit(BufferPresentId, gui.buffer.rt.id,
+                    0, 0, BufferPresentW, BufferPresentH,
+                    0, 0,
+                    (gX_U32)gui.buffer.width, (gX_U32)gui.buffer.height,
+                    gX_RHI_COLOR_BUFFER_BIT, gX_RHI_LINEAR);
+            gX_Drawing_EndTexture();
+        }
     }
 #endif
 

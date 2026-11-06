@@ -217,7 +217,7 @@ save states persist `video.prism`.
 
 `scripts/console_prism_check.py` verifies the channel-level counts, scanline
 cadence, triad phase, deterministic repeat, product controls, save/load,
-Y2K/RAY-1 coverage and the particle fallback. `GX_CONSOLE_PRISM=0/1` is the
+Y2K/RAY-1/particle coverage. `GX_CONSOLE_PRISM=0/1` is the
 deterministic A/B hook. Keep the effect opt-in and deterministic; do not
 conflate it with the generic dither/palette/interlace experiments above.
 

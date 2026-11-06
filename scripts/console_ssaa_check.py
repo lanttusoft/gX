@@ -4,8 +4,8 @@
 # This file is part of gX. See LICENSE.
 
 #ai: GX-I008 2x SSAA gate — product video mode, 640x480->320x240 split,
-#   native GUI, Y2K/RAY-1 scope, save/load, particle fallback and matched
-#   GPU frame-cost budget (<=3x the 320x240 baseline).
+#   native GUI, Y2K/RAY-1/particle scope, save/load and matched GPU frame-cost
+#   budget (<=3x the 320x240 baseline).
 import csv
 import json
 import statistics
@@ -163,18 +163,22 @@ def main():
             osd_has(ray_log, cart="RAY-1", render=(640, 480),
                 out=(320, 240), mode="SSAA2x")
 
-            # Particle sandbox is explicitly outside this slice: it falls back.
+            # Particle sandbox consumes the same resolve through its
+            # GUI-composite background capture.
             _, particle_discovery = capture("particle_discovery", None,
                 frames=80, shot=60, scene="--console-shell", extra=shell_extra)
             particle_rows = console.elements(particle_discovery)
             particle = console.target(particle_rows, "PARTICLE SANDBOX")
             ssaa_button = console.target(particle_rows, "320x240 SSAA 2x")
-            _, particle_log = capture("particle_fallback",
+            _, particle_log = capture("particle_ssaa",
                 console.interaction.click_actions((1.0, ssaa_button),
                     (2.0, particle)),
-                frames=240, shot=220, scene="--console-shell", extra=shell_extra)
-            osd_has(particle_log, cart="PARTICLE SANDBOX", render=(320, 240),
-                out=(320, 240), mode="SOFT")
+                frames=280, shot=260, scene="--console-shell", extra=shell_extra)
+            osd_has(particle_log, cart="PARTICLE SANDBOX", render=(640, 480),
+                out=(320, 240), mode="SSAA2x")
+            console.require("CONSOLE_COMPOSITE: present=320x240 "
+                "source=640x480 prism=0" in particle_log,
+                "particle composite did not consume the 320x240 resolve")
 
             # Save state persists the video factor, and a shell load applies it.
             save_dir = out / "slots"
@@ -203,7 +207,7 @@ def main():
     except (OSError, ValueError, RuntimeError, KeyError, subprocess.SubprocessError) as error:
         print(f"CONSOLE_SSAA: FAIL — {error}; evidence {out}", file=sys.stderr)
         return 1
-    print(f"CONSOLE_SSAA: PASS 640x480->320x240, menu/shell/save/RAY-1, particle fallback; "
+    print(f"CONSOLE_SSAA: PASS 640x480->320x240, menu/shell/save/RAY-1/particle; "
           f"GPU cost {ratio:.3f}x of 320x240")
     print(f"CONSOLE_SSAA: evidence {out}")
     return 0

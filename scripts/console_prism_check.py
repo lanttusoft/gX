@@ -5,8 +5,8 @@
 
 #ai: GX-I009 PRISM-1 gate — RGB565 + fixed Bayer, horizontal scanlines and a
 #   subtle RGB triad, layered after the 320x240 resolve/standard 240p canvas.
-#   Covers shell/pause controls, save/load, Soft and SSAA, Y2K/RAY-1 output and
-#   the particle fallback; also enforces a small full-frame CPU guard.
+#   Covers shell/pause controls, save/load, Soft and SSAA, Y2K/RAY-1/particle
+#   output; also enforces a small full-frame CPU guard.
 
 import csv
 import json
@@ -317,7 +317,8 @@ def main():
                 "native mode did not disable the PRISM-1 row")
             osd_has(native_log, mode="NATIVE", prism=False)
 
-            # RAY-1 shares the direct console path; particle remains a fallback.
+            # RAY-1 uses the direct console path; particle uses the composite
+            # background capture, which now reads the same PRISM present target.
             _, discovery = capture("ray_discovery", None, 80, 60,
                 scene="--console-shell")
             rows = console.elements(discovery)
@@ -336,12 +337,15 @@ def main():
             soft = console.target(rows, "320x240 SOFT")
             prism = console.target(rows, "PRISM-1: OFF")
             particle = console.target(rows, "PARTICLE SANDBOX")
-            _, particle_log = capture("particle_fallback",
+            _, particle_log = capture("particle_prism",
                 console.interaction.click_actions((1.0, soft), (2.0, prism),
                     (3.0, particle)),
-                frames=360, shot=340, scene="--console-shell")
+                frames=380, shot=360, scene="--console-shell")
             osd_has(particle_log, cart="PARTICLE SANDBOX", mode="SOFT",
-                prism=False)
+                prism=True)
+            console.require("CONSOLE_COMPOSITE: present=320x240 "
+                "source=320x240 prism=1" in particle_log,
+                "particle composite did not consume the PRISM target")
 
             # Save state stores the toggle; a shell load restores it.
             save_dir = out / "slots"
@@ -374,7 +378,7 @@ def main():
         return 1
     print("CONSOLE_PRISM: PASS RGB565 levels r/g/b %d/%d/%d, scanline %.3fx, "
           "triad phases, deterministic repeat; shell/pause/save, Soft+SSAA, "
-          "RAY-1 and particle fallback; CPU cost %.3fx"
+          "Y2K/RAY-1/particle; CPU cost %.3fx"
           % (metrics["levels"][0], metrics["levels"][1], metrics["levels"][2],
              metrics["scanline"], ratio))
     print(f"CONSOLE_PRISM: evidence {out}")
