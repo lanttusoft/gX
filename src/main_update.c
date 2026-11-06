@@ -29,6 +29,7 @@
 #include "wrappers/wrappers.h"
 
 #include "gui/gui.h"
+#include "gui/console_playback.h"
 #include "input.h"
 #if gX_ENABLE_RENDERER == 1
     #include "renderer/renderer.h"
@@ -207,6 +208,8 @@ gX_I32 gX_MainData_Update_After(gX_I0) {
     if (maindata.backendUse && maindata.backendLoaded) {
         shouldclose = gX_Window_ShouldClose();
         maindata.timeElapsed += gX_FrameTime_Get();
+        //ai: the console playback clock drives scene/renderer simulation only.
+        maindata.simulationTime += gX_ConsolePlayback_Delta();
     }
     //opencode: the editor host toolbar is always summonable — F9 toggles it
     //   from any scene or editor and loads the ImGui chrome on demand.

@@ -215,3 +215,8 @@ and **2,700,960 B** BSS (4,040 B headroom). Validation: `make lean`,
 `make gui-interaction-check`, `make check`, and Release captures of the GUI
 editor (`--tools`, temporary markup copy) and theme editor
 (`GX_TOOLS_OPEN=theme`). Shipped resource hashes were unchanged.
+
+The subsequent GX-I010 playback slice added 3,552 B payload and 128 B BSS.
+Current Release: **4,178,779 B** payload (**15,525 B** headroom) and
+**2,701,088 B** BSS (3,912 B headroom). Caps and baseline remain unchanged;
+the focused playback and console gates pass.

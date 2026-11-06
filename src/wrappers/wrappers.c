@@ -109,9 +109,25 @@ gX_I0 gX_TargetFPS_Set(gX_F32 fps) {
     SetTargetFPS((gX_I32)fps);
 }
 
+//ai: console playback sets this only around the simulation block; UI, OSD and
+//   audio continue to read the real backend clock.
+static gX_I1 gx_frameTimeSimulationActive = 0;
+static gX_F64 gx_frameTimeSimulation = 0.0;
+
+gX_I0 gX_FrameTime_SetSimulationOverride(gX_F64 dt) {
+    if (dt < 0.0) dt = 0.0;
+    gx_frameTimeSimulation = dt;
+    gx_frameTimeSimulationActive = 1;
+}
+
+gX_I0 gX_FrameTime_ClearSimulationOverride(gX_I0) {
+    gx_frameTimeSimulationActive = 0;
+}
+
 //opencode: deterministic capture hook — GX_FIXED_DT overrides the backend
 //   frame clock without changing normal runtime timing.
 gX_F64 gX_FrameTime_Get(gX_I0) {
+    if (gx_frameTimeSimulationActive) return gx_frameTimeSimulation;
     const char *fixed = getenv("GX_FIXED_DT");
     if (fixed && fixed[0]) {
         char *end = NULL;

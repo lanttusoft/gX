@@ -39,6 +39,7 @@
 #include "load.h"
 #include "features.h"
 #include "../../gui/console_state.h"
+#include "../../gui/console_playback.h"
 #include "../../rhi/rhi_state.h"
 //opencode: hunt - implicit-decl sweep
 #include "../../gxmath/gxmath.h"
@@ -564,7 +565,8 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
     //   and voids A/B determinism (--ai-screenshot* runs open a real
     //   window). Camera-affecting input is ignored while capturing.
     gX_I1 aiCapture = (arguments.aiScreenshotFinal || arguments.hasAiScreenshotAfter);
-    if (!aiCapture && input.keyboard.keys[gX_KEY_C].state.PRESSED) s_flyMode = !s_flyMode;
+    gX_I1 inputBlocked = aiCapture || gX_ConsolePlayback_InputBlocked();
+    if (!inputBlocked && input.keyboard.keys[gX_KEY_C].state.PRESSED) s_flyMode = !s_flyMode;
 
     if (s_flyMode) {
         //opencode: fly mode — let the camera system's FREE mode drive the camera
@@ -574,13 +576,13 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
                        camera.camera3D.position.z - camera.camera3D.target.z) * gX_RAD2DEG;
         s_pitch = asinf((camera.camera3D.position.y - camera.camera3D.target.y) / s_dist) * gX_RAD2DEG;
         s_dist = gX_Showcase_V3_Dist(camera.camera3D.position, camera.camera3D.target);
-    } else if (!aiCapture && input.mouse.leftButton.DOWN) {
+    } else if (!inputBlocked && input.mouse.leftButton.DOWN) {
         s_yaw -= input.mouse.coordDelta.x * 0.2f;
         s_pitch += input.mouse.coordDelta.y * 0.2f;
         if (s_pitch > 89.0f) s_pitch = 89.0f;
         if (s_pitch < -89.0f) s_pitch = -89.0f;
     }
-    if (!aiCapture && input.mouse.scroll != 0.0f && !s_flyMode) {
+    if (!inputBlocked && input.mouse.scroll != 0.0f && !s_flyMode) {
         s_dist *= (input.mouse.scroll > 0.0f) ? 0.9f : 1.1f;
         if (s_dist < 0.5f) s_dist = 0.5f;
         if (s_dist > 300.0f) s_dist = 300.0f;
@@ -622,7 +624,7 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
     //   cartridge profile owns these keys; other showcases are untouched.
     //   Unlike effect hotkeys they stay live in capture runs so the save-state
     //   gate can drive them headlessly.
-    if (arguments.cartridgeY2K) {
+    if (arguments.cartridgeY2K && !gX_ConsolePlayback_InputBlocked()) {
         if (input.keyboard.keys[gX_KEY_F5].state.PRESSED)
             gX_ConsoleState_Save(1);
         if (input.keyboard.keys[gX_KEY_F8].state.PRESSED)
@@ -632,7 +634,7 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
     //opencode: effect/camera hotkeys are ignored during screenshot captures;
     //   real keyboard state is as nondeterministic as the real mouse input
     //   already filtered above and can switch raw views or quality mid-run.
-    if (!aiCapture) {
+    if (!inputBlocked) {
         //opencode: effect hotkeys (pressed edges)
         if (input.keyboard.keys[gX_KEY_B].state.PRESSED) gfx->state.ENABLE_BLOOM = !gfx->state.ENABLE_BLOOM;
         if (input.keyboard.keys[gX_KEY_S].state.PRESSED) gfx->state.ENABLE_SSAO = !gfx->state.ENABLE_SSAO;

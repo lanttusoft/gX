@@ -28,6 +28,7 @@
 //   cartridge profile, so no object graph is stored.
 
 #include "console_state.h"
+#include "console_playback.h"
 #include "gui.h"
 
 #include <stdio.h>
@@ -264,6 +265,8 @@ gX_I32 gX_ConsoleState_Save(gX_I32 slot)
 gX_I32 gX_ConsoleState_Load(gX_I32 slot)
 {
     gX_I32 Result = console_state_load(slot);
+    //ai: loading resumes real time; playback speed never persists across slots.
+    gX_ConsolePlayback_Reset();
     gX_GUI_ConsoleOSD_Notify(slot, Result == 0 ? "LOADED" : "LOAD FAILED");
     return Result;
 }

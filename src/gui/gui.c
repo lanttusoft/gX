@@ -34,6 +34,7 @@
 #include "style.h"
 #include "markup.h"
 #include "console_state.h"
+#include "console_playback.h"
 #include "widgetsdf.h"
 #include "../ui/layout_debug.h"
 #include "../tools/editor_host.h"
@@ -1507,6 +1508,7 @@ static gX_U16 s_consoleOsdWidth, s_consoleOsdHeight;
 static gX_I32 s_consoleOsdFilter = -1;
 static gX_I1 s_consoleOsdReady, s_consoleOsdVisible, s_consoleOsdEventShown;
 static gX_I1 s_consoleOsdMenu, s_consoleOsdIdle, s_consoleOsdDirty;
+static gX_I8 s_consoleOsdPlay[24];
 
 gX_I0 gX_GUI_ConsoleOSD_Notify(gX_I32 slot, const gX_I8 *message)
 {
@@ -1530,7 +1532,16 @@ static gX_I0 console_osd_draw(gX_I0)
         if (maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH) Cartridge = "RAY-1";
         if (maindata.masterIndex == gX_SCENE_PHYSICS) Cartridge = "PARTICLE SANDBOX";
     }
+    const gX_I8 *Playback = Cartridge ? gX_ConsolePlayback_Label() : "";
     gX_F64 Now = maindata.timeElapsed;
+    gX_I1 PlaybackChanged = strcmp(s_consoleOsdPlay, Playback) != 0;
+    if (PlaybackChanged)
+    {
+        snprintf(s_consoleOsdPlay, sizeof(s_consoleOsdPlay), "%s", Playback);
+        s_consoleOsdDirty = true;
+        //ai: a pause/resume/step/FF change refreshes the visible status window.
+        s_consoleOsdUntil = Now + 4.0;
+    }
     gX_I1 Idle = s_consoleIdleAlpha > 0.001f;
     gX_I1 Changed = s_consoleOsdScene != maindata.masterIndex
         || s_consoleOsdWidth != maindata.renderWidth
@@ -1564,6 +1575,7 @@ static gX_I0 console_osd_draw(gX_I0)
             s_consoleOsdScene = -1;
             s_consoleOsdEventUntil = 0.0;
             s_consoleOsdSlot = 1;
+            s_consoleOsdPlay[0] = 0;
         }
         return;
     }
@@ -1572,10 +1584,15 @@ static gX_I0 console_osd_draw(gX_I0)
     const gX_I8 *Mode = maindata.renderWidth == maindata.windowWidth
         && maindata.renderHeight == maindata.windowHeight ? "NATIVE"
         : (maindata.presentFilter == 1 ? "SOFT" : "SHARP");
-    gX_I8 Header[80], Detail[96];
+    gX_I8 Header[80], Detail[128];
     snprintf(Header, sizeof(Header), "gX-240  %ux%u  %s",
         maindata.renderWidth, maindata.renderHeight, Mode);
-    snprintf(Detail, sizeof(Detail), "%s  |  SLOT %d  %s", Cartridge, s_consoleOsdSlot, State);
+    if (Playback[0])
+        snprintf(Detail, sizeof(Detail), "%s  |  SLOT %d  %s  |  %s",
+            Cartridge, s_consoleOsdSlot, State, Playback);
+    else
+        snprintf(Detail, sizeof(Detail), "%s  |  SLOT %d  %s",
+            Cartridge, s_consoleOsdSlot, State);
     gX_F32 Scale = fminf((gX_F32)maindata.screenWidth / 1024.0f,
         (gX_F32)maindata.screenHeight / 768.0f);
     gX_Font Font = gX_Font_GetDefault();
@@ -1594,9 +1611,9 @@ static gX_I0 console_osd_draw(gX_I0)
     gX_Drawing_Flush();
     if (gX_GUI_Trace_Enabled() && (s_consoleOsdDirty || !s_consoleOsdVisible || Event != s_consoleOsdEventShown))
         gX_TraceLog(gX_LOG_NOTICE,
-            "CONSOLE_OSD: show render=%ux%u mode=%s cart=%s slot=%d state=%s rect=%.0f,%.0f,%.0f,%.0f textfit=%.0f,%.0f",
+            "CONSOLE_OSD: show render=%ux%u mode=%s cart=%s slot=%d state=%s play=%s rect=%.0f,%.0f,%.0f,%.0f textfit=%.0f,%.0f",
             maindata.renderWidth, maindata.renderHeight, Mode, Cartridge, s_consoleOsdSlot, State,
-            Rect.x, Rect.y, Rect.width, Rect.height,
+            Playback, Rect.x, Rect.y, Rect.width, Rect.height,
             fmaxf(HeaderSize.x, DetailSize.x), fmaxf(HeaderSize.y, DetailSize.y));
     s_consoleOsdVisible = true;
     s_consoleOsdEventShown = Event;

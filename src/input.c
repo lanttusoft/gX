@@ -32,6 +32,7 @@
 #include "input.h"
 #include "gui/gui.h"
 #include "gui/binding.h"
+#include "gui/console_playback.h"
 #include "tools/tools.h"
 
 #include "main.h"
@@ -1253,7 +1254,8 @@ gX_I0 gX_Input_Update(gX_I0) {
     }
     //opencode: F7 toggles element inspector
     if (input.keyboard.keys[gX_KEY_F7].state.PRESSED
-        && !gX_Tools_RuntimeActive()) {
+        && !gX_Tools_RuntimeActive()
+        && !gX_ConsolePlayback_Paused()) {
         gui.inspectorEnabled = !gui.inspectorEnabled;
         if (!gui.inspectorEnabled) {
             gui.inspectorCanvasID = -1;

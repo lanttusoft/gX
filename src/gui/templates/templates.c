@@ -31,6 +31,7 @@
 #include "template_header.h"
 #include "../binding.h"
 #include "../console_state.h"
+#include "../console_playback.h"
 
 #if gX_ENABLE_RENDERER == 1
     #include "../../renderer/renderer.h"
@@ -253,6 +254,43 @@ static gX_I0 console_pause_rect(gX_GUI_Builder *b,
         width * Scale, height * Scale);
 }
 
+//ai: the half-width playback row keeps Step and Fast Forward inside the
+//   existing 560x560 console panel, below the five primary actions.
+static gX_I0 console_playback_button(gX_GUI_Builder *b, const gX_I8 *label,
+    gX_F32 x, gX_F32 width, gX_I0 (*clickFn)(gX_I0 *), gX_F32 textScale)
+{
+    gX_GUI_Builder_Element_Begin(b);
+        console_pause_rect(b, x, 440.0f, width, 44.0f);
+        gX_GUI_Builder_Color(b, gui.style.escape.buttonBg.r, gui.style.escape.buttonBg.g,
+            gui.style.escape.buttonBg.b, gui.style.escape.buttonBg.a);
+        gX_GUI_Element_Template_Button(b->currentElement);
+        gX_GUI_Builder_ColorV(b, gui.style.escape.buttonBg);
+        gX_GUI_Builder_Widget_AddHoverColor(b, (gX_Color){127, 255, 127, 191}, 0.1f);
+        gX_GUI_Builder_Class(b, "pause-btn");
+        b->currentElement->state.FOCUSABLE = true;
+        gX_GUI_Builder_Sound_Begin(b);
+            b->curSound->sound = gX_Audio_SoundGet("buttonHover");
+            b->curSound->execute.hovered = true;
+            b->curSound->execute.once = true;
+            b->curSound->params.volume = 0.5f;
+        gX_GUI_Builder_Sound_End(b);
+        gX_GUI_Builder_Sound_Begin(b);
+            b->curSound->sound = gX_Audio_SoundGet("buttonConfirm");
+            b->curSound->execute.clickedLeft = true;
+            b->curSound->execute.once = true;
+            b->curSound->params.volume = 0.7f;
+        gX_GUI_Builder_Sound_End(b);
+        gX_GUI_Builder_Text_Begin(b);
+            gX_GUI_Builder_Text_Set(b, label);
+            gX_GUI_Builder_Text_CenterX(b);
+            gX_GUI_Builder_Text_CenterY(b);
+            gX_GUI_Builder_Text_FontSize(b, 20.0f * textScale);
+            if (b->curText) b->curText->autoShrink = true;
+        gX_GUI_Builder_Text_End(b);
+        gX_GUI_OnClick(b->currentElement, clickFn, 0);
+    gX_GUI_Builder_Element_End(b);
+}
+
 //ai: cartridge playback specializes this canvas as the compact gX-240 menu.
 //   Callback-owned pause controls must not inherit Button_Standard's legacy title-scene writes.
 gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex);
@@ -383,6 +421,18 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
             gX_Widget_OnClick_ConsolePauseVideo, 0);
         GX_PAUSE_BTN("Exit to Shell", 4.95f,
             gX_Widget_OnClick_ConsoleExitShell, 0);
+        {
+            gX_I8 FastForward[24];
+            gX_I32 Multiplier = gX_ConsolePlayback_FastForward();
+            if (Multiplier > 0)
+                snprintf(FastForward, sizeof(FastForward), "FF: %dx", Multiplier);
+            else
+                snprintf(FastForward, sizeof(FastForward), "FF: Off");
+            console_playback_button(&b, "Step (F6)", 24.0f, 248.0f,
+                gX_Widget_OnClick_ConsolePauseStep, ConsoleTextScale);
+            console_playback_button(&b, FastForward, 288.0f, 248.0f,
+                gX_Widget_OnClick_ConsolePauseFastForward, ConsoleTextScale);
+        }
     } else {
         GX_PAUSE_BTN("Resume", 2.35f,
             gX_Widget_OnClick_CloseEscapeMenu, 0);
@@ -434,7 +484,7 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     //   Aero glass panel (the bare panel can composite light scene pixels).
     gX_GUI_Builder_Element_Begin(&b);
         gX_GUI_Builder_RectGrid(&b, 2.65f, 6.30f, 2.7f, 0.55f);
-        if (ConsoleMenu) console_pause_rect(&b, 24, 456, 512, 76);
+        if (ConsoleMenu) console_pause_rect(&b, 24, 496, 512, 52);
         gX_GUI_Builder_Color(&b, 8, 10, 18, 250);
         b.currentElement->cornerRadius = gui.style.cornerRadius;
     gX_GUI_Builder_Element_End(&b);
@@ -443,12 +493,12 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
         //   pass); widen the box and keep a shrink guard for themes with
         //   wider type.
         gX_GUI_Builder_RectGrid(&b, 2.8f, 6.35f, 2.4f, 0.4f);
-        if (ConsoleMenu) console_pause_rect(&b, 36, 468, 488, 52);
+        if (ConsoleMenu) console_pause_rect(&b, 36, 502, 488, 44);
         gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
         b.currentElement->stateRendering.RECT_NO_DRAW = true;
         gX_GUI_Builder_Text_Begin(&b);
             gX_GUI_Builder_Text_Set(&b,
-                ConsoleMenu ? "START / ESC RESUME\nSOUTH SELECT  EAST BACK" : "ESC to close");
+                ConsoleMenu ? "F6 STEP   F7 FF\nSTART / ESC RESUME   SOUTH SELECT   EAST BACK" : "ESC to close");
             gX_GUI_Builder_Text_Color(&b, gui.style.escape.hintText);
             gX_GUI_Builder_Text_CenterX(&b);
             if (b.curText) b.curText->autoShrink = true;

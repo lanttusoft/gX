@@ -58,7 +58,7 @@ gX_I32 gX_RendererGFX_Decal_Add(gX_RendererGFX *gfx, gX_F32v3 pos, gX_F32v3 norm
     d->alpha = 1.0f;
     d->color = gX_WHITE;
     d->snowLayer = 0;
-    d->expireTime = (lifetime < 0.0) ? -1.0 : maindata.timeElapsed + lifetime;
+    d->expireTime = (lifetime < 0.0) ? -1.0 : maindata.simulationTime + lifetime;
     return index;
 }
 
@@ -66,7 +66,7 @@ gX_I32 gX_RendererGFX_Decal_Add(gX_RendererGFX *gfx, gX_F32v3 pos, gX_F32v3 norm
 gX_I0 gX_RendererGFX_Decal_UpdateAll(gX_RendererGFX *gfx)
 {
     GX_HEAP_FOREACH(gfx->decals, gX_RendererGFX_Decal, d) {
-        if (d->expireTime > 0.0 && maindata.timeElapsed >= d->expireTime)
+        if (d->expireTime > 0.0 && maindata.simulationTime >= d->expireTime)
         {
             gX_U32 di = (gX_U32)(d - (gX_RendererGFX_Decal*)gfx->decals.data);
             gfx->decals.meta[di].USED = false;

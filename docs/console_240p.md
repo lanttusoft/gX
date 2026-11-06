@@ -224,8 +224,10 @@ only the scene render target is 320x240.
   share SAVED, LOADED, SAVE FAILED and LOAD FAILED feedback.
   Status appears for four seconds on entry, video changes and idle wake, stays
   visible while the pause menu is open, and fades over the final half-second.
-  Action feedback also lasts four seconds, then returns to READY/EMPTY if the
-  menu remains open. The chip is hidden throughout idle fading/blanking;
+  While the console pause menu is open, the chip appends `PAUSED`, `STEP` or
+  the armed `FF 2x`/`FF 4x`/`FF 8x` state; normal playback has no playback
+  suffix. Action feedback also lasts four seconds, then returns to READY/EMPTY
+  if the menu remains open. The chip is hidden throughout idle fading/blanking;
   renderer-path blanking covers the cartridge and overlays too. It never
   changes the display mode or claims a nominal FPS is a monitor refresh rate.
   `GX_CONSOLE_OSD=0` disables this native chip independently of the boot banner.
@@ -233,12 +235,19 @@ only the scene render target is 320x240.
   must not inherit a legacy switch-to-title action.
 - <!-- //ai: ESC system-menu behavior and its focused gate are session additions. -->
   **Cartridge system menu** — ESC opens the native-resolution pause overlay
-  during cartridge playback. Resume/ESC closes it; Save Slot 1 and Load Slot 1
-  mirror F5/F8, a successful save refreshes the slot label in place, Video
-  cycles Soft → Sharp → Native, and Exit to Shell returns to the gX-240 boot
-  view. Controller slot 0 maps D-pad to navigate, south face to confirm, east
-  face to go back, and Start to open/close the menu during playback. The shell
-  view and overlay use the shared keyboard/gamepad focus navigation.
+  during cartridge playback. The menu is a real pause: scene/renderer
+  simulation freezes while it is open; UI, OSD and audio feedback keep real
+  time. Resume/ESC closes it; Save Slot 1 and Load Slot 1 mirror F5/F8, a
+  successful save refreshes the slot label in place, Video cycles
+  Soft → Sharp → Native, and Exit to Shell returns to the gX-240 boot view.
+  Step advances exactly one 1/60 s simulation tick and keeps the menu open.
+  Fast Forward cycles Off → 2x → 4x → 8x while paused; Resume runs at the
+  selected speed. F6 and F7 mirror Step and Fast Forward while the menu is
+  open. Loading a save, changing scene or exiting to the shell resets playback
+  to normal speed. Controller slot 0 maps D-pad to navigate, south face to
+  confirm, east face to go back, and Start to open/close the menu during
+  playback. The shell view and overlay use the shared keyboard/gamepad focus
+  navigation.
 - <!-- //ai: compact native shell, save browser and cartridge pause layout. -->
   **Compact native UI** — the shell groups cartridges and video/save controls
   in two columns inside a centered, aspect-fitted 720x560 panel (reference
@@ -314,6 +323,15 @@ only the scene render target is 320x240.
   `make check`). Five display-free rejection tests cover missing/wrong OSD
   evidence, clipped/tiny/off-screen text and narrow expected-error allowlists;
   they also run in `make check-fast`.
+- <!-- //ai: GX-I010 playback timing and control coverage. -->
+  Playback: the pause menu freezes simulation; F6 and the menu Step button
+  advance exactly 1/60 s; F7 cycles 2x/4x/8x/off; 4x playback advances 4/60
+  per frame; controller Start/D-pad/South resumes at 2x; an F8 load resets
+  playback; the OSD reports PAUSED/STEP/FF (`scripts/console_playback_check.py`,
+  included by `make console-check` and `make check`). Four display-free tests
+  reject missing/malformed traces, wrong step counts/deltas, wrong FF
+  multipliers and missing OSD playback state; they also run in
+  `make check-fast`.
 - No UI clipping with native tool panels at window resolution.
 
 ## Follow-up
@@ -323,8 +341,9 @@ The [idea ledger](ideas.md) records decisions and completed/deferred variants
 (`GX-I001`–`GX-I014`). Check it before proposing these items again; this section
 remains the console's detailed open-work list.
 
-- Frame-advance/fast-forward controls with defined simulation timing semantics
-  (the remaining part of `GX-I010`); live status/slot feedback is implemented.
+- GX-I010 live status, save feedback and playback timing are implemented
+  locally (real pause, 1/60 step, 2x/4x/8x); no further timing controls are
+  planned in this slice.
 - Supersampled render/output split, separately specified from the current
   320x240 scene render followed by window upscale.
 - PRISM-1 presentation work: choose 16-bit quantization semantics and validate

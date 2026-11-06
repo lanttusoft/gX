@@ -415,6 +415,9 @@ It is inactive by default; paths outside `/tmp/` and faces larger than
   effect hotkeys, model focus, HUD legend, serializable camera state
 - `gX_ConsoleState_*` — gX-240 save slots (cartridge id, video profile and
   orbit camera in `save/console_slot_N.json`; save/describe/load)
+- `gX_ConsolePlayback_*` — gX-240 playback clock: active/paused/input-blocked/
+  simulating, simulation delta/time, 2x/4x/8x fast-forward, single 1/60 s step
+  and OSD label. UI/OSD/audio keep real time; loads reset playback.
 - `gX_Compositor_*` — layer compositing (blend modes per layer)
 
 ## gui

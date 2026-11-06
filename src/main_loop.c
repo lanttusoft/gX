@@ -41,6 +41,7 @@
 #include "settings.h"
 
 #include "gui/gui.h"
+#include "gui/console_playback.h"
 
 #if gX_ENABLE_RENDERER == 1
     #include "renderer/renderer.h"
@@ -83,22 +84,35 @@ static gX_I32 gX_Loop_Update(gX_I0) {
     GX_PROFILER_CHECK( gX_ResourceManager_Update(),                           "resource" );
     GX_PROFILER_CHECK( gX_GameData_Update(),                                  "gamedata" );
     GX_PROFILER_CHECK( gX_Input_Update(),                                     "input" );
-    GX_PROFILER_CHECK( gX_Camera_Update(),                                    "camera" );
+    GX_PROFILER_CHECK( gX_ConsolePlayback_Update(),                           "playback" );
     GX_PROFILER_CHECK( gX_Random_Update(),                                    "random" );
+    //ai: console playback freezes simulation updates while paused; a step or
+    //   fast-forward runs them through the playback clock. UI, OSD and audio
+    //   stay outside this block on real time.
+    if (gX_ConsolePlayback_Simulating())
+    {
+        gX_I1 PlaybackClock = gX_ConsolePlayback_Active();
+        if (PlaybackClock)
+            gX_FrameTime_SetSimulationOverride(gX_ConsolePlayback_Delta());
+        if (!gX_ConsolePlayback_Paused())
+            GX_PROFILER_CHECK( gX_Camera_Update(),                            "camera" );
 #if gX_ENABLE_PHYSICS == 1
-    //ai: step the shared world before scenes sync their transforms
-    GX_PROFILER_CHECK( gX_Physics_Update(),                                   "physics" );
+        //ai: step the shared world before scenes sync their transforms
+        GX_PROFILER_CHECK( gX_Physics_Update(),                               "physics" );
 #endif
 #if gX_ENABLE_SCENE == 1
-    GX_PROFILER_CHECK( gX_Scene_Update(),                                     "scene" );
+        GX_PROFILER_CHECK( gX_Scene_Update(),                                 "scene" );
 #endif
-    //opencode: dynamic modules — after the scene so hooks see the current
-    //   state, before renderer/gui so module changes apply in the same frame
-    //   (gx_shell: scripting main() + console one-shots).
-    GX_PROFILER_CHECK( gX_Module_Update(),                                    "modules" );
+        //opencode: dynamic modules — after the scene so hooks see the current
+        //   state, before renderer/gui so module changes apply in the same frame
+        //   (gx_shell: scripting main() + console one-shots).
+        GX_PROFILER_CHECK( gX_Module_Update(),                                "modules" );
 #if gX_ENABLE_RENDERER == 1
-    GX_PROFILER_CHECK( gX_Renderer_Update(),                                  "renderer" );
+        GX_PROFILER_CHECK( gX_Renderer_Update(),                              "renderer" );
 #endif
+        if (PlaybackClock)
+            gX_FrameTime_ClearSimulationOverride();
+    }
     GX_PROFILER_CHECK( gX_Audio_Update(),                                     "audio" );
     GX_PROFILER_CHECK( gX_GUI_Update(),                                       "gui" );
     GX_PROFILER_CHECK( gX_Settings_Update(),                                  "settings" );

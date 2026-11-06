@@ -131,7 +131,7 @@ gX_I0 gX_RendererGFX_Diffraction_Draw(gX_RendererGFX *gfx)
         gX_RHI_UniformInt(gfx->diffraction.tapsLoc,
             gfx->diffraction.taps);
         gX_RHI_Uniform_Float(gfx->diffraction.timeLoc,
-            (gX_F32)maindata.timeElapsed);
+            (gX_F32)maindata.simulationTime);
         gX_Drawing_DrawScreenQuad(0, 0, (gX_F32)target->texture.width,
             (gX_F32)target->texture.height);
         gX_Drawing_EndShader();

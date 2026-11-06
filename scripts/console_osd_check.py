@@ -19,15 +19,16 @@ import console_shell_check as console
 
 SHOW_RE = re.compile(
     r"CONSOLE_OSD: show render=(\d+)x(\d+) mode=(SOFT|SHARP|NATIVE) "
-    r"cart=(.*?) slot=(-?\d+) state=(.*?) "
+    r"cart=(.*?) slot=(-?\d+) state=(.*?) play=(.*?) "
     r"rect=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+) textfit=([\d.]+),([\d.]+)")
 
 
 def rows(log):
     return [{"render": (int(match[1]), int(match[2])), "mode": match[3],
              "cart": match[4], "slot": int(match[5]), "state": match[6],
-             "rect": tuple(float(match[i]) for i in range(7, 11)),
-             "fit": (float(match[11]), float(match[12]))}
+             "play": match[7],
+             "rect": tuple(float(match[i]) for i in range(8, 12)),
+             "fit": (float(match[12]), float(match[13]))}
             for match in SHOW_RE.finditer(log)]
 
 

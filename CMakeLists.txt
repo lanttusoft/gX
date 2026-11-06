@@ -289,8 +289,9 @@ set(GX_SOURCES
     src/gui/templates/materialslab.c
     src/gui/templates/shaderlab.c
     src/gui/binding.c
-    #ai: gX-240 cartridge save states (cartridge/video/camera JSON).
+    #ai: gX-240 cartridge save states (cartridge/video/camera JSON) and playback clock.
     src/gui/console_state.c
+    src/gui/console_playback.c
 
     # Resource manager (kernel: always on)
     src/resource/rmheap.c

@@ -258,7 +258,7 @@ gX_I0 gX_RendererGFX_Particle_Update(gX_RendererGFX *gfx)
         gX_F32 ft = (gX_F32)gX_FrameTime_Get();
         //opencode: clamp dt — a stall would teleport particles (was unclamped)
         if (ft > 0.1f) ft = 0.1f;
-        gX_F32 time = (gX_F32)maindata.timeElapsed;
+        gX_F32 time = (gX_F32)maindata.simulationTime;
 
         GX_HEAP_FOREACH(p->emitters, gX_RendererGFX_Emitter, e) {
             //opencode: inactive emitters still dispatch the update so alive

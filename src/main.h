@@ -440,6 +440,8 @@ typedef struct gX_MainData {
     
     //timing
     gX_F64      timeElapsed; //how long has the game been running
+    //ai: simulation clock — can pause/step/fast-forward without slowing UI/OSD.
+    gX_F64      simulationTime;
     gX_F32      targetFPS;
     gX_U64      frameCount; //opencode: total frames executed (headless-safe exit counter)
     

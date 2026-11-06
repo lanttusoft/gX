@@ -12,7 +12,7 @@ import console_osd_check as osd
 class OSDGateTests(unittest.TestCase):
     def setUp(self):
         self.log = ("CONSOLE_OSD: show render=320x240 mode=SOFT cart=Y2K CGI slot=1 "
-            "state=EMPTY rect=10,435,200,35 textfit=185,13")
+            "state=EMPTY play= rect=10,435,200,35 textfit=185,13")
 
     def test_valid_trace(self):
         osd.assert_osd(self.log, 640, 480, render=(320, 240), mode="SOFT", state="EMPTY")
@@ -31,6 +31,10 @@ class OSDGateTests(unittest.TestCase):
                          ("rect=10,435,200,35", "rect=10,470,200,35")):
             with self.subTest(new=new), self.assertRaises(RuntimeError):
                 osd.assert_osd(self.log.replace(old, new), 640, 480)
+
+    def test_playback_label_is_parsed(self):
+        log = self.log.replace("play= ", "play=PAUSED ")
+        osd.assert_osd(log, 640, 480, play="PAUSED")
 
     def test_multiword_failure_and_selected_slot(self):
         log = self.log.replace("slot=1 state=EMPTY", "slot=3 state=LOAD FAILED")

@@ -91,6 +91,8 @@ gX_I0 gX_Widget_OnClick_ConsoleLoadSlot(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_ConsolePauseSave(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_ConsolePauseLoad(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_ConsolePauseVideo(gX_I0 *arg);
+gX_I0 gX_Widget_OnClick_ConsolePauseStep(gX_I0 *arg);
+gX_I0 gX_Widget_OnClick_ConsolePauseFastForward(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_ConsoleExitShell(gX_I0 *arg);
 gX_I0 gX_Widget_OnClick_OpenEditor(gX_I0 *arg);            // extras: open GUI editor over current scene
 gX_I0 gX_Widget_OnClick_OpenTheme(gX_I0 *arg);             // extras: open theme editor over current scene

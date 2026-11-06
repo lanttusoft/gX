@@ -47,6 +47,7 @@
 #include "../input.h"
 #include "../settings.h"
 #include "console_state.h"
+#include "console_playback.h"
 
 extern gX_I32 gX_MainData_Switch(gX_I32 masterIndex);
 extern gX_I0 gX_Renderer_GFX_ColdBoot(gX_I0);
@@ -460,8 +461,26 @@ gX_I0 gX_Widget_OnClick_ConsolePauseVideo(gX_I0 *arg) {
     gui.focusFirstPending = true;
 }
 
+//ai: playback controls share the console playback clock; Step keeps the
+//   pause menu open, Fast Forward arms the next resume speed.
+gX_I0 gX_Widget_OnClick_ConsolePauseStep(gX_I0 *arg) {
+    (void)arg;
+    gX_ConsolePlayback_RequestStep();
+    gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_MENU: step");
+}
+
+gX_I0 gX_Widget_OnClick_ConsolePauseFastForward(gX_I0 *arg) {
+    (void)arg;
+    gX_ConsolePlayback_CycleFastForward();
+    if (gui.menuCanvas) gui.menuCanvas->refresh = true;
+    gui.focusFirstPending = true;
+    gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_MENU: fast-forward=%d",
+        gX_ConsolePlayback_FastForward());
+}
+
 gX_I0 gX_Widget_OnClick_ConsoleExitShell(gX_I0 *arg) {
     (void)arg;
+    gX_ConsolePlayback_Reset();
     arguments.consoleShell = true;
     arguments.cartridgeY2K = false;
     arguments.showcase = false;

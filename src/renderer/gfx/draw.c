@@ -2257,7 +2257,7 @@ static gX_I0 gfx_sky_upload_and_draw(gX_RendererGFX *gfx, gX_F32 w, gX_F32 h,
         gX_Shader_SetValue_CubemapSlot(sha, gX_Shader_GetLocation(sha, "visibleSkyCube"),
             gfx->sky.skybox.wrapper.texture, gX_GFX_TEXUNIT_SHADOW);
     //opencode: bind uniforms AFTER BeginShader
-    gX_F32 t = (gX_F32)maindata.timeElapsed;
+    gX_F32 t = (gX_F32)maindata.simulationTime;
     gX_F32v2 res = { w, h };
     gX_Shader_SetValue_Float(sha, skyTimeLoc, t);
     gX_Shader_SetValue_Float(sha, skyFovLoc, fminf(fovy, GX_SKY_FOV_MAX));
@@ -2804,7 +2804,7 @@ gX_I0 gX_RendererGFX_Draw_SSR(gX_RendererGFX *gfx)
                     gX_Shader_SetValue_Int(sha, gfx->ssr.waterWaveCountLoc, waveCount);
                 }
                 if (gfx->ssr.waterTimeLoc >= 0)
-                    gX_Shader_SetValue_Float(sha, gfx->ssr.waterTimeLoc, (gX_F32)maindata.timeElapsed);
+                    gX_Shader_SetValue_Float(sha, gfx->ssr.waterTimeLoc, (gX_F32)maindata.simulationTime);
                 for (gX_I32 wi = 0; wi < gfx->water.waveCount && wi < GX_WATER_MAX_WAVES; wi++) {
                     gX_F32v2 wdir = { cosf(gfx->water.waveDirections[wi]), sinf(gfx->water.waveDirections[wi]) };
                     if (gfx->ssr.waterWaveDirsLoc >= 0)

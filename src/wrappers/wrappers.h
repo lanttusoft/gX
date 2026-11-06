@@ -65,6 +65,10 @@ gX_I0  gX_Window_SetTitle(const gX_I8 *title);
 
 // Frame timing
 gX_F64 gX_FrameTime_Get(gX_I0);
+//ai: console playback temporarily supplies the simulation delta without
+//   changing UI/audio timing outside the simulation block.
+gX_I0  gX_FrameTime_SetSimulationOverride(gX_F64 dt);
+gX_I0  gX_FrameTime_ClearSimulationOverride(gX_I0);
 gX_I0  gX_TargetFPS_Set(gX_F32 fps);
 
 // Backend log reroute

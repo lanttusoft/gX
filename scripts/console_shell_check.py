@@ -283,7 +283,8 @@ def main():
                     ("saves", ["LOAD", "BACK"], 0, "--console-shell",
                         {"GX_GUI_TITLE_VIEW": "1", "GX_CONSOLE_SAVE_DIR": str(save_dir)}),
                     ("pause", ["Resume", "Save Slot 1 (F5)", "Load Slot 1",
-                        "Video: Soft", "Exit to Shell", "X"], 5, "--cartridge-y2k",
+                        "Video: Soft", "Exit to Shell", "Step (F6)",
+                        "FF: Off", "X"], 5, "--cartridge-y2k",
                         {"GX_CONSOLE_SAVE_DIR": str(save_dir)}),
                 ):
                     script, directions = focus_actions(len(focus),

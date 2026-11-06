@@ -693,7 +693,7 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
     //opencode: animate explode factor using elapsed time
     if (gfx->state.ENABLE_GEO_DEMO && gfx->geoDemo.loaded && gfx->geoDemo.program.id > 0)
     {
-        gfx->geoDemo.explodeFactor = (gX_F32)(sin(maindata.timeElapsed) * 0.15 + 0.15);
+        gfx->geoDemo.explodeFactor = (gX_F32)(sin(maindata.simulationTime) * 0.15 + 0.15);
     }
 
     //opencode: shader debug visualization — keyboard toggles (built-in SHOW_* uniforms)
