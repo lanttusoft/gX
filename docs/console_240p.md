@@ -451,5 +451,6 @@ remains the console's detailed open-work list.
 - Y2K, RAY-1 and the particle sandbox now have authored cartridge profiles
   with save-state camera restore. Further work is optional content expansion,
   not a missing console integration.
-- Validate on a physical CRT across supported modes, checking monitor limits
-  before testing.
+- Physical CRT/controller validation is parked by the user as of 2026-11-06.
+  Do not schedule it or change display modes without new hardware and explicit
+  approval.
