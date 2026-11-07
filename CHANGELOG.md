@@ -150,6 +150,12 @@ Release-Class: minor
   measured 17,728 B; no feature, visual or cap change.
 
 ### Fixed
+- <!-- //ai: GX-I024 generated-model material ownership. --> Generated-mesh
+  models release each material's map array on removal, and a failed mesh,
+  material, map or index allocation rolls back the reserved model slot and
+  every partial allocation. A sanitized lifecycle probe with an injected
+  `malloc` failure runs in `sanitize-check`; the generated-owner path no
+  longer leaks 336 bytes per cycle and failures leave no used slot.
 - <!-- //ai: GX-I024 async OBJ deindexing. --> Large OBJ files parsed on the
   async worker now deindex each face's position, normal and UV streams instead
   of copying `num_vertices` entries from every attribute array. Shared or

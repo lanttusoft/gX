@@ -126,6 +126,13 @@ The same suite deindexes synthetic OBJ triangles and quads with shared,
 missing or indexed normals/UVs through the real async parser; the sanitized
 editor preset fixtures cover the worker and renderer path in a GL context.
 
+<!-- //ai: GX-I024 generated-model ownership and rollback regression. -->
+`sanitize-check` also links `scripts/fixtures/generated_model_lifecycle_probe.c`
+against the sanitized engine archive with a wrapped `malloc`. It requires the
+generated-owner path to free every material map array and each injected
+allocation failure to release the reserved model slot and partial buffers
+under LeakSanitizer.
+
 ## Presets, clangd and fuzzing
 
 `CMakePresets.json` standardizes the build trees: `default` (build/), `debug`,

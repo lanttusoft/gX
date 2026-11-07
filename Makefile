@@ -1516,6 +1516,8 @@ sanitize-check:
 	cmake --build build/sanitize -j$$(nproc)
 	#ai: exercise the actual mesh wrapper and native destructor with ASan/UBSan.
 	GX_MESH_UPLOAD_SANITIZE=1 python3 scripts/test_raylib_mesh_upload.py
+	#ai: generated-model owner and allocation-failure rollback under LSan.
+	python3 scripts/test_generated_model_lifecycle.py
 	ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 UBSAN_OPTIONS=halt_on_error=1 ./build/sanitize/gX_build --test-only
 
 #ai: ThreadSanitizer headless suite; separate build tree.

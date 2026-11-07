@@ -1407,6 +1407,12 @@ gX_I32 gX_RendererGFX_Model_Unload(gX_RendererGFX *gfx, gX_RendererGFX_Model *mo
         }
         free(model->model.meshes);
         if (model->model.materials) {
+            //ai: Material_LoadDefault allocates each map array separately;
+            //    the generated-mesh owner branch must release them (M11F-02).
+            for (gX_I32 mi = 0; mi < model->model.materialCount; mi++) {
+                free(model->model.materials[mi].maps);
+                model->model.materials[mi].maps = NULL;
+            }
             free(model->model.materials);
         }
         free(model->model.meshMaterial);
@@ -2986,22 +2992,24 @@ gX_I32 gX_RendererGFX_Model_Add(gX_RendererGFX *gfx, const gX_I8 *path) {
 //   the mesh + one default material (meshMaterial[0]=0), loaded immediately.
 //   Used by the non-planar reflection demo (wavy subdivided plane).
 gX_I32 gX_RendererGFX_Model_AddGeneratedMesh(gX_RendererGFX *gfx, gX_Mesh mesh) {
+    if (!gfx || mesh.vertexCount <= 0 || mesh.triangleCount <= 0
+        || !mesh.vertices) return -1;
     gX_RendererGFX_Model *model = gX_Heap_Add_FirstEmpty_NoPtr(&gfx->models);
     if (!model) return -1;
     gX_I32 index = (gX_I32)((gX_U8*)model - (gX_U8*)gfx->models.data) / (gX_I32)sizeof(gX_RendererGFX_Model);
     gX_RendererGFX_Model_Init(model, "");
-    if (mesh.vertexCount <= 0 || mesh.triangleCount <= 0) {
-        gX_Heap_Remove_Index_NoPtr(&gfx->models, (gX_U32)index);
-        return -1;
-    }
     gX_Mesh *meshes = (gX_Mesh*)malloc(sizeof(gX_Mesh));
-    if (!meshes) return -1;
+    gX_Material *mats = NULL;
+    gX_I32 *meshMat = NULL;
+    if (!meshes) goto fail;
     *meshes = mesh;
-    gX_Material *mats = (gX_Material*)malloc(sizeof(gX_Material));
-    if (!mats) { free(meshes); return -1; }
+    mats = (gX_Material*)malloc(sizeof(gX_Material));
+    if (!mats) goto fail;
     *mats = gX_Material_LoadDefault();
-    gX_I32 *meshMat = (gX_I32*)malloc(sizeof(gX_I32));
-    if (!meshMat) { free(meshes); free(mats); return -1; }
+    //ai: failed material-map allocation must not leave a half-built model.
+    if (!mats[0].maps) goto fail;
+    meshMat = (gX_I32*)malloc(sizeof(gX_I32));
+    if (!meshMat) goto fail;
     *meshMat = 0;
     model->model.meshes = meshes;
     model->model.materials = mats;
@@ -3032,6 +3040,16 @@ gX_I32 gX_RendererGFX_Model_AddGeneratedMesh(gX_RendererGFX *gfx, gX_Mesh mesh) 
         }
     }
     return index;
+
+fail:
+    if (meshMat) free(meshMat);
+    if (mats) {
+        free(mats[0].maps);
+        free(mats);
+    }
+    if (meshes) free(meshes);
+    gX_Heap_Remove_Index_NoPtr(&gfx->models, (gX_U32)index);
+    return -1;
 }
 
 gX_I32 gX_RendererGFX_Model_Remove(gX_RendererGFX *gfx, gX_U32 index) {
