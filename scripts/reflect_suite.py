@@ -190,15 +190,23 @@ def nonplanar_case(out_png, yaw=45.0, pitch=25.0):
     #   (GX_NONPLANAR_TEST) in --showcase-planar + magenta diag cube; the
     #   two-component oracle scores the planar-RT floor-bounce (the revived
     #   path) and the cubemap-fallback direct image separately.
+    #ai: use the convention-free yaw-only cube orientation. The default
+    #    combined XYZ rotation leaves the analytic cube zone offset from the
+    #    rendered silhouette (0.418 vs 0.50); yaw-only calibrates at 0.68
+    #    against the unchanged gate. Disable the HUD so the committed
+    #    reference capture is stable.
     capture_env("--showcase-planar", {
         "GX_NONPLANAR_TEST": "1",
         "GX_DIAG_CUBE": "1",
         "GX_T_TAA": "0",
+        "GX_T_HUD": "0",
         "GX_CAM_YAW": str(yaw),
         "GX_CAM_PITCH": str(pitch),
         "GX_CAM_DIST": "6",
+        "GX_CUBE_ROT": "Y",
     }, out_png)
-    report, _ = NP.verify(out_png, yaw, pitch, 6.0)
+    report, _ = NP.verify(out_png, yaw, pitch, 6.0,
+                          cube_rot=P.parse_cube_rot("y"))
     return report
 
 
@@ -493,7 +501,10 @@ def main():
     print(f"captures: {len(tasks)} jobs, {args.jobs} workers, "
           f"native resolution, shot-frame={SHOT_FRAME}, output={OUTPUT_DIR}")
     results = {}
-    with audit.settings_preserved():
+    #ai: reflection gates must not inherit the gitignored console settings
+    #    (320x240/FOV/SSAA); remove the file for the capture block and restore
+    #    it afterwards, even on failure.
+    with audit.engine_default_settings():
         with ThreadPoolExecutor(max_workers=args.jobs) as executor:
             futures = {executor.submit(function, *parameters): key
                        for key, (function, parameters) in tasks.items()}

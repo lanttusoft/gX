@@ -138,6 +138,13 @@ The headless unit suite also exercises indexed-quad tangent generation and
 rejects a partial non-indexed triangle soup, so the public mesh boundary is
 checked under ASan without a GL context.
 
+<!-- //ai: GX-I024 non-planar reflection reference regression. -->
+`test_probe_nonplanar_reference.py` runs the real two-component reflection
+oracle against the committed `scripts/fixtures/reflection/nonplanar_y45.png`
+capture. It pins the unchanged 0.30/0.50 gates, the yaw-only calibration and
+the oracle output without a display; the live `reflect-check` covers the
+renderer path with user settings removed for determinism.
+
 ## Presets, clangd and fuzzing
 
 `CMakePresets.json` standardizes the build trees: `default` (build/), `debug`,

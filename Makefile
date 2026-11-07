@@ -71,6 +71,7 @@ check: all
 	python3 -m unittest discover -s scripts -p test_console_ssaa4x_probe.py
 	python3 -m unittest discover -s scripts -p test_console_grain_check.py
 	python3 -m unittest discover -s scripts -p test_reflection_alignment_check.py
+	python3 -m unittest discover -s scripts -p test_probe_nonplanar_reference.py
 	python3 -m unittest discover -s scripts -p test_evidence_stamp.py
 	#ai: local inventory must preserve notes and never confuse worktree identities.
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
@@ -182,6 +183,8 @@ check: all
 	$(MAKE) -s planar-geometry-check
 	#ai: numeric planar mirror chain plus the Y2K single-owner contract.
 	$(MAKE) -s reflection-alignment-check
+	#ai: full reflection suite (SSR/planar/cubemap/water/receiver) with deterministic defaults.
+	$(MAKE) -s reflect-check
 	#ai: opt-in linear-HDR SSR resolve before bloom; default post-bloom stays pinned.
 	$(MAKE) -s ssr-prebloom-check
 	#ai: native reflected vs rebuilt camera orientation and conditional winding witnesses.
@@ -261,6 +264,7 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_console_ssaa4x_probe.py
 	python3 -m unittest discover -s scripts -p test_console_grain_check.py
 	python3 -m unittest discover -s scripts -p test_reflection_alignment_check.py
+	python3 -m unittest discover -s scripts -p test_probe_nonplanar_reference.py
 	python3 -m unittest discover -s scripts -p test_evidence_stamp.py
 	#ai: procedural mesh upload/unload capacity is tested without a GL context.
 	python3 scripts/test_raylib_mesh_upload.py
@@ -381,7 +385,7 @@ module-exports:
 	cmake --build build/modules -j$$(nproc)
 
 #opencode: v0.1.36 — reflection fidelity gates (Phase C). Requires a live
-#   GPU display (DISPLAY=:1); NOT part of headless `make check`.
+#   GPU display (DISPLAY=:1); admitted by `make check` and the full gate tier.
 reflect-check: all
 	@echo "== [gX CI] reflection suite (SSR + planar + cubemap gates) =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/reflect_suite.py

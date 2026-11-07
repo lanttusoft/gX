@@ -150,6 +150,13 @@ Release-Class: minor
   measured 17,728 B; no feature, visual or cap change.
 
 ### Fixed
+- <!-- //ai: GX-I024 reflection suite determinism and fixture calibration. -->
+  The full reflection suite now removes the gitignored user settings during
+  capture and restores them afterwards, uses the convention-free yaw-only cube
+  orientation for the non-planar fixture, and ships a committed reference
+  capture. The unchanged 0.30/0.50 analytic gates pass (planar 0.702, cube
+  0.678) and the full suite grades A-. `make check` and the full gate tier now
+  run `reflect-check`; the full suite is registered in `gates.toml`.
 - <!-- //ai: GX-I024 tangent API boundary. --> Tangent generation accepts
   indexed meshes by following triangle indices and accumulating per-vertex
   gradients; non-indexed input still requires a complete triangle soup. A

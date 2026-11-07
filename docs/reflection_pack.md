@@ -9,7 +9,7 @@ in the gX GFX forward renderer. Status: **Beta** (SSR receiver-routing closure,
 | Technique | Path | Surfaces | Fidelity (yaw45, diag cube) |
 |---|---|---|---|
 | **Planar RT** | `draw.c` planar pass → `reflection.planar.wrapper.rt` → `standard.frag` planar branch | Flat mirror surfaces (`params.planarReflection`) | **54.69% (A)** |
-| **Non-planar analytic** | per-fragment local plane → global mirror-plane intersect → planar RT (`standard.frag` non-planar branch) | Curved mirrors (`planarReflection && nonPlanarReflection`, model.c:802) | **A (suite-gated)** — `reflect_suite.py` nonplanar row: two-component oracle (`probe_nonplanar_verify.py`) scores planar-RT floor-bounce 0.57 (gate 0.30) + cubemap-fallback direct image 0.71 (gate 0.50) |
+| **Non-planar analytic** | per-fragment local plane → global mirror-plane intersect → planar RT (`standard.frag` non-planar branch) | Curved mirrors (`planarReflection && nonPlanarReflection`, model.c:802) | **A (suite-gated)** — `reflect_suite.py` nonplanar row: two-component oracle (`probe_nonplanar_verify.py`) on the yaw-only fixture scores planar-RT floor-bounce 0.702 (gate 0.30) + cubemap-fallback direct image 0.678 (gate 0.50) |
 | **SSR** | Hi-Z ray march (`ssr.*`) → composite | Model receivers (`params.receiveSSR`, default on); dedicated water receiver | 44.86–57.25% across the current three-angle gate |
 | **Probe grid** | 4×128² baked probes, nearest + second-nearest distance crossfade on shared cubemap slots, box projection unmodified | Direct env, planar fallback, SSR env (`GX_PROBE_GRID=1`, opt-in; `GX_PROBE_BLEND=0` disables crossfade) | bisector fixture live; full-scene fidelity unchanged |
 | **Dynamic cubemap** | `gX_Cubemap_RenderEx`, 6 faces/frame | IBL fallback + SSR env fallback + direct samplers | direct A/B + face audit (A) |
@@ -291,10 +291,20 @@ DISPLAY=:1 env GX_DIAG_CUBE=1 ./build/gX_build --showcase-planar \
 python3 scripts/probe_reflect_verify.py --trace <png> --yaw 45 --pitch 25
 ```
 
-- The oracle uses fixed projection dimensions, so the suite preserves the
-  engine-sized viewport rather than the smaller default audit window. Captures
-  run serially by default: concurrent full-resolution GL contexts caused the
-  planar capture to exit 139 on this GPU.
+- The oracle uses projection dimensions from the actual capture. The suite
+  removes the gitignored `resources/settings.json` for the capture block and
+  restores it afterwards, so a user 320x240 console profile cannot silently
+  change the reflection resolution, console state or camera. It also preserves
+  the engine-sized viewport rather than the smaller default audit window.
+  Captures run serially by default: concurrent full-resolution GL contexts
+  caused the planar capture to exit 139 on this GPU.
+- The non-planar fixture uses the convention-free `GX_CUBE_ROT=Y` orientation.
+  The default combined XYZ rotation leaves the analytic cube zone offset from
+  the rendered silhouette; the yaw-only fixture scores 0.702/0.678 against the
+  unchanged 0.30/0.50 gates. A quantized committed reference at
+  `scripts/fixtures/reflection/nonplanar_y45.png` pins the oracle without a
+  display; `scripts/test_probe_nonplanar_reference.py` runs in fast/full
+  admission.
 - Oracle: luminance-aware magenta detection + exact mirrored-hull convex
   zone (`scripts/probe_reflect_verify.py --trace`).
 - The current three-angle sweep measures SSR `45.82–58.43%` and planar

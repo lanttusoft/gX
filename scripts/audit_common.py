@@ -126,6 +126,27 @@ def with_settings_preserved(callback):
         callback()
 
 
+@contextlib.contextmanager
+def engine_default_settings():
+    """Run with no persisted user settings, then restore the exact file.
+
+    Reflection gates need deterministic window/FOV/console defaults; a
+    gitignored 320x240 console settings file must not silently change the
+    captured resolution or camera. The file is restored even on failure.
+    """
+    settings = ROOT / "resources" / "settings.json"
+    previous = settings.read_bytes() if settings.exists() else None
+    if settings.exists():
+        settings.unlink()
+    try:
+        yield
+    finally:
+        if previous is not None:
+            settings.write_bytes(previous)
+        elif settings.exists():
+            settings.unlink()
+
+
 def scene_env(env=None, clean=False, **extra):
     """Environment for one deterministic scene run (user settings protected).
 

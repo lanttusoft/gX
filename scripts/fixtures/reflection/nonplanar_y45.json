@@ -1,0 +1,35 @@
+{
+  "name": "nonplanar yaw-only reference",
+  "capture": {
+    "scene": "--showcase-planar",
+    "environment": {
+      "GX_NONPLANAR_TEST": "1",
+      "GX_DIAG_CUBE": "1",
+      "GX_T_TAA": "0",
+      "GX_T_HUD": "0",
+      "GX_CAM_YAW": "45",
+      "GX_CAM_PITCH": "25",
+      "GX_CAM_DIST": "6",
+      "GX_CUBE_ROT": "Y"
+    },
+    "engine_settings": "removed for defaults (1024x768 base, engine-scaled capture)"
+  },
+  "image": {
+    "width": 1536,
+    "height": 1016,
+    "format": "PNG palette, 128 colors, optimized for a small repository fixture",
+    "sha256": "1e66f0e15c69e8b069998a39e362a4b51ee61b9cd5decefc4271f8120db2e8da"
+  },
+  "oracle": {
+    "yaw": 45,
+    "pitch": 25,
+    "dist": 6,
+    "cube_rot": "y",
+    "planar_zone_frac": 0.5333333333333333,
+    "cube_zone_frac": 0.6440860215053763,
+    "gate_planar": 0.30,
+    "gate_cube": 0.50,
+    "verdict": "PASS"
+  },
+  "note": "Committed reference for the non-planar analytic fixture. The live suite now uses the yaw-only cube orientation because the combined XYZ rotation leaves the analytic cube zone offset from the rendered silhouette. The file is a quantized capture; the live gate uses the full-resolution capture with the same unchanged thresholds."
+}

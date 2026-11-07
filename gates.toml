@@ -471,6 +471,14 @@ group = "render"
 cache = "content"
 description = "numeric planar mirror chain and Y2K reflection-ownership gate."
 
+[gate.reflection-suite]
+script = "reflect_suite.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "full SSR/planar/cubemap/water/receiver reflection fidelity suite."
+
 [gate.ssr-prebloom]
 script = "ssr_prebloom_check.py"
 args = []
