@@ -143,9 +143,13 @@ gX_I0 gX_RendererGFX_Diffraction_Draw(gX_RendererGFX *gfx)
         ? gfx->common.compositeTarget : &gfx->bloom.scene.wrapper.rt;
     gX_I1 previousBlend = gX_RHI_IsEnabled(gX_RHI_BLEND);
     gX_I32 previousSrc = 0, previousDst = 0, previousEq = 0;
+    gX_I32 previousSrcA = 0, previousDstA = 0, previousEqA = 0;
     gX_RHI_GetIntegerv(gX_RHI_BLEND_SRC_RGB, &previousSrc);
     gX_RHI_GetIntegerv(gX_RHI_BLEND_DST_RGB, &previousDst);
     gX_RHI_GetIntegerv(gX_RHI_BLEND_EQUATION_RGB, &previousEq);
+    gX_RHI_GetIntegerv(gX_RHI_BLEND_SRC_ALPHA, &previousSrcA);
+    gX_RHI_GetIntegerv(gX_RHI_BLEND_DST_ALPHA, &previousDstA);
+    gX_RHI_GetIntegerv(gX_RHI_BLEND_EQUATION_ALPHA, &previousEqA);
     gX_Drawing_BeginTexture(*composite);
         gX_RHI_Enable(gX_RHI_BLEND);
         gX_RHI_Blend_Func_Separate(gX_RHI_ONE, gX_RHI_ONE,
@@ -157,9 +161,9 @@ gX_I0 gX_RendererGFX_Diffraction_Draw(gX_RendererGFX *gfx)
         });
         gX_Batch_Flush();
     gX_Drawing_EndTexture();
-    gX_RHI_Blend_Equation((gX_U32)previousEq);
+    gX_RHI_Blend_Equation_Separate((gX_U32)previousEq, (gX_U32)previousEqA);
     gX_RHI_Blend_Func_Separate((gX_U32)previousSrc, (gX_U32)previousDst,
-        (gX_U32)previousSrc, (gX_U32)previousDst);
+        (gX_U32)previousSrcA, (gX_U32)previousDstA);
     if (!previousBlend) gX_RHI_Disable(gX_RHI_BLEND);
 
     GX_PROFILE_ZONE_END("gfx:diffraction");

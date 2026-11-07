@@ -194,6 +194,10 @@ normal VGA sync range. Set the CRT mode with the OS/GPU first; gX uses the
 current monitor mode in fullscreen. The native GUI stays at the window size;
 only the scene render target is 320x240.
 
+Avoid 120 Hz modes unless the monitor is confirmed free of coil whine; check
+the monitor's documented limits first. Physical CRT validation remains parked
+by the user; do not change display modes automatically.
+
 ## Presets
 
 - **Console 240p — Sharp**: 320x240 scene render, point upscale.
@@ -327,7 +331,10 @@ only the scene render target is 320x240.
   the cartridge OSD banner, F5/F8 save-load with nondefault camera restore
   after a camera cut (plus a no-load control), the shell
   LOAD slot route, and a cartridge boot from the shell that cold-boots GFX
-  and reaches the 320x240 Soft/4x MSAA/diffraction profile. The ESC menu gate
+  and reaches the 320x240 Soft/4x MSAA/diffraction profile. A second cold
+  boot after an authored camera cut must return to the authored view, and
+  save slots store an explicit native/virtual mode so a native slot stays
+  native after a window-size mismatch. The ESC menu gate
   covers save/load, video cycling, Exit to Shell and the controller
   Start/D-pad/south/east mapping, including held-Start edge behavior and
   nonprimary-pad isolation. Shell, populated saves and pause layouts are
@@ -348,7 +355,8 @@ only the scene render target is 320x240.
 - <!-- //ai: OSD draw/effect and intentional-fault coverage. -->
   Native OSD: three-size text/bounds and visible-pixel A/B checks, disable and
   auto-hide, live Soft → Sharp → Native changes, hotkey save/load and explicit
-  failure feedback, renderer idle blank/wake, and a slot-3 shell load
+  failure feedback, renderer idle blank/wake, a slot-3 shell load and a
+  native-mode slot load after a saved window-size mismatch
   (`scripts/console_osd_check.py`, included by `make console-check` and
   `make check`). Eight display-free rejection tests cover missing/wrong OSD
   evidence, clipped/tiny/off-screen text, the PRISM flag and narrow

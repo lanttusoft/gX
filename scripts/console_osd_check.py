@@ -148,12 +148,40 @@ def main():
             console.require("CONSOLE_STATE: load slot=3 cartridge=y2k" in slot3_log,
                 "shell did not load slot 3")
             assert_osd(slot3_log, 1024, 768, cart="Y2K CGI", slot=3, state="LOADED")
+
+            #ai: an explicit native save survives a window-size mismatch; the
+            #   saved 1280x720 size must not become a virtual 1280 scene.
+            native_dir = out / "native_slot"
+            native_dir.mkdir()
+            native_state = json.loads(
+                (save_dir / "console_slot_1.json").read_text())
+            native_state["video"].update({
+                "mode": "native", "width": 1280, "height": 720,
+                "windowWidth": 1280, "windowHeight": 720,
+                "filter": 0, "ssaa": 0, "prism": 0, "grain": 0,
+            })
+            (native_dir / "console_slot_1.json").write_text(
+                json.dumps(native_state))
+            extra = {"GX_CONSOLE_SAVE_DIR": str(native_dir),
+                     "GX_GUI_TITLE_VIEW": "1"}
+            _, discovery = capture("native_discovery", frames=80, shot=60,
+                scene="--console-shell", extra=extra)
+            load = console.target(console.elements(discovery), "LOAD")
+            _, native_log = capture("native_load",
+                console.interaction.click_actions((1.0, load)),
+                frames=240, shot=220, scene="--console-shell", extra=extra)
+            console.require(
+                "CONSOLE_STATE: load slot=1 cartridge=y2k" in native_log,
+                "shell did not load the native save")
+            assert_osd(native_log, 1024, 768, cart="Y2K CGI",
+                render=(1024, 768), out=(1024, 768), mode="NATIVE",
+                state="LOADED")
     except (OSError, ValueError, RuntimeError, KeyError, subprocess.SubprocessError) as error:
         print(f"CONSOLE_OSD: FAIL — {error}; evidence {out}", file=sys.stderr)
         return 1
     print("CONSOLE_OSD: PASS three-size draw/bounds, disable/auto-hide, live "
           "Soft/Sharp/SSAA 2x/Native, save/load/failure feedback, cartridge "
-          "idle/wake and slot-3 shell load")
+          "idle/wake, slot-3 shell load and native-mode save load")
     print(f"CONSOLE_OSD: evidence {out}")
     return 0
 

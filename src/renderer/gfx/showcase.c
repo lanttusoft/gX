@@ -56,6 +56,13 @@ static gX_F32 s_yaw = 45.0f;
 static gX_F32 s_pitch = 25.0f;
 static gX_F32 s_dist = 9.0f;
 static gX_F32v3 s_target = {0, 0, 0};
+static gX_I32 s_focus = -1;
+static gX_I1  s_hudVisible = true;
+static gX_I1  s_flyMode = false;
+static gX_I1  s_camOverride = false;
+static gX_I32 s_skyMode = 1; // 0=off 1=procedural 2=cubemap
+//opencode: raw-RT debug view — D cycles: 0=off 1=ssao 2=ssaoBlur 3=depth 4=ssr
+static gX_I32 s_debugView = 0;
 
 //ai: cartridge boot after a prior GFX visit restores the one-shot showcase
 //   defaults and replays the boot OSD so the selected profile can take effect.
@@ -63,6 +70,20 @@ gX_I0 gX_Showcase_ResetDefaults(gX_I0) {
     s_defaultsApplied = false;
     s_cartridgeOsdLogged = 0;
     s_cartridgeOsdBoot = -1.0;
+    //ai: a cold cartridge boot returns to the authored orbit, not the last
+    //   fly/orbit session; the defaults block re-pins the Y2K camera when
+    //   these are clear.
+    s_cameraPending = 0;
+    s_camOverride = false;
+    s_flyMode = false;
+    s_focus = -1;
+    s_hudVisible = true;
+    s_debugView = 0;
+    s_skyMode = 1;
+    s_yaw = 45.0f;
+    s_pitch = 25.0f;
+    s_dist = 9.0f;
+    s_target = (gX_F32v3){0, 0, 0};
 }
 
 gX_I0 gX_Showcase_CameraGet(gX_Showcase_CameraState *out) {
@@ -80,12 +101,6 @@ gX_I0 gX_Showcase_CameraSet(const gX_Showcase_CameraState *in) {
     s_cameraRequest = *in;
     s_cameraPending = 1;
 }
-static gX_I32 s_focus = -1;
-static gX_I1  s_hudVisible = true;
-static gX_I1  s_flyMode = false;
-static gX_I32 s_skyMode = 1; // 0=off 1=procedural 2=cubemap
-//opencode: raw-RT debug view — D cycles: 0=off 1=ssao 2=ssaoBlur 3=depth 4=ssr
-static gX_I32 s_debugView = 0;
 
 static gX_F32v3 gX_Showcase_V3(gX_F32 x, gX_F32 y, gX_F32 z) {
     gX_F32v3 v; v.x = x; v.y = y; v.z = z; return v;
@@ -487,7 +502,6 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
         const gX_I8 *envYaw = getenv("GX_CAM_YAW");
         const gX_I8 *envPitch = getenv("GX_CAM_PITCH");
         const gX_I8 *envDist = getenv("GX_CAM_DIST");
-        static gX_I1 s_camOverride = false;
         if (!s_camOverride && !s_flyMode) {
             s_camOverride = true;
             //opencode: v0.3.4 --reflectrow testbed pins a deterministic view

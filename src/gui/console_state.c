@@ -141,18 +141,31 @@ static gX_I32 console_state_save(gX_I32 slot) {
     }
     {
         struct json_object *video = json_object_new_object();
+        //ai: store the effective video profile, not the persisted preference;
+        //   the explicit mode keeps Native stable when the window changes.
+        gX_I1 Virtual = maindata.virtualScreen ? 1 : 0;
+        gX_U32 VideoWidth = Virtual ? maindata.consoleOutputWidth
+            : maindata.windowWidth;
+        gX_U32 VideoHeight = Virtual ? maindata.consoleOutputHeight
+            : maindata.windowHeight;
+        json_object_object_add(video, "mode",
+            json_object_new_string(Virtual ? "virtual" : "native"));
         json_object_object_add(video, "width",
-            json_object_new_int((gX_I32)settings.screenWidth));
+            json_object_new_int((gX_I32)VideoWidth));
         json_object_object_add(video, "height",
-            json_object_new_int((gX_I32)settings.screenHeight));
+            json_object_new_int((gX_I32)VideoHeight));
+        json_object_object_add(video, "windowWidth",
+            json_object_new_int((gX_I32)maindata.windowWidth));
+        json_object_object_add(video, "windowHeight",
+            json_object_new_int((gX_I32)maindata.windowHeight));
         json_object_object_add(video, "filter",
-            json_object_new_int(settings.presentFilter));
+            json_object_new_int(maindata.presentFilter));
         json_object_object_add(video, "ssaa",
-            json_object_new_int(settings.consoleSSAA2x ? 2 : 0));
+            json_object_new_int(maindata.consoleSSAA == 2 ? 2 : 0));
         json_object_object_add(video, "prism",
-            json_object_new_int(settings.consolePRISM1 ? 1 : 0));
+            json_object_new_int(maindata.consolePRISM1 ? 1 : 0));
         json_object_object_add(video, "grain",
-            json_object_new_int(settings.consoleGrain ? 1 : 0));
+            json_object_new_int(maindata.consoleGrain ? 1 : 0));
         json_object_object_add(root, "video", video);
     }
     {
@@ -257,11 +270,40 @@ static gX_I32 console_state_load(gX_I32 slot) {
         gX_F32 ssaa = (gX_F32)console_state_number(value, "ssaa", 0.0);
         gX_F32 prism = (gX_F32)console_state_number(value, "prism", 0.0);
         gX_F32 grain = (gX_F32)console_state_number(value, "grain", 0.0);
-        if (width >= 64 && width <= 4096 && height >= 64 && height <= 4096) {
+        //ai: an explicit mode survives a window-size change; legacy slots fall
+        //   back to comparing the saved size with the saved/current window.
+        const char *modeText = NULL;
+        struct json_object *modeValue = NULL;
+        if (json_object_object_get_ex(value, "mode", &modeValue)) {
+            const char *text = json_object_get_string(modeValue);
+            if (text) modeText = text;
+        }
+        gX_I1 Native = (modeText && strcmp(modeText, "native") == 0) ? 1 : 0;
+        gX_I1 Virtual = (modeText && strcmp(modeText, "virtual") == 0) ? 1 : 0;
+        if (!Native && !Virtual) {
+            gX_U32 savedWindowWidth = (gX_U32)console_state_number(value,
+                "windowWidth", (gX_F64)maindata.windowWidth);
+            gX_U32 savedWindowHeight = (gX_U32)console_state_number(value,
+                "windowHeight", (gX_F64)maindata.windowHeight);
+            Native = (width == savedWindowWidth
+                && height == savedWindowHeight) ? 1 : 0;
+        }
+        gX_I1 Applied = 0;
+        if (Native) {
+            settings.screenWidth = maindata.windowWidth;
+            settings.screenHeight = maindata.windowHeight;
+            settings.presentFilter = 0;
+            settings.consoleSSAA2x = 0;
+            Applied = 1;
+        } else if (width >= 64 && width <= 4096
+            && height >= 64 && height <= 4096) {
             settings.screenWidth = width;
             settings.screenHeight = height;
             settings.presentFilter = filter != 0.0f ? 1 : 0;
             settings.consoleSSAA2x = ssaa >= 2.0f ? 1 : 0;
+            Applied = 1;
+        }
+        if (Applied) {
             settings.consolePRISM1 = prism != 0.0f ? 1 : 0;
             settings.consoleGrain = grain != 0.0f ? 1 : 0;
             gX_Settings_Apply_VirtualScreen();

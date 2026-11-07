@@ -51,6 +51,28 @@ inputs = [
   "src/common/",
 ]
 
+[groups.console]
+inputs = [
+  "src/gui/",
+  "src/input.c",
+  "src/settings.c",
+  "src/camera.c",
+  "src/scene/physics.c",
+  "src/main.h",
+  "src/main_loop.c",
+  "src/main_load.c",
+  "src/main_parse.c",
+  "src/main_update.c",
+  "src/renderer/renderer.c",
+  "src/renderer/gfx/",
+  "resources/shader/gfx_prism1.frag",
+  "resources/shader/gfx_diffraction.frag",
+  "resources/texture/y2k/",
+  "scripts/console_*.py",
+  "scripts/cartridge_check.py",
+  "scripts/diffraction_shape_check.py",
+]
+
 [groups.audio]
 inputs = [
   "src/audio/",
@@ -910,3 +932,83 @@ group = "render"
 cache = "content"
 inputs = ["scripts/texture_assets_check.py", "resources/texture/orb.dds", "resources/texture/misc/testcard.dds", "resources/tools/gfx_materials.json"]
 description = "committed DDS sidecars: image budget and storage."
+
+[gate.console-shell]
+script = "console_shell_check.py"
+args = []
+tier = ["full"]
+group = "console"
+cache = "content"
+description = "gX-240 shell boot/save/controller/layout gate."
+
+[gate.console-osd]
+script = "console_osd_check.py"
+args = []
+tier = ["full"]
+group = "console"
+cache = "content"
+description = "native console OSD, feedback, auto-hide and idle gate."
+
+[gate.console-playback]
+script = "console_playback_check.py"
+args = []
+tier = ["full"]
+group = "console"
+cache = "content"
+description = "console pause/step/fast-forward timing gate."
+
+[gate.console-ssaa]
+script = "console_ssaa_check.py"
+args = []
+tier = ["full"]
+group = "console"
+cache = "content"
+description = "2x console SSAA resolve, controls and cost gate."
+
+[gate.console-prism]
+script = "console_prism_check.py"
+args = []
+tier = ["full"]
+group = "console"
+cache = "content"
+description = "PRISM-1 RGB565/Bayer/scanline/triad output gate."
+
+[gate.console-ray1]
+script = "console_ray1_check.py"
+args = []
+tier = ["full"]
+group = "console"
+cache = "content"
+description = "RAY-1 cartridge quality/camera/save gate."
+
+[gate.console-particle]
+script = "console_particle_check.py"
+args = []
+tier = ["full"]
+group = "console"
+cache = "content"
+description = "particle cartridge content/camera/save gate."
+
+[gate.console-grain]
+script = "console_grain_check.py"
+args = []
+tier = ["full"]
+group = "console"
+cache = "content"
+description = "opt-in film grain output and save gate."
+
+[gate.console-cartridge]
+script = "cartridge_check.py"
+args = []
+tier = ["full"]
+group = "console"
+cache = "content"
+description = "Y2K cartridge profile, texture, diffraction gate."
+
+[gate.diffraction]
+script = "diffraction_shape_check.py"
+args = []
+tier = ["quick"]
+group = "render"
+cache = "content"
+description = "production diffraction shader shape/threshold gate."

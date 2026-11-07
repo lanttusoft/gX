@@ -553,9 +553,12 @@ gX_I0 gX_Widget_OnClick_ConsolePauseLoad(gX_I0 *arg) {
 gX_I0 gX_Widget_OnClick_ConsolePauseVideo(gX_I0 *arg) {
     (void)arg;
     gX_I32 Mode = 0;
-    if (settings.screenWidth == 320 && settings.screenHeight == 240) {
-        if (settings.consoleSSAA2x) Mode = 2;
-        else if (settings.presentFilter) Mode = 1;
+    //ai: cycle from the effective video state, not a stale persisted profile.
+    if (maindata.virtualScreen
+        && maindata.consoleOutputWidth == 320
+        && maindata.consoleOutputHeight == 240) {
+        if (maindata.consoleSSAA > 1) Mode = 2;
+        else if (maindata.presentFilter) Mode = 1;
         else Mode = 3;
     }
     gX_Widget_OnClick_ConsoleVideo(

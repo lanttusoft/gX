@@ -415,11 +415,12 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
         gX_GUI_Builder_Element_End(&b)
 
     if (ConsoleMenu) {
-        const gX_I8 *VideoLabel = settings.screenWidth == 320
-            && settings.screenHeight == 240
-            ? (settings.consoleSSAA2x ? "Video: SSAA 2x"
-                : (settings.presentFilter ? "Video: Soft" : "Video: Sharp"))
-            : "Video: Native";
+        const gX_I8 *VideoLabel = !maindata.virtualScreen ? "Video: Native"
+            : (maindata.consoleOutputWidth != 320
+                || maindata.consoleOutputHeight != 240 ? "Video: Virtual"
+                : (maindata.consoleSSAA > 1 ? "Video: SSAA 2x"
+                    : (maindata.presentFilter ? "Video: Soft"
+                        : "Video: Sharp")));
         const gX_I8 *LoadLabel = gX_ConsoleState_Exists(1)
             ? "Load Slot 1" : "Load Slot 1 (empty)";
         console_pause_button_at(&b, "Resume", 24.0f, 96.0f, 512.0f, 48.0f,
@@ -432,12 +433,13 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
         console_pause_button_at(&b, VideoLabel, 24.0f, 264.0f, 512.0f, 48.0f,
             gX_Widget_OnClick_ConsolePauseVideo, ConsoleTextScale);
         {
-            gX_I1 Native = settings.screenWidth != 320
-                || settings.screenHeight != 240;
+            gX_I1 Native = !maindata.virtualScreen
+                || maindata.consoleOutputWidth != 320
+                || maindata.consoleOutputHeight != 240;
             const gX_I8 *PrismLabel = Native ? "PRISM-1: N/A"
-                : (settings.consolePRISM1 ? "PRISM-1: ON" : "PRISM-1: OFF");
+                : (maindata.consolePRISM1 ? "PRISM-1: ON" : "PRISM-1: OFF");
             const gX_I8 *GrainLabel = Native ? "GRAIN: N/A"
-                : (settings.consoleGrain ? "GRAIN: ON" : "GRAIN: OFF");
+                : (maindata.consoleGrain ? "GRAIN: ON" : "GRAIN: OFF");
             console_pause_button_at(&b, PrismLabel, 24.0f, 320.0f, 248.0f,
                 48.0f, gX_Widget_OnClick_ConsolePRISM, ConsoleTextScale);
             if (Native) b.currentElement->state.DISABLED = true;

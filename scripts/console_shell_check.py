@@ -379,6 +379,25 @@ def main():
         require(wake_mean > 5.0 and wake_std > 8.0,
             f"wake did not restore the shell ({wake_mean:.1f}/{wake_std:.1f})")
 
+        #ai: a cold boot re-applies the authored Y2K camera after a prior cut.
+        reboot_script = (interaction.click_actions((1.0, boot_button))
+            + ";5.5 key 256;5.9 key 264;6.2 key 264;6.5 key 264;"
+              "6.8 key 264;7.1 key 264;7.4 key 264;7.9 key 257;"
+              "10.0 key 257;12.0 move 10 10 200")
+        reboot_extra = {"GX_CONSOLE_OSD": "0", "GX_T_CARTRIDGE_OSD": "0",
+            "GX_CONSOLE_PRISM": "0", "GX_CONSOLE_GRAIN": "0"}
+        plain_reboot, _ = capture("camera_reboot_plain", reboot_script,
+            860, 840, out, extra=reboot_extra)
+        cut_reboot, _ = capture("camera_reboot_cut", reboot_script,
+            860, 840, out,
+            extra={**reboot_extra, "GX_CAM_CUT_FRAME": "240",
+                   "GX_CAM_CUT_YAW": "120"})
+        camera_diff = np.abs(plain_reboot - cut_reboot)
+        require(camera_diff.mean() < 3.0
+            and (camera_diff.mean(axis=2) > 8).mean() == 0.0,
+            "cold boot kept a prior camera cut (mean %.3f)"
+            % camera_diff.mean())
+
         require("CONSOLE_STATE: save slot=1 cartridge=y2k" in state_save_log,
             "cartridge F5 save failed")
         require((save_dir / "console_slot_1.json").is_file(),
@@ -438,6 +457,7 @@ def main():
     print("CONSOLE_SHELL: PASS boot view, sharp video route, save slots, "
           "CRT-safe idle blank/wake (input swallowed), cartridge OSD + cold "
           "boot at 320x240 Soft + 4x MSAA + diffraction, save/load slots, "
+          "cold-boot camera reset, "
           "ESC system menu save/load/video/exit, gamepad Start/D-pad/South/East map; "
           "shell/saves/pause layout + focus at 640x480, 1024x768, 1280x720")
     print(f"CONSOLE_SHELL: evidence {out}")

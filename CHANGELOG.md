@@ -58,8 +58,8 @@ Release-Class: minor
   shell/cartridge fades to a black screen with a dim drifting gX mark, and
   the wake input is swallowed so it cannot activate a hidden card
   (`GX_CONSOLE_IDLE_SECONDS` for probes). Cartridge boot also draws a
-  seven-second OSD banner (gX-240 / CARTRIDGE 01 Y2K CGI / 320x240 4x MSAA
-  PRISM-1) inside the 240p frame; `GX_T_CARTRIDGE_OSD=0` disables it.
+  seven-second OSD banner (gX-240 / CARTRIDGE 01 Y2K CGI) inside the 240p
+  frame; `GX_T_CARTRIDGE_OSD=0` disables it.
   `make console-check` drives the boot view, sharp video route, save slots,
   idle blank/wake, OSD banner and cartridge boot.
 - **Console save states**: three `save/console_slot_N.json` slots store the
@@ -71,7 +71,8 @@ Release-Class: minor
 - <!-- //ai: in-cartridge ESC menu addition. --> **Cartridge system menu**:
   ESC opens the native-resolution pause overlay
   with Resume, Save Slot 1, Load Slot 1, Video and Exit to Shell. The video
-  action cycles Soft/Sharp/Native; save and load match F5/F8, and a successful
+  action cycles Soft/Sharp/SSAA 2x/Native; save and load match F5/F8, and a
+  successful
   save refreshes the slot label in place. The console gate drives the menu
   through keyboard focus navigation and checks all routes.
 - **Y2K CGI cartridge**: `--cartridge-y2k` boots a fixed console profile — the
@@ -91,6 +92,66 @@ Release-Class: minor
   level for headless runs, and `GX_UI_TRACE=1` logs the resolved lab/section
   surface. `editor-host-check` verifies every traced row against its declared
   minimum at all three levels.
+- **Console controller and compact layouts**: controller slot 0 maps D-pad to
+  navigate, south to confirm, east to back and Start to toggle the cartridge
+  playback menu. The shell, save browser and cartridge pause panels aspect-fit
+  a native-coordinate layout at 640x480, 1024x768 and 1280x720; save labels are
+  not dead focus stops. `console-check` covers held Start, slot-0 isolation,
+  focus/wrap and click routing.
+- **Console playback**: real pause, a fixed 1/60 s step, 2x/4x/8x
+  fast-forward, menu and F6/F7 controls, and PAUSED/STEP/FF OSD state. A
+  separate simulation clock drives camera/scene/physics/renderer while UI, OSD
+  and audio stay on real time; save loads, scene changes and Exit to Shell
+  reset playback. `console_playback_check` pins the deltas and controls.
+- **2x console SSAA**: opt-in 640x480 scene render resolved to 320x240 for
+  Y2K, RAY-1 and the particle composite route; shell/pause video mode,
+  save-state persistence and an OSD `SSAA2x` split. The matched GPU gate stays
+  under the 3x cap (about 1.5x measured). `GX_CONSOLE_SSAA=4` remains a hidden
+  probe: 3.507x the 240p frame, above the cap, declined as a product mode.
+- **PRISM-1 console output**: opt-in RGB565 quantization, fixed 4x4 Bayer,
+  horizontal scanlines and a subtle RGB triad after the 240p resolve or SSAA
+  target. Shell/pause controls, settings and save states persist it; the
+  native GUI/OSD stay outside the pass. The deterministic gate pins levels,
+  scanline cadence, triad phase, coverage, repeat and a full-frame CPU cap
+  (about 1.0x). No NTSC composite smear is applied.
+- **RAY-1 and particle cartridge profiles**: RAY-1 boots the default SDF scene
+  at Full quality with an authored camera; the particle sandbox rebuilds its
+  deterministic content with an authored overview camera. Both support the
+  console pause menu, F5/F8 slots and `camera3d` restore, direct or from the
+  shell.
+- **Film grain**: opt-in animated monochrome grain in the same console output
+  pass as PRISM-1 but with independent settings/save bits. The pattern is
+  frame-indexed at 24 Hz, deterministic for fixed captures and composable with
+  Soft/Sharp, 2x SSAA and the particle route. It is an experiment, not a
+  required PRISM-1 property.
+- **Evidence stamps**: optional sidecar stamps for Lean proof audits and C gate
+  runs record UTC/result, Git revision and dirty fingerprint, and SHA-256
+  hashes of `proofs.lock.json`, `gates.toml`, `.lean_baseline`,
+  `.lean_budget.json` and the harness scripts. Stamps never enter the binary,
+  SBOM or deterministic source archive; `make evidence-check` covers the
+  matching/rejection paths.
+- **Release payload recovery**: additional cold tool paths (GUI/theme editors
+  and the startup CLI parser) link in the existing Release `-Os` tier, and
+  earlier shader-compiler/serializer recovery remains in place. The recovery
+  measured 17,728 B; no feature, visual or cap change.
+
+### Fixed
+- Console save/load and cartridge boot are cluster-guarded so the renderer-off
+  kernel build links; the editor palette/settings and editor-host panel
+  entries also have kernel-safe stubs. `make check-kernel` passes.
+- The MinGW build uses the tree's portable `localtime` pattern; no
+  `localtime_r` dependency remains in the console state code.
+- The Demos-hub shell route enters and leaves console mode consistently:
+  the main-menu LOAD browser keeps engine saves, while the shell save browser
+  keeps console slots; console pause/playback/Start paths no longer leak into
+  unrelated demos. Start opens the pause menu on direct RAY-1/particle boots.
+- The 320x240 console output shader/present target are created for the whole
+  console mode, so first-time PRISM-1 and grain toggles take effect without a
+  canvas reload; the gates assert post-toggle scene pixels.
+- A cartridge cold boot resets the showcase orbit/fly/debug/HUD camera state,
+  so re-entering Y2K returns to the authored view.
+- Console save states store an explicit `virtual`/`native` video mode plus the
+  saved window size, so a Native save stays Native after a window resize.
 
 ## [0.41.0] - 2026-11-04
 

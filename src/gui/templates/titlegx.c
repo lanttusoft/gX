@@ -236,6 +236,28 @@ static gX_I0 titlegx_console_panel(gX_GUI_Builder *b, const gX_I8 *title)
         (gX_Color){90, 220, 240, 255}, NULL, NULL);
 }
 
+//ai: BACK uses the title back palette, not the save-slot card fill.
+static gX_I0 titlegx_console_back(gX_GUI_Builder *b,
+    gX_F32 x, gX_F32 y, gX_F32 width, gX_F32 height, const gX_I8 *label,
+    gX_I0 (*onClick)(gX_I0 *))
+{
+    gX_GUI_Builder_Element_Begin(b);
+    titlegx_console_rect(b, x, y, width, height);
+    gX_GUI_Builder_ColorV(b, gui.style.title2.backBg);
+    gX_GUI_Element_Template_Button(b->currentElement);
+    gX_GUI_OnClick(b->currentElement, onClick, NULL);
+    gX_GUI_Builder_Text_Begin(b);
+    gX_GUI_Builder_Text_Set(b, label);
+    gX_GUI_Builder_Text_CenterX(b);
+    gX_GUI_Builder_Text_CenterY(b);
+    gX_GUI_Builder_Text_Color(b, gui.style.title2.backText);
+    gX_GUI_Builder_Text_FontSize(b, 20.0f * fminf(1.0f,
+        (gX_F32)b->height * 4.0f / (3.0f * (gX_F32)b->width)));
+    gX_GUI_Builder_Text_AutoShrink(b, true);
+    gX_GUI_Builder_Text_End(b);
+    gX_GUI_Builder_Element_End(b);
+}
+
 //ai: save labels are non-interactive; only real LOAD actions and BACK enter focus.
 static gX_I0 titlegx_console_saves(gX_GUI_Builder *b)
 {
@@ -272,9 +294,8 @@ static gX_I0 titlegx_console_saves(gX_GUI_Builder *b)
     titlegx_console_item(b, 24, 416, 672, 32,
         "In a cartridge: F5 saves slot 1, F8 loads it", 14,
         (gX_Color){150, 180, 210, 255}, NULL, NULL);
-    titlegx_console_item(b, 240, 472, 240, 52, "BACK", 20,
-        gui.style.title2.backText, gX_Widget_OnClick_TitleConsole, NULL);
-    gX_GUI_Builder_ColorV(b, gui.style.title2.backBg);
+    titlegx_console_back(b, 240, 472, 240, 52, "BACK",
+        gX_Widget_OnClick_TitleConsole);
 }
 
 //ai: title template owns Battle and renderer routes in the Demos view.
@@ -607,9 +628,8 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
         titlegx_console_item(&b, 24, 474, 672, 24,
             "PAD NAVIGATE  SOUTH SELECT  EAST BACK", 16,
             (gX_Color){150, 180, 210, 255}, NULL, NULL);
-        titlegx_console_item(&b, 240, 506, 240, 44, "BACK", 20,
-            gui.style.title2.backText, gX_Widget_OnClick_TitleBack, NULL);
-        gX_GUI_Builder_ColorV(&b, gui.style.title2.backBg);
+        titlegx_console_back(&b, 240, 506, 240, 44, "BACK",
+            gX_Widget_OnClick_TitleBack);
     } else if (titleView == TITLEGX_VIEW_EXTRAS) {
         //opencode: v0.6.5 — EXTRAS: in-app tools (out-of-box editors).
         //   Each opens its tool over the title; BACK returns to the menu

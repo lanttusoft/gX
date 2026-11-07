@@ -33,7 +33,6 @@ float hash(vec2 value) {
 }
 
 void main() {
-    fragColor = vec4(1.0, 0.0, 1.0, 1.0);
     //opencode: screen Y-down vs texture Y-up, same convention as the other
     //   post shaders.
     vec2 uv = vec2(fragTexCoord.x, 1.0 - fragTexCoord.y);
