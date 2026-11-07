@@ -113,6 +113,8 @@ int main(int argc, char **argv) {
 
     errors = gX_Parse(argc,argv);
     if (errors > 0) goto parse_ret;
+    //ai: --help is a successful query and must exit 0 without booting.
+    if (arguments.showHelp) goto parse_ret;
 
     //opencode: apply logLevel from arguments
     if (arguments.hasLogLevel) {

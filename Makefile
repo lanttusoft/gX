@@ -99,6 +99,8 @@ check: all
 	@status=0; ./build/gX_build --test-only > $${GX_SCRATCH:-/tmp/opencode}/gx_test_only.log 2>&1 || status=$$?; \
 	  cat $${GX_SCRATCH:-/tmp/opencode}/gx_test_only.log; \
 	  grep -q "TEST_ONLY: 0 errors" $${GX_SCRATCH:-/tmp/opencode}/gx_test_only.log && test $$status -eq 0
+	#ai: public CLI contract — help succeeds, typos fail closed, first-run documented.
+	python3 scripts/cli_contract_check.py
 	#ai: native allocation rollback and bounded file-backed JSON admission controls.
 	$(MAKE) -s runtime-input-check
 	#ai: archive policy preview and isolated tagged-export negative controls.
@@ -255,6 +257,8 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
 	@echo "== [gX fast] unit tests =="
 	./build/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/gX_build --test-only && exit 1)
+	@echo "== [gX fast] CLI contract =="
+	python3 scripts/cli_contract_check.py
 	@echo "== [gX fast] attribution =="
 	python3 scripts/attribution_audit.py --strict
 	python3 scripts/script_license_audit.py --strict
@@ -834,6 +838,11 @@ diffraction-check:
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/diffraction_shape_check.py
 
 #ai: fixed Y2K cartridge profile — presentation, Max quality, textures, spikes.
+.PHONY: cli-check
+cli-check: all
+	@echo "== [gX CI] CLI contract =="
+	python3 scripts/cli_contract_check.py
+
 .PHONY: cartridge-check
 cartridge-check: all
 	@echo "== [gX CI] Y2K cartridge =="

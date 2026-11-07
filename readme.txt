@@ -78,7 +78,9 @@ Features
   outside this source beta
 - release hygiene: license/provenance.json is the resource source of truth,
   and license/ATTRIBUTIONS.md is generated from it
-- scene dispatcher with masterIndex switching; title is the default scene
+- scene dispatcher with masterIndex switching; a fresh tree (no settings/save)
+  opens the GFX renderer demo, while returning users and `--title` get the
+  title front end
 - raylib backend only
 
 Requirements
@@ -89,9 +91,10 @@ Requirements
 
 Build
 -----
-    git clone <repo-url>
+    git clone https://github.com/lanttusoft/gX.git
     ./build.sh
-    ./build/gX_build            # run (windowed)
+    ./build/gX_build --title    # front end (title menu)
+    ./build/gX_build            # plain launch; fresh tree opens the GFX demo
     ./build/gX_build --test-only  # run unit tests, exit immediately
     GX_RUN_TESTS=1 ./build/gX_build --gfx  # opt-in boot tests (skipped by default)
     make check-fast             # public fast CI: build, tests, scene smoke
@@ -99,10 +102,21 @@ Build
     make mingw-check            # cross-build + Wine unit-test smoke
     make mingw-scripting-check  # AngelScript shell DLL + Wine script smoke
 
+First five minutes
+------------------
+1. `./build.sh`.
+2. `./build/gX_build --title` for the front end; use Esc for the pause menu
+   and Back to Title to return.
+3. On a genuinely fresh tree (no resources/settings.json and no save), a plain
+   `./build/gX_build` opens the GFX renderer demo instead of the title. Use
+   `--title` or `GX_SKIPTITLE=0` for the front end.
+4. `--help` lists every scene/tool/audit flag; `docs/getting_started.md` has the
+   longer walkthrough, headless capture notes and support routes.
+
 raylib source is vendored in `external/raylib` for this beta (upstream
 6.0-58-gcf9f27db). The release helper vendors the same source into tarballs.
 
-Common flags: `--title` (default scene), `--gfx`, `--gfx-editor`, `--background`,
+Common flags: `--title` (front end), `--gfx`, `--gfx-editor`, `--background`,
 `--battle`,
 `--pp`, `--theme <file>` (aesthetic preset), `--tools <markup>` (GUI editor),
 `--theme-editor <file>` (theme editor). See `./build/gX_build --help`.

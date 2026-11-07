@@ -679,6 +679,14 @@ group = "render"
 cache = "content"
 description = "error audit gate."
 
+[gate.cli-contract]
+script = "cli_contract_check.py"
+args = []
+tier = ["quick"]
+group = "tooling"
+cache = "content"
+description = "public CLI help/error and first-run contract gate."
+
 [gate.raymarch-features]
 script = "gfx_raymarch_features.py"
 args = []

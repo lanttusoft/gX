@@ -173,6 +173,12 @@ Release-Class: minor
   around bright surfaces; planar/env/IBL reflections stay in the pre-bloom
   scene, restoring the light glow in air. `cartridge-check` pins the mirror
   material flags and the GFX plan.
+- The public CLI now treats `--help` as success (exit 0), rejects unknown or
+  incomplete options with one actionable line instead of booting, and removes
+  parser debug noise. A new `docs/getting_started.md` and README/readme/SUPPORT
+  front door document the intentional fresh-tree rule (plain launch opens the
+  GFX demo; `--title` opens the front end). `make cli-check` pins help,
+  fail-closed errors and the first-run documentation.
 
 ## [0.41.0] - 2026-11-04
 

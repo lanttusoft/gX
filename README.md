@@ -6,7 +6,24 @@ demo resources; story/game content and private development history are not part
 of this repository. The beta does not include the cast/broadcast demo; Battle remains a
 generic engine demo.
 
+## Start here
+
+1. `./build.sh`
+2. `./build/gX_build --title` — front end (Resume, Run Demo, Load Save,
+   Settings, Demos, Extras, Quit).
+3. Press **Esc** for the pause menu; **Back to Title** returns to the front end.
+4. `./build/gX_build --help` lists every flag; see
+   [`docs/getting_started.md`](docs/getting_started.md) for the first five
+   minutes.
+
+A genuinely fresh tree with no `resources/settings.json` and no save opens the
+GFX renderer demo on a plain `./build/gX_build`. That is intentional; use
+`--title` or `GX_SKIPTITLE=0` for the front end, or press **Esc** and choose
+**Back to Title**. Any returning user with a settings file or save gets the
+title.
+
 - Version: see `readme.txt` (`v0.41.0` beta).
+- Repository: https://github.com/lanttusoft/gX
 - License: GPLv3; third-party notices in `license/NOTICE.md`.
 - Build: `./build.sh`; unit tests: `./build/gX_build --test-only`;
   fast checks: `make check-fast`. Windows x86_64 cross-build:

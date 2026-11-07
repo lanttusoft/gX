@@ -7,11 +7,13 @@ privacy checks are included.
 
 ## Contact routing
 
+Repository: <https://github.com/lanttusoft/gX>
+
 | Topic | Where to go |
 | --- | --- |
-| Build/renderer/tooling help | [`docs/README.md`](docs/README.md) and the documentation contact link on the new-issue page |
-| Bug report | [Bug report form](../../issues/new?template=bug_report.yml) |
-| Feature proposal | [Feature request form](../../issues/new?template=feature_request.yml) |
+| Build/renderer/tooling help | [`docs/getting_started.md`](docs/getting_started.md), [`docs/README.md`](docs/README.md) and the documentation contact link on the new-issue page |
+| Bug report | [Bug report form](https://github.com/lanttusoft/gX/issues/new?template=bug_report.yml) |
+| Feature proposal | [Feature request form](https://github.com/lanttusoft/gX/issues/new?template=feature_request.yml) |
 | Suspected vulnerability | Private advisory link in `SECURITY.md`; never a public issue |
 | Conduct concern | Private message to the repository owner through their GitHub profile |
 | Everything else | Use the support and documentation contact links on the new-issue page |

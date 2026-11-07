@@ -2,6 +2,8 @@
 
 Start here:
 
+- [Getting started — the first five minutes](getting_started.md) — build, pick
+  a front door, settings/saves, help and headless captures.
 - [gX readme](../readme.txt) — what gX is, build, license and controls.
 - [Contributing](../CONTRIBUTING.md), [support](../SUPPORT.md), [security policy](../SECURITY.md), [code of conduct](../CODE_OF_CONDUCT.md).
 <!-- //ai: public agent entry points. -->

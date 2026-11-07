@@ -43,6 +43,15 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
         "\n"
         "Usage: %s [options]\n"
         "\n"
+        "Examples:\n"
+        "  %s --title                Front end (title menu)\n"
+        "  %s --gfx                  GFX renderer demo\n"
+        "  %s --console-shell        gX-240 console boot view\n"
+        "  %s --showcase-y2k         Y2K showcase\n"
+        "\n"
+        "A tree with no resources/settings.json and no save opens --gfx on a\n"
+        "plain launch; use --title (or GX_SKIPTITLE=0) for the front end.\n"
+        "\n"
         "Options:\n"
         "  -w, --screenWidth <px>     Window width\n"
         "  -h, --screenHeight <px>    Window height\n"
@@ -164,6 +173,10 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
         "      --console              Open the developer console (module;\n"
         "                              F10 toggles at runtime)\n"
         "\n",
+        name ? name : "gX_build",
+        name ? name : "gX_build",
+        name ? name : "gX_build",
+        name ? name : "gX_build",
         name ? name : "gX_build");
 }
 
@@ -199,7 +212,9 @@ gX_I32 gX_Parse(int argc, char **argv) {
 
     gX_I32 c = 0;
     gX_I32 option_index = 0;
-    fprintf(stdout, "parsing arguments...\n");
+    //ai: user-facing CLI — no parser debug noise, and getopt must not print
+    //   its own message before we can fail with one actionable line.
+    opterr = 0;
     static struct option long_options[] = {
         {"screenWidth", required_argument,  NULL, 0},
         {"screenHeight",required_argument,  NULL, 0},
@@ -307,14 +322,9 @@ gX_I32 gX_Parse(int argc, char **argv) {
         {NULL, 0, NULL, 0}
     };
     while ((c = getopt_long(argc,argv,"w:h:",long_options,&option_index)) != -1) {
-        if (c == 0) fprintf(stdout, "args: case %i [long]: arg %s \n", c, optarg);
-        else fprintf(stdout, "args: case %i [%c]: arg %s \n", c, c, optarg);
         switch (c) {
             case 0: {
                 if (long_options[option_index].flag != 0) break;
-                printf ("-> option %s", long_options[option_index].name);
-                if (optarg) printf (" with arg %s", optarg);
-                printf ("\n");
                 if (!strcmp(long_options[option_index].name,"renderScale")) {
                     arguments.renderScale = (gX_F32)atof(optarg);
                     arguments.hasRenderScale = true;
@@ -328,12 +338,10 @@ gX_I32 gX_Parse(int argc, char **argv) {
                 if (!strcmp(long_options[option_index].name,"screenWidth")) {
                     arguments.screenWidth = (gX_U16)atoi(optarg);
                     arguments.hasScreenWidth = true;
-                    printf("screenWidth: %u \n", (unsigned)arguments.screenWidth);
                 }
                 if (!strcmp(long_options[option_index].name,"screenHeight")) {
                     arguments.screenHeight = (gX_U16)atoi(optarg);
                     arguments.hasScreenHeight = true;
-                    printf("screenHeight: %u \n", (unsigned)arguments.screenHeight);
                 }
                 if (!strcmp(long_options[option_index].name,"virtualWidth")) {
                     arguments.virtualWidth = (gX_U32)atoi(optarg);
@@ -543,8 +551,10 @@ if (!strcmp(long_options[option_index].name,"guest-model")) {
                     arguments.disableModuleGUI = true;
                 }
                 if (!strcmp(long_options[option_index].name,"help")) {
+                    //ai: help is a successful query, not a parse failure.
                     gX_Parse_Help(argv[0]);
-                    errors = 1;
+                    arguments.showHelp = true;
+                    errors = 0;
                     goto parse_ret;
                 }
                 //opencode: scene shortcuts
@@ -851,26 +861,26 @@ if (!strcmp(long_options[option_index].name,"guest-model")) {
             case 'w': {
                 arguments.screenWidth = (gX_U16)atoi(optarg);
                 arguments.hasScreenWidth = true;
-                printf("screenWidth: %u \n", (unsigned)arguments.screenWidth);
                 break;
             }
             case 'h': {
                 arguments.screenHeight = (gX_U16)atoi(optarg);
                 arguments.hasScreenHeight = true;
-                printf("screenHeight: %u \n", (unsigned)arguments.screenHeight);
                 break;
             }
             case '?': {
-                if (optopt == 'w') fprintf(stderr, "Option -%c: [screenWidth] (U16) \n", optopt);
-                else if (optopt == 'h') fprintf(stderr, "Option -%c: [screenHeight] (U16) \n", optopt);
-                else if (isprint(optopt)) fprintf(stderr, "Unknown option `-%c'.\n", optopt);
-                else fprintf (stderr,"Unknown option character `\\x%x'.\n",optopt);
-                break;
+                //ai: fail closed with one actionable line; a typo must not
+                //   fall through to a windowed boot.
+                if (optopt == 'w' || optopt == 'h')
+                    fprintf(stderr, "missing argument for -%c; run --help for usage\n", optopt);
+                else
+                    fprintf(stderr, "unknown option; run --help for valid options\n");
+                errors = 1;
+                goto parse_ret;
             }
             default: break;
         }
     }
-    fprintf(stdout, "done.\n");
 
     //opencode: v0.3.8 — aesthetic presets: --theme <path> wins, GX_THEME env
     //   falls back (consumed before gX_GUI_Load via gX_GUI_Style_SetThemePath)
