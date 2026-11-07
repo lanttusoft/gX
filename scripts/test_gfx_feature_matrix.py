@@ -9,6 +9,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+from PIL import Image
+
 import gfx_feature_matrix as matrix
 
 
@@ -40,6 +42,36 @@ class VerdictExplanationTests(unittest.TestCase):
         report = matrix.explain_metrics(dict(self.metrics,frac=0),dict(self.case,lo=0))
         self.assertEqual(report["failures"],[])
         self.assertIn("zero change permitted",report["evidence"])
+
+
+#ai: GX-I024 M11F-05 — every positive row needs a visible-effect floor and
+#    the cookie gobo must actually contain dark mullions.
+class CoverageTests(unittest.TestCase):
+    def test_all_positive_rows_have_a_visible_floor(self):
+        for row in matrix.ROWS:
+            name, lo = row[0], row[3]
+            if lo is None:
+                continue
+            with self.subTest(feature=name):
+                self.assertGreater(lo, 0.0)
+
+    def test_zero_response_fails_every_positive_row(self):
+        metrics = {"frac": 0.0, "mean0": 100.0, "mean1": 100.0,
+                   "black": 0.0}
+        for row in matrix.ROWS:
+            name, lo, hi = row[0], row[3], row[4]
+            if lo is None:
+                continue
+            with self.subTest(feature=name):
+                self.case = {"lo": lo, "hi": hi, "dthresh": 10}
+                report = matrix.explain_metrics(metrics, self.case)
+                self.assertTrue(report["failures"])
+
+    def test_cookie_gobo_is_not_a_blank_white_map(self):
+        image = Image.open(Path(__file__).resolve().parents[1]
+                           / "resources/texture/cookie_window.png").convert("L")
+        low, high = image.getextrema()
+        self.assertLess(low, high)
 
 
 #ai: prevent profile leakage and asymmetric fixture controls.

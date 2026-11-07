@@ -106,8 +106,10 @@ ROWS = [
      0.005, 0.80, "one deterministic casting point light"),
     ("instancing", "--showcase", {"GX_T_INSTANCING": "1"},
      0.005, 0.95, "16 cube transforms via hardware instancing"),
-    ("taa", "--showcase", {"GX_T_TAA": "1"}, 0.0, 0.30, ""),
-    ("fxaa", "--showcase", {"GX_T_FXAA": "1"}, 0.0, 0.50, ""),
+    #ai: positive floors close the M11F-05 zero-response gap; the base
+    #    showcase measures TAA 0.0026 and FXAA 0.0033 changed fraction.
+    ("taa", "--showcase", {"GX_T_TAA": "1"}, 0.0005, 0.30, "jitter/AA visible change"),
+    ("fxaa", "--showcase", {"GX_T_FXAA": "1"}, 0.0005, 0.50, "edge-AA visible change"),
     # fog-volume visibly needs shadow maps (gen input); provoke both
     # fog scatters proportionally to scene brightness: an all-dark baseline
     # yields sub-threshold delta (correct physics, unmeasurable). Run it on
@@ -115,17 +117,21 @@ ROWS = [
     ("fog", "--showcase", {"GX_T_SSR": "1", "GX_T_SHADOWS": "1",
                            "GX_T_FOG": "1", "GX_FOG_DENSITY": "0.01"},
      0.005, 0.95, "lit baseline; fog needs light to scatter"),
-    ("godray", "--showcase", {"GX_T_GODRAY": "1"}, 0.0, 0.60, "needs sun in frame"),
-    ("cookies", "--showcase", {"GX_T_COOKIES": "1"}, 0.0, 0.60, ""),
+    #ai: positive floors close the M11F-05 zero-response gap; the base
+    #    showcase measures godray 0.304, cookies 0.009 with the window gobo,
+    #    and lens flare 0.028 changed fraction.
+    ("godray", "--showcase", {"GX_T_GODRAY": "1"}, 0.005, 0.60, "sun in frame; visible contribution"),
+    ("cookies", "--showcase", {"GX_T_COOKIES": "1"}, 0.001, 0.60, "window gobo light; visible contribution"),
     ("particles", "--showcase", {"GX_T_PARTICLES": "1"}, 0.0001, 0.60, "sparse at this angle"),
-    ("lensflare", "--showcase", {"GX_T_LENSFLARE": "1"}, 0.0, 0.60, "was 0.0 (dead upload) pre include-fix"),
+    ("lensflare", "--showcase", {"GX_T_LENSFLARE": "1"}, 0.001, 0.60, "visible contribution"),
     # static scenes sit inside the default focal slab: provoke at focal 1.0
     ("dof", "--showcase", {"GX_T_DOF": "1", "GX_T_DOFFOCAL": "1.0"}, 0.005, 0.80, "provoked focal"),
     ("motionblur", "--showcase", {"GX_T_MOTIONBLUR": "1", "GX_CAM_SPIN": "3"},
      0.02, 0.80, "spun camera; stronger default"),
-    # envambient: upload verified live (flag=1 factor=0.3 loc=53); effect is
-    # subtle in dark scenes (env~0.5 gray) — threshold documents, not proves
-    ("envambient", "--showcase", {"GX_T_ENVAMBIENT": "1"}, 0.0, 0.95, "subtle; upload-verified"),
+    # envambient: upload verified live (flag=1 factor=0.3 loc=53); the base
+    #   showcase measures 0.088 changed fraction, so a positive floor is
+    #   meaningful even though the effect is subtle in dark scenes.
+    ("envambient", "--showcase", {"GX_T_ENVAMBIENT": "1"}, 0.001, 0.95, "subtle but visible contribution"),
     # decals: GX_T_DECALS=1 spawns 4 deterministic floor quads (3 matte
     #   white, one translucent + 1 textured SMPTE testcard, GX_T_DECALTEX=0
     #   forces all-matte); measures textured-vs-dry delta
@@ -280,7 +286,8 @@ def label_top_right(path, text):
     im.save(path)
 
 
-#ai: explain the unchanged admission rules, including weak zero-floor probes.
+#ai: explain admission rules: positive floors require a visible contribution,
+#    negative controls require invariance.
 def explain_metrics(metrics, case):
     failures = []
     frac, lo, hi = metrics["frac"], case["lo"], case["hi"]
@@ -476,8 +483,11 @@ def main():
     print(f"captures: {len(capture_jobs)} images, {args.jobs} workers, "
           f"{MATRIX_WIDTH}x{MATRIX_HEIGHT}@{MATRIX_FPS}, "
           f"shot-frame={shot_frame}")
-    capture_results = capture_jobs_to_pool(capture_jobs, args.jobs,
-                                           shot_frame_value)
+    #ai: keep the user's gitignored console/settings profile out of the
+    #    matrix; restore it after all isolated captures.
+    with audit.engine_default_settings():
+        capture_results = capture_jobs_to_pool(capture_jobs, args.jobs,
+                                               shot_frame_value)
     for destination in capture_jobs:
         if destination not in capture_results:
             print(f"capture error {os.path.basename(destination)}: missing")

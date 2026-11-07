@@ -72,7 +72,7 @@
   {
    "match": "resources/texture/cookie_window.png",
    "origin": "ai-generated",
-   "license": "author-prompted generation",
+   "license": "author-prompted generation (procedural 4x4 window gobo test pattern)",
    "publish": "keep"
   },
   {

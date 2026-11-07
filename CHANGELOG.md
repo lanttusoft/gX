@@ -150,6 +150,12 @@ Release-Class: minor
   measured 17,728 B; no feature, visual or cap change.
 
 ### Fixed
+- <!-- //ai: GX-I024 M11F-05 zero-floor matrix coverage. --> TAA, FXAA,
+  godray, cookies, lens flare and environment ambient now require a positive
+  changed-fraction floor instead of accepting no contribution. The cookie
+  fixture is a real window-gobo pattern rather than a blank white map, so its
+  spotlight is visible. The full feature matrix passes, and a display-free
+  report-rule test fails every positive row on a zero response.
 - <!-- //ai: GX-I024 GUI texture/model resource lifetime. --> GUI texture and
   model elements keep a stable resource-manager filename and resolve the live
   heap slot before every draw, matching the shader-element lifetime fix. The
