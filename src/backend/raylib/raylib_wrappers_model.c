@@ -48,8 +48,9 @@
 #ifndef MAX_MATERIAL_MAPS
     #define MAX_MATERIAL_MAPS       12    // Maximum number of maps supported
 #endif
+//ai: match bundled raylib's skinned UnloadMesh capacity, including meshes without bone data.
 #ifndef MAX_MESH_VERTEX_BUFFERS
-    #define MAX_MESH_VERTEX_BUFFERS  7    // Maximum vertex buffers (VBO) per mesh
+    #define MAX_MESH_VERTEX_BUFFERS  9    // Maximum vertex buffers (VBO) per mesh
 #endif
 
 // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)

@@ -104,6 +104,17 @@ disables leak detection (`detect_leaks=0`) because the test harness keeps
 process-lifetime allocations; UBSan halts on the first error. Coverage writes
 `build/coverage/coverage.json` and prints the lowest-covered sources.
 
+<!-- //ai: M11-01 native capacity regression also runs without a display. -->
+`sanitize-check` additionally runs `scripts/test_raylib_mesh_upload.py` with
+ASan/UBSan and leak detection enabled. It compiles the complete mesh backend,
+load wrapper and conversion units, and uses the bundled raylib destructor's
+actual capacity/loop with instrumented allocation and GL boundaries. Rigid,
+skinned, all-attribute, repeated-lifetime and already-uploaded controls must
+match raylib's nine-slot destruction contract, even without wrapper skinning.
+The ordinary guarded-allocation variant also runs in `check` and `check-fast`.
+This is a CPU ownership/bounds test, not a replacement for sanitized water
+and physics scene runs with a real GL context.
+
 ## Presets, clangd and fuzzing
 
 `CMakePresets.json` standardizes the build trees: `default` (build/), `debug`,

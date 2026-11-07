@@ -80,6 +80,8 @@ check: all
 	  echo "Use 'make check-fast' for the public source-beta CI."; \
 	  exit 2; \
 	fi
+	#ai: procedural uploads and bundled raylib destruction must own the same VBO table.
+	python3 scripts/test_raylib_mesh_upload.py
 	#ai: cookie image formats must match RGBA client uploads and stay within atlas cells.
 	python3 scripts/test_gfx_cookie_upload.py
 	#ai: pass identities, unchanged draw order, complete GPU query sets and strict source-frame windows.
@@ -260,6 +262,8 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_console_grain_check.py
 	python3 -m unittest discover -s scripts -p test_reflection_alignment_check.py
 	python3 -m unittest discover -s scripts -p test_evidence_stamp.py
+	#ai: procedural mesh upload/unload capacity is tested without a GL context.
+	python3 scripts/test_raylib_mesh_upload.py
 	#ai: inventory regressions use owned disposable repositories, not real worktrees.
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
 	python3 -m unittest discover -s scripts -p test_agent_bus.py
@@ -1510,6 +1514,8 @@ lint-check:
 sanitize-check:
 	cmake -B build/sanitize -DCMAKE_BUILD_TYPE=Debug -DGX_SANITIZE=ON .
 	cmake --build build/sanitize -j$$(nproc)
+	#ai: exercise the actual mesh wrapper and native destructor with ASan/UBSan.
+	GX_MESH_UPLOAD_SANITIZE=1 python3 scripts/test_raylib_mesh_upload.py
 	ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 UBSAN_OPTIONS=halt_on_error=1 ./build/sanitize/gX_build --test-only
 
 #ai: ThreadSanitizer headless suite; separate build tree.
