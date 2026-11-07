@@ -150,6 +150,11 @@ Release-Class: minor
   measured 17,728 B; no feature, visual or cap change.
 
 ### Fixed
+- <!-- //ai: M11-01 upload/destruction capacity parity. --> Procedural sphere
+  meshes allocate all nine VBO slots expected by the bundled skinned raylib
+  destructor, including rigid meshes. This fixes the upload write overrun
+  reached by the water and physics scenes; headless upload/unload regressions
+  run in fast/full admission and the sanitizer target.
 - Console save/load and cartridge boot are cluster-guarded so the renderer-off
   kernel build links; the editor palette/settings and editor-host panel
   entries also have kernel-safe stubs. `make check-kernel` passes.
