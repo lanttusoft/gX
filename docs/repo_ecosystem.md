@@ -51,6 +51,14 @@ Use Git identity, not directory names:
   names match;
 - branches without worktrees remain in the per-repository report.
 
+Repository and branch lifecycle are independent. A repository can be retained
+as lineage/reference while its default branch is deprecated; a stale `master`
+does not make newer release or feature branches disposable. Record lifecycle
+per branch/worktree (“active”, “paused”, “deprecated”, “archived”, “unknown”)
+and do not infer it from the default branch alone. Deprecated or archived means
+“preserve and label”, not “delete”: unique commits, tags, worktree dirt and
+unmerged patches remain evidence until an explicit maintainer decision.
+
 For each repository snapshot:
 
 ```text
@@ -59,6 +67,7 @@ state:    current branch/HEAD, worktree list, local branches/tags,
           dirty/untracked/ignored state, unique commits vs chosen base,
           last commit time, proof pin and release/archive state
 activity: active agent-bus claims/messages, recent session notes
+lifecycle: per-branch/worktree active/paused/deprecated/archived/unknown
 review:   purpose, lineage, integration target, archive/prune disposition
 ```
 
