@@ -277,8 +277,14 @@ gX_I0 raylib_Mesh_Upload(gX_Mesh *mesh, gX_I1 dynamic) {
 // handedness sign. This is an independent implementation of the standard
 // tangent-basis construction, not a copied tutorial snippet.
 gX_I0 raylib_Mesh_GenTangents(  gX_Mesh *mesh) {
-    if ((mesh->vertices == NULL) || (mesh->texcoords == NULL)) {
-        TRACELOG(LOG_WARNING, "MESH: Tangents generation requires texcoord vertex attribute data");
+    //ai: the public boundary accepts indexed meshes, but the accumulation
+    //    must follow triangle indices and reject non-triangle-soup counts
+    //    (M11F-04). A valid indexed quad must not read past vertexCount.
+    if (!mesh || !mesh->vertices || !mesh->texcoords || !mesh->normals
+        || mesh->vertexCount < 3
+        || (mesh->indices == NULL && (mesh->vertexCount % 3) != 0)
+        || (mesh->indices != NULL && mesh->triangleCount <= 0)) {
+        TRACELOG(LOG_WARNING, "MESH: Tangents generation requires indexed triangles or triangle-soup vertex data");
         return;
     }
 
@@ -303,16 +309,31 @@ gX_I0 raylib_Mesh_GenTangents(  gX_Mesh *mesh) {
         return;
     }
 
-    for (int i = 0; i < mesh->vertexCount; i += 3) {
-        // Get triangle vertices
-        Vector3 v1 = { mesh->vertices[(i + 0)*3 + 0], mesh->vertices[(i + 0)*3 + 1], mesh->vertices[(i + 0)*3 + 2] };
-        Vector3 v2 = { mesh->vertices[(i + 1)*3 + 0], mesh->vertices[(i + 1)*3 + 1], mesh->vertices[(i + 1)*3 + 2] };
-        Vector3 v3 = { mesh->vertices[(i + 2)*3 + 0], mesh->vertices[(i + 2)*3 + 1], mesh->vertices[(i + 2)*3 + 2] };
+    int triangleCount = mesh->indices ? mesh->triangleCount : mesh->vertexCount / 3;
+    for (int triangle = 0; triangle < triangleCount; triangle++) {
+        int i1;
+        int i2;
+        int i3;
+        if (mesh->indices) {
+            i1 = mesh->indices[triangle*3 + 0];
+            i2 = mesh->indices[triangle*3 + 1];
+            i3 = mesh->indices[triangle*3 + 2];
+        } else {
+            i1 = triangle*3 + 0;
+            i2 = triangle*3 + 1;
+            i3 = triangle*3 + 2;
+        }
+        if (i1 < 0 || i2 < 0 || i3 < 0
+            || i1 >= mesh->vertexCount || i2 >= mesh->vertexCount
+            || i3 >= mesh->vertexCount) continue;
 
-        // Get triangle texcoords
-        Vector2 uv1 = { mesh->texcoords[(i + 0)*2 + 0], mesh->texcoords[(i + 0)*2 + 1] };
-        Vector2 uv2 = { mesh->texcoords[(i + 1)*2 + 0], mesh->texcoords[(i + 1)*2 + 1] };
-        Vector2 uv3 = { mesh->texcoords[(i + 2)*2 + 0], mesh->texcoords[(i + 2)*2 + 1] };
+        Vector3 v1 = { mesh->vertices[i1*3 + 0], mesh->vertices[i1*3 + 1], mesh->vertices[i1*3 + 2] };
+        Vector3 v2 = { mesh->vertices[i2*3 + 0], mesh->vertices[i2*3 + 1], mesh->vertices[i2*3 + 2] };
+        Vector3 v3 = { mesh->vertices[i3*3 + 0], mesh->vertices[i3*3 + 1], mesh->vertices[i3*3 + 2] };
+
+        Vector2 uv1 = { mesh->texcoords[i1*2 + 0], mesh->texcoords[i1*2 + 1] };
+        Vector2 uv2 = { mesh->texcoords[i2*2 + 0], mesh->texcoords[i2*2 + 1] };
+        Vector2 uv3 = { mesh->texcoords[i3*2 + 0], mesh->texcoords[i3*2 + 1] };
 
         float x1 = v2.x - v1.x;
         float y1 = v2.y - v1.y;
@@ -332,13 +353,13 @@ gX_I0 raylib_Mesh_GenTangents(  gX_Mesh *mesh) {
         Vector3 sdir = { (t2*x1 - t1*x2)*r, (t2*y1 - t1*y2)*r, (t2*z1 - t1*z2)*r };
         Vector3 tdir = { (s1*x2 - s2*x1)*r, (s1*y2 - s2*y1)*r, (s1*z2 - s2*z1)*r };
 
-        tan1[i + 0] = sdir;
-        tan1[i + 1] = sdir;
-        tan1[i + 2] = sdir;
+        tan1[i1].x += sdir.x; tan1[i1].y += sdir.y; tan1[i1].z += sdir.z;
+        tan1[i2].x += sdir.x; tan1[i2].y += sdir.y; tan1[i2].z += sdir.z;
+        tan1[i3].x += sdir.x; tan1[i3].y += sdir.y; tan1[i3].z += sdir.z;
 
-        tan2[i + 0] = tdir;
-        tan2[i + 1] = tdir;
-        tan2[i + 2] = tdir;
+        tan2[i1].x += tdir.x; tan2[i1].y += tdir.y; tan2[i1].z += tdir.z;
+        tan2[i2].x += tdir.x; tan2[i2].y += tdir.y; tan2[i2].z += tdir.z;
+        tan2[i3].x += tdir.x; tan2[i3].y += tdir.y; tan2[i3].z += tdir.z;
     }
 
     // Compute tangents considering normals

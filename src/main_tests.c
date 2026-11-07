@@ -1541,6 +1541,62 @@ static gX_I32 gX_Tests_ModelObjParse(gX_I0) {
     return errors;
 }
 
+//ai: tangent generation must follow indexed triangles and reject partial
+//    non-indexed vertex counts; the old loop read i+1/i+2 past a 4-vertex
+//    indexed quad (GX-I024 M11F-04).
+static gX_I32 gX_Tests_MeshTangents(gX_I0) {
+    gX_I32 errors = 0;
+    {
+        gX_Mesh mesh = {0};
+        gX_F32 vertices[12] = { 0,0,0, 1,0,0, 1,1,0, 0,1,0 };
+        gX_F32 texcoords[8] = { 0,0, 1,0, 1,1, 0,1 };
+        gX_F32 normals[12] = { 0,0,1, 0,0,1, 0,0,1, 0,0,1 };
+        unsigned short indices[6] = { 0, 1, 2, 0, 2, 3 };
+        mesh.vertexCount = 4;
+        mesh.triangleCount = 2;
+        mesh.vertices = vertices;
+        mesh.texcoords = texcoords;
+        mesh.normals = normals;
+        mesh.indices = indices;
+        gX_Mesh_GenTangents(&mesh);
+        if (!mesh.tangents) errors++;
+        free(mesh.tangents);
+    }
+    {
+        gX_Mesh mesh = {0};
+        gX_F32 vertices[9] = { 0,0,0, 1,0,0, 0,1,0 };
+        gX_F32 texcoords[6] = { 0,0, 1,0, 0,1 };
+        gX_F32 normals[9] = { 0,0,1, 0,0,1, 0,0,1 };
+        mesh.vertexCount = 3;
+        mesh.triangleCount = 1;
+        mesh.vertices = vertices;
+        mesh.texcoords = texcoords;
+        mesh.normals = normals;
+        gX_Mesh_GenTangents(&mesh);
+        if (!mesh.tangents) errors++;
+        free(mesh.tangents);
+    }
+    {
+        gX_Mesh mesh = {0};
+        gX_F32 vertices[12] = { 0,0,0, 1,0,0, 0,1,0, 1,1,0 };
+        gX_F32 texcoords[8] = { 0,0, 1,0, 0,1, 1,1 };
+        gX_F32 normals[12] = { 0,0,1, 0,0,1, 0,0,1, 0,0,1 };
+        mesh.vertexCount = 4;
+        mesh.triangleCount = 1;
+        mesh.vertices = vertices;
+        mesh.texcoords = texcoords;
+        mesh.normals = normals;
+        gX_Mesh_GenTangents(&mesh);
+        if (mesh.tangents) {
+            errors++;
+            free(mesh.tangents);
+        }
+    }
+    if (errors == 0)
+        gX_TraceLog(gX_LOG_INFO, "MESH tangent boundary tests: all passed");
+    return errors;
+}
+
 //opencode: gameCSS cascade tests (audit finding 8) — the key must compare
 //   origin, importance, specificity, and source order lexicographically.
 //   The old weighted key (origin*64 + important*2 + specificity*3) let one
@@ -4103,6 +4159,7 @@ gX_I32 gX_Tests(gX_I0) {
     errors += gX_Tests_ShaderCompiler();
     errors += gX_Tests_GUI_ShaderLifetime();
     errors += gX_Tests_ModelObjParse();
+    errors += gX_Tests_MeshTangents();
     errors += gX_Tests_Threading();
     errors += gX_Tests_SkinUploadClamp();
     errors += gX_Tests_DevCubePhase();

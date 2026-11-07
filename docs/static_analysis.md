@@ -133,6 +133,11 @@ generated-owner path to free every material map array and each injected
 allocation failure to release the reserved model slot and partial buffers
 under LeakSanitizer.
 
+<!-- //ai: GX-I024 tangent boundary regression. -->
+The headless unit suite also exercises indexed-quad tangent generation and
+rejects a partial non-indexed triangle soup, so the public mesh boundary is
+checked under ASan without a GL context.
+
 ## Presets, clangd and fuzzing
 
 `CMakePresets.json` standardizes the build trees: `default` (build/), `debug`,

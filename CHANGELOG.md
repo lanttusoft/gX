@@ -150,6 +150,12 @@ Release-Class: minor
   measured 17,728 B; no feature, visual or cap change.
 
 ### Fixed
+- <!-- //ai: GX-I024 tangent API boundary. --> Tangent generation accepts
+  indexed meshes by following triangle indices and accumulating per-vertex
+  gradients; non-indexed input still requires a complete triangle soup. A
+  four-vertex indexed quad no longer reads past the vertex arrays, and an
+  out-of-range index is skipped safely. The headless tangent boundary
+  regression runs in `--test-only` and `sanitize-check`.
 - <!-- //ai: GX-I024 generated-model material ownership. --> Generated-mesh
   models release each material's map array on removal, and a failed mesh,
   material, map or index allocation rolls back the reserved model slot and
