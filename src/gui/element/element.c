@@ -33,6 +33,7 @@
 #include "../widgetsdf.h"
 
 #include "../../wrappers/wrappers.h"
+#include "../../resource/resource.h"
 #include "../../common/log.h"
 #include "../../common/macros.h"
 #include "../../gxmath/color.h"
@@ -56,6 +57,20 @@
     
 //opencode: monotonically changing runtime identity for element heap slots.
 static gX_U32 gX_GUI_Element_Generation = 0;
+
+//ai: resolve a GUI resource cache from an RM filename. The path is stable;
+//    the cached pointer is not, because gX_Heap_Resize frees the old block.
+gX_I0 *gX_GUI_Element_Resource_Resolve(gX_I32 type, const gX_I8 *path, gX_I0 **cache) {
+    if (!path || !path[0]) return cache ? *cache : NULL;
+    gX_Heap *heap = gX_ResourceManager_GetHeap_Type((gX_U32)type);
+    gX_I0 *live = NULL;
+    if (heap && heap->data && heap->amount > 0) {
+        live = gX_RMHeap_GetPtr_FileName(heap, path);
+        if (!live) live = gX_RMHeap_GetPtr_FileName2(heap, path);
+    }
+    if (cache) *cache = live;
+    return live;
+}
 
 static gX_I0 gX_GUI_Element_DefaultValues(gX_GUI_Element *element) {
     element->rect   = (gX_Rectangle){0,0,1,1};

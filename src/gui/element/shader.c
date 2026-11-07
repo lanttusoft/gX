@@ -56,14 +56,8 @@
 gX_Shader *gX_GUI_Element_Shader_Resolve(gX_GUI_Element_Shader *shader) {
     if (!shader) return NULL;
     shader->fragPath[sizeof(shader->fragPath) - 1] = '\0';
-    if (shader->fragPath[0] == '\0') return shader->shader;
-    gX_Heap *shaderHeap = gX_ResourceManager_GetHeap_Type(gX_DATATYPE_STRUCT_SHADER);
-    gX_Shader *live = NULL;
-    if (shaderHeap && shaderHeap->data && shaderHeap->amount > 0) {
-        live = (gX_Shader *)gX_RMHeap_GetPtr_FileName2(shaderHeap, shader->fragPath);
-    }
-    shader->shader = live;
-    return live;
+    return (gX_Shader *)gX_GUI_Element_Resource_Resolve(
+        gX_DATATYPE_STRUCT_SHADER, shader->fragPath, (gX_I0 **)&shader->shader);
 }
 
 inline gX_I0 gX_GUI_Element_Shader_Init(gX_GUI_Element_Shader *shader) {

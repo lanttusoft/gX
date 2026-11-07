@@ -1450,6 +1450,84 @@ static gX_I32 gX_Tests_GUI_ShaderLifetime(gX_I0) {
     return errors;
 }
 
+//ai: GUI texture/model elements must resolve their live RM slot after a
+//    resource-heap growth, just like shader elements (GX-I024 residual).
+static gX_I32 gX_Tests_GUI_ResourceLifetime(gX_I0) {
+    gX_I32 errors = 0;
+
+    if (!gX_ResourceSlot_Find(gX_DATATYPE_STRUCT_TEXTURE)) {
+        gX_ResourceSlot *slot = gX_ResourceSlot_Add(gX_DATATYPE_STRUCT_TEXTURE);
+        if (!slot) {
+            errors++;
+        } else {
+            gX_Heap *heap = &slot->heap;
+            gX_Texture *oldView = (gX_Texture *)gX_Heap_SeekPtr_Index(heap, 0);
+            if (!oldView || !heap->fileName) {
+                errors++;
+            } else {
+                heap->meta[0].USED = true;
+                strncpy(heap->fileName[0], "lifetime_probe.png",
+                        sizeof(heap->fileName[0]) - 1);
+                gX_GUI_Element_Texture element = {0};
+                strncpy(element.texturePath, "lifetime_probe.png",
+                        sizeof(element.texturePath) - 1);
+                element.texture = oldView;
+                if (gX_GUI_Element_Texture_Resolve(&element) != oldView) errors++;
+                if (!gX_Heap_Add_Push_NoPtr(heap)) errors++;
+                gX_Texture *liveView = (gX_Texture *)gX_Heap_SeekPtr_Index(heap, 0);
+                if (!liveView || liveView == oldView) errors++;
+                if (gX_GUI_Element_Texture_Resolve(&element) != liveView) errors++;
+                element.texturePath[0] = '\0';
+                if (gX_GUI_Element_Texture_Resolve(&element) != liveView) errors++;
+            }
+            gX_RMHeap_Clear(heap);
+            gX_Heap_DeInit(heap);
+            free(slot->loadMtimes);
+            slot->loadMtimes = NULL;
+            slot->active = false;
+            slot->type = 0;
+        }
+    }
+
+    if (!gX_ResourceSlot_Find(gX_DATATYPE_STRUCT_MODEL)) {
+        gX_ResourceSlot *slot = gX_ResourceSlot_Add(gX_DATATYPE_STRUCT_MODEL);
+        if (!slot) {
+            errors++;
+        } else {
+            gX_Heap *heap = &slot->heap;
+            gX_Model *oldView = (gX_Model *)gX_Heap_SeekPtr_Index(heap, 0);
+            if (!oldView || !heap->fileName) {
+                errors++;
+            } else {
+                heap->meta[0].USED = true;
+                strncpy(heap->fileName[0], "lifetime_probe.glb",
+                        sizeof(heap->fileName[0]) - 1);
+                gX_GUI_Element_Model element = {0};
+                strncpy(element.modelPath, "lifetime_probe.glb",
+                        sizeof(element.modelPath) - 1);
+                element.model = oldView;
+                if (gX_GUI_Element_Model_Resolve(&element) != oldView) errors++;
+                if (!gX_Heap_Add_Push_NoPtr(heap)) errors++;
+                gX_Model *liveView = (gX_Model *)gX_Heap_SeekPtr_Index(heap, 0);
+                if (!liveView || liveView == oldView) errors++;
+                if (gX_GUI_Element_Model_Resolve(&element) != liveView) errors++;
+                element.modelPath[0] = '\0';
+                if (gX_GUI_Element_Model_Resolve(&element) != liveView) errors++;
+            }
+            gX_RMHeap_Clear(heap);
+            gX_Heap_DeInit(heap);
+            free(slot->loadMtimes);
+            slot->loadMtimes = NULL;
+            slot->active = false;
+            slot->type = 0;
+        }
+    }
+
+    if (errors == 0)
+        gX_TraceLog(gX_LOG_INFO, "GUI resource lifetime tests: all passed");
+    return errors;
+}
+
 //ai: async OBJ parsing must deindex independent position/normal/UV streams;
 //    the old path copied attrib.num_vertices for every stream and overran
 //    shared or missing attributes (GX-I024 M11F-01).
@@ -4158,6 +4236,7 @@ gX_I32 gX_Tests(gX_I0) {
     errors += gX_Tests_JSON();
     errors += gX_Tests_ShaderCompiler();
     errors += gX_Tests_GUI_ShaderLifetime();
+    errors += gX_Tests_GUI_ResourceLifetime();
     errors += gX_Tests_ModelObjParse();
     errors += gX_Tests_MeshTangents();
     errors += gX_Tests_Threading();

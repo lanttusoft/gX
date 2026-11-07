@@ -48,6 +48,25 @@ extern gX_I0 gX_GUI_Element_Shader_Load(gX_GUI_Element_Shader *shader);
 // helpers
 //=============================================================================
 
+//ai: remember the RM filename for a raw resource pointer so GUI elements
+//    survive a later resource-heap relocation.
+static gX_I0 gX_GUI_Builder_StoreResourcePath(gX_Heap *heap, const gX_I0 *ptr,
+    gX_I8 *out, size_t size) {
+    if (!out || size == 0) return;
+    out[0] = '\0';
+    if (!heap || !heap->data || !ptr) return;
+    for (gX_U32 i = 0; i < heap->amount; i++) {
+        if (gX_Heap_SeekPtr_Index(heap, i) != ptr) continue;
+        if (heap->fileName && heap->fileName[i][0]) {
+            strncpy(out, heap->fileName[i], size - 1);
+        } else if (heap->fileName2 && heap->fileName2[i][0]) {
+            strncpy(out, heap->fileName2[i], size - 1);
+        }
+        out[size - 1] = '\0';
+        return;
+    }
+}
+
 static gX_I0 gX_GUI_Builder_GetResourceHeaps(gX_GUI_Builder *b) {
     gX_TraceLog_SuppressStart();
     b->fontHeap    = gX_ResourceManager_GetHeap_Type(gX_DATATYPE_STRUCT_FONT);
@@ -439,9 +458,13 @@ gX_I0 gX_GUI_Builder_Texture_File(gX_GUI_Builder *b, const gX_I8 *path) {
     //opencode: RM heap slots are plain gX_Texture, NOT gX_Texture_Wrapper —
     //   the old wrapper cast landed ~280 bytes past the block (garbage
     //   id/width → backend crash at draw time).
-    gX_Texture *tex = (gX_Texture*)gX_RMHeap_GetPtr_FileName2(b->textureHeap, path);
+    gX_Texture *tex = (gX_Texture*)gX_RMHeap_GetPtr_FileName(b->textureHeap, path);
+    if (!tex) tex = (gX_Texture*)gX_RMHeap_GetPtr_FileName2(b->textureHeap, path);
     if (tex) {
         b->curTexture->texture = tex;
+        strncpy(b->curTexture->texturePath, path,
+            sizeof(b->curTexture->texturePath) - 1);
+        b->curTexture->texturePath[sizeof(b->curTexture->texturePath) - 1] = '\0';
     } else {
         gX_TraceLog_GUI(gX_LOG_WARNING, "GUI_Builder: Texture not found: %s", path);
     }
@@ -450,6 +473,8 @@ gX_I0 gX_GUI_Builder_Texture_File(gX_GUI_Builder *b, const gX_I8 *path) {
 gX_I0 gX_GUI_Builder_Texture_Set(gX_GUI_Builder *b, gX_Texture *tex) {
     if (!b->curTexture) return;
     b->curTexture->texture = tex;
+    gX_GUI_Builder_StoreResourcePath(b->textureHeap, (const gX_I0 *)tex,
+        b->curTexture->texturePath, sizeof(b->curTexture->texturePath));
 }
 
 //opencode: attach a shader element (index into element->shaders) to the texture
@@ -644,6 +669,9 @@ gX_I0 gX_GUI_Builder_Model_File(gX_GUI_Builder *b, const gX_I8 *path) {
     gX_Model *mdl = (gX_Model*)gX_RMHeap_GetPtr_FileName(b->modelHeap, path);
     if (mdl) {
         b->curModel->model = mdl;
+        strncpy(b->curModel->modelPath, path,
+            sizeof(b->curModel->modelPath) - 1);
+        b->curModel->modelPath[sizeof(b->curModel->modelPath) - 1] = '\0';
     } else {
         gX_TraceLog_GUI(gX_LOG_WARNING, "GUI_Builder: Model not found: %s", path);
     }

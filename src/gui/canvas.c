@@ -730,7 +730,8 @@ gX_I0 gX_GUI_Pools_MigrateFromHeap(gX_I0) {
                 gX_PoolTexture *pt = (gX_PoolTexture*)gX_Pool_Get(&gui.poolTextures, hTex);
                 if (!pt) break;
                 memset(pt, 0, sizeof(gX_PoolTexture));
-                pt->id = oldTextures[ti].texture ? (gX_I32)oldTextures[ti].texture->id : 0;
+                gX_Texture *liveTexture = gX_GUI_Element_Texture_Resolve(&oldTextures[ti]);
+                pt->id = liveTexture ? (gX_I32)liveTexture->id : 0;
                 pt->src = oldTextures[ti].params.src;
                 e->hTextures[ti] = hTex;
             }

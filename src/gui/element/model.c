@@ -32,6 +32,7 @@
 #include "modules.h"
 
 #include "../../wrappers/wrappers.h"
+#include "../../resource/resource.h"
 #include "../../rhi/rhi_state.h"
 //opencode: hunt - implicit-decl sweep (float-arg promotion hazard)
 #include "../../common/log.h"
@@ -43,6 +44,13 @@
 #include "../../main.h"
 #include "../../rhi/rhi.h"
 #include "../../rhi/rhi_fbo.h"
+
+gX_Model *gX_GUI_Element_Model_Resolve(gX_GUI_Element_Model *model) {
+    if (!model) return NULL;
+    model->modelPath[sizeof(model->modelPath) - 1] = '\0';
+    return (gX_Model *)gX_GUI_Element_Resource_Resolve(
+        gX_DATATYPE_STRUCT_MODEL, model->modelPath, (gX_I0 **)&model->model);
+}
 
 inline gX_I0 gX_GUI_Element_Model_Init(gX_GUI_Element_Model *model) {
     gX_TraceLog_GUI(gX_LOG_ALL,"Initializing model values");
@@ -60,15 +68,17 @@ inline gX_I0 gX_GUI_Element_Model_Init(gX_GUI_Element_Model *model) {
 }
 
 static gX_I0 gX_GUI_Element_Model_Draw(gX_GUI_Element_Model *model, gX_GUI_Element *element, gX_GUI_Canvas *canvas) {
-    //opencode: guard against NULL model pointer — skip draw if unset
-    if (!model->model) {
+    //opencode: resolve the live RM slot; a resource-heap growth may have
+    //   moved it since the element was built.
+    gX_Model *liveModel = gX_GUI_Element_Model_Resolve(model);
+    if (!liveModel) {
         gX_TraceLog_GUI(gX_LOG_WARNING, "Model element with no model assigned — skipping draw");
         return;
     }
     
     gX_Color col = gX_Color_Mul(element->color,canvas->canvasHue);
     
-    gX_Model modell = *(model->model);
+    gX_Model modell = *liveModel;
     modell.transform = model->transform;
     
     gX_Model_Parameters params = { 0 };

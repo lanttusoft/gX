@@ -31,6 +31,7 @@
 #include "modules.h"
 
 #include "../../wrappers/wrappers.h"
+#include "../../resource/resource.h"
 #include "../../rhi/rhi_matrix.h"
 #include "../../rhi/rhi_state.h"
 #include "../../rhi/rhi_enums.h"
@@ -42,6 +43,13 @@
 #include "../../main.h"
 
 extern gX_I0 gX_GUI_Element_Shader_Load(gX_GUI_Element_Shader *shader);
+
+gX_Texture *gX_GUI_Element_Texture_Resolve(gX_GUI_Element_Texture *texture) {
+    if (!texture) return NULL;
+    texture->texturePath[sizeof(texture->texturePath) - 1] = '\0';
+    return (gX_Texture *)gX_GUI_Element_Resource_Resolve(
+        gX_DATATYPE_STRUCT_TEXTURE, texture->texturePath, (gX_I0 **)&texture->texture);
+}
 
 inline gX_I0 gX_GUI_Element_Texture_Init(gX_GUI_Element_Texture *texture) {
     gX_TraceLog_GUI(gX_LOG_ALL,"Initializing texture values");
@@ -58,8 +66,10 @@ inline gX_I0 gX_GUI_Element_Texture_Init(gX_GUI_Element_Texture *texture) {
 
 static gX_I0 gX_GUI_Element_Texture_Draw(gX_GUI_Element_Texture *texture, gX_GUI_Element *element, gX_GUI_Canvas *canvas) {
     
-    //opencode: guard against NULL texture pointer — skip draw if unset
-    if (!texture->texture) {
+    //opencode: resolve the live RM slot; a resource-heap growth may have
+    //   moved it since the element was built.
+    gX_Texture *liveTexture = gX_GUI_Element_Texture_Resolve(texture);
+    if (!liveTexture) {
         gX_TraceLog_GUI(gX_LOG_WARNING, "Texture element with no texture assigned — skipping draw");
         return;
     }
@@ -120,12 +130,12 @@ static gX_I0 gX_GUI_Element_Texture_Draw(gX_GUI_Element_Texture *texture, gX_GUI
                     elShader->loaded = true;
                 }
                 if (elShader->locs.inputTexLoc != -1) {
-                    gX_Shader_SetValue_TextureSlot(*elShader->shader, elShader->locs.inputTexLoc, *texture->texture, 0);
+                    gX_Shader_SetValue_TextureSlot(*elShader->shader, elShader->locs.inputTexLoc, *liveTexture, 0);
                 }
             }
         }
         
-        gX_Texture_Draw3D_Params(*texture->texture,params,(gX_F32v3){element->rect.x,element->rect.y,0.0f});
+        gX_Texture_Draw3D_Params(*liveTexture,params,(gX_F32v3){element->rect.x,element->rect.y,0.0f});
         
         //opencode: bounds check shaderIndex, NULL check heap+shader
         if (!forcePlain && texture->useShader && element->shaders.data
@@ -178,7 +188,7 @@ static gX_I0 gX_GUI_Element_Texture_Draw(gX_GUI_Element_Texture *texture, gX_GUI
                     (gX_F32)(maindata.timeElapsed), (gX_F32v2){resW, resH},
                     gX_Color_Mul(element->color, canvas->canvasHue),
                     element->params.scale, canvas->camera.ambientFactor);
-                gX_Shader_SetValue_TextureSlot(*sh, elShader->locs.inputTexLoc, *texture->texture, 24);
+                gX_Shader_SetValue_TextureSlot(*sh, elShader->locs.inputTexLoc, *liveTexture, 24);
                 gX_Drawing_DrawScreenQuad(element->rect.x, element->rect.y,
                     element->rect.width, element->rect.height);
             gX_Drawing_EndShader();
@@ -196,7 +206,7 @@ static gX_I0 gX_GUI_Element_Texture_Draw(gX_GUI_Element_Texture *texture, gX_GUI
             gX_Drawing_Flush();
             gX_RHI_Disable(gX_RHI_DEPTH_TEST);
             gX_RHI_Disable(gX_RHI_CULL_FACE);
-            gX_Texture_Draw(*texture->texture,params);
+            gX_Texture_Draw(*liveTexture,params);
             if (cullWas) gX_RHI_Enable(gX_RHI_CULL_FACE);
             if (depthWas) gX_RHI_Enable(gX_RHI_DEPTH_TEST);
         }

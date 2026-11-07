@@ -116,10 +116,11 @@ This is a CPU ownership/bounds test, not a replacement for sanitized water
 and physics scene runs with a real GL context.
 
 <!-- //ai: GX-I024 GUI shader relocation regression runs headless. -->
-The sanitizer suite also includes a headless resource-lifetime regression: a
-GUI shader element keeps a stable fragment path, a forced shader-heap growth
-frees the old slice, and resolve/clear must use the live slot. No GL context
-is needed; the sanitized 24-frame water run covers the real relocation path.
+The sanitizer suite also includes headless resource-lifetime regressions for
+GUI shader, texture and model elements: each keeps a stable RM filename, a
+forced heap growth frees the old slice, and resolve/draw must use the live
+slot. No GL context is needed; sanitized 24-frame water, physics and editor
+runs cover the real relocation path.
 
 <!-- //ai: GX-I024 async OBJ deindexing regression. -->
 The same suite deindexes synthetic OBJ triangles and quads with shared,

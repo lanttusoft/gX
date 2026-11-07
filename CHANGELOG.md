@@ -150,6 +150,13 @@ Release-Class: minor
   measured 17,728 B; no feature, visual or cap change.
 
 ### Fixed
+- <!-- //ai: GX-I024 GUI texture/model resource lifetime. --> GUI texture and
+  model elements keep a stable resource-manager filename and resolve the live
+  heap slot before every draw, matching the shader-element lifetime fix. The
+  shared resolver also covers shader elements, so a resource-heap growth can
+  no longer leave any of the three raw pointer caches dangling. A headless
+  relocation regression runs in `--test-only`; sanitized water, physics and
+  editor runs exit cleanly.
 - <!-- //ai: GX-I024 reflection suite determinism and fixture calibration. -->
   The full reflection suite now removes the gitignored user settings during
   capture and restores them afterwards, uses the convention-free yaw-only cube

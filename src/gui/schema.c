@@ -280,6 +280,8 @@ static gX_I0 gX_GUI_Element_Model_SchemaJSON_Create(gX_GUI_Element_Model *model)
     GX_SCHEMAJSON_ADDOBJECT_TERM(paramRotate,(model->paramRotate),F32V3)
     GX_SCHEMAJSON_ADDOBJECT_TERM(paramTranslate,(model->paramTranslate),F32V3)
     GX_SCHEMAJSON_ADDOBJECT_TERM(paramScale,(model->paramScale),F32V3)
+    //ai: stable resource key; the raw model pointer is runtime-only.
+    GX_SCHEMAJSON_ADDOBJECT_STRING(modelPath,(model->modelPath))
     
 }
 
@@ -419,6 +421,8 @@ static gX_I0 gX_GUI_Element_Texture_SchemaJSON_Create(gX_GUI_Element_Texture *te
     
     GX_SCHEMAJSON_ADDOBJECT_TERM(useShader,(texture->useShader),I1)
     GX_SCHEMAJSON_ADDOBJECT_TERM(shaderIndex,(texture->shaderIndex),U32)
+    //ai: stable resource key; the raw texture pointer is runtime-only.
+    GX_SCHEMAJSON_ADDOBJECT_STRING(texturePath,(texture->texturePath))
     
     //opencode: texture draw params — Widget_TextureButton sets params.dst;
     //   without this the texture silently disappeared on load

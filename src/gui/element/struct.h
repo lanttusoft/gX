@@ -211,6 +211,9 @@ typedef struct gX_GUI_Element_Model {
     gX_F32v3    paramScale;
     
     gX_Model   *model;
+    //ai: stable RM lookup key; the raw pointer is only a cache and may be
+    //    invalidated by resource-heap growth. Resolve before every use.
+    gX_I8       modelPath[128];
     
 } gX_GUI_Element_Model;
 
@@ -350,6 +353,9 @@ typedef struct gX_GUI_Element_Texture {
     
     gX_Texture  *texture;
     gX_Texture_Draw_Params params;
+    //ai: stable RM lookup key; the raw pointer is only a cache and may be
+    //    invalidated by resource-heap growth. Resolve before every use.
+    gX_I8       texturePath[128];
     
 } gX_GUI_Element_Texture;
 
