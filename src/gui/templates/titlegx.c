@@ -600,10 +600,28 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
             "320x240 SOFT", "320x240 SHARP", "320x240 SSAA 2x", "NATIVE"
         };
         static const gX_I32 VideoModes[4] = { 0, 1, 3, 2 };
+        gX_I1 Is240 = settings.screenWidth == 320
+            && settings.screenHeight == 240;
+        gX_I1 IsNative = settings.screenWidth == maindata.windowWidth
+            && settings.screenHeight == maindata.windowHeight;
         for (gX_I32 Video = 0; Video < 4; Video++)
         {
+            gX_I1 Selected = 0;
+            switch (VideoModes[Video])
+            {
+                case 0: Selected = Is240 && !settings.consoleSSAA2x
+                    && settings.presentFilter == 1; break;
+                case 1: Selected = Is240 && !settings.consoleSSAA2x
+                    && settings.presentFilter == 0; break;
+                case 3: Selected = Is240 && settings.consoleSSAA2x; break;
+                case 2: Selected = IsNative; break;
+                default: break;
+            }
+            gX_Color VideoColor = Selected
+                ? gui.style.title2.saveHeaderText
+                : gui.style.title2.saveSlotText;
             titlegx_console_item(&b, 448, 136.0f + (gX_F32)Video * 48.0f,
-                248, 44, VideoLabels[Video], 18, gui.style.title2.saveSlotText,
+                248, 44, VideoLabels[Video], 18, VideoColor,
                 gX_Widget_OnClick_ConsoleVideo,
                 (gX_I0 *)(gX_U64)(uintptr_t)VideoModes[Video]);
         }

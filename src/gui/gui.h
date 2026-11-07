@@ -724,6 +724,8 @@ gX_I32 gX_GUI_Make_SaveFile(const gX_I8 *path, gX_I32 canvasIndex);
 
 gX_I0 gX_GUI_Update(gX_I0);
 gX_I0 gX_GUI_Draw(gX_I0);
+//ai: console idle blanking runs from the input pass before global hotkeys.
+gX_I0 gX_GUI_ConsoleIdle_Update(gX_I0);
 
 //ai: transient console feedback shared by hotkeys, pause actions and shell loads.
 gX_I0 gX_GUI_ConsoleOSD_Notify(gX_I32 slot, const gX_I8 *message);

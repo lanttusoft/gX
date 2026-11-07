@@ -152,6 +152,15 @@ Release-Class: minor
   so re-entering Y2K returns to the authored view.
 - Console save states store an explicit `virtual`/`native` video mode plus the
   saved window size, so a Native save stays Native after a window resize.
+- The console idle wake now consumes the frame's input before binds, character
+  queueing or global hotkeys, so F5/F8/ESC/Start cannot act on the wake frame;
+  the OSD gate wakes with F5 and proves no save was written.
+- Console save writes use a sibling temp file and replace the slot, and
+  overlong save paths are rejected instead of silently truncated.
+- The shell marks the selected video profile (Soft/Sharp/SSAA 2x/Native) in its
+  video list.
+- The particle sandbox keeps its own status HUD by design; Y2K remains the
+  clean presentation profile.
 
 ## [0.41.0] - 2026-11-04
 

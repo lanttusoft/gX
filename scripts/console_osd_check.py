@@ -134,6 +134,22 @@ def main():
             assert_osd(wake_log.split("CONSOLE_IDLE: wake", 1)[1], 1024, 768,
                 cart="Y2K CGI", mode="SOFT", state="EMPTY")
 
+            #ai: the wake frame must swallow global hotkeys too, not only cards.
+            wake_slots = out / "wake_slots"
+            _, hotkey_log = capture("wake_hotkey", "7.5 key 294",
+                frames=540, shot=520,
+                extra={"GX_CONSOLE_IDLE_SECONDS": "2",
+                       "GX_CONSOLE_SAVE_DIR": str(wake_slots),
+                       "GX_NO_SETTINGS_SAVE": "0"})
+            console.require("CONSOLE_IDLE: wake" in hotkey_log,
+                "hotkey wake did not fire the idle wake")
+            console.require("CONSOLE_STATE: save" not in hotkey_log,
+                "wake F5 leaked into the save path")
+            console.require(not (wake_slots / "console_slot_1.json").exists(),
+                "wake F5 wrote a save slot")
+            assert_osd(hotkey_log.split("CONSOLE_IDLE: wake", 1)[1], 1024, 768,
+                cart="Y2K CGI", mode="SOFT", state="EMPTY")
+
             slot3_dir = out / "slot3"
             slot3_dir.mkdir()
             state = json.loads((save_dir / "console_slot_1.json").read_text())

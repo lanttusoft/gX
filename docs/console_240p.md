@@ -66,6 +66,8 @@ A cartridge is a gX scene preset plus an asset set and a settings profile:
 - **Particle/physics sandbox** — bootable `--cartridge-particle` profile:
   deterministic sandbox rebuild, authored overview camera, console pause menu
   and save-state camera restore. Uses the fast CPU and cheap low-res overdraw.
+  Its sandbox status HUD stays visible by design; Y2K is the clean
+  dev-HUD-free presentation profile.
 - **Console shell** — boot menu, cartridge select, video options, save states,
   controller mapping, emulator-style OSD. First slice: `--console-shell` opens
   the gX-240 boot view (cartridge slot, video output, save states); the Y2K
@@ -343,7 +345,8 @@ by the user; do not change display modes automatically.
   controller focus traversal/wrap. Empty-save focus and save-browser return
   routes are covered too. Clicks resolve from the engine's current element
   map rather than fixed pixel coordinates; the wake test clicks a cartridge
-  while blanked. Every capture rejects engine errors and writes its log beside
+  while blanked and a second wake presses F5; neither reaches a card nor the
+  save path. Every capture rejects engine errors and writes its log beside
   the screenshot under the scratch directory
   (`make console-check`).
   Ten display-free gate tests reject missing/partial telemetry, stale or

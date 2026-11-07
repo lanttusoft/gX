@@ -1165,7 +1165,6 @@ gX_I0 gX_Input_Update(gX_I0) {
     if (input.cursorSwitched) input.mouse.coordDelta = (gX_F32v2){0.0f, 0.0f};
     gX_Input_Update_Gamepad();
     gX_AI_Input_Apply_Gamepad();
-    if (updateBinds) gX_Input_Update_Binds();
     GX_PROFILE_ZONE_END("input:devices");
 
     //opencode: virtual input override — applies AFTER normal mouse/key update
@@ -1205,8 +1204,10 @@ gX_I0 gX_Input_Update(gX_I0) {
             }
         }
     }
-    //opencode: re-process binds AFTER held keys so movement binds see the held
-    //   state this frame (binds ran before the override above).
+    //opencode: re-process binds after the held-key state so movement sees it
+    //   this frame; the console idle wake consumes input first, before binds,
+    //   character queueing or any global hotkey.
+    gX_GUI_ConsoleIdle_Update();
     gX_Input_CaptureBind();
     if (updateBinds) gX_Input_Update_Binds();
     //opencode: enqueue characters for the textinput widget (after virtual

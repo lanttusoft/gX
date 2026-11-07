@@ -62,9 +62,9 @@ static const gX_I8 *console_state_dir(gX_I0) {
 static gX_I1 console_state_path(gX_I32 slot, gX_I8 *out, gX_I32 size) {
     if (!out || size <= 0 || slot < 1 || slot > GX_CONSOLE_SAVE_SLOTS)
         return 0;
-    snprintf((char *)out, (size_t)size, "%s/console_slot_%d.json",
-        (const char *)console_state_dir(), slot);
-    return 1;
+    gX_I32 written = snprintf((char *)out, (size_t)size,
+        "%s/console_slot_%d.json", (const char *)console_state_dir(), slot);
+    return (written > 0 && written < size) ? 1 : 0;
 }
 
 gX_I1 gX_ConsoleState_Exists(gX_I32 slot) {
@@ -214,8 +214,23 @@ static gX_I32 console_state_save(gX_I32 slot) {
             json_object_new_double((gX_F64)camera.camera3D.fovy));
         json_object_object_add(root, "camera3d", camera3d);
     }
-    gX_I32 result = json_object_to_file_ext((const char *)path, root,
-        JSON_C_TO_STRING_PRETTY_TAB);
+    //ai: write a sibling temp then replace the slot; a crash or full disk
+    //   leaves the previous save intact.
+    gX_I8 tempPath[520];
+    gX_I32 written = snprintf((char *)tempPath, sizeof(tempPath), "%s.tmp",
+        (const char *)path);
+    gX_I32 result = -1;
+    if (written > 0 && written < (gX_I32)sizeof(tempPath)) {
+        result = json_object_to_file_ext((const char *)tempPath, root,
+            JSON_C_TO_STRING_PRETTY_TAB);
+        if (result == 0 && rename((const char *)tempPath,
+                (const char *)path) != 0) {
+            remove((const char *)path);
+            if (rename((const char *)tempPath, (const char *)path) != 0)
+                result = -1;
+        }
+        if (result != 0) remove((const char *)tempPath);
+    }
     json_object_put(root);
     if (result != 0) {
         gX_TraceLog(gX_LOG_ERROR, "CONSOLE_STATE: save failed %s",
