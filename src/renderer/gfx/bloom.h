@@ -65,6 +65,8 @@ typedef struct gX_RendererGFX_Bloom {
     gX_RendererGFX_Shader compositeShader;
 
     gX_RendererGFX_RenderTexture hdrScene;
+    //ai: opt-in linear-HDR scene copy with SSR resolved before bloom/tonemap.
+    gX_RendererGFX_RenderTexture ssrScene;
     //opencode: Phase 1 — MSAA resolve target. When msaaLevel >= 2 the scene
     //   renders into hdrMSAA (multisampled) and MSAA_Resolve copies it to
     //   hdrScene for post-process. hdrMSAA owns its GL objects directly in

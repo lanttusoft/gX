@@ -100,17 +100,22 @@ main pass with an unjittered mirror pass. The Y2K console profile disables TAA.
 ### 5. Pre-bloom composition and color space
 
 All reflection sources should resolve in linear HDR before bloom and tonemap.
-The current SSR composite runs after bloom and writes linear SSR values into
-the tonemapped `bloom.scene`, which can make a geometrically aligned reflection
-look like a second image and clips its glow. The planned order is:
+The historical SSR composite runs after bloom and writes linear SSR values
+into the tonemapped `bloom.scene`, which can make a geometrically aligned
+reflection look like a second image and clips its glow.
+
+The opt-in `GX_SSR_PREBLOOM=1` path implements the preferred order:
 
 ```text
 scene -> reflection capture -> opaque/transparent
-      -> SSR -> reflection resolve (linear HDR)
+      -> SSR -> reflection resolve into bloom.ssrScene (linear HDR)
       -> bloom/tonemap -> post -> present
 ```
 
-Do not claim this order until the pre-bloom slice lands with its own evidence.
+`make ssr-prebloom-check` pins that the default post-bloom output is
+pixel-identical with SSR off, and that the opt-in path is valid and changes the
+SSR frame. The default remains post-bloom until the visual/color review is
+accepted; do not switch the default from this gate alone.
 
 ### 6. Env is a fallback
 
@@ -157,9 +162,10 @@ matrix if a new mismatch class appears.
 
 1. **This slice:** contract + `make reflection-alignment-check` (planar oracle
    and Y2K ownership).
-2. **Pre-bloom SSR resolve:** move/duplicate the composite into linear HDR
-   before bloom, or tonemap the SSR color consistently; add a color-match and
-   glow-retention gate.
+2. **Pre-bloom SSR resolve (opt-in implemented):** `GX_SSR_PREBLOOM=1`
+   resolves into `bloom.ssrScene` before bloom; the default stays post-bloom.
+   Remaining: color-match/glow-retention visual acceptance before changing the
+   default.
 3. **Per-surface ownership:** make `planarReflection` imply no SSR/defer and
    make the mode explicit; keep `reflectionSource` capture-only.
 4. **Jitter-consistent mirror VP:** apply the main jitter to the mirror

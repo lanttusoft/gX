@@ -155,6 +155,11 @@ gX_I0 gX_RendererGFX_Load_SetDefaults(gX_RendererGFX *gfx)
     gfx->ssr.maxDistance = gX_GFX_SSR_MAX_DISTANCE;
     gfx->ssr.depthBias = gX_GFX_SSR_DEPTH_BIAS;
     gfx->state.ENABLE_SSR_AUXVIEW = true;   //opencode: v0.3.4 auxview ships on
+    gfx->state.SSR_PREBLOOM = false;
+    {
+        const gX_I8 *ssrPre = getenv("GX_SSR_PREBLOOM");
+        if (ssrPre && ssrPre[0] == '1') gfx->state.SSR_PREBLOOM = true;
+    }
     gfx->ssr.opacity = gX_GFX_SSR_OPACITY;
     gfx->ssr.roughness = 0.2f; //opencode: was 0.3 — smoother = stronger reflections
     gfx->ssr.maxLod = 2.5f;    //opencode: Hi-Z max mip LOD (was 4.0 — coarse mips made far reflections blocky)
@@ -630,6 +635,9 @@ gX_I32 gX_RendererGFX_Load_InitRTs(gX_RendererGFX *gfx)
     GX_GFX_RT_INIT_HDR(gfx, bloom.hdrScene);
     gfx->bloom.hdrScene.wrapper.loadingState.loadAsap =
         gX_RendererGFX_Feature_NeedHdr(gfx);
+    GX_GFX_RT_INIT_HDR(gfx, bloom.ssrScene);
+    gfx->bloom.ssrScene.wrapper.loadingState.loadAsap = false;
+    gfx->bloom.ssrScene.colorOnly = 1;
     GX_GFX_RT_INIT_HDR(gfx, bloom.hdrMSAA);   // MSAA_Create-owned: custom multisample assembly, never generic-loaded
     gfx->bloom.hdrMSAA.wrapper.loadingState.loadAsap = false;
     GX_GFX_RT_INIT_LDR(gfx, sceneColorLDR);
@@ -1082,6 +1090,7 @@ gX_I0 gX_RendererGFX_Unload_FreeRTs(gX_RendererGFX *gfx)
     GX_GFX_RT_UNLOAD(gfx, fogVolume.genMap);
     GX_GFX_RT_UNLOAD(gfx, diffraction.map);
     GX_GFX_RT_UNLOAD(gfx, bloom.hdrScene);
+    GX_GFX_RT_UNLOAD(gfx, bloom.ssrScene);
     GX_GFX_RT_UNLOAD(gfx, bloom.luminanceRT);
     GX_GFX_RT_UNLOAD(gfx, ssao.ssgiMap);
     GX_GFX_RT_UNLOAD(gfx, ssao.ssgiBlurMap);

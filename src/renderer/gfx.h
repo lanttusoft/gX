@@ -99,6 +99,7 @@ typedef struct gX_RendererGFX_State {
     gX_I1   RELOAD; // reload RTs on resolution change
     gX_I1   ENABLE_SSR;
     gX_I1   ENABLE_SSR_AUXVIEW;    //opencode: v0.3.4 hybrid miss->planar fallback
+    gX_I1   SSR_PREBLOOM;          //ai: resolve SSR in linear HDR before bloom
 
     //opencode: post-process toggles (motion blur, DOF, TAA)
     gX_I1   ENABLE_MOTION_BLUR;

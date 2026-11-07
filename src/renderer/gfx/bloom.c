@@ -43,6 +43,17 @@
 #include "../../main.h"
 #include "../../camera.h"
 
+//ai: bloom consumes the SSR-resolved linear scene when the opt-in pre-bloom
+//   path is active; otherwise the direct HDR scene is unchanged.
+static gX_Texture Bloom_SceneTexture(gX_RendererGFX *gfx) {
+    if (gfx->state.SSR_PREBLOOM && gfx->state.ENABLE_BLOOM
+        && gfx->state.ENABLE_SSR && gfx->ssr.drewThisFrame
+        && gfx->ssr.map.wrapper.loadingState.loaded
+        && gfx->bloom.ssrScene.wrapper.loadingState.loaded)
+        return gfx->bloom.ssrScene.wrapper.rt.texture;
+    return gfx->bloom.hdrScene.wrapper.rt.texture;
+}
+
 #include "../../common/log.h"
 #include "../../common/macros.h"
 #include "../../common/profiler.h"
@@ -78,7 +89,7 @@ static gX_I0 Bloom_AutoExposure_Update(gX_RendererGFX *gfx)
             gfx->bloom.luminanceShader.shader.id, "sceneTex");
     gX_Drawing_BeginTexture(gfx->bloom.luminanceRT.wrapper.rt);
         gX_Drawing_BeginShader(gfx->bloom.luminanceShader.shader);
-            gX_RHI_Tex_BindOnUnit(gfx->bloom.hdrScene.wrapper.rt.texture.id, gX_GFX_TEXUNIT_SCENE);
+            gX_RHI_Tex_BindOnUnit(Bloom_SceneTexture(gfx).id, gX_GFX_TEXUNIT_SCENE);
             if (gfx->bloom.luminanceInputLoc >= 0)
                 gX_RHI_UniformInt(gfx->bloom.luminanceInputLoc, gX_GFX_TEXUNIT_SCENE);
             gX_Drawing_DrawScreenQuad(0, 0, (gX_F32)lumW, (gX_F32)lumH);
@@ -344,7 +355,7 @@ gX_I0 gX_RendererGFX_Bloom_Draw(gX_RendererGFX *gfx)
         gX_Drawing_ClearBG((gX_Color){0,0,0,255});
         Bloom_BeginScreenShader(extractS);
         //opencode: bind uniforms AFTER BeginShader — batch flush can lose bindings
-        gX_Shader_SetValue_TextureSlot(extractS, extractSceneLoc, gfx->bloom.hdrScene.wrapper.rt.texture, gX_GFX_TEXUNIT_SCENE);
+        gX_Shader_SetValue_TextureSlot(extractS, extractSceneLoc, Bloom_SceneTexture(gfx), gX_GFX_TEXUNIT_SCENE);
         gX_RHI_Uniform_Float(extractThresholdLoc, gfx->bloom.threshold);
         gX_RHI_Uniform_Float(extractKneeLoc, gfx->bloom.knee);
             gX_Drawing_DrawScreenQuad(0, 0, (gX_F32)gfx->bloom.extract.wrapper.width, (gX_F32)gfx->bloom.extract.wrapper.height);
@@ -369,7 +380,7 @@ gX_I0 gX_RendererGFX_Bloom_Draw(gX_RendererGFX *gfx)
     gX_Drawing_BeginTexture(gfx->bloom.scene.wrapper.rt);
         Bloom_BeginScreenShader(compositeS);
         //opencode: bind textures on dedicated units
-        gX_RHI_Tex_BindOnUnit(gfx->bloom.hdrScene.wrapper.rt.texture.id, gX_GFX_TEXUNIT_SCENE);
+        gX_RHI_Tex_BindOnUnit(Bloom_SceneTexture(gfx).id, gX_GFX_TEXUNIT_SCENE);
         gX_RHI_Tex_BindOnUnit(gfx->bloom.pong.wrapper.rt.texture.id, gX_GFX_TEXUNIT_BLOOM_BLUR);
         //opencode: v0.3-M4 Phase2 — SSGI additive reads the ACCUMULATED tex
         //opencode: v0.3.4-fix - the -1 location trick skipped rlSetUniform so

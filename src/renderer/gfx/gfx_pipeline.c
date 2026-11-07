@@ -118,6 +118,7 @@ typedef enum gX_GFX_PassId {
     PASS_SSR_VIS,
     PASS_CLUSTERS,
     PASS_SCENE_COPY,
+    PASS_SSR_RESOLVE,
     PASS_SSGI,
     PASS_BLOOM,
     PASS_DIFFRACTION,
@@ -167,9 +168,23 @@ static gX_I1 Pass_On_PostTarget(gX_RendererGFX *gfx)
 {
     return (gX_RendererGFX_Feature_HasEffects(gfx) || gfx->state.ENABLE_TAA);
 }
+static gX_I1 Pass_On_SsrBase(gX_RendererGFX *gfx)
+{
+    return (gfx->state.ENABLE_SSR && gfx->ssr.drewThisFrame
+        && gfx->ssr.map.wrapper.loadingState.loaded);
+}
+static gX_I1 Pass_On_SsrPrebloom(gX_RendererGFX *gfx)
+{
+    return (gfx->state.SSR_PREBLOOM && gfx->state.ENABLE_BLOOM
+        && gfx->bloom.ssrScene.wrapper.loadingState.loaded);
+}
 static gX_I1 Pass_On_SsrComp(gX_RendererGFX *gfx)
 {
-    return (gfx->state.ENABLE_SSR && gfx->ssr.drewThisFrame && gfx->ssr.map.wrapper.loadingState.loaded);
+    return Pass_On_SsrBase(gfx) && !Pass_On_SsrPrebloom(gfx);
+}
+static gX_I1 Pass_On_SsrResolve(gX_RendererGFX *gfx)
+{
+    return Pass_On_SsrBase(gfx) && Pass_On_SsrPrebloom(gfx);
 }
 static gX_I1 Pass_On_DepthVis(gX_RendererGFX *gfx)
 {
@@ -608,7 +623,16 @@ static gX_I0 Pass_Run_SceneCopy(gX_RendererGFX *gfx, gX_RenderTexture *)
     gX_RHI_GetIntegerv(gX_RHI_BLEND_DST_RGB, &scPB_D);
     gX_RHI_GetIntegerv(gX_RHI_BLEND_EQUATION_RGB, &scPB_Eq);
     gX_RHI_Disable(gX_RHI_BLEND);
-    gX_Drawing_BeginTexture(gfx->bloom.scene.wrapper.rt);
+    //ai: pre-bloom SSR copies the linear scene into ssrScene, then resolves
+    //   the SSR map there before bloom. The default post-bloom path keeps the
+    //   historical bloom.scene copy unchanged.
+    gX_RenderTexture *copyTarget = &gfx->bloom.scene.wrapper.rt;
+    if (gfx->state.SSR_PREBLOOM && gfx->state.ENABLE_BLOOM
+        && gfx->state.ENABLE_SSR && gfx->ssr.drewThisFrame
+        && gfx->ssr.map.wrapper.loadingState.loaded
+        && gfx->bloom.ssrScene.wrapper.loadingState.loaded)
+        copyTarget = &gfx->bloom.ssrScene.wrapper.rt;
+    gX_Drawing_BeginTexture(*copyTarget);
         gX_Texture_Draw(srcTex, (gX_Texture_Draw_Params){
             .dst = (gX_Rectangle){0, 0, (gX_F32)maindata.renderWidth, (gX_F32)maindata.renderHeight},
             .tint = gX_WHITE, .scale = {1, 1}
@@ -668,8 +692,9 @@ static gX_I0 Pass_Run_Lensflare(gX_RendererGFX *gfx, gX_RenderTexture *)
     gX_RHI_Debug_PopGroup();
     return;
 }
-static gX_I0 Pass_Run_SsrComp(gX_RendererGFX *gfx, gX_RenderTexture *)
+static gX_I0 Pass_Run_SsrComposite(gX_RendererGFX *gfx, gX_RenderTexture *target)
 {
+    if (!gfx || !target) return;
     gX_RHI_Debug_PushGroup("GFX_SSR_Composite");
     GX_PROFILE_ZONE_BEGIN("gfx:ssr_composite");
     //opencode: v0.1.24 — gate on drewThisFrame, not just ENABLE_SSR: when
@@ -685,7 +710,7 @@ static gX_I0 Pass_Run_SsrComp(gX_RendererGFX *gfx, gX_RenderTexture *)
     gX_RHI_GetIntegerv(gX_RHI_BLEND_EQUATION_RGB, &pbEq);
     gX_RHI_Enable(gX_RHI_BLEND);
     gX_RHI_Blend_Func_Separate(gX_RHI_SRC_ALPHA, gX_RHI_ONE_MINUS_SRC_ALPHA, gX_RHI_SRC_ALPHA, gX_RHI_ONE_MINUS_SRC_ALPHA);
-    gX_Drawing_BeginTexture(gfx->bloom.scene.wrapper.rt);
+    gX_Drawing_BeginTexture(*target);
         gX_Texture_Draw(gfx->ssr.map.wrapper.rt.texture, (gX_Texture_Draw_Params){
             .dst = (gX_Rectangle){0, 0, (gX_F32)maindata.renderWidth, (gX_F32)maindata.renderHeight},
             //opencode: NO y-flip here. The SSR map holds true-orientation
@@ -706,7 +731,18 @@ static gX_I0 Pass_Run_SsrComp(gX_RendererGFX *gfx, gX_RenderTexture *)
     if (!pbBlend) gX_RHI_Disable(gX_RHI_BLEND);
     GX_PROFILE_ZONE_END("gfx:ssr_composite");
     gX_RHI_Debug_PopGroup(); // GFX_SSR_Composite
-    return;
+}
+
+static gX_I0 Pass_Run_SsrComp(gX_RendererGFX *gfx, gX_RenderTexture *)
+{
+    if (!gfx->bloom.scene.wrapper.loadingState.loaded) return;
+    Pass_Run_SsrComposite(gfx, &gfx->bloom.scene.wrapper.rt);
+}
+
+static gX_I0 Pass_Run_SsrResolve(gX_RendererGFX *gfx, gX_RenderTexture *)
+{
+    if (!gfx->bloom.ssrScene.wrapper.loadingState.loaded) return;
+    Pass_Run_SsrComposite(gfx, &gfx->bloom.ssrScene.wrapper.rt);
 }
 static gX_I0 Pass_Run_Fog(gX_RendererGFX *gfx, gX_RenderTexture *)
 {
@@ -1545,9 +1581,10 @@ static const gX_GFX_Pass s_gfxPasses[PASS_COUNT] = {
     {"ssr",         NULL,               Pass_Run_Ssr,         "hdrScene,hiz,LUTs",    "ssr.map"},
     {"ssr_vis",     Pass_On_SsrVis,     Pass_Run_SsrVis,      "ssr.map",              "hdrScene"},
     {"clusters",    NULL,               Pass_Run_Clusters,    "lights",               "tile grid"},
-    {"scene_copy",  Pass_On_SceneCopy,  Pass_Run_SceneCopy,   "hdrScene/LDR",         "bloom.scene"},
+    {"scene_copy",  Pass_On_SceneCopy,  Pass_Run_SceneCopy,   "hdrScene/LDR",         "bloom.scene/ssrScene"},
+    {"ssr_resolve", Pass_On_SsrResolve, Pass_Run_SsrResolve,  "ssr.map,ssrScene",     "bloom.ssrScene"},
     {"ssgi",        Pass_On_Ssgi,       Pass_Run_Ssgi,        "hdrScene.depth,color", "ssgi.map,accum"},
-    {"bloom",       NULL,               Pass_Run_Bloom,       "hdrScene",             "bloom.scene"},
+    {"bloom",       NULL,               Pass_Run_Bloom,       "hdrScene/ssrScene",    "bloom.scene"},
     {"diffraction", Pass_On_Diffraction, Pass_Run_Diffraction, "hdrScene",           "compositeTarget,diffraction.map"},
     {"godray",      NULL,               Pass_Run_Godray,      "hdrScene",             "compositeTarget"},
     {"lensflare",   NULL,               Pass_Run_Lensflare,   "LDR,hdrScene.depth",   "compositeTarget"},

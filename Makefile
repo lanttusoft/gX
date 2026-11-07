@@ -179,6 +179,8 @@ check: all
 	$(MAKE) -s planar-geometry-check
 	#ai: numeric planar mirror chain plus the Y2K single-owner contract.
 	$(MAKE) -s reflection-alignment-check
+	#ai: opt-in linear-HDR SSR resolve before bloom; default post-bloom stays pinned.
+	$(MAKE) -s ssr-prebloom-check
 	#ai: native reflected vs rebuilt camera orientation and conditional winding witnesses.
 	$(MAKE) -s reflection-handedness-check
 	#ai: near clipping before perspective divide and mixed-w winding negative controls.
@@ -851,6 +853,11 @@ cli-check: all
 reflection-alignment-check: all
 	@echo "== [gX CI] reflection alignment =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/reflection_alignment_check.py
+
+.PHONY: ssr-prebloom-check
+ssr-prebloom-check: all
+	@echo "== [gX CI] SSR pre-bloom resolve =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/ssr_prebloom_check.py
 
 .PHONY: cartridge-check
 cartridge-check: all

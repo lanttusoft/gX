@@ -111,6 +111,12 @@ Release-Class: minor
   invariants. `make reflection-alignment-check` runs the CPU planar mirror
   oracle and the Y2K `planar=1`/`receiveSSR=0` SSR-free plan. The oracle now
   uses a fixed 1024x768 capture and an image-adaptive floor sample grid.
+- **Opt-in pre-bloom SSR resolve**: `GX_SSR_PREBLOOM=1` copies the linear HDR
+  scene and resolves the SSR map into `bloom.ssrScene` before bloom/tonemap;
+  bloom consumes that scene, so reflections share the scene's exposure and
+  can contribute to bloom. The default remains the post-bloom composite until
+  the visual/color review accepts the switch. `make ssr-prebloom-check` pins
+  SSR-off pixel identity and a valid, changed SSR frame.
 - **2x console SSAA**: opt-in 640x480 scene render resolved to 320x240 for
   Y2K, RAY-1 and the particle composite route; shell/pause video mode,
   save-state persistence and an OSD `SSAA2x` split. The matched GPU gate stays

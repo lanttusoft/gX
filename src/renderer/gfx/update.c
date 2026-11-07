@@ -529,6 +529,15 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
         gfx->bloom.pong.wrapper.height     = maindata.renderHeight / 2;
         gfx->bloom.scene.wrapper.width     = maindata.renderWidth;
         gfx->bloom.scene.wrapper.height    = maindata.renderHeight;
+        //ai: opt-in pre-bloom SSR scene copy; load lazily only when active.
+        if (gfx->bloom.ssrScene.wrapper.loadingState.loaded)
+            gX_RendererGFX_RenderTexture_Unload(&gfx->bloom.ssrScene);
+        gfx->bloom.ssrScene.wrapper.loadingState.loaded = false;
+        gfx->bloom.ssrScene.wrapper.loadingState.loadAsap = false;
+        gfx->bloom.ssrScene.hdr = true;
+        gfx->bloom.ssrScene.colorOnly = 1;
+        gfx->bloom.ssrScene.wrapper.width  = maindata.renderWidth;
+        gfx->bloom.ssrScene.wrapper.height = maindata.renderHeight;
 
         GX_GFX_RT_RELOAD(gfx, godray.genMap);
         gfx->godray.genMap.wrapper.width = maindata.renderWidth / 2;
@@ -1507,6 +1516,15 @@ gX_I0 gX_RendererGFX_Update(gX_RendererGFX *gfx)
             && gfx->state.msaaLevel >= 2
             && !gfx->bloom.hdrMSAA.wrapper.loadingState.loaded) {
             gX_RendererGFX_MSAA_Create(gfx);
+        }
+        //ai: pre-bloom SSR needs its own linear-HDR scene copy; the target is
+        //   created lazily when the opt-in path is active.
+        if (gfx->state.SSR_PREBLOOM && gfx->state.ENABLE_SSR
+            && gfx->state.ENABLE_BLOOM
+            && gfx->bloom.hdrScene.wrapper.loadingState.loaded
+            && !gfx->bloom.ssrScene.wrapper.loadingState.loaded) {
+            gfx->bloom.ssrScene.wrapper.loadingState.loadAsap = true;
+            gX_RendererGFX_RenderTexture_Update(&gfx->bloom.ssrScene);
         }
     }
     if (gfx->state.ENABLE_BLOOM && gfx->bloom.autoExposure) {
