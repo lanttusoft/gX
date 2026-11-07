@@ -33,6 +33,46 @@ only from each side of that base. A directory name is not its branch identity;
 always use the branch reported by Git. The script only runs read-only Git
 commands; `--write` changes these local report files, not refs, indexes or trees.
 
+## Safe collection and prune planning
+
+`worktree_collection.py` extends the read-only inventory with an explicit
+archive and a plan-only prune report. Neither command removes a worktree,
+deletes a branch, fetches, resets or cleans:
+
+```bash
+# grouped integrated/unmerged/dirty/missing/locked/active/detached view
+python3 scripts/worktree_collection.py status --base main
+
+# deterministic archive in a new or empty directory
+python3 scripts/worktree_collection.py archive --base main \
+  --output /tmp/gx-worktree-archive-$(date -u +%Y%m%dT%H%M%SZ)
+
+# exact commands for clean, integrated candidates; this only prints them
+python3 scripts/worktree_collection.py prune-plan --base main
+```
+
+The archive contains a full local-branch/tag Git bundle, one bundle per
+detached worktree HEAD, tracked/staged binary-safe patches, untracked/ignored
+path-and-size listings, worktree status snapshots, the inventory and notes,
+active advisory-bus claims, a JSON/Markdown manifest, and a sorted
+`SHA256SUMS`. Every bundle is verified with `git bundle verify` before the
+archive succeeds. Bundle, patch and listing bytes are deterministic for the
+same repository state; the manifest observation time is not.
+
+`prune-plan` emits `git worktree remove` and `git branch -d` only for branches
+integrated into the explicit base whose worktrees are clean, unlocked, not
+current and free of untracked **and ignored** files, with no active bus claim.
+It never emits `--force`, `-D`, `clean` or `reset --hard`. Everything else is a
+`REVIEW` line. Commands are quoted for copy/paste but the script does not
+execute them; removal and branch deletion remain separate, explicit maintainer
+actions after reviewing the archive and notes.
+
+Regression tests use disposable repositories:
+
+```bash
+python3 -m unittest discover -s scripts -p test_worktree_collection.py
+```
+
 ## Parallel sessions
 
 The inventory is the durable record. For live, short-lived coordination between

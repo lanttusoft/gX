@@ -9,6 +9,14 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **Worktree collection archive and prune plan**: `worktree_collection.py`
+  provides grouped status, deterministic local-branch/tag and detached-HEAD
+  Git bundles, tracked/staged patches, untracked/ignored listings, inventory/
+  notes, active-claim records, JSON/Markdown manifests and sorted SHA-256
+  checksums, verifying every bundle. `prune-plan` only prints safe
+  `git worktree remove`/`git branch -d` commands after integration, clean and
+  ignored-file, lock and active-claim checks; it never executes cleanup or
+  emits `--force`, `-D`, `clean` or `reset --hard`.
 - **gX-240 virtual scene**: `--virtualWidth/--virtualHeight` set the scene
   render target independently of the window, `--presentFilter sharp|soft`
   selects the nearest/linear upscale, and the Accessibility **Console
