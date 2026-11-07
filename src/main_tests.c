@@ -53,6 +53,7 @@
 #include "gui/builder.h"
 #include "gui/layout.h"
 #include "gui/enum.h"
+#include "gui/templates/template_registry.h"
 #include "gxmath/constants.h"
 #include "input.h"
 #include "common/enum.h"
@@ -2144,6 +2145,12 @@ static gX_I32 gX_Tests_GUI_Dialog(gX_I0)
 //   interaction-eligibility predicate.
 static gX_I32 gX_Tests_GUI_CoreAudit(gX_I0) {
     gX_I32 errors = 0;
+    //ai: template id 0 is the explicit empty canvas; it must be a no-op, not
+    //   a warning on every startup build.
+    if (gX_GUI_Template_Dispatch(0, 0) != 0) {
+        gX_TraceLog(gX_LOG_INFO, "GUI core audit: empty template dispatch FAIL");
+        errors++;
+    }
     gX_GUI_Canvas canvas = {0};
     gX_U32 order[gX_GUI_CANVAS_DEFAULT_MAX_ELEMENTS];
     gX_U32 drawCount = 0;

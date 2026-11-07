@@ -27,6 +27,7 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include <stddef.h> //opencode: reject non-finite persisted tool UI scale values.
 
@@ -468,8 +469,20 @@ gX_I32 gX_Settings_Reset(gX_I0) {
 
 gX_I32 gX_Settings_Load(gX_I0) {
     json.schema = &settings.schema;
-    if (gX_JSON_Load("resources/settings.json") != 0) {
-        gX_TraceLog(gX_LOG_NOTICE, "Settings_Load: could not load resources/settings.json — using defaults");
+    //ai: a missing settings file is the expected first-run state, not a load
+    //   failure. Probe first so the JSON loader does not emit a WARN before
+    //   the newcomer reaches the title.
+    FILE *probe = fopen("resources/settings.json", "rb");
+    gX_I1 exists = probe != NULL;
+    if (probe) fclose(probe);
+    if (!exists || gX_JSON_Load("resources/settings.json") != 0) {
+        if (!exists) {
+            gX_TraceLog(gX_LOG_INFO,
+                "Settings_Load: no settings file yet — using defaults");
+        } else {
+            gX_TraceLog(gX_LOG_NOTICE,
+                "Settings_Load: could not load resources/settings.json — using defaults");
+        }
         settings.uiThemePreset = GX_SETTINGS_UI_THEME_DEFAULT;
         gX_GUI_Style_SetThemePath(GX_GUI_STYLE_DEFAULT_PATH);
         gX_Settings_AudioSync(1);

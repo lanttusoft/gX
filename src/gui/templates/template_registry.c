@@ -65,6 +65,9 @@ gX_I0 gX_GUI_Template_Register(gX_I32 id, const gX_I8 *name, gX_GUI_TemplateFunc
 }
 
 gX_I32 gX_GUI_Template_Dispatch(gX_I32 id, gX_I32 canvasIndex) {
+    //ai: NULL/0 is the explicit empty-template case; canvases with no authored
+    //   template must not emit a warning on every build.
+    if (id <= 0) return 0;
     for (gX_U32 i = 0; i < gX_guiTemplateCount; i++) {
         if (gX_guiTemplateRegistry[i].id == id) {
             gX_guiTemplateRegistry[i].func(canvasIndex);
