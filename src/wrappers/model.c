@@ -36,6 +36,7 @@
 #include "model.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include "../rhi/rhi.h"
 #include "../rhi/rhi_matrix.h"
 #include "../rhi/rhi_state.h"
@@ -69,7 +70,7 @@ typedef struct gX_Model_AsyncSlot {
     gX_F32 *normals;
     gX_F32 *texcoords;
     gX_U32  vertexCount;
-    gX_U32  faceCount;
+    gX_U32  triangleCount;
     gX_I8   errorMsg[256];
 } gX_Model_AsyncSlot;
 
@@ -93,52 +94,146 @@ static gX_I1 gX_Model_EnsurePool(gX_I0)
     return 1;
 }
 
+gX_I0 gX_Model_ObjFree(gX_Model_ObjData *data) {
+    if (!data) return;
+    free(data->positions);
+    free(data->normals);
+    free(data->texcoords);
+    *data = (gX_Model_ObjData){0};
+}
+
+//ai: deindex OBJ faces into triangle soup. Positions and attributes use
+//    independent OBJ index streams; copying attrib.num_vertices for every
+//    stream overruns shared/missing normals and UVs (M11F-01). Missing normal
+//    and UV entries get the same neutral defaults as raylib's LoadOBJ.
+gX_I32 gX_Model_ObjParse(const gX_I8 *text, gX_U32 length, gX_Model_ObjData *out) {
+    if (!text || length == 0 || !out) return 1;
+    *out = (gX_Model_ObjData){0};
+
+    tinyobj_attrib_t attrib = {0};
+    tinyobj_shape_t *shapes = NULL;
+    unsigned int shapeCount = 0;
+    tinyobj_material_t *materials = NULL;
+    unsigned int materialCount = 0;
+    int ret = tinyobj_parse_obj(&attrib, &shapes, &shapeCount, &materials,
+        &materialCount, text, length, TINYOBJ_FLAG_TRIANGULATE);
+    tinyobj_shapes_free(shapes, shapeCount);
+    tinyobj_materials_free(materials, materialCount);
+    if (ret != TINYOBJ_SUCCESS) {
+        tinyobj_attrib_free(&attrib);
+        return 2;
+    }
+
+    if (!attrib.vertices || !attrib.faces || !attrib.face_num_verts
+        || attrib.num_vertices == 0 || attrib.num_faces == 0) {
+        tinyobj_attrib_free(&attrib);
+        return 3;
+    }
+
+    gX_U64 totalFaceVerts = 0;
+    for (gX_U32 face = 0; face < attrib.num_faces; face++) {
+        if (attrib.face_num_verts[face] != 3) {
+            tinyobj_attrib_free(&attrib);
+            return 4;
+        }
+        totalFaceVerts += 3;
+    }
+    if (totalFaceVerts == 0 || totalFaceVerts != attrib.num_face_num_verts
+        || totalFaceVerts > 0x7FFFFFFFULL
+        || totalFaceVerts > (gX_U64)(SIZE_MAX / (3 * sizeof(gX_F32)))
+        || totalFaceVerts > (gX_U64)(SIZE_MAX / (2 * sizeof(gX_F32)))) {
+        tinyobj_attrib_free(&attrib);
+        return 5;
+    }
+
+    gX_F32 *positions = (gX_F32*)calloc((size_t)totalFaceVerts * 3, sizeof(gX_F32));
+    gX_F32 *normals = (gX_F32*)calloc((size_t)totalFaceVerts * 3, sizeof(gX_F32));
+    gX_F32 *texcoords = (gX_F32*)calloc((size_t)totalFaceVerts * 2, sizeof(gX_F32));
+    if (!positions || !normals || !texcoords) {
+        free(positions);
+        free(normals);
+        free(texcoords);
+        tinyobj_attrib_free(&attrib);
+        return 6;
+    }
+
+    gX_U32 outVertex = 0;
+    gX_U32 faceVertex = 0;
+    for (gX_U32 face = 0; face < attrib.num_faces; face++) {
+        for (gX_U32 corner = 0; corner < 3; corner++) {
+            tinyobj_vertex_index_t index = attrib.faces[faceVertex++];
+            if (index.v_idx < 0 || (gX_U32)index.v_idx >= attrib.num_vertices) {
+                free(positions);
+                free(normals);
+                free(texcoords);
+                tinyobj_attrib_free(&attrib);
+                return 6;
+            }
+            positions[outVertex * 3 + 0] = attrib.vertices[index.v_idx * 3 + 0];
+            positions[outVertex * 3 + 1] = attrib.vertices[index.v_idx * 3 + 1];
+            positions[outVertex * 3 + 2] = attrib.vertices[index.v_idx * 3 + 2];
+
+            if (attrib.normals && index.vn_idx >= 0
+                && (gX_U32)index.vn_idx < attrib.num_normals) {
+                normals[outVertex * 3 + 0] = attrib.normals[index.vn_idx * 3 + 0];
+                normals[outVertex * 3 + 1] = attrib.normals[index.vn_idx * 3 + 1];
+                normals[outVertex * 3 + 2] = attrib.normals[index.vn_idx * 3 + 2];
+            } else {
+                normals[outVertex * 3 + 1] = 1.0f;
+            }
+
+            if (attrib.texcoords && index.vt_idx >= 0
+                && (gX_U32)index.vt_idx < attrib.num_texcoords) {
+                texcoords[outVertex * 2 + 0] = attrib.texcoords[index.vt_idx * 2 + 0];
+                texcoords[outVertex * 2 + 1] = 1.0f - attrib.texcoords[index.vt_idx * 2 + 1];
+            }
+            outVertex++;
+        }
+    }
+
+    tinyobj_attrib_free(&attrib);
+    out->positions = positions;
+    out->normals = normals;
+    out->texcoords = texcoords;
+    out->vertexCount = (gX_U32)totalFaceVerts;
+    out->triangleCount = (gX_U32)(totalFaceVerts / 3);
+    return 0;
+}
+
 static gX_I0 *gX_Model_AsyncThreadFunc(gX_I0 *arg)
 {
     gX_Model_AsyncSlot *slot = (gX_Model_AsyncSlot*)arg;
     // Read the file into memory
     FILE *f = fopen(slot->path, "rb");
     if (!f) { snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Cannot open %.200s", slot->path); gX_AtomicI32_Store(&slot->done, 1); return NULL; }
-    fseek(f, 0, SEEK_END);
+    if (fseek(f, 0, SEEK_END) != 0) { fclose(f); snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Cannot seek %.200s", slot->path); gX_AtomicI32_Store(&slot->done, 1); return NULL; }
     long fileLen = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    if (fileLen <= 0 || (gX_U64)fileLen > 0xFFFFFFFFULL) { fclose(f); snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Invalid file size"); gX_AtomicI32_Store(&slot->done, 1); return NULL; }
+    if (fseek(f, 0, SEEK_SET) != 0) { fclose(f); snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Cannot seek %.200s", slot->path); gX_AtomicI32_Store(&slot->done, 1); return NULL; }
     char *fileText = (char*)malloc((gX_U64)fileLen + 1);
     if (!fileText) { fclose(f); snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Out of memory"); gX_AtomicI32_Store(&slot->done, 1); return NULL; }
-    fread(fileText, 1, (gX_U64)fileLen, f);
+    size_t readBytes = fread(fileText, 1, (gX_U64)fileLen, f);
     fclose(f);
-    fileText[fileLen] = '\0';
-
-    // Parse with tinyobj (raylib's bundled copy)
-    tinyobj_attrib_t attrib;
-    tinyobj_shape_t *shapes = NULL;
-    unsigned int shapeCount = 0;
-    tinyobj_material_t *materials = NULL;
-    unsigned int materialCount = 0;
-    int ret = tinyobj_parse_obj(&attrib, &shapes, &shapeCount, &materials, &materialCount, fileText, (unsigned int)fileLen, 0);
-    free(fileText);
-    if (ret != 0) {
-        snprintf(slot->errorMsg, sizeof(slot->errorMsg), "tinyobj parse error");
-        free(shapes); free(materials);
+    if (readBytes != (size_t)fileLen) {
+        free(fileText);
+        snprintf(slot->errorMsg, sizeof(slot->errorMsg), "Cannot read %.200s", slot->path);
         gX_AtomicI32_Store(&slot->done, 1); return NULL;
     }
-    free(shapes);
-    if (materials) { for (unsigned int mi = 0; mi < materialCount; mi++) free(materials[mi].name); free(materials); }
+    fileText[fileLen] = '\0';
 
-    // Allocate and fill vertex arrays (positions, normals, texcoords)
-    slot->vertexCount = attrib.num_vertices;
-    slot->faceCount = attrib.num_faces;
-    if (attrib.num_vertices > 0) {
-        slot->positions = (gX_F32*)malloc((gX_U64)attrib.num_vertices * 3 * sizeof(gX_F32));
-        slot->normals   = (gX_F32*)malloc((gX_U64)attrib.num_vertices * 3 * sizeof(gX_F32));
-        slot->texcoords = (gX_F32*)malloc((gX_U64)attrib.num_vertices * 2 * sizeof(gX_F32));
-        if (slot->positions && slot->normals && slot->texcoords)
-        {
-            memcpy(slot->positions, attrib.vertices, (gX_U64)attrib.num_vertices * 3 * sizeof(gX_F32));
-            memcpy(slot->normals,   attrib.normals,   (gX_U64)attrib.num_vertices * 3 * sizeof(gX_F32));
-            memcpy(slot->texcoords, attrib.texcoords, (gX_U64)attrib.num_vertices * 2 * sizeof(gX_F32));
-        }
+    gX_Model_ObjData parsed = {0};
+    gX_I32 parseError = gX_Model_ObjParse(fileText, (gX_U32)fileLen, &parsed);
+    free(fileText);
+    if (parseError) {
+        snprintf(slot->errorMsg, sizeof(slot->errorMsg), "OBJ parse/deindex error %d", parseError);
+        gX_AtomicI32_Store(&slot->done, 1); return NULL;
     }
-    tinyobj_attrib_free(&attrib);
+
+    slot->positions = parsed.positions;
+    slot->normals = parsed.normals;
+    slot->texcoords = parsed.texcoords;
+    slot->vertexCount = parsed.vertexCount;
+    slot->triangleCount = parsed.triangleCount;
     gX_AtomicI32_Store(&slot->done, 1);
     return NULL;
 }
@@ -213,7 +308,7 @@ gX_Model gX_Model_AsyncLoadFinish(const gX_I8 *path)
 
     // Create raylib Mesh from the parsed vertex data
     rlMesh.vertexCount = (int)slot->vertexCount;
-    rlMesh.triangleCount = (int)(slot->faceCount);
+    rlMesh.triangleCount = (int)slot->triangleCount;
     rlMesh.vertices = slot->positions;     // transfer ownership
     rlMesh.normals   = slot->normals;
     rlMesh.texcoords = slot->texcoords;

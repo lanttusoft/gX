@@ -59,6 +59,7 @@
 #include "input.h"
 #include "common/enum.h"
 #include "settings.h"
+#include "wrappers/model.h"
 #include "wrappers/text.h"
 
 //opencode: release-lean guard — the unit-test suite is a development gate
@@ -1446,6 +1447,97 @@ static gX_I32 gX_Tests_GUI_ShaderLifetime(gX_I0) {
 
     if (errors == 0)
         gX_TraceLog(gX_LOG_INFO, "GUI SHADER lifetime tests: all passed");
+    return errors;
+}
+
+//ai: async OBJ parsing must deindex independent position/normal/UV streams;
+//    the old path copied attrib.num_vertices for every stream and overran
+//    shared or missing attributes (GX-I024 M11F-01).
+static gX_I32 gX_Tests_ModelObjParse(gX_I0) {
+    gX_I32 errors = 0;
+    struct {
+        const gX_I8 *name;
+        const gX_I8 *text;
+        gX_U32 vertices;
+        gX_U32 triangles;
+    } cases[] = {
+        { "shared normal",
+          "v 0 0 0\nv 1 0 0\nv 0 1 0\n"
+          "vt 0 0\nvt 1 0\nvt 0 1\nvn 0 0 1\n"
+          "f 1/1/1 2/2/1 3/3/1\n", 3, 1 },
+        { "no normals",
+          "v 0 0 0\nv 1 0 0\nv 0 1 0\n"
+          "vt 0 0\nvt 1 0\nvt 0 1\n"
+          "f 1/1 2/2 3/3\n", 3, 1 },
+        { "no uvs",
+          "v 0 0 0\nv 1 0 0\nv 0 1 0\n"
+          "vn 0 0 1\nvn 0 0 1\nvn 0 0 1\n"
+          "f 1//1 2//2 3//3\n", 3, 1 },
+        { "positions only",
+          "v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n", 3, 1 },
+        { "quad triangulation",
+          "v 0 0 0\nv 1 0 0\nv 1 1 0\nv 0 1 0\nf 1 2 3 4\n", 6, 2 },
+        { "indexed quad",
+          "v 0 0 0\nv 1 0 0\nv 1 1 0\nv 0 1 0\n"
+          "vn 0 0 1\n"
+          "f 1//1 2//1 3//1\nf 1//1 3//1 4//1\n", 6, 2 },
+    };
+
+    for (gX_U32 i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+        gX_Model_ObjData data = {0};
+        gX_I32 parseError = gX_Model_ObjParse(cases[i].text,
+            (gX_U32)strlen(cases[i].text), &data);
+        if (parseError != 0) {
+            gX_TraceLog(gX_LOG_INFO, "MODEL OBJ parse '%s' failed: %d",
+                cases[i].name, parseError);
+            errors++;
+            continue;
+        }
+        if (data.vertexCount != cases[i].vertices
+            || data.triangleCount != cases[i].triangles
+            || !data.positions || !data.normals || !data.texcoords) {
+            gX_TraceLog(gX_LOG_INFO,
+                "MODEL OBJ parse '%s' counts %u/%u want %u/%u",
+                cases[i].name, data.vertexCount, data.triangleCount,
+                cases[i].vertices, cases[i].triangles);
+            errors++;
+        }
+        if (strcmp(cases[i].name, "shared normal") == 0 && data.normals
+            && data.texcoords) {
+            for (gX_U32 v = 0; v < 3; v++) {
+                if (data.normals[v * 3 + 2] != 1.0f) errors++;
+            }
+            if (data.texcoords[0] != 0.0f || data.texcoords[1] != 1.0f
+                || data.texcoords[2] != 1.0f || data.texcoords[3] != 1.0f) {
+                errors++;
+            }
+        }
+        if (strcmp(cases[i].name, "positions only") == 0 && data.normals
+            && data.texcoords) {
+            for (gX_U32 v = 0; v < 3; v++) {
+                if (data.normals[v * 3 + 0] != 0.0f
+                    || data.normals[v * 3 + 1] != 1.0f
+                    || data.normals[v * 3 + 2] != 0.0f) errors++;
+            }
+            for (gX_U32 v = 0; v < 6; v++) {
+                if (data.texcoords[v] != 0.0f) errors++;
+            }
+        }
+        if (strcmp(cases[i].name, "indexed quad") == 0 && data.positions) {
+            if (data.positions[0] != 0.0f || data.positions[3] != 1.0f
+                || data.positions[6] != 1.0f || data.positions[9] != 0.0f
+                || data.positions[12] != 1.0f || data.positions[13] != 1.0f) errors++;
+        }
+        gX_Model_ObjFree(&data);
+    }
+
+    gX_Model_ObjData invalid = {0};
+    const gX_I8 *invalidText = "v 0 0 0\nf 1 2 3\n";
+    if (gX_Model_ObjParse(invalidText, (gX_U32)strlen(invalidText), &invalid) == 0) errors++;
+    gX_Model_ObjFree(&invalid);
+
+    if (errors == 0)
+        gX_TraceLog(gX_LOG_INFO, "MODEL OBJ parse tests: all passed");
     return errors;
 }
 
@@ -4010,6 +4102,7 @@ gX_I32 gX_Tests(gX_I0) {
     errors += gX_Tests_JSON();
     errors += gX_Tests_ShaderCompiler();
     errors += gX_Tests_GUI_ShaderLifetime();
+    errors += gX_Tests_ModelObjParse();
     errors += gX_Tests_Threading();
     errors += gX_Tests_SkinUploadClamp();
     errors += gX_Tests_DevCubePhase();

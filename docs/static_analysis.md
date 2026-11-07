@@ -121,6 +121,11 @@ GUI shader element keeps a stable fragment path, a forced shader-heap growth
 frees the old slice, and resolve/clear must use the live slot. No GL context
 is needed; the sanitized 24-frame water run covers the real relocation path.
 
+<!-- //ai: GX-I024 async OBJ deindexing regression. -->
+The same suite deindexes synthetic OBJ triangles and quads with shared,
+missing or indexed normals/UVs through the real async parser; the sanitized
+editor preset fixtures cover the worker and renderer path in a GL context.
+
 ## Presets, clangd and fuzzing
 
 `CMakePresets.json` standardizes the build trees: `default` (build/), `debug`,

@@ -150,6 +150,13 @@ Release-Class: minor
   measured 17,728 B; no feature, visual or cap change.
 
 ### Fixed
+- <!-- //ai: GX-I024 async OBJ deindexing. --> Large OBJ files parsed on the
+  async worker now deindex each face's position, normal and UV streams instead
+  of copying `num_vertices` entries from every attribute array. Shared or
+  missing normals/UVs and indexed quads no longer overrun their destinations;
+  quads are triangulated and the mesh triangle count is correct. A headless
+  parser regression runs in `--test-only` and `sanitize-check`, and the five
+  sanitized editor OBJ fixtures exit cleanly.
 - <!-- //ai: GX-I024 GUI shader resource lifetime. --> GUI shader elements now
   resolve their live resource-heap slot from the stable fragment path before
   load, draw, uniform upload and clear. This fixes the sanitizer

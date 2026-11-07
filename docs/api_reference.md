@@ -154,8 +154,9 @@ this source beta.
 - `gX_Shader_*` — Load, LoadFromMemory, Load_Geo, SetValue_* (Int/Float/
   V2/V3/V4/Matrix/TextureSlot), GetLocation, Unload; hot-reload via
   `gX_Shader_Compiler_CheckReload`
-- `gX_Model_*` — Load, AsyncLoad (Start/IsDone/Finish), Draw, Mesh access,
-  Unload; `gX_Mesh_Gen*` (plane/cube/sphere...)
+- `gX_Model_*` — Load, AsyncLoad (Start/IsDone/Finish), ObjParse/ObjFree
+  (display-free OBJ triangle-soup deindexing), Draw, Mesh access, Unload;
+  `gX_Mesh_Gen*` (plane/cube/sphere...)
 - `gX_Font_*` — GetDefault, Load, Measure (gX_RawString_Measure)
 - `gX_Sound_*` / `gX_Music_*` — Play/Stop/SetVolume/SetPan, GetLength
 - `gX_Window_*` — Init, ShouldClose, resize, fullscreen

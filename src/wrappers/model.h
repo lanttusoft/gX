@@ -108,6 +108,20 @@ gX_BoundingBox gX_Model_GetBoundingBox(gX_Model model);
 
 gX_I0 gX_BoundingBox_Draw(gX_BoundingBox bb, gX_Color color);
 
+//ai: display-free OBJ deindexing shared by the async loader and the headless
+//    regression. Positions/normals/texcoords are per-face-vertex triangle
+//    soup; the caller owns and frees them with gX_Model_ObjFree().
+typedef struct gX_Model_ObjData {
+    gX_F32 *positions;
+    gX_F32 *normals;
+    gX_F32 *texcoords;
+    gX_U32  vertexCount;
+    gX_U32  triangleCount;
+} gX_Model_ObjData;
+
+gX_I32 gX_Model_ObjParse(const gX_I8 *text, gX_U32 length, gX_Model_ObjData *out);
+gX_I0  gX_Model_ObjFree(gX_Model_ObjData *data);
+
 //opencode: async OBJ model loading — parses in a worker thread to avoid main-thread softlocks
 gX_I0   gX_Model_AsyncLoadStart(const gX_I8 *path);
 gX_I1   gX_Model_AsyncLoadIsDone(const gX_I8 *path);
