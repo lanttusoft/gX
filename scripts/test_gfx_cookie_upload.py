@@ -114,7 +114,21 @@ int main(int argc,char **argv)
     if(Mode==0)
     {
         assert(CellUploads==1 && Conversions==1 && LastW==256 && LastH==256);
-        for(unsigned i=0;i<2048u*2048u*4u;i++)assert(Atlas[i]==255);
+        assert(LastX==768 && LastY==0);
+        int dark=0,light=0;
+        for(unsigned y=0;y<256;y++)for(unsigned x=0;x<256;x++)
+        {
+            unsigned char *p=Atlas+((y*2048u+768u+x)*4u);
+            assert(p[0]==p[1] && p[1]==p[2] && p[3]==255);
+            if(p[0]<64)dark=1;
+            if(p[0]>192)light=1;
+        }
+        assert(dark && light);
+        for(unsigned y=0;y<2048u;y++)for(unsigned x=0;x<2048u;x++)
+        {
+            if(y<256 && x>=768 && x<1024)continue;
+            assert(Atlas[(y*2048u+x)*4u]==255);
+        }
     }
     else if(Mode>=1 && Mode<=4)
     {
