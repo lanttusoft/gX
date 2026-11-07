@@ -150,6 +150,13 @@ Release-Class: minor
   measured 17,728 B; no feature, visual or cap change.
 
 ### Fixed
+- <!-- //ai: GX-I024 GUI shader resource lifetime. --> GUI shader elements now
+  resolve their live resource-heap slot from the stable fragment path before
+  load, draw, uniform upload and clear. This fixes the sanitizer
+  heap-use-after-free when a late scene shader load (water boot) relocated the
+  shader heap after the GUI templates were built; shape, texture and model
+  shader references use the same resolution. The headless relocation
+  regression runs in `--test-only` and `sanitize-check`.
 - <!-- //ai: M11-01 upload/destruction capacity parity. --> Procedural sphere
   meshes allocate all nine VBO slots expected by the bundled skinned raylib
   destructor, including rigid meshes. This fixes the upload write overrun

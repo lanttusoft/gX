@@ -59,6 +59,9 @@ gX_GUI_Element_ModuleGen(TextInput)
 
 //opencode: shader module internals used by texture/model/shape elements when
 //   they reference a shader element via shaderIndex
+//ai: resolve the live RM heap slot from the stable fragment path; callers
+//    must not cache the returned pointer across a resource-heap growth.
+gX_Shader *gX_GUI_Element_Shader_Resolve(gX_GUI_Element_Shader *shader);
 gX_I0 gX_GUI_Element_Shader_Load(gX_GUI_Element_Shader *shader);
 gX_I0 gX_GUI_Element_Shader_Uniforms_Init(gX_GUI_Element_Shader *shader);
 gX_I0 gX_GUI_Element_Shader_Uniforms_Set(gX_GUI_Element_Shader *shader);

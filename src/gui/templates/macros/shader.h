@@ -38,7 +38,10 @@
     GUI_TEMPLATE_ELEMENT_ADD_SHADER \
     if (shaderOK) { \
         currentShader->shader = (gX_Shader*)gX_RMHeap_GetPtr_FileName2(shaderHeap, fragfile); \
-        if (!currentShader->shader) { \
+        if (currentShader->shader) { \
+            strncpy(currentShader->fragPath, fragfile, sizeof(currentShader->fragPath) - 1); \
+        } \
+        else { \
             gX_TraceLog(gX_LOG_WARNING, "GUI_TEMPLATE: Shader not found: %s", fragfile); \
             shaderOK = false; \
         } \

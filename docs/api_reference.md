@@ -439,6 +439,9 @@ It is inactive by default; paths outside `/tmp/` and faces larger than
 - `gX_GUI_Element_*` — 15 element sub-modules (rect, color, text, texture,
   model, shader, sound, animation, attribute, data, layout, shape,
   textinput, timer)
+- `gX_GUI_Element_Shader_Resolve(shader)` — re-bind a shader element to the
+  live resource-manager shader-heap slot from its stable fragment path; call
+  it after heap growth instead of caching the returned pointer.
 - `gX_GUI_Canvas_*` — canvas boxes, buffers, composites
 - `gX_GUI_Style/CSS/Markup` — theme.json + css + markup templates
 - `gX_GUI_Template_*` — registry (Example/Demo/Demo2/Scene/EscapeMenu/

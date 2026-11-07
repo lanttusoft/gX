@@ -90,7 +90,8 @@ static gX_I0 gX_GUI_Element_Model_Draw(gX_GUI_Element_Model *model, gX_GUI_Eleme
     gX_GUI_Element_Shader *elShader = NULL;
     if (model->useShader && element->shaders.data && model->shaderIndex < element->shaders.amount) {
         elShader = &((gX_GUI_Element_Shader*)element->shaders.data)[model->shaderIndex];
-        if (!elShader->shader) elShader = NULL;
+        //ai: the RM shader heap relocates on growth — resolve before use.
+        if (!gX_GUI_Element_Shader_Resolve(elShader)) elShader = NULL;
     }
     
     if (model->useParameters) {

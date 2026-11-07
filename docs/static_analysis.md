@@ -115,6 +115,12 @@ The ordinary guarded-allocation variant also runs in `check` and `check-fast`.
 This is a CPU ownership/bounds test, not a replacement for sanitized water
 and physics scene runs with a real GL context.
 
+<!-- //ai: GX-I024 GUI shader relocation regression runs headless. -->
+The sanitizer suite also includes a headless resource-lifetime regression: a
+GUI shader element keeps a stable fragment path, a forced shader-heap growth
+frees the old slice, and resolve/clear must use the live slot. No GL context
+is needed; the sanitized 24-frame water run covers the real relocation path.
+
 ## Presets, clangd and fuzzing
 
 `CMakePresets.json` standardizes the build trees: `default` (build/), `debug`,

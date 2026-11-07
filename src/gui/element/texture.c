@@ -112,7 +112,8 @@ static gX_I0 gX_GUI_Element_Texture_Draw(gX_GUI_Element_Texture *texture, gX_GUI
             && texture->shaderIndex < element->shaders.amount) {
             gX_GUI_Element_Shader *shaders = element->shaders.data;
             gX_GUI_Element_Shader *elShader = &shaders[texture->shaderIndex];
-            if (elShader->shader) {
+            //ai: the RM shader heap relocates on growth — resolve before use.
+            if (gX_GUI_Element_Shader_Resolve(elShader)) {
                 gX_Drawing_BeginShader(*(elShader->shader));
                 if (!elShader->loaded) {
                     gX_GUI_Element_Shader_Load(elShader);
@@ -131,7 +132,7 @@ static gX_I0 gX_GUI_Element_Texture_Draw(gX_GUI_Element_Texture *texture, gX_GUI
             && texture->shaderIndex < element->shaders.amount) {
             gX_GUI_Element_Shader *shaders = element->shaders.data;
             gX_GUI_Element_Shader *elShader = &shaders[texture->shaderIndex];
-            if (elShader->shader) {
+            if (gX_GUI_Element_Shader_Resolve(elShader)) {
                 gX_Drawing_EndShader();
             }
         }
@@ -155,7 +156,8 @@ static gX_I0 gX_GUI_Element_Texture_Draw(gX_GUI_Element_Texture *texture, gX_GUI
         gX_GUI_Element_Shader *elShader = NULL;
         if (texture->useShader && element->shaders.data && texture->shaderIndex < element->shaders.amount) {
             elShader = &((gX_GUI_Element_Shader*)element->shaders.data)[texture->shaderIndex];
-            if (!elShader->shader) elShader = NULL;
+            //ai: the RM shader heap relocates on growth — resolve before use.
+            if (!gX_GUI_Element_Shader_Resolve(elShader)) elShader = NULL;
         }
         
         if (elShader && !forcePlain) {

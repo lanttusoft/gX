@@ -35,6 +35,7 @@
 #include "common/heap.h"
 #include "common/log.h"
 #include "common/types/3d.h"
+#include "resource/resource.h"
 #include "module/devcube_phase.h"
 #include "common/marshal/json_impl.h"
 #include "gui/element/textinput.h"
@@ -1388,6 +1389,63 @@ static gX_I32 gX_Tests_ShaderCompiler(gX_I0) {
     remove(vp);
     remove(fp);
     if (errors == 0) gX_TraceLog(gX_LOG_INFO, "SHADER_COMPILER observer tests: all passed");
+    return errors;
+}
+
+//ai: RM heap growth must not leave a GUI shader element holding freed storage.
+//    The observed water boot loaded a shader after the GUI templates were
+//    built, relocated the shader heap, and the next clear read
+//    shader->shader->id through the stale slice (ASan heap-use-after-free).
+static gX_I32 gX_Tests_GUI_ShaderLifetime(gX_I0) {
+    gX_I32 errors = 0;
+    //opencode: --test-only runs before gX_Load; a pre-existing slot belongs to
+    //   another fixture, so leave it untouched.
+    if (gX_ResourceSlot_Find(gX_DATATYPE_STRUCT_SHADER)) return 0;
+
+    gX_ResourceSlot *slot = gX_ResourceSlot_Add(gX_DATATYPE_STRUCT_SHADER);
+    if (!slot) {
+        gX_TraceLog(gX_LOG_INFO, "GUI SHADER LIFETIME: slot allocation failed");
+        return 1;
+    }
+    gX_Heap *heap = &slot->heap;
+    gX_Shader *oldView = (gX_Shader *)gX_Heap_SeekPtr_Index(heap, 0);
+    if (!oldView || !heap->fileName2) {
+        gX_TraceLog(gX_LOG_INFO, "GUI SHADER LIFETIME: heap setup failed");
+        errors++;
+    } else {
+        oldView->id = 0;   // no watch entry: Clear must not touch GL
+        heap->meta[0].USED = true;
+        strncpy(heap->fileName2[0], "lifetime_probe.frag",
+                sizeof(heap->fileName2[0]) - 1);
+
+        gX_GUI_Element_Shader element = {0};
+        strncpy(element.fragPath, "lifetime_probe.frag",
+                sizeof(element.fragPath) - 1);
+        element.shader = oldView;
+        if (gX_GUI_Element_Shader_Resolve(&element) != oldView) errors++;
+
+        //opencode: force the same relocation a late resource load performs.
+        if (!gX_Heap_Add_Push_NoPtr(heap)) errors++;
+        gX_Shader *liveView = (gX_Shader *)gX_Heap_SeekPtr_Index(heap, 0);
+        if (!liveView || liveView == oldView) errors++;
+        if (gX_GUI_Element_Shader_Resolve(&element) != liveView) errors++;
+
+        //opencode: deliberately restore the stale slice; Clear must resolve
+        //   the live slot instead of dereferencing the freed block.
+        element.shader = oldView;
+        gX_GUI_Element_Shader_Clear(&element);
+        if (element.shader || element.fragPath[0]) errors++;
+    }
+
+    gX_RMHeap_Clear(heap);
+    gX_Heap_DeInit(heap);
+    free(slot->loadMtimes);
+    slot->loadMtimes = NULL;
+    slot->active = false;
+    slot->type = 0;
+
+    if (errors == 0)
+        gX_TraceLog(gX_LOG_INFO, "GUI SHADER lifetime tests: all passed");
     return errors;
 }
 
@@ -3951,6 +4009,7 @@ gX_I32 gX_Tests(gX_I0) {
     errors += gX_Tests_Input_Transitions();
     errors += gX_Tests_JSON();
     errors += gX_Tests_ShaderCompiler();
+    errors += gX_Tests_GUI_ShaderLifetime();
     errors += gX_Tests_Threading();
     errors += gX_Tests_SkinUploadClamp();
     errors += gX_Tests_DevCubePhase();

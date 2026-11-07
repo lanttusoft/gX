@@ -47,6 +47,24 @@
 #include "../../rhi/rhi.h"
 #include "../../rhi/batch.h"
 
+#include "../../resource/resource.h"
+
+
+//ai: GUI modules keep a stable fragment path instead of a raw slice of the
+//    relocating RM shader heap; resolve before every access so a heap growth
+//    (water/scene shader load) cannot leave a dangling program pointer.
+gX_Shader *gX_GUI_Element_Shader_Resolve(gX_GUI_Element_Shader *shader) {
+    if (!shader) return NULL;
+    shader->fragPath[sizeof(shader->fragPath) - 1] = '\0';
+    if (shader->fragPath[0] == '\0') return shader->shader;
+    gX_Heap *shaderHeap = gX_ResourceManager_GetHeap_Type(gX_DATATYPE_STRUCT_SHADER);
+    gX_Shader *live = NULL;
+    if (shaderHeap && shaderHeap->data && shaderHeap->amount > 0) {
+        live = (gX_Shader *)gX_RMHeap_GetPtr_FileName2(shaderHeap, shader->fragPath);
+    }
+    shader->shader = live;
+    return live;
+}
 
 inline gX_I0 gX_GUI_Element_Shader_Init(gX_GUI_Element_Shader *shader) {
     gX_TraceLog_GUI(gX_LOG_ALL,"Initializing shader values");
@@ -70,22 +88,23 @@ inline gX_I0 gX_GUI_Element_Shader_Init(gX_GUI_Element_Shader *shader) {
 
 gX_I0 gX_GUI_Element_Shader_Load(gX_GUI_Element_Shader *shader);
 static gX_I0 gX_GUI_Element_Shader_OnReload(gX_Shader *unused, gX_I0 *userData);
-//opencode: NULL guard shader->shader before dereference
+//opencode: resolve the live heap slot before dereferencing the program
 gX_I0 gX_GUI_Element_Shader_Load(gX_GUI_Element_Shader *shader) {
-    if (!shader->shader) return;
-    shader->locs.timeLoc =      gX_Shader_GetLocation(*(shader->shader),"time");
-    shader->locs.resLoc =       gX_Shader_GetLocation(*(shader->shader),"res");
-    shader->locs.rectLoc =      gX_Shader_GetLocation_Multi(*(shader->shader),2,"box","rect");
-    shader->locs.colorLoc =     gX_Shader_GetLocation_Multi(*(shader->shader),2,"albedoColor","col");
-    shader->locs.scaleLoc =     gX_Shader_GetLocation(*(shader->shader),"scale");
+    gX_Shader *sha = gX_GUI_Element_Shader_Resolve(shader);
+    if (!sha) return;
+    shader->locs.timeLoc =      gX_Shader_GetLocation(*sha,"time");
+    shader->locs.resLoc =       gX_Shader_GetLocation(*sha,"res");
+    shader->locs.rectLoc =      gX_Shader_GetLocation_Multi(*sha,2,"box","rect");
+    shader->locs.colorLoc =     gX_Shader_GetLocation_Multi(*sha,2,"albedoColor","col");
+    shader->locs.scaleLoc =     gX_Shader_GetLocation(*sha,"scale");
     //opencode: search "input" BEFORE "texture0"! raylib's default vertex shader
     //   always has a "texture0" sampler. Looking up "texture0" first would
     //   find the default vertex shader's sampler, not the custom fragment
     //   shader's input texture. raylib's batch flush then resets texture0
     //   to unit 0 (with the shapes texture), breaking the input binding.
     //   "inputTex" is the desktop-GLSL130 dialect rename of `input`.
-    shader->locs.inputTexLoc =  gX_Shader_GetLocation_Multi(*(shader->shader),4,"input","inputTex","tex0","texture0");
-    shader->locs.uniformLoc =   gX_Shader_GetLocation(*(shader->shader),"uniforms");
+    shader->locs.inputTexLoc =  gX_Shader_GetLocation_Multi(*sha,4,"input","inputTex","tex0","texture0");
+    shader->locs.uniformLoc =   gX_Shader_GetLocation(*sha,"uniforms");
     
     //opencode: query the declared size of the `uniforms` array — uploading
     //   more vec4s than the shader declares is gX_RHI_INVALID_OPERATION.
@@ -93,11 +112,11 @@ gX_I0 gX_GUI_Element_Shader_Load(gX_GUI_Element_Shader *shader) {
     shader->uniformCount = 0;
     if (shader->locs.uniformLoc >= 0) {
         gX_I32 activeUniforms = 0;
-        gX_RHI_GetProgramiv((gX_U32)shader->shader->id, gX_RHI_ACTIVE_UNIFORMS, &activeUniforms);
+        gX_RHI_GetProgramiv((gX_U32)sha->id, gX_RHI_ACTIVE_UNIFORMS, &activeUniforms);
         for (gX_I32 ui = 0; ui < activeUniforms; ui++) {
             gX_I8 uname[64] = {0};
             gX_I32 usize = 0; gX_U32 utype = 0;
-            gX_RHI_GetActiveUniform((gX_U32)shader->shader->id, (gX_U32)ui,
+            gX_RHI_GetActiveUniform((gX_U32)sha->id, (gX_U32)ui,
                 uname, (gX_U32)sizeof(uname), &usize, &utype);
             if (strncmp(uname, "uniforms", 8) == 0) {
                 shader->uniformCount = (gX_U32)(usize > 4 ? 4 : (usize > 0 ? usize : 1));
@@ -106,24 +125,24 @@ gX_I0 gX_GUI_Element_Shader_Load(gX_GUI_Element_Shader *shader) {
         }
     }
     
-    shader->locs.camPosLoc =    gX_Shader_GetLocation(*(shader->shader),"cameraPos");
-    shader->locs.camTargetLoc = gX_Shader_GetLocation(*(shader->shader),"cameraTarget");
-    shader->locs.camUpLoc =     gX_Shader_GetLocation(*(shader->shader),"cameraUp");
-    shader->locs.camFovLoc =    gX_Shader_GetLocation(*(shader->shader),"cameraFov");
+    shader->locs.camPosLoc =    gX_Shader_GetLocation(*sha,"cameraPos");
+    shader->locs.camTargetLoc = gX_Shader_GetLocation(*sha,"cameraTarget");
+    shader->locs.camUpLoc =     gX_Shader_GetLocation(*sha,"cameraUp");
+    shader->locs.camFovLoc =    gX_Shader_GetLocation(*sha,"cameraFov");
     
-    shader->locs.ambientFactorLoc =  gX_Shader_GetLocation(*(shader->shader),"ambientFactor");
-    shader->locs.colorMultiplierLoc =  gX_Shader_GetLocation(*(shader->shader),"colorMultiplier");
-    shader->locs.lightDirLoc =  gX_Shader_GetLocation(*(shader->shader),"lightDir");
+    shader->locs.ambientFactorLoc =  gX_Shader_GetLocation(*sha,"ambientFactor");
+    shader->locs.colorMultiplierLoc =  gX_Shader_GetLocation(*sha,"colorMultiplier");
+    shader->locs.lightDirLoc =  gX_Shader_GetLocation(*sha,"lightDir");
     
-    shader->locs.backsideLoc =  gX_Shader_GetLocation(*(shader->shader),"backside");
-    shader->locs.refIndexLoc =  gX_Shader_GetLocation(*(shader->shader),"refIndex");
+    shader->locs.backsideLoc =  gX_Shader_GetLocation(*sha,"backside");
+    shader->locs.refIndexLoc =  gX_Shader_GetLocation(*sha,"refIndex");
     
     //opencode: matrix locs for 3D model draws with this element shader
-    shader->locs.mvpLoc =       gX_Shader_GetLocation(*(shader->shader),"mvp");
-    shader->locs.modelLoc =     gX_Shader_GetLocation(*(shader->shader),"matModel");
-    shader->locs.normalLoc =    gX_Shader_GetLocation(*(shader->shader),"matNormal");
-    shader->locs.viewLoc =      gX_Shader_GetLocation(*(shader->shader),"matView");
-    shader->locs.projLoc =      gX_Shader_GetLocation(*(shader->shader),"matProjection");
+    shader->locs.mvpLoc =       gX_Shader_GetLocation(*sha,"mvp");
+    shader->locs.modelLoc =     gX_Shader_GetLocation(*sha,"matModel");
+    shader->locs.normalLoc =    gX_Shader_GetLocation(*sha,"matNormal");
+    shader->locs.viewLoc =      gX_Shader_GetLocation(*sha,"matView");
+    shader->locs.projLoc =      gX_Shader_GetLocation(*sha,"matProjection");
 
     //opencode: reload ownership — the element does NOT own the resource shader
     //   watch. Calling Watch_Ex with NULL paths reused the owner's program slot
@@ -133,9 +152,9 @@ gX_I0 gX_GUI_Element_Shader_Load(gX_GUI_Element_Shader *shader) {
     //   The RM resource heap reloads shaders in place with a new program id
     //   that bypasses the watch table entirely — Draw's loadedProgramId check
     //   covers that path (self-healing), so a 0 return here is not an error.
-    shader->loadedProgramId = shader->shader->id;
-    if (shader->shader->id != 0) {
-        gX_Shader_Compiler_Subscribe(*(shader->shader),
+    shader->loadedProgramId = sha->id;
+    if (sha->id != 0) {
+        gX_Shader_Compiler_Subscribe(*sha,
             gX_GUI_Element_Shader_OnReload,
             (gX_I0 *)shader);
     }
@@ -159,8 +178,8 @@ gX_I0 gX_GUI_Element_Shader_Uniforms_Init(gX_GUI_Element_Shader *shader) {
 
 //opencode: public — the model element uploads element uniforms through this
 gX_I0 gX_GUI_Element_Shader_Uniforms_Set(gX_GUI_Element_Shader *shader) {
-    if (!shader->shader) return;
-    gX_Shader *sha = shader->shader;
+    gX_Shader *sha = gX_GUI_Element_Shader_Resolve(shader);
+    if (!sha) return;
     gX_F32v4 unif[4] = { 0 };
     gX_U32 count = (shader->uniformCount > 0) ? shader->uniformCount : 4;
     if (count > 4) count = 4;
@@ -179,7 +198,7 @@ gX_I0 gX_GUI_Element_Shader_Uniforms_Set(gX_GUI_Element_Shader *shader) {
 //   Caller must have the shader enabled (BeginShader).
 gX_I0 gX_GUI_Element_Shader_UploadUniforms(gX_GUI_Element_Shader *shader, gX_Rectangle box,
     gX_F32 time, gX_F32v2 res, gX_Color col, gX_F32v2 scale, gX_F32 ambientFactor) {
-    gX_Shader *sha = shader->shader;
+    gX_Shader *sha = gX_GUI_Element_Shader_Resolve(shader);
     if (!sha) return;
     gX_Shader_SetValue_Float(*sha, shader->locs.timeLoc, time);
     gX_Shader_SetValue_V2(*sha, shader->locs.resLoc, res);
@@ -194,7 +213,7 @@ gX_I0 gX_GUI_Element_Shader_UploadUniforms(gX_GUI_Element_Shader *shader, gX_Rec
 //   Fix: moved time, res, rect, color, scale, ambientFactor, and uniforms[] into this function.
 static gX_I0 gX_GUI_Element_Shader_Draw_Shader(gX_GUI_Element_Shader *shader, gX_Rectangle box,
     gX_U32 iterations, gX_F32 time, gX_F32v2 res, gX_Color col, gX_F32v2 scale, gX_F32 ambientFactor) {
-    gX_Shader *sha = shader->shader;
+    gX_Shader *sha = gX_GUI_Element_Shader_Resolve(shader);
     if (!sha) return;
 
     //opencode: v0.2.0 — flush pending rlgl batch FIRST: the raw DrawScreenQuad
@@ -237,19 +256,21 @@ static gX_I0 gX_GUI_Element_Shader_Draw_Shader(gX_GUI_Element_Shader *shader, gX
 //   Resolves lens (uniforms defaulting to 0) and blur (radius defaulting to 0) bugs.
 static gX_I0 gX_GUI_Element_Shader_Draw(gX_GUI_Element_Shader *shader, gX_GUI_Element *element, gX_GUI_Canvas *canvas) {
     
-    //opencode: NULL guard shader->shader before dereference
+    //opencode: resolve before dereference — a resource-heap growth may have
+    //   moved the live program since the last frame.
     //opencode: reload ownership — the RM resource heap reloads shaders in
     //   place with a new program id (resource.c mtime reload bypasses the
     //   watch table), so also re-Load when the live program changed since the
     //   locs were queried. Uniforms are NOT re-initialized on reload — only
     //   the first load resets value=initial (preserves delta animation).
-    if (shader->shader && (!shader->loaded || shader->loadedProgramId != shader->shader->id)) {
+    gX_Shader *sha = gX_GUI_Element_Shader_Resolve(shader);
+    if (sha && (!shader->loaded || shader->loadedProgramId != sha->id)) {
         gX_GUI_Element_Shader_Load(shader);
         if (!shader->loaded) gX_GUI_Element_Shader_Uniforms_Init(shader);
         shader->loaded = true;
     }
     
-    if (!shader->shader) return;
+    if (!sha) return;
     gX_Rectangle box = element->rect;
     gX_Color col = gX_Color_Mul(element->color,canvas->canvasHue);
     
@@ -326,13 +347,15 @@ static gX_I0 gX_GUI_Element_Shader_Draw(gX_GUI_Element_Shader *shader, gX_GUI_El
     
 }
 
-//opencode: lifetime-aware clear — drop the reload observer BEFORE zeroing so
-//   the watch table never retains a pointer into reused module memory. The
-//   REMOVE/CLEARMODULE macros funnel every removal through this function.
+//opencode: lifetime-aware clear — resolve the live heap slot, then drop the
+//   reload observer BEFORE zeroing so the watch table never retains a pointer
+//   into reused module memory. The REMOVE/CLEARMODULE macros funnel every
+//   removal through this function.
 gX_I0 gX_GUI_Element_Shader_Clear(gX_GUI_Element_Shader *shader) {
     if (shader == NULL) return;
-    if (shader->shader && shader->shader->id != 0) {
-        gX_Shader_Compiler_Unsubscribe(*(shader->shader),
+    gX_Shader *sha = gX_GUI_Element_Shader_Resolve(shader);
+    if (sha && sha->id != 0) {
+        gX_Shader_Compiler_Unsubscribe(*sha,
             gX_GUI_Element_Shader_OnReload,
             (gX_I0 *)shader);
     }

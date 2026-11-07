@@ -64,7 +64,8 @@ static gX_I0 gX_GUI_Element_Shape_Draw(gX_GUI_Element_Shape *shape, gX_GUI_Eleme
     gX_GUI_Element_Shader *elShader = NULL;
     if (shape->useShader && element->shaders.data && shape->shaderIndex < element->shaders.amount) {
         elShader = &((gX_GUI_Element_Shader*)element->shaders.data)[shape->shaderIndex];
-        if (!elShader->shader) elShader = NULL;
+        //ai: the RM shader heap relocates on growth — resolve before use.
+        if (!gX_GUI_Element_Shader_Resolve(elShader)) elShader = NULL;
     }
     gX_I1 shaderOk = (elShader != NULL) &&
         (shape->type == gX_GUI_ELEMENT_SHAPE_CIRCLE ||
@@ -126,7 +127,8 @@ static gX_I0 gX_GUI_Element_Shape_Draw(gX_GUI_Element_Shape *shape, gX_GUI_Eleme
         
         gX_F32 resW = canvas->buffer.loadingState.loaded ? (gX_F32)canvas->buffer.width  : (gX_F32)maindata.renderWidth;
         gX_F32 resH = canvas->buffer.loadingState.loaded ? (gX_F32)canvas->buffer.height : (gX_F32)maindata.renderHeight;
-        gX_Shader *sh = elShader->shader;
+        gX_Shader *sh = gX_GUI_Element_Shader_Resolve(elShader);
+        if (!sh) return;
         //opencode: 2D shape geometry winding is screen-space dependent — the
         //   fan/triangle winding can be back-facing in NDC (culled when the
         //   model element left cull enabled). GUI shapes always draw unculled.

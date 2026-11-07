@@ -245,6 +245,9 @@ typedef struct gX_GUI_Element_Shader {
     //   pool migration to copy to gX_PoolShader entries. 128 bytes per shader
     //   element is acceptable; the struct will be removed once pool system
     //   replaces the old heap entirely.
+    //ai: also the stable RM lookup key. `shader` is only a resolved cache and
+    //    may be invalidated by resource-heap growth; call
+    //    gX_GUI_Element_Shader_Resolve() before every use.
     gX_I8       fragPath[128];
 } gX_GUI_Element_Shader;
 

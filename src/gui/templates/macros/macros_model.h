@@ -45,6 +45,7 @@
         if (shEl) { \
             shEl->shader = (gX_Shader*)gX_RMHeap_GetPtr_FileName2(shaderHeap, fragfile); \
             if (shEl->shader) { \
+                strncpy(shEl->fragPath, fragfile, sizeof(shEl->fragPath) - 1); \
                 shEl->drawShader = false; \
                 gX_GUI_Element_Shader_Load(shEl); \
                 currentModel->useShader = true; \
