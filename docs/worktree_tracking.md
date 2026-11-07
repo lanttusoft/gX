@@ -42,6 +42,13 @@ editing, post intent, claim paths, release when done. It is not a lock or a
 cleanup authorization, and it does not replace these notes. See
 `python3 scripts/agent_bus.py list`.
 
+## Local ecosystem
+
+This inventory covers one Git repository. For separate clones, proof
+repositories and lineage/reference trees under the local Git root, see
+[`repo_ecosystem.md`](repo_ecosystem.md) (proposed GX-I023). It is a read-only
+discovery/ledger contract and does not authorize cleanup.
+
 ## Keeping the notes useful
 
 - Before creating a branch/worktree, search the idea ledger and inventory for
