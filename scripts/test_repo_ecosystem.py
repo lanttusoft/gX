@@ -326,6 +326,8 @@ class EcosystemTests(unittest.TestCase):
                         if row["path"] == str(self.engine_wt))
         engine = self.group(data, self.common(self.engine))
         self.assertTrue(worktree["active"])
+        self.assertEqual(worktree["lifecycle"], "active")
+        self.assertEqual(engine["lifecycle"], "active")
         self.assertEqual(engine["active_sessions"], ["eco-active"])
         branch = next(row for row in engine["branches"]
                       if row["branch"] == "feature/two")

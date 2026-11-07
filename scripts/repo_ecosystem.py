@@ -570,6 +570,8 @@ def inspect_checkout(identity, group, root, current, claims):
     branch = row.get("branch", "").removeprefix("refs/heads/") or None
     head = row.get("HEAD")
     detached = "detached" in row or branch is None
+    active = any(claim_matches(claim, [path], [branch] if branch else [])
+                 for claim in claims)
     data = {
         "path": str(path),
         "in_root": is_within(root, path),
@@ -594,8 +596,8 @@ def inspect_checkout(identity, group, root, current, claims):
         "unique_commits": None,
         "behind_base": None,
         "last_commit": None,
-        "active": any(claim_matches(claim, [path], [branch] if branch else [])
-                      for claim in claims),
+        "active": active,
+        "lifecycle": "active" if active else "unknown",
         "error": None,
     }
     if not path.is_dir():
@@ -831,6 +833,7 @@ def snapshot(root=None, max_depth=DEFAULT_MAX_DEPTH, base=None,
         group["activity"] = activity
         group["active_sessions"] = activity["sessions"]
         group["active"] = bool(activity["sessions"])
+        group["lifecycle"] = "active" if group["active"] else "unknown"
         claims_all.extend(activity["claims"])
         active_branches = set()
         for identity in identities:
@@ -997,7 +1000,7 @@ def compare_snapshots(previous, current):
     fields = ("kind", "common_dir", "relation", "branch", "head", "state",
               "dirty_entries", "untracked", "ignored", "base", "base_commit",
               "unique_commits", "behind_base", "last_commit", "active",
-              "locked", "prunable", "detached", "in_root")
+              "lifecycle", "locked", "prunable", "detached", "in_root")
     changed = []
     for path in sorted(set(old_rows) & set(new_rows)):
         differences = {}
@@ -1017,7 +1020,7 @@ def compare_snapshots(previous, current):
     group_fields = ("kind", "remote_keys", "base", "base_commit",
                     "checkout_count", "tag_count", "active_sessions",
                     "archive_state", "in_ecosystem", "proof_pin", "release",
-                    "activity", "notes")
+                    "activity", "notes", "lifecycle")
     changed_groups = []
     for common in sorted(set(old_groups) & set(new_groups)):
         differences = {}
