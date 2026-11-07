@@ -649,9 +649,19 @@ gX_I32 gX_RendererGFX_Scene_AddDemoContent(gX_RendererGFX *gfx)
             }
             if (s->mirror)
             {
+                //ai: the Y2K floor is a true planar mirror — the exact
+                //   planar read replaces the SSR/env double image and keeps
+                //   its light glints in the bloom pass. The slab still owns
+                //   the mirror view for the capture.
                 m->params.reflectionSource = 1;
+                m->params.planarReflection = 1;
+                m->params.receiveSSR = 0;
                 m->params.reflectionPlaneHeight = 0.075f;
                 m->params.reflectionNormal = (gX_F32v3){0.0f, 1.0f, 0.0f};
+                gX_TraceLog(gX_LOG_NOTICE,
+                    "SHOWCASE-Y2K: mirror planar=%d receiveSSR=%d",
+                    (gX_I32)m->params.planarReflection,
+                    (gX_I32)m->params.receiveSSR);
             }
             if (s->glass)
             {

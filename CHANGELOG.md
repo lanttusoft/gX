@@ -78,12 +78,15 @@ Release-Class: minor
 - **Y2K CGI cartridge**: `--cartridge-y2k` boots a fixed console profile — the
   Y2K composition at a 320x240 Soft scene target, the authored 128 px
   brushed-metal albedo/normal/ORM set on the low-poly floor and ring, Max
-  quality (4x MSAA, 4 CSM cascades, 64-sample GTAO, full-res SSR when
-  authored, auto exposure) and 6-blade diffraction on the neon/glass glints.
-  The cartridge hides the developer HUD by default; `GX_CARTRIDGE_DIFFRACTION=0`
-  provides the A/B control. `make cartridge-check` pins the presentation trace,
-  quality cascade, texture binding, diffraction contribution and 160x120
-  star-map target.
+  quality (4x MSAA, 4 CSM cascades, 64-sample GTAO, auto exposure), the exact
+  planar floor reflection (SSR-free cartridge) and 6-blade diffraction on the
+  neon/glass glints.
+  TAA stays off in the console profile (FXAA and optional 2x SSAA handle AA;
+  `GX_T_TAA=1` re-enables it for A/B probes). The cartridge hides the
+  developer HUD by default; `GX_CARTRIDGE_DIFFRACTION=0` provides the A/B
+  control. `make cartridge-check` pins the presentation trace, quality
+  cascade, texture binding, diffraction contribution and 160x120 star-map
+  target.
 - **UI maturity in the GFX editor**: Basic/Advanced/Expert now gate whole
   renderer labs and the fine-tuning sections (shader tuning, GL level, raw
   toggles, texture tools, map tuning, SSGI, aux targets, CSM, decals, volumes,
@@ -161,6 +164,15 @@ Release-Class: minor
   video list.
 - The particle sandbox keeps its own status HUD by design; Y2K remains the
   clean presentation profile.
+- The Y2K console profile disables the showcase's default TAA, which ghosted
+  neon glints and left tails at 240p. FXAA and optional 2x SSAA remain;
+  `GX_T_TAA=1` re-enables TAA for A/B probes.
+- The Y2K mirror floor now uses the exact planar-reflection path and the
+  cartridge runs SSR-free, so the mirror no longer shows a second, misaligned
+  SSR/env reflection. SSR composites after bloom, which clipped the glow
+  around bright surfaces; planar/env/IBL reflections stay in the pre-bloom
+  scene, restoring the light glow in air. `cartridge-check` pins the mirror
+  material flags and the GFX plan.
 
 ## [0.41.0] - 2026-11-04
 

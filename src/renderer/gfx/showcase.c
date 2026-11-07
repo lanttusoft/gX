@@ -209,6 +209,11 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
                     gfx->diffraction.blades = 6;
                     gfx->diffraction.taps = 12;
                     gX_RendererGFX_ConsoleMax_Apply(gfx);
+                    //ai: the Y2K mirror floor is an exact planar reflection;
+                    //   keeping SSR would composite after bloom, doubling the
+                    //   floor image and clipping the glow around bright
+                    //   surfaces. The cartridge stays SSR-free.
+                    gfx->state.ENABLE_SSR = 0;
                     gX_TraceLog_GFX(gX_LOG_NOTICE,
                         "CARTRIDGE: y2k diffraction=%d blades=%d quality=%d",
                         gfx->state.ENABLE_DIFFRACTION ? 1 : 0,
@@ -338,6 +343,10 @@ gX_I0 gX_Showcase_Update(gX_RendererGFX *gfx) {
     //   after the E7 velocity fix). Env hook below still overrides, as
     //   does the T key at runtime.
     gfx->state.ENABLE_TAA = true;
+    //ai: the 240p console cartridge uses FXAA + optional 2x SSAA; the
+    //   showcase TAA default ghosts the small glints at this output size, so
+    //   keep it off for Y2K unless a probe opts in with GX_T_TAA=1.
+    if (arguments.cartridgeY2K) gfx->state.ENABLE_TAA = 0;
     //opencode: v0.1.38 — TAA harness hook: deterministic on/off for captures
     if (getenv("GX_T_TAA")) gfx->state.ENABLE_TAA = (gX_I1)atoi(getenv("GX_T_TAA"));
 

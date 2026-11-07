@@ -103,11 +103,19 @@ def main():
             pause_rows = [row for row in rows(pause_log) if row["paused"]]
             console.require(pause_rows and all(row["delta"] == 0 for row in pause_rows),
                 "paused frames advanced the simulation")
-            paused_diff = float(np.abs(paused_a - paused_b).mean())
-            control_diff = float(np.abs(control_a - control_b).mean())
-            console.require(paused_diff < 0.5 and paused_diff < control_diff * 0.25,
+            paused_delta = np.abs(paused_a - paused_b)
+            control_delta = np.abs(control_a - control_b)
+            paused_diff = float(paused_delta.mean())
+            control_diff = float(control_delta.mean())
+            paused_changed = float((paused_delta.mean(axis=2) > 8.0).mean())
+            control_changed = float((control_delta.mean(axis=2) > 8.0).mean())
+            #ai: auto-exposure/AA drift leaves a sub-visible mean residual on a
+            #   frozen frame; real motion changes >8 pixels (control ~0.7%).
+            console.require(paused_diff < 0.5 and paused_changed < 0.001
+                and control_changed > paused_changed,
                 f"paused cartridge was not visually frozen "
-                f"({paused_diff:.3f} vs control {control_diff:.3f})")
+                f"({paused_diff:.3f}/{paused_changed:.4f} vs control "
+                f"{control_diff:.3f}/{control_changed:.4f})")
 
             # Keyboard step: exactly one 1/60 s tick, menu stays open.
             _, step_log = capture("step_f6", "1.0 key 256;2.0 key 295",

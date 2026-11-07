@@ -58,6 +58,11 @@ A cartridge is a gX scene preset plus an asset set and a settings profile:
   fog, diffraction spikes, 320x240 Soft output and Max quality. Boots with
   `--cartridge-y2k` (the same composition as `--showcase-y2k` plus the
   authored 128 px brushed-metal set, diffraction and the console profile).
+  TAA is off in the console profile; FXAA and optional 2x SSAA handle AA
+  (`GX_T_TAA=1` is the A/B probe hook). The mirror floor uses the exact
+  planar-reflection path and the cartridge runs SSR-free, so the mirror shows
+  one pre-bloom reflection instead of an SSR/env double image and bloom keeps
+  the light glow around it.
 - **RAY-1 tech demo** — bootable raymarch profile (`--cartridge-ray1` or the
   shell): the default SDF scene at Full quality (render scale 1.0, 256 steps,
   4 bounces), an authored three-quarter overview camera, free-camera movement,
@@ -300,9 +305,10 @@ by the user; do not change display modes automatically.
 - **Y2K CGI cartridge** — `--cartridge-y2k` boots the fixed profile: 320x240
   scene with Soft upscale, the Y2K composition, 128 px brushed-metal
   albedo/normal/ORM on the low-poly forms, Max-quality cascade (4x MSAA, 4 CSM
-  cascades, 64-sample GTAO, full-res SSR when authored, auto exposure) and
-  6-blade diffraction on the neon/glass glints. `GX_CARTRIDGE_DIFFRACTION=0`
-  gives the A/B control.
+  cascades, 64-sample GTAO, auto exposure), an exact planar floor reflection
+  (the cartridge is SSR-free; the floor opts out of SSR) and 6-blade
+  diffraction on the neon/glass glints. `GX_CARTRIDGE_DIFFRACTION=0` gives the
+  A/B control.
 
 ## Non-goals
 
@@ -326,8 +332,9 @@ by the user; do not change display modes automatically.
 - Resolution/buffer audit: cold 320 vs runtime-resized 320 target sizes and
   image parity (33 active targets, ~0.62/255 mean difference).
 - Y2K cartridge: 320x240 Soft trace, 4x MSAA quality 3, textured low-poly
-  scene, Max quality, diffraction contribution and the 160x120 star-map
-  target (`make cartridge-check`).
+  scene, Max quality, the exact planar floor with SSR disabled (one pre-bloom
+  reflection), diffraction contribution and the 160x120 star-map target
+  (`make cartridge-check`).
 - Console shell: boot-view trace, Sharp video route (320x240 filter 0),
   save-slot route, CRT-safe idle blank/wake with the wake input swallowed,
   the cartridge OSD banner, F5/F8 save-load with nondefault camera restore
@@ -336,10 +343,11 @@ by the user; do not change display modes automatically.
   and reaches the 320x240 Soft/4x MSAA/diffraction profile. A second cold
   boot after an authored camera cut must return to the authored view, and
   save slots store an explicit native/virtual mode so a native slot stays
-  native after a window-size mismatch. The ESC menu gate
-  covers save/load, video cycling, Exit to Shell and the controller
-  Start/D-pad/south/east mapping, including held-Start edge behavior and
-  nonprimary-pad isolation. Shell, populated saves and pause layouts are
+  native after a window-size mismatch, and the modal pause claims the UI
+  cursor over the captured 3D scene and restores the captured state on close.
+  The ESC menu gate covers save/load, video cycling, Exit to Shell and the
+  controller Start/D-pad/south/east mapping, including held-Start edge
+  behavior and nonprimary-pad isolation. Shell, populated saves and pause layouts are
   checked at 640x480, 1024x768 and 1280x720: complete element maps, text fit,
   usable control sizes, no overlapping labels/controls, and four-direction
   controller focus traversal/wrap. Empty-save focus and save-browser return

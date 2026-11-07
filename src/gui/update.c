@@ -390,6 +390,14 @@ static gX_I1 gX_GUI_Focus_AdjustSlider(gX_GUI_Element *element,
 //opencode: an active ImGui tool owns native GUI input to avoid key and click-through.
 gX_I0 gX_GUI_Update(gX_I0) {
 
+    //ai: a modal/menu surface needs the OS cursor even when the scene default
+    //   is CAPTURED (free-look/3D). Push UI for the menu lifetime; popping
+    //   restores the scene default. The tools push their own UI owner.
+    if (gui.state.SHOW_MENU || gui.modalCanvasID >= 0)
+        gX_Cursor_Push(GX_CURSOR_STATE_UI, "gui-modal", 30);
+    else
+        gX_Cursor_Pop("gui-modal");
+
     gX_GUI_Canvas *canvases = gui.canvases.data;
     gX_Heap_Meta *canvasesMeta = gui.canvases.meta;
     gui.toolsInputCaptured = gX_Tools_RuntimeActive();
