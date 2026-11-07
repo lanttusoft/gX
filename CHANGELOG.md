@@ -164,8 +164,11 @@ Release-Class: minor
   matching/rejection paths.
 - **Release payload recovery**: additional cold tool paths (GUI/theme editors
   and the startup CLI parser) link in the existing Release `-Os` tier, and
-  earlier shader-compiler/serializer recovery remains in place. The recovery
-  measured 17,728 B; no feature, visual or cap change.
+  earlier shader-compiler/serializer recovery remains in place. The initial
+  recovery measured 17,728 B. A 2026-11-07 pass moved the six vendored Dear
+  ImGui tool-UI sources to the same Release `-Os` tier, recovering 278,144 B;
+  the current payload is 3,914,523 B (279,781 B headroom) with unchanged BSS,
+  caps, capabilities, visuals and Debug code generation.
 
 ### Fixed
 - <!-- //ai: GX-I024 M11F-05 zero-floor matrix coverage. --> TAA, FXAA,

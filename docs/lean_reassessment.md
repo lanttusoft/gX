@@ -226,3 +226,32 @@ payload by 352 B through code/layout changes. Current Release: **4,186,683 B**
 payload (**7,621 B** headroom) and **2,701,344 B** BSS (3,656 B headroom).
 Caps and baseline remain unchanged; the focused playback, SSAA/4x probe,
 PRISM-1, RAY-1, particle, grain and console gates pass.
+
+### GX-I017 headroom recovery (2026-11-07)
+
+<!-- //ai: ImGui tool-UI -Os recovery after the console/GX-I024 feature run. -->
+
+After the console, reflection, GUI-lifetime and ecosystem-tooling slices, the
+production Release measured **4,192,667 B** payload (cap 4,194,304; **1,637 B**
+headroom) and **2,701,344 B** BSS (3,656 B headroom). Scratch relinks measured
+the vendored Dear ImGui tool-UI group in isolation without replacing production
+objects:
+
+| Candidate | Release `-Os` payload saved | Release `-Oz` payload saved |
+| --- | ---: | ---: |
+| `src/tools/imgui/*.cpp` (six files) | 278,144 | 281,920 |
+
+`-Os` was adopted: `-Oz` recovered only 3,776 B more and the tool UI is
+pointer-driven, so the less aggressive size tier keeps panel interaction
+responsive. The six files are `imgui.cpp`, `imgui_draw.cpp`, `imgui_tables.cpp`,
+`imgui_widgets.cpp`, `rlImGui.cpp` and `imgui_gx.cpp`. They are tool chrome and
+editor panels only; they are not in the game render loop. The existing
+`NO_FONT_AWESOME` define and the Debug `-O0` path are unchanged.
+
+The post-change Release measured **3,914,523 B** payload (**279,781 B**
+headroom) and **2,701,344 B** BSS (3,656 B headroom). Caps, baseline and
+capabilities are unchanged; no visual or resource hash changed. Validation:
+`make release`, `make lean`, `make payload-audit`, `make check-fast`,
+`make check`, the Release tool-mode smoke for all twelve `GX_TOOLS_OPEN`
+entries, `make ui-audit`, `make gui-interaction-check`, and the focused editor
+checks. This is capacity recovery, not a new reserve policy.

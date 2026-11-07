@@ -679,6 +679,13 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         src/scene/battle_runtime.c src/renderer/raymarch.c src/gui/style.c
         src/tools/gfx/gfx_editor.cpp src/common/shader_compiler.c
         src/tools/gfx/water_panel.cpp src/tools/gfx/glass_panel.cpp
+        #ai: vendored Dear ImGui is tool-UI only (editor panels and tool
+        #   chrome, never the game render loop); the GX-I017 headroom pass
+        #   measured Release -Os saving 278,144 B payload without changing
+        #   tool capabilities. Keep the font-awesome opt-out below.
+        src/tools/imgui/imgui.cpp src/tools/imgui/imgui_draw.cpp
+        src/tools/imgui/imgui_tables.cpp src/tools/imgui/imgui_widgets.cpp
+        src/tools/imgui/rlImGui.cpp src/tools/imgui/imgui_gx.cpp
         #ai: GUI/theme editors are pointer-driven tool UIs; Release favors
         #   size for the same reason as gfx_editor.cpp.
         src/tools/editor/editor.cpp src/tools/theme/theme_editor.cpp

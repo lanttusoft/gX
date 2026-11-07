@@ -44,7 +44,10 @@ from `src/tools/tools.c`, with `GX_TOOL_TIER_ALPHA/BETA`.
 ## Conventions (follow these for every new editor)
 
 1. **Placement**: default build, Release `-Os` cold tier (tool UIs favor size;
-   see the cold-tier set in `CMakeLists.txt`). Nothing lands on hot paths.
+   see the cold-tier set in `CMakeLists.txt`). Nothing lands on hot paths. The
+   vendored Dear ImGui runtime (`src/tools/imgui/*.cpp`) is in the same tier;
+   its GX-I017 recovery measured 278,144 B payload in Release, while Debug
+   code generation is unchanged.
 2. **Runtime**: one exclusive `s_runtime<Name>` flag in `src/tools/tools.c`;
    the opener `gX_Tools_Open<Name>_Runtime` loads ImGui, sets the flag and
    clears the other exclusive tools; `gX_Tools_Close_Runtime` resets every
