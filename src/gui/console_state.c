@@ -40,9 +40,13 @@
 #include "../main.h"
 #include "../settings.h"
 #include "../camera.h"
+//ai: save/load need the renderer/scene/showcase; keep the title-side readers
+//   (Exists/Describe) renderer-free so the kernel build still links.
+#if gX_ENABLE_RENDERER == 1
 #include "../renderer/renderer.h"
 #include "../renderer/gfx.h"
 #include "../renderer/gfx/showcase.h"
+#endif
 #if gX_ENABLE_SCENE == 1
 #include "../scene/scene.h"
 #endif
@@ -72,6 +76,9 @@ gX_I1 gX_ConsoleState_Exists(gX_I32 slot) {
     return 1;
 }
 
+//ai: save/load need the GFX showcase, raymarch module and cartridge scene;
+//   the kernel build compiles only the file readers below.
+#if gX_ENABLE_RENDERER == 1
 static const gX_I8 *console_state_cartridge(gX_I0) {
     if (arguments.cartridgeY2K) return (const gX_I8 *)"y2k";
     if (maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH)
@@ -117,9 +124,13 @@ static gX_I32 console_state_save(gX_I32 slot) {
     {
         char date[32] = "";
         char clock[32] = "";
+        //ai: localtime is the portable form used by the rest of the tree;
+        //   MinGW has no localtime_r.
         time_t now = time(NULL);
         struct tm local;
-        if (localtime_r(&now, &local)) {
+        struct tm *localTime = localtime(&now);
+        if (localTime) {
+            local = *localTime;
             strftime(date, sizeof(date), "%Y-%m-%d", &local);
             strftime(clock, sizeof(clock), "%H:%M", &local);
         }
@@ -335,22 +346,37 @@ static gX_I32 console_state_load(gX_I32 slot) {
             slot, (const char *)cartridge);
     return 0;
 }
+#endif //gX_ENABLE_RENDERER
 
 //ai: all save/load callers, including hotkeys, share success and failure OSD feedback.
 gX_I32 gX_ConsoleState_Save(gX_I32 slot)
 {
+#if gX_ENABLE_RENDERER == 1
     gX_I32 Result = console_state_save(slot);
     gX_GUI_ConsoleOSD_Notify(slot, Result == 0 ? "SAVED" : "SAVE FAILED");
     return Result;
+#else
+    (void)slot;
+    gX_TraceLog(gX_LOG_WARNING,
+        "CONSOLE_STATE: save requires the renderer");
+    return -1;
+#endif
 }
 
 gX_I32 gX_ConsoleState_Load(gX_I32 slot)
 {
+#if gX_ENABLE_RENDERER == 1
     gX_I32 Result = console_state_load(slot);
     //ai: loading resumes real time; playback speed never persists across slots.
     gX_ConsolePlayback_Reset();
     gX_GUI_ConsoleOSD_Notify(slot, Result == 0 ? "LOADED" : "LOAD FAILED");
     return Result;
+#else
+    (void)slot;
+    gX_TraceLog(gX_LOG_WARNING,
+        "CONSOLE_STATE: load requires the renderer");
+    return -1;
+#endif
 }
 
 gX_I0 gX_ConsoleState_Describe(gX_I32 slot, gX_I8 *out, gX_I32 size) {
@@ -363,10 +389,14 @@ gX_I0 gX_ConsoleState_Describe(gX_I32 slot, gX_I8 *out, gX_I32 size) {
     struct json_object *value = NULL;
     const char *cartridge = "?";
     const char *timeText = "";
-    if (json_object_object_get_ex(root, "cartridge", &value))
-        cartridge = json_object_get_string(value);
-    if (json_object_object_get_ex(root, "created_time", &value))
-        timeText = json_object_get_string(value);
+    if (json_object_object_get_ex(root, "cartridge", &value)) {
+        const char *name = json_object_get_string(value);
+        if (name && name[0]) cartridge = name;
+    }
+    if (json_object_object_get_ex(root, "created_time", &value)) {
+        const char *stamp = json_object_get_string(value);
+        if (stamp) timeText = stamp;
+    }
     const char *label = strcmp((const char *)cartridge, "y2k") == 0 ? "Y2K CGI"
         : (strcmp((const char *)cartridge, "ray-1") == 0 ? "RAY-1"
         : (strcmp((const char *)cartridge, "particle") == 0 ? "SANDBOX" : cartridge));

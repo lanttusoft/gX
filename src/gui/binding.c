@@ -172,8 +172,7 @@ gX_I0 gX_Widget_OnClick_CloseEscapeMenu(gX_I0 *arg) {
     gui.state.SHOW_MENU = false;
     gX_GUI_Focus_Clear();
     if (arguments.cartridgeY2K || arguments.cartridgeRay1
-        || arguments.cartridgeParticle
-        || (arguments.consoleShell && maindata.masterIndex != gX_SCENE_TITLE))
+        || arguments.cartridgeParticle)
         gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_MENU: resume");
 }
 
@@ -303,6 +302,14 @@ gX_I0 gX_Widget_OnClick_TitleSaves(gX_I0 *arg) {
 
 gX_I0 gX_Widget_OnClick_TitleBack(gX_I0 *arg) {
     (void)arg;
+    //ai: leaving the shell for the engine menu ends console mode; a stale flag
+    //   would route the menu's LOAD GAME to the console slots and leak the
+    //   cartridge pause/playback paths into unrelated scenes.
+    arguments.consoleShell = 0;
+    arguments.cartridgeY2K = 0;
+    arguments.cartridgeRay1 = 0;
+    arguments.cartridgeParticle = 0;
+    gX_ConsolePlayback_Reset();
     gX_GUI_Focus_Clear();
     gX_GUI_Template_TitleGX_SetView(0);
     gX_GUI_Canvas *canvas = gX_Heap_SeekPtr_Index(&gui.canvases, 0);
@@ -345,6 +352,10 @@ static gX_I0 console_refresh_view(gX_I0) {
 
 gX_I0 gX_Widget_OnClick_TitleConsole(gX_I0 *arg) {
     (void)arg;
+    //ai: the Demos-hub route enters the same console mode as --console-shell;
+    //   the save browser, idle blanking and OSD key off this flag.
+    arguments.consoleShell = 1;
+    gX_ConsolePlayback_Reset();
     gX_GUI_Focus_Clear();
     gX_GUI_Template_TitleGX_SetView(6);
     gX_TraceLog(gX_LOG_NOTICE, "CONSOLE: view=shell");
@@ -377,6 +388,9 @@ gX_I0 gX_Widget_OnClick_ConsoleVideo(gX_I0 *arg) {
     console_refresh_view();
 }
 
+//ai: cartridge boot owns renderer/scene state; the kernel build keeps the
+//   shell view but reports that cartridges need the renderer.
+#if gX_ENABLE_RENDERER == 1
 gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
     gX_I32 cartridge = (gX_I32)(gX_U64)(uintptr_t)arg;
     gX_I32 sceneIndex = gX_SCENE_RENDERER_GFX;
@@ -432,6 +446,16 @@ gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
         sceneIndex);
     gX_MainData_Switch(sceneIndex);
 }
+#else
+gX_I0 gX_Widget_OnClick_ConsoleBoot(gX_I0 *arg) {
+    (void)arg;
+    snprintf((char *)gui.state.toastMessage,
+        sizeof(gui.state.toastMessage), "%s", "Renderer disabled");
+    gui.state.SHOW_MSG = true;
+    gX_TraceLog(gX_LOG_WARNING,
+        "CONSOLE: cartridge boot requires the renderer");
+}
+#endif
 
 //ai: PRISM-1 is an independent 240p output toggle layered over Soft/Sharp/
 //   SSAA; toggling it does not reload the scene targets.

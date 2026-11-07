@@ -1402,9 +1402,9 @@ static gX_F32v2 s_consoleIdleMouse;
 static gX_I1 s_consoleIdleMouseInit;
 
 static gX_I1 console_idle_enabled(gX_I0) {
-    return (arguments.consoleShell && (maindata.masterIndex == gX_SCENE_TITLE
-            || maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH
-            || maindata.masterIndex == gX_SCENE_PHYSICS))
+    //ai: the shell itself plus each cartridge profile; the boot flag alone
+    //   must not blank unrelated title/demo surfaces.
+    return (arguments.consoleShell && maindata.masterIndex == gX_SCENE_TITLE)
         || (arguments.cartridgeY2K
             && maindata.masterIndex == gX_SCENE_RENDERER_GFX)
         || (arguments.cartridgeRay1

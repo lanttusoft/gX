@@ -100,9 +100,17 @@ gX_I0 gX_GUI_Template_TitleGX_SetView(gX_I32 view) {
 gX_I1 gX_GUI_Template_TitleGX_Back(gX_I0)
 {
     if (titleView == TITLEGX_VIEW_MENU) return false;
-    gX_GUI_Template_TitleGX_SetView(arguments.consoleShell
-        && titleView == TITLEGX_VIEW_SAVES
-        ? TITLEGX_VIEW_CONSOLE : TITLEGX_VIEW_MENU);
+    gX_I32 target = (arguments.consoleShell && titleView == TITLEGX_VIEW_SAVES)
+        ? TITLEGX_VIEW_CONSOLE : TITLEGX_VIEW_MENU;
+    //ai: returning to the engine menu ends console mode; the console save
+    //   browser still returns to its shell.
+    if (target == TITLEGX_VIEW_MENU) {
+        arguments.consoleShell = 0;
+        arguments.cartridgeY2K = 0;
+        arguments.cartridgeRay1 = 0;
+        arguments.cartridgeParticle = 0;
+    }
+    gX_GUI_Template_TitleGX_SetView(target);
     gX_GUI_Focus_Clear();
     gX_GUI_Canvas *canvas = gX_GUI_Canvas_FromIndex(0);
     if (canvas) canvas->refresh = true;

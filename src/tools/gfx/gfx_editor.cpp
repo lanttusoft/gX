@@ -51,6 +51,9 @@
 #include "../../common/error.h"
 #include "../../common/profiler.h"
 #include "../../common/debug.h"
+//ai: the palette helper uses settings without the renderer cluster, so keep
+//   this include outside the guarded renderer surface (kernel builds compile it).
+#include "../../settings.h"
 #if gX_ENABLE_RENDERER == 1
     #include "../../renderer/gfx.h"
     //ai: private surface panels borrow editor-owned services.
@@ -66,7 +69,6 @@
     #include "../../renderer/gfx/animation.h"
     #include "../../renderer/gfx/gl_level.h"
 #include "../../renderer/gfx/features.h"
-    #include "../../settings.h"
     #include "../../renderer/renderer.h"
     //opencode: raymarch preset schema declarations (save/load entry points).
     #include "../../renderer/raymarch/schema2.h"
@@ -12044,6 +12046,25 @@ static gX_I0 gfx_menu_bar(gX_RendererGFX *gfx) {
     }
     ImGui::EndMainMenuBar();
 }
+#else
+//ai: kernel builds still call the editor-host panel controls; provide inert
+//   panel state/labels so the host menu links without the renderer cluster.
+static gX_I1 s_kernelAssetPanelFlag = 0;
+static gX_I1 s_kernelFooterPanelFlag = 1;
+extern "C" gX_I1 *gX_Tools_Gfx_AssetPanelFlag(gX_I0)
+{
+    return &s_kernelAssetPanelFlag;
+}
+extern "C" gX_I1 *gX_Tools_Gfx_FooterPanelFlag(gX_I0)
+{
+    return &s_kernelFooterPanelFlag;
+}
+extern "C" gX_I32 gX_Tools_Gfx_LabPanelCount(gX_I0) { return 0; }
+extern "C" const gX_I8 *gX_Tools_Gfx_LabPanelLabel(gX_I32 index)
+{
+    (void)index;
+    return (const gX_I8 *)"";
+}
 #endif
 
 extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
@@ -12083,7 +12104,9 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
         gfx_focus_viewport_set(1);
     //opencode: capture/gate hook — force the summonable panels after the
     //   open resets; the host menu toggles the same flags.
+#if gX_ENABLE_RENDERER == 1
     s_shortcutFooterOpen = 1;
+#endif
     {
         const gX_I8 *sceneEnv = getenv("GX_GFX_PANEL_SCENE");
         const gX_I8 *inspEnv = getenv("GX_GFX_PANEL_INSPECTOR");
@@ -12092,8 +12115,13 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
         const gX_I8 *labsEnv = getenv("GX_GFX_PANEL_LABS");
         if (sceneEnv && sceneEnv[0]) s_scenePanelOpen = atoi((const char *)sceneEnv) != 0;
         if (inspEnv && inspEnv[0]) s_inspectorPanelOpen = atoi((const char *)inspEnv) != 0;
+#if gX_ENABLE_RENDERER == 1
         if (assetEnv && assetEnv[0]) s_assetBrowserOpen = atoi((const char *)assetEnv) != 0;
         if (footerEnv && footerEnv[0]) s_shortcutFooterOpen = atoi((const char *)footerEnv) != 0;
+#else
+        (void)assetEnv;
+        (void)footerEnv;
+#endif
         if (labsEnv && labsEnv[0]) {
             s_labMask = (gX_U32)strtoul((const char *)labsEnv, NULL, 0)
                 & ((1u << GX_GFX_LAB_COUNT) - 1u);
@@ -12119,11 +12147,13 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
             s_labMask |= 1u << GX_GFX_LAB_RAY;
     }
     //ai: headless preset-dir probe: scan the configured dir and report it.
+#if gX_ENABLE_RENDERER == 1
     {
         const gX_I8 *scanEnv = getenv("GX_GFX_PRESET_SCAN");
         if (scanEnv && scanEnv[0] && scanEnv[0] != '0')
             gfx_preset_assets_scan();
     }
+#endif
     s_freeCameraActive = 0;
     input.toolCameraInputEnabled = 0;
     s_moveAxis = 0;

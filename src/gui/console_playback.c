@@ -55,10 +55,14 @@ static gX_I8 s_label[24] = { 0 };
 
 static gX_I1 console_playback_scene(gX_I0)
 {
-    if (arguments.cartridgeY2K) return 1;
-    if (arguments.cartridgeRay1 && maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH) return 1;
-    if (arguments.cartridgeParticle && maindata.masterIndex == gX_SCENE_PHYSICS) return 1;
-    if (arguments.consoleShell && maindata.masterIndex != gX_SCENE_TITLE) return 1;
+    //ai: scope the console clock to the cartridge profiles, not the boot flag;
+    //   a stale shell flag must not pause unrelated demos.
+    if (arguments.cartridgeY2K && maindata.masterIndex == gX_SCENE_RENDERER_GFX)
+        return 1;
+    if (arguments.cartridgeRay1 && maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH)
+        return 1;
+    if (arguments.cartridgeParticle && maindata.masterIndex == gX_SCENE_PHYSICS)
+        return 1;
     return 0;
 }
 

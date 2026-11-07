@@ -304,6 +304,22 @@ def main():
             osd_has(pause_log, cart="Y2K CGI", mode="SOFT", prism=True)
             osd_has(pause_log, cart="Y2K CGI", mode="SOFT", prism=False)
 
+            #ai: a live first enable must change scene pixels, not only the
+            #   label; the output pass must exist before the toggle.
+            off_script = ("1.0 key 256;2.0 key 264;2.25 key 264;"
+                "2.5 key 264;2.75 key 264")
+            on_script = off_script + ";3.25 key 257"
+            pause_off, _ = capture("pause_live_off", off_script, 280, 260)
+            pause_on, pause_on_log = capture("pause_live_on", on_script, 280, 260)
+            console.require("CONSOLE: prism=1" in pause_on_log,
+                "pause PRISM-1 live toggle did not enable the pass")
+            live_off = pause_off[80:600, 0:200]
+            live_on = pause_on[80:600, 0:200]
+            live_delta = float(np.abs(live_on - live_off).mean())
+            console.require(live_delta > 1.0,
+                f"pause PRISM-1 live toggle changed no scene pixels "
+                f"({live_delta:.3f})")
+
             # Native mode keeps the preference but disables the output row.
             _, discovery = capture("shell_native_discovery", None, 80, 60,
                 scene="--console-shell")

@@ -246,10 +246,15 @@ static gX_I0 gX_Renderer_Canvas_Load(gX_I0) {
             maindata.consoleOutputWidth, maindata.consoleOutputHeight);
         renderer.state.CONSOLE_RESOLVE_LOADED = true;
     }
-    //ai: the console output shader serves PRISM-1 and/or film grain. The
-    //   HDR-format present target receives the 240p treatment; matching the
-    //   GUI composite targets keeps the format-compatible blits.
-    if ((maindata.consolePRISM1 || maindata.consoleGrain)
+    //ai: the console output shader serves PRISM-1 and/or film grain. Load it
+    //   for the whole 320x240 console mode so a runtime toggle takes effect
+    //   without a canvas reload; the pass itself still gates on the flags.
+    //   The HDR-format present target receives the 240p treatment; matching
+    //   the GUI composite targets keeps the format-compatible blits.
+    gX_I1 ConsoleOutputMode = (maindata.virtualScreen
+        && maindata.consoleOutputWidth == 320
+        && maindata.consoleOutputHeight == 240) ? 1 : 0;
+    if ((maindata.consolePRISM1 || maindata.consoleGrain || ConsoleOutputMode)
         && !renderer.state.CONSOLE_PRISM_LOADED) {
         renderer.consolePrismShader = gX_Shader_Load(0,
             GX_PATH("shader", "gfx_prism1.frag"));
@@ -269,7 +274,7 @@ static gX_I0 gX_Renderer_Canvas_Load(gX_I0) {
             gX_TraceLog(gX_LOG_ERROR, "RENDERER: console output shader load failed");
         }
     }
-    if ((maindata.consolePRISM1 || maindata.consoleGrain)
+    if ((maindata.consolePRISM1 || maindata.consoleGrain || ConsoleOutputMode)
         && renderer.state.CONSOLE_PRISM_LOADED
         && !renderer.state.CONSOLE_PRESENT_LOADED
         && maindata.consoleOutputWidth > 0 && maindata.consoleOutputHeight > 0) {

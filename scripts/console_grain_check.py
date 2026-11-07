@@ -131,6 +131,22 @@ def main():
             osd_has(pause_log, cart="Y2K CGI", mode="SOFT", grain=True)
             osd_has(pause_log, cart="Y2K CGI", mode="SOFT", grain=False)
 
+            #ai: a live first enable must add grain to the scene, not only the
+            #   label; the output pass must exist before the toggle.
+            off_script = ("1.0 key 256;2.0 key 264;2.25 key 264;2.5 key 264;"
+                "2.75 key 264;3.0 key 264")
+            on_script = off_script + ";3.5 key 257"
+            pause_off, _ = capture("pause_live_off", off_script, 300, 280)
+            pause_on, pause_on_log = capture("pause_live_on", on_script, 300, 280)
+            console.require("CONSOLE: grain=1" in pause_on_log,
+                "pause grain live toggle did not enable the pass")
+            live_off = pause_off[80:600, 0:200]
+            live_on = pause_on[80:600, 0:200]
+            live_delta = float(np.abs(live_on - live_off).mean())
+            console.require(live_delta > 0.25,
+                f"pause grain live toggle changed no scene pixels "
+                f"({live_delta:.3f})")
+
             # Save state stores grain; F8 restores it.
             save_dir = out / "slots"
             save_script = ("1.0 key 256;2.0 key 264;2.25 key 264;2.5 key 264;"

@@ -1088,11 +1088,17 @@ static gX_I0 gX_Input_Update_Binds(gX_I0) {
     }
 }
 
-//ai: reserve the Start menu action for gX-240 cartridge playback.
+//ai: Start opens the cartridge pause menu; cover every console profile and
+//   require its own scene so a stale boot flag cannot affect other demos.
 static gX_I1 gX_Input_ConsoleController_Enabled(gX_I0)
 {
-    return arguments.cartridgeY2K
-        || (arguments.consoleShell && maindata.masterIndex != gX_SCENE_TITLE);
+    if (arguments.cartridgeY2K
+        && maindata.masterIndex == gX_SCENE_RENDERER_GFX) return 1;
+    if (arguments.cartridgeRay1
+        && maindata.masterIndex == gX_SCENE_RENDERER_RAYMARCH) return 1;
+    if (arguments.cartridgeParticle
+        && maindata.masterIndex == gX_SCENE_PHYSICS) return 1;
+    return 0;
 }
 
 //opencode: poll all connected gamepads and update button/axis state.
