@@ -1,9 +1,10 @@
 # Local gX repository ecosystem
 
-<!-- //ai: proposed multi-repo discovery/ledger; no implementation or cleanup authorization. -->
+<!-- //ai: implemented multi-repo discovery/ledger; no cleanup authorization. -->
 
-Status: **proposed (GX-I023)**. This is a contract for a future read-only
-inventory, not a claim that the tool exists.
+Status: **implemented (GX-I023)** in `scripts/repo_ecosystem.py`. The tool is
+read-only by default and writes only an explicit local snapshot/ledger under
+the configured ecosystem directory. It never archives, prunes or deletes.
 
 ## Why
 
@@ -23,11 +24,13 @@ lineage/reference trees. Tracking them by directory name alone is unsafe.
 
 ## Discovery
 
-A read-only helper would scan a configurable root (`GX_REPO_ROOT`, defaulting
-to the directory that contains the current checkout) with a bounded depth and
-skip `.git`, build/output, vendor and package directories. It records only
+The helper scans a configurable root (`GX_REPO_ROOT`, defaulting to the parent
+of the primary checkout) with a bounded depth (`--max-depth`, default 4) and
+skips `.git`, build/output, vendor and package directories. It records only
 directories that Git identifies as a repository or worktree; a directory name
-containing “gX” is a hint, not proof.
+containing “gX” is a hint, not proof. Registered worktrees of a discovered
+repository are added through `git worktree list`, so discovery does not need to
+walk into every checkout.
 
 A repository is classified as:
 
@@ -110,37 +113,52 @@ paths, private remotes and user data stay local.
 - Archive/prune remains an explicit, reviewed maintainer action; the
   ecosystem tool may produce a plan but never executes it.
 
-## Planned commands
+## Commands
 
-```text
+```bash
 # read-only report over the local root
-repo-ecosystem report --root <local-git-root> [--json]
+python3 scripts/repo_ecosystem.py report --root <local-git-root> [--json]
 
 # write snapshot.md/snapshot.json and create ledger.md if absent
-repo-ecosystem report --root <local-git-root> --write
+python3 scripts/repo_ecosystem.py report --root <local-git-root> --write
 
-# compare a new snapshot with the previous one
-repo-ecosystem drift --root <local-git-root>
+# also retain an immutable timestamped observation for drift history
+python3 scripts/repo_ecosystem.py report --root <local-git-root> \
+  --write --history
 
-# link per-repository archive/prune plans (GX-I022)
-repo-ecosystem archive-plan --root <local-git-root>
+# compare a new observation with the previous snapshot
+python3 scripts/repo_ecosystem.py drift --root <local-git-root>
+
+# print per-repository archive/prune-plan commands (GX-I022); plan only
+python3 scripts/repo_ecosystem.py archive-plan --root <local-git-root>
 ```
 
-The exact executable name is intentionally not fixed in this contract.
+The local directory defaults to `<git-common-dir>/gx-ecosystem` and can be
+overridden with `GX_ECOSYSTEM_DIR` or `--ecosystem-dir`. `ledger.md` is created
+once and never overwritten by a refresh. `drift` and `archive-plan` do not
+write a snapshot or create archive directories; `archive-plan` prints exact
+commands for explicit review and never executes them.
 
 ## Tests
 
-Use disposable roots containing:
+`scripts/test_repo_ecosystem.py` uses disposable roots containing:
 
 - one repository with two worktrees;
 - a separate clone of the same remote;
 - a proof-style repository;
+- a candidate repository with partial engine markers;
 - a lineage-style repository with no remote;
 - an unrelated repository whose name merely contains “gX”.
 
-Assert grouping, worktree-vs-clone identity, remote sanitization, exclusion of
-unrelated trees, preservation of `ledger.md`, and that no ref, index, worktree
-or file is modified by a report or drift run.
+The tests assert grouping, worktree-vs-clone identity, remote sanitization,
+exclusion of unrelated trees, preservation of `ledger.md`, drift reporting,
+archive-plan linkage, depth/vendor/symlink skips, active-claim marking, and
+that no ref, index, worktree or file is modified by a report, drift or
+archive-plan run.
+
+```bash
+python3 -m unittest discover -s scripts -p test_repo_ecosystem.py
+```
 
 ## Non-goals
 

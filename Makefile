@@ -77,6 +77,8 @@ check: all
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
 	#ai: collection archives are deterministic and prune-plan never executes cleanup.
 	python3 -m unittest discover -s scripts -p test_worktree_collection.py
+	#ai: ecosystem discovery is read-only, sanitizes remotes and preserves the local ledger.
+	python3 -m unittest discover -s scripts -p test_repo_ecosystem.py
 	python3 -m unittest discover -s scripts -p test_agent_bus.py
 	@if [ ! -d ../proofs ]; then \
 	  echo "gX public source beta: full 'make check' needs the proof tree (../proofs)."; \
@@ -274,6 +276,8 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
 	#ai: collection archives are deterministic and prune-plan never executes cleanup.
 	python3 -m unittest discover -s scripts -p test_worktree_collection.py
+	#ai: ecosystem discovery is read-only, sanitizes remotes and preserves the local ledger.
+	python3 -m unittest discover -s scripts -p test_repo_ecosystem.py
 	python3 -m unittest discover -s scripts -p test_agent_bus.py
 	@echo "== [gX fast] unit tests =="
 	./build/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/gX_build --test-only && exit 1)

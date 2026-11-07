@@ -9,6 +9,16 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **Local repository ecosystem ledger**: `repo_ecosystem.py` provides bounded,
+  read-only discovery of repositories and registered worktrees under a local
+  root, grouping separate clones by sanitized remote identity and worktrees by
+  common Git directory. It classifies engine, proof, lineage/reference,
+  candidate and unrelated trees from markers and remotes, records branch/head,
+  dirty/untracked/ignored state, unique commits, tags, proof pins, release
+  version, active agent-bus claims and archive state, and writes JSON/Markdown
+  snapshots plus an immutable human-maintained `ledger.md`. `drift` compares
+  observations and `archive-plan` prints plan-only GX-I022 archive/prune
+  commands. No command fetches, archives, prunes or deletes.
 - **Worktree collection archive and prune plan**: `worktree_collection.py`
   provides grouped status, deterministic local-branch/tag and detached-HEAD
   Git bundles, tracked/staged patches, untracked/ignored listings, inventory/

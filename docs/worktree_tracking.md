@@ -85,9 +85,34 @@ cleanup authorization, and it does not replace these notes. See
 ## Local ecosystem
 
 This inventory covers one Git repository. For separate clones, proof
-repositories and lineage/reference trees under the local Git root, see
-[`repo_ecosystem.md`](repo_ecosystem.md) (proposed GX-I023). It is a read-only
-discovery/ledger contract and does not authorize cleanup.
+repositories and lineage/reference trees under the local Git root, use
+`scripts/repo_ecosystem.py` (GX-I023, contract in
+[`repo_ecosystem.md`](repo_ecosystem.md)):
+
+```bash
+# read-only observation of the local root
+python3 scripts/repo_ecosystem.py report --root /path/to/local/git-root
+
+# refresh the local snapshot and create ledger.md once
+python3 scripts/repo_ecosystem.py report --root /path/to/local/git-root --write
+
+# compare against the previous snapshot without writing
+python3 scripts/repo_ecosystem.py drift --root /path/to/local/git-root
+
+# print per-repository GX-I022 archive/prune-plan commands; never executes
+python3 scripts/repo_ecosystem.py archive-plan --root /path/to/local/git-root
+```
+
+The default local state directory is `<git-common-dir>/gx-ecosystem`, not the
+public source tree. `snapshot.json`/`snapshot.md` are refreshable observations;
+`ledger.md` is human/agent-maintained and refresh never overwrites it. Remotes
+are sanitized, discovery is bounded, unrelated repositories are excluded from
+the ecosystem groups, and unknown purpose stays unreviewed. No command fetches,
+archives, prunes or deletes. Disposable-root tests:
+
+```bash
+python3 -m unittest discover -s scripts -p test_repo_ecosystem.py
+```
 
 ## Keeping the notes useful
 
