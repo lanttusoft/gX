@@ -88,6 +88,8 @@ Start here:
 - [Static lightmaps](lightmap_baking.md)
 - [Probe box-projection contract](probe_box_contract.md)
 - [Raymarch](raymarch.md)
+- [Reflection alignment contract](reflection_alignment.md) — planar/SSR/env
+  ownership, shared frame/plane/jitter and the numeric gate.
 - [gX Reflection Pack](reflection_pack.md)
 - [Rendering backlog](rendering_backlog.md)
 - [Sky render tests](sky_render_tests.md)

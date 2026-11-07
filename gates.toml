@@ -463,6 +463,14 @@ group = "render"
 cache = "content"
 description = "mirror-alignment audit gate."
 
+[gate.reflection-alignment]
+script = "reflection_alignment_check.py"
+args = []
+tier = ["full"]
+group = "render"
+cache = "content"
+description = "numeric planar mirror chain and Y2K reflection-ownership gate."
+
 [gate.grid]
 script = "gfx_grid_check.py"
 args = []

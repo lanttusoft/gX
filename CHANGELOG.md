@@ -106,6 +106,11 @@ Release-Class: minor
   separate simulation clock drives camera/scene/physics/renderer while UI, OSD
   and audio stay on real time; save loads, scene changes and Exit to Shell
   reset playback. `console_playback_check` pins the deltas and controls.
+- **Reflection alignment contract**: `docs/reflection_alignment.md` defines
+  the ownership, shared frame/plane, jitter, color-space and env-fallback
+  invariants. `make reflection-alignment-check` runs the CPU planar mirror
+  oracle and the Y2K `planar=1`/`receiveSSR=0` SSR-free plan. The oracle now
+  uses a fixed 1024x768 capture and an image-adaptive floor sample grid.
 - **2x console SSAA**: opt-in 640x480 scene render resolved to 320x240 for
   Y2K, RAY-1 and the particle composite route; shell/pause video mode,
   save-state persistence and an OSD `SSAA2x` split. The matched GPU gate stays

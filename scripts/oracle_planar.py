@@ -45,8 +45,8 @@ T_B0, T_B, T_A = 2.5, 5.0, 0.01
 def run(env, capture_dir):
     #opencode: NVIDIA display via audit.display(); never xvfb-run (llvmpipe).
     environment = audit.scene_env(env, clean=True)
-    result = audit.run_scene("--showcase-planar", environment, width=None,
-                             height=None, fps=None, screenshot_dir=capture_dir,
+    result = audit.run_scene("--showcase-planar", environment, width=1024,
+                             height=768, fps=None, screenshot_dir=capture_dir,
                              shot_frame=None, timeout=TIMEOUT, check=False)
     return result.stdout or ""
 
@@ -117,10 +117,13 @@ def main():
 
 
 def run_oracle(capture_dir, Image):
-    env = {"GX_DIAG_CUBE": "1", "GX_CUBE_ROT": "0", "GX_T_TAA": "0",
+    env = {"GX_DIAG_CUBE": "1", "GX_CUBE_ROT": "0",
+           "GX_T_TAA": os.environ.get("GX_ORACLE_TAA", "0"),
            "GX_T_BLOOM": "0",  # opencode: halo-free hard edges for bbox truth
            "GX_T_TONEMAP": "0",  # opencode: raw echoes (ACES/gamma corrupt UVs)
            "GX_CAM_YAW": "30", "GX_CAM_PITCH": "25", "GX_CAM_DIST": "6",
+           "GX_CONSOLE_SSAA": "0", "GX_CONSOLE_PRISM": "0",
+           "GX_CONSOLE_GRAIN": "0",
            "GX_SCREENSHOT_DIR": capture_dir}
 
     print("== [oracle] beauty capture ==")
@@ -246,9 +249,17 @@ def run_oracle(capture_dir, Image):
     # Clean floor only (ghost/contact excluded: different content class).
     invVP = np.linalg.inv(VP)
     Ps, Ms = [], []
-    for gy in range(550, 951, 50):
-        for gx in range(750, 1360, 60):
-            if 690 <= gx <= 980 and 540 <= gy <= 830:
+    #opencode: derive the floor sample grid from the captured image instead of
+    #   fixed 1440-ish coordinates; forced 1024x768 captures otherwise sample
+    #   past the right edge (n=5 and an empty-slice warning). The ghost bbox is
+    #   already measured above, so exclude it plus a small margin.
+    gx0, gx1, gy0, gy1, _ = boxes["ghost"]
+    step_x = max(8, PW // 24)
+    step_y = max(8, PH // 20)
+    for gy in range(int(PH * 0.55), int(PH * 0.98), step_y):
+        for gx in range(int(PW * 0.48), int(PW * 0.98), step_x):
+            if (gx0 - 10 <= gx <= gx1 + 10
+                    and gy0 - 10 <= gy <= gy1 + 10):
                 continue  # ghost + contact smear
             bv = beauty[gy - 2:gy + 3, gx - 2:gx + 3].reshape(-1, 3).mean(axis=0)
             if not (bv[1] > bv[0] and bv[1] > bv[2] and bv.mean() < 150):

@@ -70,6 +70,7 @@ check: all
 	python3 -m unittest discover -s scripts -p test_console_particle_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa4x_probe.py
 	python3 -m unittest discover -s scripts -p test_console_grain_check.py
+	python3 -m unittest discover -s scripts -p test_reflection_alignment_check.py
 	python3 -m unittest discover -s scripts -p test_evidence_stamp.py
 	#ai: local inventory must preserve notes and never confuse worktree identities.
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
@@ -176,6 +177,8 @@ check: all
 	$(MAKE) -s depth-input-check
 	#ai: source-grounded planar camera/UV geometry and asymmetric convention witnesses.
 	$(MAKE) -s planar-geometry-check
+	#ai: numeric planar mirror chain plus the Y2K single-owner contract.
+	$(MAKE) -s reflection-alignment-check
 	#ai: native reflected vs rebuilt camera orientation and conditional winding witnesses.
 	$(MAKE) -s reflection-handedness-check
 	#ai: near clipping before perspective divide and mixed-w winding negative controls.
@@ -252,6 +255,7 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_console_particle_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa4x_probe.py
 	python3 -m unittest discover -s scripts -p test_console_grain_check.py
+	python3 -m unittest discover -s scripts -p test_reflection_alignment_check.py
 	python3 -m unittest discover -s scripts -p test_evidence_stamp.py
 	#ai: inventory regressions use owned disposable repositories, not real worktrees.
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
@@ -842,6 +846,11 @@ diffraction-check:
 cli-check: all
 	@echo "== [gX CI] CLI contract =="
 	python3 scripts/cli_contract_check.py
+
+.PHONY: reflection-alignment-check
+reflection-alignment-check: all
+	@echo "== [gX CI] reflection alignment =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/reflection_alignment_check.py
 
 .PHONY: cartridge-check
 cartridge-check: all
