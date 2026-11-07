@@ -33,6 +33,15 @@ only from each side of that base. A directory name is not its branch identity;
 always use the branch reported by Git. The script only runs read-only Git
 commands; `--write` changes these local report files, not refs, indexes or trees.
 
+## Parallel sessions
+
+The inventory is the durable record. For live, short-lived coordination between
+sessions, use the advisory local bus in
+[`agent_coordination.md`](agent_coordination.md): check active claims before
+editing, post intent, claim paths, release when done. It is not a lock or a
+cleanup authorization, and it does not replace these notes. See
+`python3 scripts/agent_bus.py list`.
+
 ## Keeping the notes useful
 
 - Before creating a branch/worktree, search the idea ledger and inventory for

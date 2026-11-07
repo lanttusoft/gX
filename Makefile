@@ -74,6 +74,7 @@ check: all
 	python3 -m unittest discover -s scripts -p test_evidence_stamp.py
 	#ai: local inventory must preserve notes and never confuse worktree identities.
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
+	python3 -m unittest discover -s scripts -p test_agent_bus.py
 	@if [ ! -d ../proofs ]; then \
 	  echo "gX public source beta: full 'make check' needs the proof tree (../proofs)."; \
 	  echo "Use 'make check-fast' for the public source-beta CI."; \
@@ -261,6 +262,7 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_evidence_stamp.py
 	#ai: inventory regressions use owned disposable repositories, not real worktrees.
 	python3 -m unittest discover -s scripts -p test_worktree_inventory.py
+	python3 -m unittest discover -s scripts -p test_agent_bus.py
 	@echo "== [gX fast] unit tests =="
 	./build/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/gX_build --test-only && exit 1)
 	@echo "== [gX fast] CLI contract =="
@@ -844,6 +846,11 @@ diffraction-check:
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/diffraction_shape_check.py
 
 #ai: fixed Y2K cartridge profile — presentation, Max quality, textures, spikes.
+.PHONY: agent-bus-check
+agent-bus-check:
+	@echo "== [gX CI] agent bus =="
+	python3 -m unittest discover -s scripts -p test_agent_bus.py
+
 .PHONY: cli-check
 cli-check: all
 	@echo "== [gX CI] CLI contract =="

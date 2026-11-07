@@ -132,6 +132,25 @@ never remove/prune worktrees or delete branches without explicit approval.
    run, and do not describe a beta as certified or release-grade.
 6. Leave tags, releases and publishing to the maintainer.
 
+<!-- //ai: advisory parallel-session coordination; never a hard lock or cleanup approval. -->
+## Parallel sessions and the local agent bus
+
+Another session may be editing a different worktree of the same repository at
+the same time. Before touching files:
+
+- run `git status` and `python3 scripts/agent_bus.py list`;
+- read [`docs/agent_coordination.md`](docs/agent_coordination.md);
+- treat unknown modified, untracked or ignored files as another session's
+  work — never `git add -A`, commit, delete, clean or reformat them without
+  explicit approval;
+- post intent and claim the paths you will edit, then release when done;
+- use unique scratch paths and coordinate GPU/display-heavy gates.
+
+The bus is advisory, lives under the Git common dir (or `GX_AGENT_BUS`), and is
+not a lock, sandbox or cleanup authorization. Subagents receive the bus root
+and session ID from the parent. The durable record remains
+[`docs/worktree_tracking.md`](docs/worktree_tracking.md).
+
 ## Where to start
 
 - [`docs/architecture.md`](docs/architecture.md) — system layout
@@ -139,6 +158,7 @@ never remove/prune worktrees or delete branches without explicit approval.
 - [`docs/api_reference.md`](docs/api_reference.md) — public API index
 - [`docs/ideas.md`](docs/ideas.md) — ideas, decisions, remaining work and revisit conditions
 - [`docs/worktree_tracking.md`](docs/worktree_tracking.md) — shared branch/worktree inventory and cleanup review
+- [`docs/agent_coordination.md`](docs/agent_coordination.md) — advisory cross-session bus and parallel-write rules
 - [`gates.toml`](gates.toml) — the audit matrix
 - [`docs/ai_policy.md`](docs/ai_policy.md) — AI contribution policy
 - [`AI_CONTRIBUTING.md`](AI_CONTRIBUTING.md) — the short reviewer checklist
