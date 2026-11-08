@@ -9,6 +9,9 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **GFX audit close-out**: GX-I024 functional findings are closed and the
+  coverage-only residuals are documented in the November follow-up report;
+  no engine, gate, threshold or budget behavior changed.
 - **Documentation process index and November audits**: the docs index now
   groups worktree/agent/ecosystem, release, static-analysis, Lean, lineage,
   AI and review links under Process and maintenance, and publishes the

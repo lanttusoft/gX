@@ -272,3 +272,43 @@ not-yet-created `new_user_pass.md` report under `docs/`. That work was
 preserved, not removed or accepted into the baseline. Its GX-I020 ID was
 retained; this audit uses GX-I021. This documentation-check failure is not a regrade of the frozen
 engine's runtime results.
+
+## Resolution and residual coverage (2026-11-08)
+
+**Status: functional findings closed; remaining notes are documentation-only.**
+The frozen `89927f5` snapshot remains the audit record. Repairs and gate
+coverage landed in later local commits:
+
+| Finding | Resolution | Evidence |
+| --- | --- | --- |
+| M11-01 procedural sphere VBO overflow | Fixed in `48ec24a`, merged in `4e7c386` | native bounds/lifetime controls |
+| M11-04 full reflection failure | Calibrated in `38685a3` | suite in `make check` and `gates.toml`; planar 0.702, cube 0.678 |
+| GUI shader-clear use-after-free | Fixed in `01241c8` | headless relocation regression; sanitized water clean |
+| GUI texture/model lifetime | Fixed in `f9c3df0` | shared resolver + forced-growth regressions |
+| M11F-01 async OBJ attribute overrun | Fixed in `39e3201` | independent position/normal/UV deindex regression |
+| M11F-02/03 generated-model maps and rollback | Fixed in `0132c4d` | owner destructor + allocation-failure probe |
+| M11F-04 tangent API boundary | Fixed in `4288636` | indexed/soup/out-of-range boundary regression |
+| M11F-05 zero-floor matrix rows | Fixed in `c6fa4e6`/`f1ba90e` | positive visible floors + window-gobo cookie |
+| M11F-06 summary/reflection coverage | Fixed in `38685a3` | full suite scheduled by admission |
+| 240p console Y2K→RAY-1 GL errors | Fixed in `796aba8` | cubemap/array target-aware state + dead-uniform guard; transition gate |
+
+Residual notes, all documentation-only:
+
+- Human image grades remain **UNREVIEWED**; the advisory observations in the
+  frozen monthly report are not regraded here.
+- The 15 GL-state lexical warnings are retained as report evidence; source
+  review found mutually exclusive early-return/normal-tail pops. This is not a
+  dynamic GL-state proof.
+- The 103 informational shader-uniform heuristics and compiler/Lean notices
+  remain historical admission observations.
+- No cross-driver certification, physical CRT/controller validation,
+  arbitrary-scene radiance proof, exhaustive GPU-object lifetime claim,
+  long-duration resource-growth claim, or general performance claim follows.
+- The earlier “Report installation checks” paragraph describes the frozen
+  snapshot. GX-I020 is now complete and the current tree's
+  `common_sense_check` passes.
+- The original M11F-05 zero-floor table is historical; current matrix rows have
+  positive floors and the cookie fixture is visible.
+
+No open functional finding remains. Caps, baselines, thresholds and published
+behavior are unchanged by this close-out.
