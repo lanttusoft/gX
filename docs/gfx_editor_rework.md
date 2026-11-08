@@ -3,9 +3,14 @@
 <!-- //ai: isolated editor-rework plan; branch editor/rework-2026-10-28. -->
 
 Status: Phases 1–5 complete (2026-10-30) on `release/v0.19`. Internal
-re-review meets the 8.0 release target in all three lenses. This branch is isolated from the `v0.18.1` public-beta
-release worktree and is not release-blocking; the beta ships the editor as a
-technical preview.
+re-review meets the 8.0 release target in all three lenses. The same rework
+features (suites, split Scene/Create/Renderer hierarchy, showcase default,
+plum/lavender/amber palette, accessibility scale/focus and eleven summonable
+renderer labs) are present on the current `feature/console-240p` line. The
+beta ships the editor as a **technical preview**; this is not a claim of
+release-grade certification beyond the recorded internal review. The F1/Help
+guide was added in the 2026-11-08 onboarding slice. The original isolated
+`v0.18.1` worktree note is retained as history.
 
 The current public beta ships the GFX editor as a **technical preview**. This
 rework is the path from “dense internal tool” to the release-grade primary

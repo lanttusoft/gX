@@ -9,6 +9,11 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **GFX editor rework close-out**: the Phases 1–5 hierarchy, identity,
+  showcase, accessibility/scaling and renderer-lab work is recorded as
+  present on the current line (it was previously described as future
+  work), with the remaining tab/overlay/label items marked low-severity
+  technical-preview debt. The F1/Help onboarding guide is included.
 - **GFX editor guide**: an F1/Help step-by-step onboarding window covers
   the stage, transform keys, panels, presets, cameras and bug reporting.
   `GX_GFX_GUIDE=force` powers `make gfx-editor-guide-check`; the broader

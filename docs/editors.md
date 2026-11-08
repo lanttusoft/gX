@@ -5,10 +5,11 @@ Status: **technical-preview inventory** — the slice list below is author-order
 all slices have landed (the physics editor was author-built; the sky editor
 closes the list). `tooling_scope.md` is the contract: gX builds engine-native
 editing surfaces that drive and validate the engine, not authoring applications.
-The GFX editor is the reference surface but is **work in progress and not yet
-release-grade UI**: its panel hierarchy, identity, default showcase,
-accessibility and scaling remain beta work. A dedicated rework is planned and
-will land in future betas.
+The GFX editor is the reference surface. Its isolated rework (Phases 1–5:
+hierarchy/layout, identity, default showcase, accessibility/scaling and
+re-review) is **complete on this line** for the technical preview; the
+remaining notes are low-severity layout debt, not missing workflow phases.
+See [`gfx_editor_rework.md`](gfx_editor_rework.md).
 
 ## What an editor is here
 
@@ -19,7 +20,7 @@ round-trips presets under `resources/tools/`.
 | Surface | Source | Edits | Tier | Gate / gap |
 |---|---|---|---|---|
 | Global editor host | `src/tools/editor_host.cpp` | always-summonable menu bar (`gX/File/Edit/View/<Active Editor>/Window/Help`), editor registry (GUI, theme, sky, background, physics, wavetable, textwriter, rail, GFX; GFX scene/inspector/asset/footer panels summonable, renderer labs (Models/Sky/World/FX/Lights/Render/Water/Ray/Particles/Refl/Debug) as separate panels, per-suite panel and lab masks), workspace tabs, built-in and user-saved suites (`gx_editor_<suite>.ini`, `gx_editor_suites.txt`, `gx_editor_workspace.txt`), console/quit | Alpha/WIP | `editor-host`; per-panel draw, GFX migration and layout polish pending |
-| GFX editor | `src/tools/gfx/gfx_editor.cpp` | renderer scene (models/materials/lights/camera/sky/weather/decals/water/particles/SSAO/SSR/quality) + blockout/texture/export/bake panels | Beta | full audit matrix; F1/Help guided onboarding added; panel hierarchy/identity rework remains open (reference surface) |
+| GFX editor | `src/tools/gfx/gfx_editor.cpp` | renderer scene (models/materials/lights/camera/sky/weather/decals/water/particles/SSAO/SSR/quality) + blockout/texture/export/bake panels | Beta | full audit matrix; rework Phases 1–5 complete; F1/Help guide; residual low-severity tab/overlay debt |
 | GUI editor | `src/tools/editor/editor.cpp` | markup templates on the GUIPLAYGROUND canvas | Alpha/WIP | `gui-editor` gate; canvas click/drag/resize, tree filter, undo/redo, first-run tour + F1 guide, shipped-markup guard |
 | Theme editor | `src/tools/theme/theme_editor.cpp` | GUI theme tokens (live) | Alpha/WIP | `ui-audit` open path; token-list surface, manual workflow |
 | ThemLab / MaterialsLab / ShaderLab | GUI templates | design previews (no data path) | Alpha/WIP | preview only, no data path |

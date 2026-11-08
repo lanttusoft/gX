@@ -57,7 +57,7 @@ is the judgment layer on top of it.
 | GUI editor (`--tools`) | three-column dock (`Editor - …`) + status bar + first-run tour popup | tour + direct manipulation + tree filter + undo/redo are covered by `gui-editor-check`; status bar reports canvas/element/selection |
 | Theme editor | `gX Tools - Theme Editor`, fits | token tree + search + compare presets + save path |
 | Theme lab / Materials lab / Shader lab | canvas galleries (no window) | readable at 1024; each pairs with an editor or stands alone |
-| GFX editor | three-column dock (`GFX …`) + menu bar + shortcut footer | the reference surface; routes to the GFX scene; F1/Help guide covered by `gfx-editor-guide-check` |
+| GFX editor | three-column dock (`GFX …`) + menu bar + shortcut footer | the reference surface; rework Phases 1–5 complete; routes to the GFX scene; F1/Help guide covered by `gfx-editor-guide-check` |
 | Script debugger | `Scripting - Debug` (module), fits | CLI/env-only (module-gated); console overlay draws on top |
 | Wavetable editor | `gX Tools - Wavetable Editor`, fits | slot/generate/draw/preview; fixture list; opens over any scene |
 | Textwriter editor | `gX Tools - Textwriter Editor`, fits | line list scrolls inside the panel; tag palette compact |
