@@ -9,6 +9,10 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **GFX editor guide**: an F1/Help step-by-step onboarding window covers
+  the stage, transform keys, panels, presets, cameras and bug reporting.
+  `GX_GFX_GUIDE=force` powers `make gfx-editor-guide-check`; the broader
+  panel-hierarchy/identity rework remains separate.
 - **GUI editor usability gate and guard**: the existing canvas
   click/drag/resize, tree filter, undo/redo, shortcut and first-run tour
   workflow is now documented and covered by `make gui-editor-check`.
@@ -191,7 +195,7 @@ Release-Class: minor
   earlier shader-compiler/serializer recovery remains in place. The initial
   recovery measured 17,728 B. A 2026-11-07 pass moved the six vendored Dear
   ImGui tool-UI sources to the same Release `-Os` tier, recovering 278,144 B;
-  the current payload is 3,918,683 B (275,621 B headroom) with unchanged BSS,
+  the current payload is 3,919,771 B (274,533 B headroom) with unchanged BSS,
   caps, capabilities, visuals and Debug code generation.
 
 ### Fixed

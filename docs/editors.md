@@ -19,7 +19,7 @@ round-trips presets under `resources/tools/`.
 | Surface | Source | Edits | Tier | Gate / gap |
 |---|---|---|---|---|
 | Global editor host | `src/tools/editor_host.cpp` | always-summonable menu bar (`gX/File/Edit/View/<Active Editor>/Window/Help`), editor registry (GUI, theme, sky, background, physics, wavetable, textwriter, rail, GFX; GFX scene/inspector/asset/footer panels summonable, renderer labs (Models/Sky/World/FX/Lights/Render/Water/Ray/Particles/Refl/Debug) as separate panels, per-suite panel and lab masks), workspace tabs, built-in and user-saved suites (`gx_editor_<suite>.ini`, `gx_editor_suites.txt`, `gx_editor_workspace.txt`), console/quit | Alpha/WIP | `editor-host`; per-panel draw, GFX migration and layout polish pending |
-| GFX editor | `src/tools/gfx/gfx_editor.cpp` | renderer scene (models/materials/lights/camera/sky/weather/decals/water/particles/SSAO/SSR/quality) + blockout/texture/export/bake panels | Beta | full audit matrix; UI rework open (reference surface) |
+| GFX editor | `src/tools/gfx/gfx_editor.cpp` | renderer scene (models/materials/lights/camera/sky/weather/decals/water/particles/SSAO/SSR/quality) + blockout/texture/export/bake panels | Beta | full audit matrix; F1/Help guided onboarding added; panel hierarchy/identity rework remains open (reference surface) |
 | GUI editor | `src/tools/editor/editor.cpp` | markup templates on the GUIPLAYGROUND canvas | Alpha/WIP | `gui-editor` gate; canvas click/drag/resize, tree filter, undo/redo, first-run tour + F1 guide, shipped-markup guard |
 | Theme editor | `src/tools/theme/theme_editor.cpp` | GUI theme tokens (live) | Alpha/WIP | `ui-audit` open path; token-list surface, manual workflow |
 | ThemLab / MaterialsLab / ShaderLab | GUI templates | design previews (no data path) | Alpha/WIP | preview only, no data path |
@@ -30,6 +30,15 @@ round-trips presets under `resources/tools/`.
 | Camera rail editor | `src/tools/tour/rail_editor.cpp` (**gx_shell module**) | tour camera keyframes: grabs, t/pos/target/fov/bezier, play, JSON presets | Alpha/WIP | no shipped gate; module-side, no undo/tutorial |
 | Background editor | `src/tools/background/background_editor.cpp` (+ shared `bg_panel.cpp`) | background palette/decomposer (shared body), preset files under `resources/tools/background`, the Background polisher entries, reaction pulses | Alpha/WIP | `background-editor`; tuning panel only, authoring loop incomplete, no undo |
 | Sky editor | `src/tools/sky/sky_editor.cpp` | sky look parameters + the **ephemeris clock** (scrub/play), preset files, helpers overlay | Alpha/WIP | `sky-editor`; parameter panel, no undo |
+
+### GFX editor guide (2026-11-08)
+
+The reference GFX editor now has a step-by-step **F1/Help > Editor guide**
+window covering the stage, selection/transform keys, panel layout, preset
+save/load and camera/report routes. `GX_GFX_GUIDE=force` opens it for headless
+coverage; `make gfx-editor-guide-check` pins the GFX-stage open and guide
+trace. The rest of the beta UI rework (panel hierarchy, surface identity and
+default-showcase polish) remains separate work.
 
 ### GUI editor usability (2026-11-08)
 

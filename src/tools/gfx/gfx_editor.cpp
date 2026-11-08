@@ -456,6 +456,35 @@ static gX_U32 s_assetSourceCount = 0;
 static gX_I1 s_assetsReady = 0;
 static gX_I1 s_assetBrowserOpen = 0;
 static gX_I1 s_shortcutFooterOpen = 1;
+//ai: F1/Help onboarding guide; GX_GFX_GUIDE=force opens it for the gate.
+static gX_I1 s_guideOpen = 0;
+
+static gX_I0 gfx_guide_set(gX_I1 open) {
+    if (s_guideOpen == open) return;
+    s_guideOpen = open;
+    gX_TraceLog(gX_LOG_INFO, "GFX_EDITOR: guide %s",
+        open ? "opened" : "closed");
+}
+
+static gX_I0 gfx_editor_guide(void) {
+    if (!s_guideOpen) return;
+    ImGui::SetNextWindowSize(ImVec2(560, 430), ImGuiCond_FirstUseEver);
+    bool open = true;
+    if (ImGui::Begin("GFX editor guide", &open)) {
+        ImGui::TextWrapped("1. Stage: middle-drag orbits, Shift+middle-drag pans, wheel zooms. F frames the selection; F6 hides both side panels.");
+        ImGui::TextWrapped("2. Select and transform: click a model or light marker, then drag. X/Y/Z constrain the move axis, R rotates, S scales, Ctrl snaps. Alt+G/R/S resets position/rotation/scale; Delete removes.");
+        ImGui::TextWrapped("3. Panels: Scene is on the left, Inspector on the right. View > Renderer panels opens the authored labs; the preset, asset and material browsers are searchable.");
+        ImGui::TextWrapped("4. Save and load: File > Save preset (Ctrl+S) or Load preset (Ctrl+O). The preset path is shown in the inspector; shipped paths are refused under the harness guard.");
+        ImGui::TextWrapped("5. Views: View > Camera markers shows authored cameras. World > Camera enters free camera; Esc returns. Help > Report bug opens the offline report.");
+        ImGui::SeparatorText("quick keys");
+        ImGui::Text("F  frame    F6 viewport    Del remove    Ctrl+S save    Ctrl+Z undo");
+        ImGui::Text("MMB orbit   Shift+MMB pan   wheel zoom   F1 guide");
+        ImGui::SeparatorText("current status");
+        ImGui::TextDisabled("Pick models and lights with mouse; authored preset and asset paths stay local.");
+    }
+    ImGui::End();
+    if (!open) gfx_guide_set(0);
+}
 
 extern "C" gX_I1 *gX_Tools_Gfx_AssetPanelFlag(gX_I0) { return &s_assetBrowserOpen; }
 extern "C" gX_I1 *gX_Tools_Gfx_FooterPanelFlag(gX_I0) { return &s_shortcutFooterOpen; }
@@ -5489,6 +5518,7 @@ static gX_I0 gfx_editor_keyboard_input(gX_RendererGFX *gfx) {
     if (io.WantTextInput || io.WantCaptureKeyboard) return;
     gX_RendererGFX_Model *model = gfx_model_at(gfx, s_selModel);
     gX_RendererGFX_Light *light = gfx_light_at(gfx, s_selLight);
+    if (ImGui::IsKeyPressed(ImGuiKey_F1)) gfx_guide_set(!s_guideOpen);
     if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S)) gfx_preset_save(gfx);
     if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O)) {
         s_inspectorPanelOpen = 1;
@@ -12031,17 +12061,12 @@ static gX_I0 gfx_menu_bar(gX_RendererGFX *gfx) {
         ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Help")) {
+        if (ImGui::MenuItem("Editor guide", "F1")) gfx_guide_set(!s_guideOpen);
         if (ImGui::MenuItem("Report bug...", "F10")) gX_BugReport.open = 1;
         ImGui::Separator();
-        ImGui::TextWrapped("Click-drag a visible model or light marker to translate on the selected plane.");
-        ImGui::TextWrapped("Camera markers (View > Camera markers) show every authored camera; drag a position or target handle to reframe it.");
-        ImGui::TextWrapped("Hold X/Y/Z + drag for world-axis translation. Hold R + drag to rotate; R+X/Y/Z constrains the rotation axis. Hold S + drag to scale uniformly; S+X/Y/Z scales one axis.");
-        ImGui::Text("Move buttons and numeric controls are in Inspector > Models.");
-        ImGui::Text("Ctrl during drag snaps; Alt+G/R/S resets position/rotation/scale.");
-        ImGui::Text("F frames the selection; Delete removes it.");
+        ImGui::TextWrapped("F1 opens the step-by-step guide. Drag a model or light marker to translate; X/Y/Z constrain, R rotates, S scales, Ctrl snaps. F frames, Del removes, F6 focuses the stage.");
         ImGui::Text("Middle-drag orbits; Shift+middle-drag pans; wheel zooms.");
         ImGui::Text("World > Camera enters free camera; Esc returns to authoring.");
-        ImGui::Text("F6 hides both side panels for a full-stage view.");
         ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
@@ -12107,6 +12132,13 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
 #if gX_ENABLE_RENDERER == 1
     s_shortcutFooterOpen = 1;
 #endif
+    s_guideOpen = 0;
+    {
+        const char *guideEnv = getenv("GX_GFX_GUIDE");
+        if (guideEnv && guideEnv[0] && strcmp(guideEnv, "0") != 0) {
+            gfx_guide_set(1);
+        }
+    }
     {
         const gX_I8 *sceneEnv = getenv("GX_GFX_PANEL_SCENE");
         const gX_I8 *inspEnv = getenv("GX_GFX_PANEL_INSPECTOR");
@@ -12223,6 +12255,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     if (input.keyboard.keys[gX_KEY_F6].state.PRESSED)
         gfx_focus_viewport_set(!s_focusViewport);
     gfx_menu_bar(gfx);
+    gfx_editor_guide();
 #ifndef NDEBUG
     gX_Tools_Gfx_BugReport_Test();
 #endif

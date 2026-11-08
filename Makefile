@@ -318,6 +318,8 @@ check-fast: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/editor_host_check.py
 	@echo "== [gX fast] GUI editor usability =="
 	python3 scripts/gui_editor_check.py
+	@echo "== [gX fast] GFX editor guide =="
+	python3 scripts/gfx_editor_guide_check.py
 	@echo "== [gX fast] cursor state machine =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/cursor_check.py
 	@echo "== [gX fast] OK =="
@@ -538,6 +540,8 @@ editor-host-check: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/editor_host_check.py
 	@echo "== [gX CI] GUI editor usability =="
 	python3 scripts/gui_editor_check.py
+	@echo "== [gX CI] GFX editor guide =="
+	python3 scripts/gfx_editor_guide_check.py
 
 gui-layout-check: all
 	@echo "== [gX CI] GUI layout pass (text fits its box) =="
@@ -1063,6 +1067,12 @@ ui-audit: all
 gui-editor-check: all
 	@echo "== [gX CI] GUI editor usability =="
 	python3 scripts/gui_editor_check.py
+
+#ai: GFX editor onboarding — F1/Help guide opens on the GFX stage.
+.PHONY: gfx-editor-guide-check
+gfx-editor-guide-check: all
+	@echo "== [gX CI] GFX editor guide =="
+	python3 scripts/gfx_editor_guide_check.py
 
 #ai: physics editor — both open paths render and exit clean, and both route
 #   to the physics sandbox scene; the tuning round trip + live apply pins run

@@ -663,6 +663,14 @@ group = "gui"
 cache = "content"
 description = "GUI editor usability gate."
 
+[gate.gfx-editor-guide]
+script = "gfx_editor_guide_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "GFX editor onboarding guide gate."
+
 [gate.physics-editor]
 script = "physics_editor_check.py"
 args = []

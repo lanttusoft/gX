@@ -94,6 +94,7 @@ FALLBACK_GATES = [
     ("sky-editor", "sky_editor_check.py", [], "full"),
     ("ui-audit", "ui_audit.py", [], "full"),
     ("gui-editor", "gui_editor_check.py", [], "full"),
+    ("gfx-editor-guide", "gfx_editor_guide_check.py", [], "full"),
     ("physics-editor", "physics_editor_check.py", [], "full"),
     ("decal-bake", "gfx_decal_bake_check.py", [], "full"),
     ("cache", "audit_cache_check.py", [], "full"),
