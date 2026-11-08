@@ -9,6 +9,11 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **Documentation process index and November audits**: the docs index now
+  groups worktree/agent/ecosystem, release, static-analysis, Lean, lineage,
+  AI and review links under Process and maintenance, and publishes the
+  November monthly GFX audit plus memory/gate follow-up with frozen-snapshot
+  resolution notes. Local index links resolve in the deterministic archive.
 - **Title newcomer polish**: the main menu now uses honest `OPEN GFX` and
   `SAVE SLOTS` labels, explains that slot 1 is a demo while the other slots
   are reserved, and adds a footer `HELP` quick-start panel covering controls,

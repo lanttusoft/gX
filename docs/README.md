@@ -14,8 +14,19 @@ Start here:
 <!-- //ai: versioned idea/outcome memory, separate from session handoffs. -->
 - [Ideas and decisions](ideas.md) — search before proposing work; retains done,
   partial, deferred, declined and superseded ideas with reasons and sources.
+- [gX proofs](https://github.com/lanttusoft/gx-proofs) — Lean 4 proof sources,
+  audit contract and provenance.
+- [License](../LICENSE), [third-party notices](../license/NOTICE.md), [generated attributions](../license/ATTRIBUTIONS.md), [provenance source](../license/provenance.json).
+
+## Process and maintenance
+
 - [Worktree and branch tracking](worktree_tracking.md) — shared local inventory,
   workstream notes and explicit review before future cleanup.
+- [Agent coordination](agent_coordination.md) — advisory cross-session bus,
+  path claims and parallel-write rules.
+- [Local repository ecosystem](repo_ecosystem.md) — read-only multi-repo
+  discovery, sanitized remote grouping, snapshots, drift and plan-only
+  archive/prune linkage.
 - [Versioning policy](versioning.md) — official MAJOR/MINOR/PATCH rules,
   `Release-Class` metadata and the change classifier.
 - [Release candidate ledger](release_candidate.md) — the three gates (author
@@ -24,15 +35,20 @@ Start here:
 - [Publish readiness](publish_readiness.md) — the release operations contract:
   admission evidence, packaging, signing, publish, post-publish verification
   and rollback.
-- [gX proofs](https://github.com/lanttusoft/gx-proofs) — Lean 4 proof sources,
-  audit contract and provenance.
+- [Release hardening](release_hardening.md) — reproducible Release builds,
+  SPDX SBOM, tracked-file secret scan and deterministic signed archives.
+- [Static analysis and type gates](static_analysis.md) — compiler probes,
+  libclang type audit and the clang-tidy diff gate.
+- [Lean size gate](lean_gate.md), [Lean proof audit](lean_proofs.md),
+  [proof inventory](proof_inventory.md).
+- [Source-lineage audit](source_lineage_audit.md) — citation/self-reuse review
+  against a private archive or vendored corpus.
 - [AI policy](ai_policy.md) — contribution marking, asset provenance and the
-  license stance for AI-assisted work.
+  license stance for AI-assisted contributions.
 - [Peer-review gate](peer_review_gate.md) — three-lens UX/editor review:
   7/10 minimum, 8/10 target, with evidence.
 - [AI usage and limitations](ai_disclosure.md) — what AI assisted with,
   review limits and the as-is disclaimer.
-- [License](../LICENSE), [third-party notices](../license/NOTICE.md), [generated attributions](../license/ATTRIBUTIONS.md), [provenance source](../license/provenance.json).
 
 ## Engine and platform
 
@@ -46,10 +62,6 @@ Start here:
 - [Engine frontend contract — module-owned scene](engine_frontend_contract.md)
 - [Engine/game split and the no-assets terminal frontend](engine_game_split.md)
 - [Engine-core archive boundary](engine_library.md)
-- [Static analysis and type gates](static_analysis.md) — compiler probes,
-  libclang type audit and the clang-tidy diff gate.
-- [Release hardening](release_hardening.md) — reproducible Release builds,
-  SPDX SBOM, tracked-file secret scan and deterministic signed archives.
 - [Layered point shadows](layered_shadows.md) — opt-in 4.3 point-shadow
   layering, its exact-image guarantee and measured trade.
 - [Scene feature manifest](feature_manifest.md) — the feature table, dependency
@@ -61,16 +73,11 @@ Start here:
   pixels” console, virtual-screen/present-filter mapping and CRT presets.
 - [Compressed texture sidecars](texture_compression.md) — BC7/BC5/BC4 DDS
   sidecars, encoder tooling and the loader fallback policy.
-- [Source-lineage audit](source_lineage_audit.md) — citation/self-reuse review
-  against a private archive or vendored corpus.
 - [gX Kernel](kernel.md)
-- [Lean size gate](lean_gate.md)
-- [Lean 4 proof audit](lean_proofs.md)
 - [Lean reassessment — 2026-10-03](lean_reassessment.md)
 - [Math pass](math_pass.md)
 - [gX — Physics](physics.md)
 - [gX — Porting Guide](porting.md)
-- [Proof inventory](proof_inventory.md)
 - [gX — Scripting (AngelScript shell)](scripting.md)
 - [gX — Tier Model (L0–L3)](tiers.md)
 
@@ -83,6 +90,10 @@ Start here:
 - [gfx shader inventory](gfx_shader_inventory.md)
 - [Shader program cache](shader_cache.md)
 - [GFX visual review](gfx_visual_review.md)
+<!-- //ai: report-only monthly snapshot; raw audit evidence remains outside the repository. -->
+- [Monthly GFX audit — November 2026](gfx_audit_2026-11.md) — snapshot results and retained findings.
+<!-- //ai: scoped report-only follow-up; raw memory/gate evidence stays external. -->
+- [GFX memory and gate follow-up — November 2026](gfx_memory_gate_audit_2026-11.md) — runtime findings and gate sensitivity.
 - [“Good enough” audit — reflections](good_enough_audit.md)
 - [Light Culling Upgrade — Research Note (v0.5.0 prep)](light_culling_research.md)
 - [Static lightmaps](lightmap_baking.md)
