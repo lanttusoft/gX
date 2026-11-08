@@ -35,8 +35,10 @@ Title**. Any returning user with a settings file or save gets the title.
 
 ## 3. What to try
 
-- **Title:** Resume, Run Demo, Load Save, Settings, Demos, Extras and Quit.
-  The title footer lists the current navigation keys.
+- **Title:** Open GFX, Run Demo, Save Slots, Settings, Demos, Extras and Quit.
+  The footer Help link opens a quick-start panel with controls, save-slot
+  meaning, documentation and the issue link; the footer also lists the current
+  navigation keys.
 - **Demos:** Battle, the GFX showcase, the procedural background and the
   raymarch demo; the gX-240 console shell is also reachable from the Demos hub.
 - **Settings:** Basic/Advanced/Expert levels, display/video, accessibility,

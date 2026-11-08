@@ -65,6 +65,8 @@
 #define TITLEGX_VIEW_DEMOS 5
 //ai: gX-240 console shell boot view.
 #define TITLEGX_VIEW_CONSOLE 6
+//ai: newcomer quick-start view reached from the footer HELP link.
+#define TITLEGX_VIEW_HELP 7
 
 static gX_I32 titleView = TITLEGX_VIEW_MENU;
 static gX_I1 s_consoleBootApplied = 0;
@@ -88,7 +90,7 @@ static gX_I32 titleVariant(void) {
 
 gX_I0 gX_GUI_Template_TitleGX_SetView(gX_I32 view);
 gX_I0 gX_GUI_Template_TitleGX_SetView(gX_I32 view) {
-    if (view >= TITLEGX_VIEW_MENU && view <= TITLEGX_VIEW_CONSOLE) {
+    if (view >= TITLEGX_VIEW_MENU && view <= TITLEGX_VIEW_HELP) {
         titleView = view;
         gui.focusFirstPending = true;
         gX_GUI_Trace_Event("title-view", view, -1, NULL);
@@ -319,7 +321,7 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
         const gX_I8 *viewEnv = getenv("GX_GUI_TITLE_VIEW");
         if (viewEnv) {
             gX_I32 vv = atoi(viewEnv);
-            titleView = (vv >= TITLEGX_VIEW_MENU && vv <= TITLEGX_VIEW_CONSOLE) ? vv : TITLEGX_VIEW_MENU;
+            titleView = (vv >= TITLEGX_VIEW_MENU && vv <= TITLEGX_VIEW_HELP) ? vv : TITLEGX_VIEW_MENU;
         } else if (!s_consoleBootApplied && arguments.consoleShell) {
             //ai: one-shot boot route; backing out to the menu must stick.
             s_consoleBootApplied = 1;
@@ -376,8 +378,8 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
         if (arguments.consoleShell) {
             titlegx_console_saves(&b);
         } else {
-        //opencode: v0.2.0-pre4 — save-slot sub-screen (LOAD GAME target):
-        //   centered panel over dimmed gradient; BACK returns to the menu view
+        //opencode: v0.2.0-pre4 — save-slot sub-screen:
+        //   centered panel over dimmed gradient; BACK returns to the menu view.
         gX_GUI_Builder_Element_Begin(&b);
             gX_GUI_Builder_RectGrid(&b, 0.5f, 0.5f, 7.0f, 7.0f);
             gX_GUI_Builder_ColorV(&b, gui.style.title2.savePanelBg);
@@ -387,21 +389,19 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
                 gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
                 b.currentElement->stateRendering.RECT_NO_DRAW = true;
                 gX_GUI_Builder_Text_Begin(&b);
-                    gX_GUI_Builder_Text_Set(&b, "LOAD SAVE");
+                    gX_GUI_Builder_Text_Set(&b, "SAVE SLOTS");
                     b.currentElement->stateRendering.TEXT_CENTER_X = true;
                     if (b.curText) { b.curText->fontSize = 20; b.curText->color = gui.style.title2.saveHeaderText; }
                 gX_GUI_Builder_Text_End(&b);
-            gX_GUI_Builder_Widget_SetTooltip(&b, "Browse save slots and pick one to load");
+            gX_GUI_Builder_Widget_SetTooltip(&b, "Slot 1 opens the renderer demo; empty slots are reserved");
             gX_GUI_Builder_Element_End(&b);
 
-            //opencode: slot 1 loads the GFX demo ("NEW GAME" contradicted the
-            //   LOAD header); empties are DISABLED-inert — no click, no focus,
-            //   dimmed label. Per-slot tooltips removed: they duplicated the
-            //   label and the plates collided across the tight stack.
+            //opencode: slot 1 is a demo shortcut, not an engine save; empties
+            //   are DISABLED-inert — no click, no focus, dimmed label.
             struct { gX_F32 y; const gX_I8 *label; gX_I1 empty; } slots[3] = {
-                { 1.8f, "SAVE 1 - DEMO", 0 },
-                { 3.3f, "SAVE 2 - EMPTY", 1 },
-                { 4.8f, "SAVE 3 - EMPTY", 1 },
+                { 1.8f, "DEMO SLOT - GFX SHOWCASE", 0 },
+                { 3.3f, "EMPTY SLOT - RESERVED", 1 },
+                { 4.8f, "EMPTY SLOT - RESERVED", 1 },
             };
             for (gX_I32 si = 0; si < 3; si++) {
                 gX_GUI_Builder_Element_Begin(&b);
@@ -786,6 +786,69 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
             gX_GUI_Builder_Element_End(&b);
 
         gX_GUI_Builder_Element_End(&b);
+    } else if (titleView == TITLEGX_VIEW_HELP) {
+        //ai: newcomer quick start — controls, save-slot meaning, docs and
+        //   issue route in one local panel; BACK returns to the main menu.
+        gX_GUI_Builder_Element_Begin(&b);
+            gX_GUI_Builder_RectGrid(&b, 0.5f, 0.5f, 7.0f, 7.0f);
+            gX_GUI_Builder_ColorV(&b, gui.style.title2.savePanelBg);
+
+            gX_GUI_Builder_Element_Begin(&b);
+                gX_GUI_Builder_RectGrid(&b, 1.2f, 0.85f, 5.6f, 0.6f);
+                gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
+                b.currentElement->stateRendering.RECT_NO_DRAW = true;
+                gX_GUI_Builder_Text_Begin(&b);
+                    gX_GUI_Builder_Text_Set(&b, "HELP / QUICK START");
+                    b.currentElement->stateRendering.TEXT_CENTER_X = true;
+                    if (b.curText) { b.curText->fontSize = 20; b.curText->color = gui.style.title2.saveHeaderText; }
+                gX_GUI_Builder_Text_End(&b);
+            gX_GUI_Builder_Widget_SetTooltip(&b, "Controls, save slots, docs and the issue tracker");
+            gX_GUI_Builder_Element_End(&b);
+
+            struct { const gX_I8 *text; } help[10] = {
+                { "MOVE  ARROWS / D-PAD     CONFIRM  ENTER / SOUTH     BACK  ESC / EAST" },
+                { "OPEN GFX  starts the renderer demo" },
+                { "RUN DEMO  opens the same renderer demo" },
+                { "SAVE SLOTS  slot 1 is the demo; empty slots are reserved" },
+                { "SETTINGS  display, accessibility, audio, themes and keys" },
+                { "DEMOS  Battle, GFX, background, raymarch and gX-240" },
+                { "EXTRAS  GUI, theme, GFX and content editors" },
+                { "CARTRIDGE  F5 saves slot 1, F8 loads slot 1" },
+                { "DOCS  docs/getting_started.md     FLAGS  --help" },
+                { "ISSUES  github.com/lanttusoft/gX/issues" },
+            };
+            for (gX_I32 hi = 0; hi < 10; hi++) {
+                gX_GUI_Builder_Element_Begin(&b);
+                    gX_GUI_Builder_RectGrid(&b, 1.2f,
+                        1.62f + (gX_F32)hi * 0.42f, 5.6f, 0.36f);
+                    gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
+                    b.currentElement->stateRendering.RECT_NO_DRAW = true;
+                    gX_GUI_Builder_Text_Begin(&b);
+                        gX_GUI_Builder_Text_Set(&b, help[hi].text);
+                        b.currentElement->stateRendering.TEXT_CENTER_X = true;
+                        if (b.curText) {
+                            b.curText->fontSize = 12;
+                            b.curText->color = gui.style.title2.saveSlotText;
+                            b.curText->autoShrink = true;
+                        }
+                    gX_GUI_Builder_Text_End(&b);
+                gX_GUI_Builder_Element_End(&b);
+            }
+
+            gX_GUI_Builder_Element_Begin(&b);
+                gX_GUI_Builder_RectGrid(&b, 3.0f, 6.55f, 2.0f, 0.55f);
+                gX_GUI_Builder_ColorV(&b, gui.style.title2.backBg);
+                gX_GUI_Element_Template_Button(b.currentElement);
+                gX_GUI_Builder_Text_Begin(&b);
+                    gX_GUI_Builder_Text_Set(&b, "BACK");
+                    b.currentElement->stateRendering.TEXT_CENTER_X = true;
+                    b.currentElement->stateRendering.TEXT_CENTER_Y = true;
+                    if (b.curText) { b.curText->fontSize = 14; b.curText->color = gui.style.title2.backText; }
+                gX_GUI_Builder_Text_End(&b);
+                gX_GUI_OnClick(b.currentElement, gX_Widget_OnClick_TitleBack, 0);
+            gX_GUI_Builder_Element_End(&b);
+
+        gX_GUI_Builder_Element_End(&b);
     } else {
         // wordmark
         gX_Texture *logo = gX_Resource_LoadTexture("texture/gx_title.png");
@@ -836,7 +899,7 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
         gX_U32 animIdx = 0;
 
         if (variant == TITLEGX_VARIANT_FULL) {
-            // RESUME
+            // OPEN GFX — this is a renderer scene shortcut, not a save resume.
             gX_GUI_Builder_Element_Begin(&b);
                 gX_GUI_Builder_RectAnchored(&b, TITLEGX_MENU_W, menuH,
                     GX_GUI_ANCHOR_CENTER, GX_GUI_ANCHOR_START, 0.0f, itemY);
@@ -844,7 +907,7 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
                 gX_GUI_Element_Template_Button(b.currentElement);
                 titlegx_MenuClearTooltip(&b);
                     gX_GUI_Builder_Text_Begin(&b);
-                        gX_GUI_Builder_Text_Set(&b, "RESUME");
+                        gX_GUI_Builder_Text_Set(&b, "OPEN GFX");
                         titlegx_MenuUseTitleFont(&b);
                         b.currentElement->stateRendering.TEXT_CENTER_X = true;
                     b.currentElement->stateRendering.TEXT_CENTER_Y = true;
@@ -880,7 +943,7 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
         }
 
         if (variant != TITLEGX_VARIANT_DEMOS) {
-            // LOAD SAVE -> save-slot sub-view
+            // SAVE SLOTS -> slot browser (demo slot plus reserved empties)
             gX_GUI_Builder_Element_Begin(&b);
                 gX_GUI_Builder_RectAnchored(&b, TITLEGX_MENU_W, menuH,
                     GX_GUI_ANCHOR_CENTER, GX_GUI_ANCHOR_START, 0.0f, itemY);
@@ -888,7 +951,7 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
                 gX_GUI_Element_Template_Button(b.currentElement);
                 titlegx_MenuClearTooltip(&b);
                     gX_GUI_Builder_Text_Begin(&b);
-                        gX_GUI_Builder_Text_Set(&b, "LOAD SAVE");
+                        gX_GUI_Builder_Text_Set(&b, "SAVE SLOTS");
                         titlegx_MenuUseTitleFont(&b);
                         b.currentElement->stateRendering.TEXT_CENTER_X = true;
                     b.currentElement->stateRendering.TEXT_CENTER_Y = true;
@@ -985,9 +1048,10 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
         //opencode: v0.2.0-pre8 — footer links row per frontend_iteration1.png
         //   Keep the same navigation chrome across density variants.
         {
-            //opencode: footer contains only the working CREDITS route. Dead
-            //   INFO/DEMO links and the duplicate QUIT action are removed.
-            struct { const gX_I8 *label; gX_F32 x; gX_F32 w; gX_I32 act; } foot[1] = {
+            //opencode: footer carries the working HELP and CREDITS routes.
+            //   Dead INFO/DEMO links and the duplicate QUIT action are removed.
+            struct { const gX_I8 *label; gX_F32 x; gX_F32 w; gX_I32 act; } foot[2] = {
+                { "HELP", 5.62f, 0.62f, 0 },
                 { "CREDITS", 6.35f, 0.88f, 1 },
             };
             //opencode: main-menu polish — a quiet rule gives the footer a
@@ -1000,7 +1064,7 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
             //   footer slot carries the input hint (ESC routes Back through
             //   gX_GUI_Handle_Back, arrows/Enter drive the focus system).
             gX_GUI_Builder_Element_Begin(&b);
-                gX_GUI_Builder_RectGrid(&b, 1.95f, 7.38f, 4.2f, 0.3f);
+                gX_GUI_Builder_RectGrid(&b, 1.4f, 7.38f, 4.2f, 0.3f);
                 gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
                 b.currentElement->stateRendering.RECT_NO_DRAW = true;
                 gX_GUI_Builder_Text_Begin(&b);
@@ -1016,7 +1080,7 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
                     }
                 gX_GUI_Builder_Text_End(&b);
             gX_GUI_Builder_Element_End(&b);
-            for (gX_I32 fi = 0; fi < 1; fi++) {
+            for (gX_I32 fi = 0; fi < 2; fi++) {
                 gX_GUI_Builder_Element_Begin(&b);
                     gX_GUI_Builder_RectGrid(&b, foot[fi].x, 7.34f, foot[fi].w, 0.28f);
                     gX_Color creditsBg = gui.style.title2.menuBg5;
@@ -1034,7 +1098,9 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
                             b.curText->color = gui.style.title2.footerText;
                         }
                     gX_GUI_Builder_Text_End(&b);
-                    gX_GUI_OnClick(b.currentElement, gX_Widget_OnClick_TitleCredits, 0);
+                    gX_GUI_OnClick(b.currentElement,
+                        foot[fi].act == 0 ? gX_Widget_OnClick_TitleHelp
+                                          : gX_Widget_OnClick_TitleCredits, 0);
                 gX_GUI_Builder_Element_End(&b);
             }
         }

@@ -9,6 +9,11 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **Title newcomer polish**: the main menu now uses honest `OPEN GFX` and
+  `SAVE SLOTS` labels, explains that slot 1 is a demo while the other slots
+  are reserved, and adds a footer `HELP` quick-start panel covering controls,
+  save slots, documentation, `--help` and the issue route. `title-flow` covers
+  the help open/back route and `gui-interaction-check` is 13/13 rows.
 - **Local repository ecosystem ledger**: `repo_ecosystem.py` provides bounded,
   read-only discovery of repositories and registered worktrees under a local
   root, grouping separate clones by sanitized remote identity and worktrees by
@@ -167,7 +172,7 @@ Release-Class: minor
   earlier shader-compiler/serializer recovery remains in place. The initial
   recovery measured 17,728 B. A 2026-11-07 pass moved the six vendored Dear
   ImGui tool-UI sources to the same Release `-Os` tier, recovering 278,144 B;
-  the current payload is 3,914,523 B (279,781 B headroom) with unchanged BSS,
+  the current payload is 3,915,899 B (278,405 B headroom) with unchanged BSS,
   caps, capabilities, visuals and Debug code generation.
 
 ### Fixed

@@ -334,6 +334,15 @@ gX_I0 gX_Widget_OnClick_TitleCredits(gX_I0 *arg) {
     if (canvas) canvas->refresh = true;
 }
 
+//ai: newcomer quick-start panel reached from the footer HELP link.
+gX_I0 gX_Widget_OnClick_TitleHelp(gX_I0 *arg) {
+    (void)arg;
+    gX_GUI_Focus_Clear();
+    gX_GUI_Template_TitleGX_SetView(7);
+    gX_GUI_Canvas *canvas = gX_Heap_SeekPtr_Index(&gui.canvases, 0);
+    if (canvas) canvas->refresh = true;
+}
+
 //ai: open the title's demo hub using the same refresh path as other subviews.
 gX_I0 gX_Widget_OnClick_TitleDemos(gX_I0 *arg) {
     (void)arg;

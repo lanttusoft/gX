@@ -38,12 +38,12 @@ TRACE_RE = re.compile(
     r'element=(\d+) name="([^"]*)" text="([^"]*)" rect=(\d+),(\d+),(\d+),(\d+)')
 DESC_RE = re.compile(r'desc="([^"]*)"')
 
-#opencode: menu order is RESUME, RUN DEMO, LOAD SAVE, SETTINGS, DEMOS,
+#opencode: menu order is OPEN GFX, RUN DEMO, SAVE SLOTS, SETTINGS, DEMOS,
 #   EXTRAS, QUIT; key codes are gX_KEY_* (DOWN 264, ENTER 257, ESCAPE 256).
 #   ESC is the shared back route on the title and on every sub-view.
 #opencode: the title entrance cascade delays menu focus past 1s; start the
 #   navigation after it settles so the first Down is not lost.
-#opencode: the first Down focuses RESUME (it does not move); include it as a
+#opencode: the first Down focuses OPEN GFX (it does not move); include it as a
 #   warm-up, then the visible menu navigation.
 LOAD_GAME = "2.0 key 264;2.4 key 264;2.8 key 264;3.2 key 257"
 DEMOS = "2.0 key 264;2.4 key 264;2.8 key 264;3.2 key 264;3.6 key 264;4.0 key 257"
@@ -56,15 +56,18 @@ EXTRAS = "2.0 move 511 615 200;2.5 click 511 615"
 #   coordinates so the keyboard focus cascade cannot change the target.
 DEMOS_CLICK = "2.0 move 511 568 200;2.5 click 511 568"
 CONSOLE = DEMOS_CLICK + ";3.5 move 512 578 200;4.0 click 512 578"
+HELP = "2.0 move 759 718 200;2.5 click 759 718"
 VIEWS = (
     ("load_game", LOAD_GAME, "view"),
     ("demos", DEMOS, "view"),
     ("extras", EXTRAS, "view"),
     ("credits", "2.0 move 855 723 200;2.5 click 855 723", "view"),
+    ("help", HELP, "view"),
     ("escape", "2.0 key 256", "view"),
     ("escape_back", "2.0 key 256;4.0 key 256", "return"),
     ("load_game_back", LOAD_GAME + ";4.2 key 256", "return"),
     ("extras_back", EXTRAS + ";4.5 key 256", "return"),
+    ("help_back", HELP + ";4.2 key 256", "return"),
     ("console", CONSOLE, "view"),
     ("console_back", CONSOLE + ";4.6 key 256", "return"),
 )

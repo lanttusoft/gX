@@ -9,8 +9,8 @@ generic engine demo.
 ## Start here
 
 1. `./build.sh`
-2. `./build/gX_build --title` — front end (Resume, Run Demo, Load Save,
-   Settings, Demos, Extras, Quit).
+2. `./build/gX_build --title` — front end (Open GFX, Run Demo, Save Slots,
+   Settings, Demos, Extras, Quit; the footer Help link explains the controls).
 3. Press **Esc** for the pause menu; **Back to Title** returns to the front end.
 4. `./build/gX_build --help` lists every flag; see
    [`docs/getting_started.md`](docs/getting_started.md) for the first five

@@ -249,8 +249,10 @@ editor panels only; they are not in the game render loop. The existing
 `NO_FONT_AWESOME` define and the Debug `-O0` path are unchanged.
 
 The post-change Release measured **3,914,523 B** payload (**279,781 B**
-headroom) and **2,701,344 B** BSS (3,656 B headroom). Caps, baseline and
-capabilities are unchanged; no visual or resource hash changed. Validation:
+headroom) and **2,701,344 B** BSS (3,656 B headroom). The later title
+newcomer polish added 1,376 B, leaving **3,915,899 B** payload (**278,405 B**
+headroom). Caps, baseline and capabilities are unchanged; the title slice
+changed labels/help only, with no renderer or resource hash change. Validation:
 `make release`, `make lean`, `make payload-audit`, `make check-fast`,
 `make check`, the Release tool-mode smoke for all twelve `GX_TOOLS_OPEN`
 entries, `make ui-audit`, `make gui-interaction-check`, and the focused editor

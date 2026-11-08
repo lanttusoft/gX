@@ -195,20 +195,37 @@ class Rows:
 
 
 def row_title_saves_back(rows):
-    load = find_element(rows.menu(), "LOAD SAVE", canvas=0)
+    load = find_element(rows.menu(), "SAVE SLOTS", canvas=0)
     back = find_element(rows.view(1), "BACK", canvas=0)
     if not load or not back:
-        return False, "LOAD SAVE/BACK target missing"
+        return False, "SAVE SLOTS/BACK target missing"
     script = click_actions((1.0, load), (2.2, back))
     code, log = trace_run("--title", {"GX_AI_INPUT": script}, frames_for(2.5))
     events = parse_events(log)
     ok = code == 0 and ordered(events, [
-        {"type": "click", "detail": "LOAD SAVE"},
+        {"type": "click", "detail": "SAVE SLOTS"},
         {"type": "title-view", "canvas": 1},
         {"type": "click", "detail": "BACK"},
         {"type": "title-view", "canvas": 0},
     ])
-    return ok, "LOAD SAVE opens the saves view, BACK returns to the menu"
+    return ok, "SAVE SLOTS opens the slot view, BACK returns to the menu"
+
+
+def row_title_help_back(rows):
+    help_link = find_element(rows.menu(), "HELP", canvas=0)
+    back = find_element(rows.view(7), "BACK", canvas=0)
+    if not help_link or not back:
+        return False, "HELP/BACK target missing"
+    script = click_actions((1.0, help_link), (2.2, back))
+    code, log = trace_run("--title", {"GX_AI_INPUT": script}, frames_for(2.5))
+    events = parse_events(log)
+    ok = code == 0 and ordered(events, [
+        {"type": "click", "detail": "HELP"},
+        {"type": "title-view", "canvas": 7},
+        {"type": "click", "detail": "BACK"},
+        {"type": "title-view", "canvas": 0},
+    ])
+    return ok, "HELP opens the quick-start view, BACK returns to the menu"
 
 
 def row_title_settings_back(rows):
@@ -346,18 +363,18 @@ def row_title_quit_cancel(rows):
 
 
 def row_menu_continue(rows):
-    continue_element = find_element(rows.menu(), "RESUME", canvas=0)
+    continue_element = find_element(rows.menu(), "OPEN GFX", canvas=0)
     if not continue_element:
-        return False, "RESUME target missing"
+        return False, "OPEN GFX target missing"
     script = click_actions((1.0, continue_element))
     code, log = trace_run("--title", {"GX_AI_INPUT": script}, frames_for(1.4))
     events = parse_events(log)
     builds = parse_builds(log)
     ok = code == 0 and ordered(events, [
-        {"type": "click", "detail": "RESUME"},
+        {"type": "click", "detail": "OPEN GFX"},
         {"type": "respond", "canvas": lambda value: value != TITLE_SCENE_CANVAS},
     ]) and any(build["index"] == 0 for build in builds)
-    return ok, "RESUME switches the scene and rebuilds the GUI canvas"
+    return ok, "OPEN GFX switches the scene and rebuilds the GUI canvas"
 
 
 #ai: Resume must not inherit a standard button's implicit title-scene switch.
@@ -430,6 +447,7 @@ def row_settings_toggle(rows):
 
 ROWS = [
     ("title-saves-back", row_title_saves_back),
+    ("title-help-back", row_title_help_back),
     ("title-settings-back", row_title_settings_back),
     ("title-demos-back", row_title_demos_back),
     ("title-battle-launch", row_title_battle_launch),

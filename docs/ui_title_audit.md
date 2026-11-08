@@ -8,7 +8,7 @@
      1024x768/1600x900; notes from the vision review; the title's own menu code
      (titlegx.c) is mid-flight in the author's WIP, so its findings are
      reported, not edited. -->
-Status: **first pass complete** — the title, its sub-views (LOAD GAME /
+Status: **first pass complete** — the title, its sub-views (SAVE SLOTS /
 DEMOS / EXTRAS / CREDITS) and the overlay templates are reviewed; the
 mechanical layer is the existing GUI gate family (template matrix, text-fit
 layout, interaction checks) plus the new `title-flow` row, and this doc is
@@ -19,7 +19,7 @@ WIP.
 
 - The title itself (`--title`, the TITLEGX look) at the lean floor and
   1600x900.
-- The title's own sub-views (LOAD GAME, DEMOS, EXTRAS, CREDITS) and the
+- The title's own sub-views (SAVE SLOTS, DEMOS, EXTRAS, HELP, CREDITS) and the
   user-facing overlay templates over the title: ESC MENU (the title's ESC
   routes there), SETTINGS, MESSAGE (toast), DIALOG; the dev/demo templates
   are noted for completeness.
@@ -53,7 +53,7 @@ WIP.
   `gX_GUI_Template_TitleGX` -> `gX_GUI_Builder_Text_Set`). Fixed by growing
   the array to `tools[12]`, and pinned by the new **`title-flow`** gate
   (`scripts/title_flow_check.py`, matrix row `title-flow`): it drives the
-  menu like a user (LOAD GAME / DEMOS / EXTRAS / CREDITS / ESC), fails on any
+  menu like a user (SAVE SLOTS / DEMOS / EXTRAS / HELP / CREDITS / ESC), fails on any
   non-zero exit or an unchanged frame, and asserts the ESC back routes return
   to a bit-identical main menu (0.000 deltas — the fixed clock makes it
   exact). Verified: the gate FAILs on the pre-fix binary exactly at `extras`
@@ -92,8 +92,8 @@ WIP.
   out of the front-end scope (their text-fit rows still gate in
   `gui-layout-check`).
 - The title's hint bar (`ARROWS SELECT`, `ENTER CONFIRM`, `ESC MENU`,
-  `CREDITS`) is the discoverability anchor and is correct at both sizes.
-- **Sub-view review (vision pass)**: LOAD GAME (three slots, dim `EMPTY`
+  `HELP`, `CREDITS`) is the discoverability anchor and is correct at both sizes.
+- **Sub-view review (vision pass)**: SAVE SLOTS (three slots, dim `EMPTY`
   labels, focused back), DEMOS (five scene entries + BACK) and CREDITS
   (engine + tool credits, focused back) read clean at 1024x768 — the EXTRAS
   grid finding above came from this pass. Minor note: the DEMOS labels
@@ -105,7 +105,7 @@ WIP.
 - Re-review TITLEGX and the ESC overlay composition once the author's WIP
   lands (the two reported items).
 - The **front-end flow gate landed** as `scripts/title_flow_check.py`
-  (matrix row `title-flow`): arrow navigation to LOAD GAME / DEMOS / EXTRAS,
+  (matrix row `title-flow`): arrow navigation to SAVE SLOTS / DEMOS / EXTRAS / HELP,
   the CREDITS link, and the ESC overlay — each must open and leave the frame
-  changed; ESC closes the overlay, LOAD GAME and EXTRAS back to a
+  changed; ESC closes the overlay, SAVE SLOTS and EXTRAS back to a
   bit-identical menu frame; a non-zero exit fails the gate.

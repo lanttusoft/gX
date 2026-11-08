@@ -79,6 +79,7 @@ gX_I0 gX_Widget_OnClick_TitleBack(gX_I0 *arg);             // title: back to mai
 //opencode: v0.6.5 — EXTRAS/CREDITS sub-views + in-app tool openers.
 gX_I0 gX_Widget_OnClick_TitleExtras(gX_I0 *arg);           // title: swap to extras (tools) sub-view
 gX_I0 gX_Widget_OnClick_TitleCredits(gX_I0 *arg);          // title: swap to credits sub-view
+gX_I0 gX_Widget_OnClick_TitleHelp(gX_I0 *arg);             // title: swap to quick-start help
 //ai: title demo hub for Battle and the GFX showcase.
 gX_I0 gX_Widget_OnClick_TitleDemos(gX_I0 *arg);
 //ai: gX-240 console shell — boot view, video profile and cartridge launch.
