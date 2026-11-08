@@ -250,7 +250,7 @@ editor panels only; they are not in the game render loop. The existing
 
 The post-change Release measured **3,914,523 B** payload (**279,781 B**
 headroom) and **2,701,344 B** BSS (3,656 B headroom). The later title
-newcomer polish added 1,376 B, leaving **3,915,899 B** payload (**278,405 B**
+newcomer polish added 1,344 B, leaving **3,915,867 B** payload (**278,437 B**
 headroom). Caps, baseline and capabilities are unchanged; the title slice
 changed labels/help only, with no renderer or resource hash change. Validation:
 `make release`, `make lean`, `make payload-audit`, `make check-fast`,
