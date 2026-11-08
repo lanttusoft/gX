@@ -211,6 +211,9 @@ Release-Class: minor
   visuals and Debug code generation are unchanged.
 
 ### Fixed
+- The `GX_UI_SCALE` audit hook now applies on the first-run/default path too,
+  so the GFX editor layout gate works in a clean archive without
+  `resources/settings.json`; found by the v0.42.0 clean-extraction smoke.
 - <!-- //ai: 240p console Y2K→RAY-1 GL transition. --> Switching Y2K → shell →
   RAY-1 no longer emits `GL_INVALID_OPERATION` from the raymarch cubemap
   filter or the dead `texSky` uniform upload. Cubemap/array filters route

@@ -28,9 +28,9 @@ items. Until all three gates and the operations contract hold, gX stays a
 | Version | v0.42.0 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 120 manifest entries; **107/107** gates passed in the v0.42.0 full run (`AUDIT_CACHE=0`, 1,511.8 s wall / 2,981.1 s gate time) |
+| Audit baseline | 120 manifest entries; **107/107** gates passed in the v0.42.0 full run (`AUDIT_CACHE=0`, 1,476.2 s wall / 2,908.7 s gate time) |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 3,921,979 B (272,325 B headroom), BSS 2,701,376 B (3,624 B headroom) — v0.42.0 `make check` |
+| Lean gate | payload 3,922,235 B (272,069 B headroom), BSS 2,701,376 B (3,624 B headroom) — v0.42.0 `make check` |
 | Release class | MINOR (v0.42.0: gX-240 console shell/cartridges/saves/OSD/playback, SSAA/PRISM-1/film grain/diffraction, GFX editor rework/guide/layout, virtual scene, named log levels, audit/tooling) |
 
 ## Completeness ledger
@@ -45,7 +45,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Source | Release builds reproduce across extraction paths | holds | `make reproducible-check` (two clean trees, fixed epoch) |
 | Admission | `make check` (build, tests, scene smoke, audits, proofs, lean gate) | holds | release CI logs |
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
-| Admission | full audit matrix green (`make audit-summary-full`) | holds | **107/107** on the v0.42.0 release tree (2026-11-08, `AUDIT_CACHE=0`, 1,511.8 s wall / 2,981.1 s gate time) |
+| Admission | full audit matrix green (`make audit-summary-full`) | holds | **107/107** on the v0.42.0 release tree (2026-11-08, `AUDIT_CACHE=0`, 1,476.2 s wall / 2,908.7 s gate time) |
 | Tests | unit suite + contract gates green | holds | `--test-only`, gate manifest |
 | Stability | 3 consecutive full admission runs without a flake | holds | 3 x `make check` on 2026-11-08 (`b0fd5f4`, `89aa25d`, v0.42.0 release tree); no flake; the rare test-only SIGSEGV remains a watch item |
 | Docs | documentation index covers public surfaces; API/enum coverage gates | holds | `docs/README.md`, `api_coverage.py`, `enum_coverage.py` |
