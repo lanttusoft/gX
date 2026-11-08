@@ -253,6 +253,20 @@ static gX_F32 gX_Settings_ToolUIScale_Clamp(gX_F32 scale)
     return scale;
 }
 
+//ai: audit hook — pin the tool scale without touching the persisted file.
+//   It also applies on the first-run/default path, where no settings file
+//   exists (clean archives and new checkouts).
+static gX_F32 gX_Settings_ToolUIScale_Env(gX_F32 scale)
+{
+    const gX_I8 *scaleEnv = getenv("GX_UI_SCALE");
+    if (scaleEnv && scaleEnv[0]) {
+        gX_F32 override = (gX_F32)atof((const char *)scaleEnv);
+        if (isfinite(override) && override >= 1.0f && override <= 1.75f)
+            return override;
+    }
+    return scale;
+}
+
 //opencode: keep native theme-file selection and the persisted preset index in sync.
 static const gX_I8 *gX_Settings_UITheme_Path(gX_I32 preset)
 {
@@ -483,22 +497,16 @@ gX_I32 gX_Settings_Load(gX_I0) {
             gX_TraceLog(gX_LOG_NOTICE,
                 "Settings_Load: could not load resources/settings.json — using defaults");
         }
+        settings.toolUiScale = gX_Settings_ToolUIScale_Env(
+            gX_Settings_ToolUIScale_Clamp(settings.toolUiScale));
         settings.uiThemePreset = GX_SETTINGS_UI_THEME_DEFAULT;
         gX_GUI_Style_SetThemePath(GX_GUI_STYLE_DEFAULT_PATH);
         gX_Settings_AudioSync(1);
         return 1;
     }
     //opencode: sanitize saved scale before any ImGui context reads it.
-    settings.toolUiScale = gX_Settings_ToolUIScale_Clamp(settings.toolUiScale);
-    //ai: audit hook — pin the tool scale without touching the persisted file.
-    {
-        const gX_I8 *scaleEnv = getenv("GX_UI_SCALE");
-        if (scaleEnv && scaleEnv[0]) {
-            gX_F32 scale = (gX_F32)atof((const char *)scaleEnv);
-            if (isfinite(scale) && scale >= 1.0f && scale <= 1.75f)
-                settings.toolUiScale = scale;
-        }
-    }
+    settings.toolUiScale = gX_Settings_ToolUIScale_Env(
+        gX_Settings_ToolUIScale_Clamp(settings.toolUiScale));
     if (settings.uiLevel < GX_SETTINGS_UI_BASIC
         || settings.uiLevel >= GX_SETTINGS_UI_LEVEL_COUNT)
         settings.uiLevel = GX_SETTINGS_UI_ADVANCED;
