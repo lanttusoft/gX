@@ -129,10 +129,14 @@ def assert_focus_walk(log, rows, directions, canvas=0):
 
 #ai: fault probes may allow only their explicit expected diagnostic, never unrelated errors.
 def check_errors(log, allowed=()):
+    #ai: GL_INVALID_OPERATION and HIGH GL_DEBUG are never acceptable on the
+    #   console path; MEDIUM shader-recompile notices stay informational.
     for line in log.splitlines():
-        if re.search(r"\[\s*ERROR\s*\]", line):
+        if (re.search(r"\[\s*ERROR\s*\]", line)
+                or re.search(r"GL_DEBUG \[HIGH\]", line)
+                or "GL_INVALID_OPERATION" in line):
             require(any(re.search(pattern, line) for pattern in allowed),
-                f"unexpected engine error: {line}")
+                f"unexpected engine/GL error: {line}")
 
 
 def capture(tag, actions, frames, shot_frame, out, extra=None,

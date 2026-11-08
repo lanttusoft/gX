@@ -181,6 +181,11 @@ Release-Class: minor
   caps, capabilities, visuals and Debug code generation.
 
 ### Fixed
+- <!-- //ai: 240p console GL error guard. --> Console gates now reject any
+  `GL_INVALID_OPERATION` or HIGH GL debug message in their captures while
+  keeping the known MEDIUM shader-recompile notices informational. Targeted
+  Y2K Soft/SSAA/PRISM/4x, native-window, resize and actual-settings probes
+  produced no `GL_INVALID_OPERATION` on the reference host.
 - <!-- //ai: GX-I024 M11F-05 zero-floor matrix coverage. --> TAA, FXAA,
   godray, cookies, lens flare and environment ambient now require a positive
   changed-fraction floor instead of accepting no contribution. The cookie

@@ -354,10 +354,11 @@ by the user; do not change display modes automatically.
   routes are covered too. Clicks resolve from the engine's current element
   map rather than fixed pixel coordinates; the wake test clicks a cartridge
   while blanked and a second wake presses F5; neither reaches a card nor the
-  save path. Every capture rejects engine errors and writes its log beside
-  the screenshot under the scratch directory
-  (`make console-check`).
-  Ten display-free gate tests reject missing/partial telemetry, stale or
+  save path. Every capture rejects engine errors, `GL_INVALID_OPERATION` and
+  HIGH GL debug messages while keeping MEDIUM shader-recompile notices
+  informational, and writes its log beside the screenshot under the scratch
+  directory (`make console-check`).
+  Eleven display-free gate tests reject missing/partial telemetry, stale or
   ambiguous click targets, clipped/tiny/off-screen/overlapping controls,
   missing or incorrectly ordered controller focus events, and ambient input/UI
   hooks leaking back into the subprocess environment. They also run

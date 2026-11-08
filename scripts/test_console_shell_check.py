@@ -95,6 +95,20 @@ class ConsoleGateTests(unittest.TestCase):
             with self.subTest(ids=ids), self.assertRaises(RuntimeError):
                 console.assert_focus_walk(events(ids), rows, directions)
 
+    def test_gl_invalid_operation_and_high_debug_fail_console_gates(self):
+        console.check_errors(
+            "GL_DEBUG [MEDIUM] src=0x8246 id=131218 Program/shader state "
+            "performance warning: Vertex shader is being recompiled")
+        for log in (
+                "GL_DEBUG [HIGH] src=0x824C id=7 GL_INVALID_OPERATION",
+                "GL_DEBUG [HIGH] src=0x824C id=7 texture is immutable",
+                "[ ERROR ] GL_INVALID_OPERATION: target mismatch"):
+            with self.subTest(log=log), self.assertRaises(RuntimeError):
+                console.check_errors(log)
+        console.check_errors(
+            "GL_DEBUG [HIGH] src=0x824C id=7 expected fixture error",
+            allowed=(r"expected fixture error",))
+
     def test_final_subprocess_environment_drops_ambient_hooks(self):
         ambient = {"GX_GUI_TEMPLATE_FORCE": "GUITESTER", "GX_GUI_TITLE_VIEW": "4",
                    "GX_AI_INPUT": "1.0 key 256", "GX_CAM_CUT_FRAME": "1"}
