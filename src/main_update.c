@@ -117,7 +117,7 @@ static gX_I32 gX_MainData_Responses(gX_I0) {
         maindata.masterIndexSuccessful = true;
     }
     else {
-        gX_TraceLog(gX_LOG_WARNING,"MAIN: Masterindex switch errors: %i",errors);
+        gX_TraceLog(gX_LOG_WARNING,"MAIN: Masterindex switch errors: %i",switcherrors);
         maindata.masterIndexSuccessful = false;
     }
     

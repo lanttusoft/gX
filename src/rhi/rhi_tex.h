@@ -126,6 +126,10 @@ gX_I0 gX_RHI_Tex_Bind(gX_U32 texId, gX_I32 target);
 // Activate a specific texture unit — wraps glActiveTexture.
 gX_I0   gX_RHI_ActiveTexture(gX_U32 unit);
 gX_U32  gX_RHI_Tex_GetTarget(gX_U32 texId);
+//ai: backends that create textures outside the RHI still need target-aware
+//   parameter/bind calls (notably raylib cubemaps).
+gX_I0   gX_RHI_Tex_RegisterTarget(gX_U32 texId, gX_U32 target);
+gX_I0   gX_RHI_Tex_UnregisterTarget(gX_U32 texId);
 
 //opencode: texture unit shadow table — tracks bindings for debugging
 #define GX_RHI_MAX_TEX_UNITS 32

@@ -52,6 +52,7 @@
 #define gX_RHI_BUFFER                                      0x82E0   // GL_BUFFER
 #define gX_RHI_CLAMP_TO_BORDER                             0x812D   // GL_CLAMP_TO_BORDER
 #define gX_RHI_CLAMP_TO_EDGE                               0x812F   // GL_CLAMP_TO_EDGE
+#define gX_RHI_MIRROR_CLAMP_TO_EDGE                        0x8743   // GL_MIRROR_CLAMP_TO_EDGE
 #define gX_RHI_COLOR_ATTACHMENT0                           0x8CE0   // GL_COLOR_ATTACHMENT0
 #define gX_RHI_COLOR_BUFFER_BIT                            0x00004000   // GL_COLOR_BUFFER_BIT
 #define gX_RHI_COLOR_WRITEMASK                             0x0C23   // GL_COLOR_WRITEMASK
@@ -124,11 +125,13 @@
 #define gX_RHI_LINE                                        0x1B01   // GL_LINE
 #define gX_RHI_LINEAR                                      0x2601   // GL_LINEAR
 #define gX_RHI_LINEAR_MIPMAP_LINEAR                        0x2703   // GL_LINEAR_MIPMAP_LINEAR
+#define gX_RHI_LINEAR_MIPMAP_NEAREST                       0x2701   // GL_LINEAR_MIPMAP_NEAREST
 #define gX_RHI_LINES                                       0x0001   // GL_LINES
 #define gX_RHI_LINK_STATUS                                 0x8B82   // GL_LINK_STATUS
 #define gX_RHI_MAX_COMBINED_TEXTURE_IMAGE_UNITS            0x8B4D   // GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS
 #define gX_RHI_MAX_FRAGMENT_IMAGE_UNIFORMS                 0x90CE   // GL_MAX_FRAGMENT_IMAGE_UNIFORMS
 #define gX_RHI_MAX_TEXTURE_IMAGE_UNITS                     0x8872   // GL_MAX_TEXTURE_IMAGE_UNITS
+#define gX_RHI_MIRRORED_REPEAT                             0x8370   // GL_MIRRORED_REPEAT
 #define gX_RHI_NEAREST                                     0x2600   // GL_NEAREST
 #define gX_RHI_NEAREST_MIPMAP_NEAREST                      0x2700   // GL_NEAREST_MIPMAP_NEAREST
 #define gX_RHI_NONE                                        0   // GL_NONE
@@ -210,6 +213,7 @@
 #define gX_RHI_TEXTURE_INTERNAL_FORMAT                     0x1003   // GL_TEXTURE_INTERNAL_FORMAT
 #define gX_RHI_TEXTURE_LOD_BIAS                            0x8501   // GL_TEXTURE_LOD_BIAS
 #define gX_RHI_TEXTURE_MAG_FILTER                          0x2800   // GL_TEXTURE_MAG_FILTER
+#define gX_RHI_TEXTURE_MAX_ANISOTROPY                      0x84FE   // GL_TEXTURE_MAX_ANISOTROPY_EXT
 #define gX_RHI_TEXTURE_MAX_LEVEL                           0x813D   // GL_TEXTURE_MAX_LEVEL
 #define gX_RHI_TEXTURE_MIN_FILTER                          0x2801   // GL_TEXTURE_MIN_FILTER
 #define gX_RHI_TEXTURE_WIDTH                               0x1000   // GL_TEXTURE_WIDTH

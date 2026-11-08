@@ -183,10 +183,21 @@ Release-Class: minor
   earlier shader-compiler/serializer recovery remains in place. The initial
   recovery measured 17,728 B. A 2026-11-07 pass moved the six vendored Dear
   ImGui tool-UI sources to the same Release `-Os` tier, recovering 278,144 B;
-  the current payload is 3,917,051 B (277,253 B headroom) with unchanged BSS,
+  the current payload is 3,918,427 B (275,877 B headroom) with unchanged BSS,
   caps, capabilities, visuals and Debug code generation.
 
 ### Fixed
+- <!-- //ai: 240p console Y2K→RAY-1 GL transition. --> Switching Y2K → shell →
+  RAY-1 no longer emits `GL_INVALID_OPERATION` from the raymarch cubemap
+  filter or the dead `texSky` uniform upload. Cubemap/array filters route
+  through the target-aware RHI, and dead uniform locations are skipped. The
+  console gate now exercises the transition and rejects the whole GL error
+  class.
+- <!-- //ai: console camera/particle warning levels. --> The physics/particle
+  scene now acknowledges the master-index switch instead of logging a false
+  "Camera failed to respond"; switch errors report the actual failing
+  subsystem count, and the expected non-compute particle fallback is NOTICE
+  rather than WARNING.
 - <!-- //ai: logging-level hygiene. --> Routine prologue/epilogue and GUI
   load/respond traces now use fixed TRACE levels instead of reusing the
   current threshold as a severity; expected texture-unit bind churn is

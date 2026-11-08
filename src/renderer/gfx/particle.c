@@ -211,7 +211,7 @@ gX_I0 gX_RendererGFX_Particle_Update(gX_RendererGFX *gfx)
         //   then no-ops on the zero SSBO) and stop retrying.
         else if (!gX_GL.hasCompute) {
             p->loaded = true;
-            gX_TraceLog_GFX(gX_LOG_WARNING, "Particles: GPU path unavailable (no compute) — disabled");
+            gX_TraceLog_GFX(gX_LOG_NOTICE, "Particles: GPU path unavailable (no compute) — disabled");
         }
         gX_TraceLog_GFX(gX_LOG_NOTICE, "Particles: compute=%u render=%u velocity=%u max=%d emitters=%u",
             p->computeProg, p->renderProg, p->velocityProg, p->maxCount, p->emitters.amount);

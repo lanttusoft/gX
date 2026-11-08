@@ -71,6 +71,9 @@ on-screen `gX_Msg` feed. Env hooks:
 - `GX_LOG_JSON=1` emits machine-readable lines
   (`{"ts","level","module","msg"}`) instead of the ANSI format; the audit
   gates keep the default. Raw `printf` output (math dumps) stays raw.
+- `GX_GL_BACKTRACE=1` prints a native call stack to stderr for each
+  `GL_INVALID_OPERATION` reported by the GL debug callback (Linux builds).
+  It is diagnostic-only and does not change rendering.
 
 `--logLevel` accepts named thresholds as well as the numeric enum:
 `trace5`/`trace4`/`trace3`/`trace2`/`trace`, `debug`, `info`, `notice`,

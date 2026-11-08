@@ -24,6 +24,7 @@
 **********************************************************************************************/
 
 #include "wrappers_header.h"
+#include "../common/enum.h"
 #include "../common/path.h"
 #include "texture.h"
 #include "../common/config.h"
@@ -281,20 +282,89 @@ gX_Texture gX_Texture_Load(const gX_I8 *path) {
 
 gX_Texture gX_Texture_Load_Cubemap(const gX_I8 *path, gX_I32 layout) {
     //opencode: D12 — backend loader
-    return raylib_Texture_LoadCubemap(path, layout);
+    gX_Texture texture = raylib_Texture_LoadCubemap(path, layout);
+    if (texture.id) {
+        gX_RHI_Tex_RegisterTarget(texture.id, gX_RHI_TEXTURE_CUBE_MAP);
+    }
+    return texture;
 }
 
 gX_I0 gX_Texture_Unload(gX_Texture tex) {
+    //ai: forget the GL target too; texture IDs are reused after deletion and a
+    //   stale cube/array mapping would misroute later filter/wrap calls.
+    if (tex.id) gX_RHI_Tex_UnregisterTarget(tex.id);
     //opencode: D12 — backend loader
     raylib_Texture_Unload(tex);
 }
 
 gX_I0 gX_Texture_SetFilter(gX_Texture texture, gX_I32 filter) {
-    raylib_Texture_SetFilter(texture, filter);
+    //ai: raylib's SetTextureFilter always binds GL_TEXTURE_2D. Route known
+    //   cubemap/array targets through the target-aware RHI instead; the old
+    //   path made raylib cubemap filtering emit GL_INVALID_OPERATION
+    //   "target doesn't match".
+    gX_U32 target = gX_RHI_Tex_GetTarget(texture.id);
+    if (target == gX_RHI_TEXTURE_2D_MULTISAMPLE) return;
+    if (target == 0 || target == gX_RHI_TEXTURE_2D) {
+        raylib_Texture_SetFilter(texture, filter);
+        return;
+    }
+    gX_I32 minFilter = 0;
+    gX_I32 magFilter = 0;
+    gX_I32 anisotropy = 0;
+    switch (filter) {
+        case gX_TEXTURE_FILTER_POINT:
+            minFilter = texture.mipmaps > 1
+                ? gX_RHI_NEAREST_MIPMAP_NEAREST : gX_RHI_NEAREST;
+            magFilter = gX_RHI_NEAREST;
+            break;
+        case gX_TEXTURE_FILTER_BILINEAR:
+            minFilter = texture.mipmaps > 1
+                ? gX_RHI_LINEAR_MIPMAP_NEAREST : gX_RHI_LINEAR;
+            magFilter = gX_RHI_LINEAR;
+            break;
+        case gX_TEXTURE_FILTER_TRILINEAR:
+            minFilter = texture.mipmaps > 1
+                ? gX_RHI_LINEAR_MIPMAP_LINEAR : gX_RHI_LINEAR;
+            magFilter = gX_RHI_LINEAR;
+            break;
+        case gX_TEXTURE_FILTER_ANISOTROPIC_4X: anisotropy = 4; break;
+        case gX_TEXTURE_FILTER_ANISOTROPIC_8X: anisotropy = 8; break;
+        case gX_TEXTURE_FILTER_ANISOTROPIC_16X: anisotropy = 16; break;
+        default: return;
+    }
+    if (minFilter) {
+        gX_RHI_Tex_Param(texture.id, (gX_I32)target,
+            gX_RHI_TEXTURE_MIN_FILTER, minFilter);
+        gX_RHI_Tex_Param(texture.id, (gX_I32)target,
+            gX_RHI_TEXTURE_MAG_FILTER, magFilter);
+    }
+    if (anisotropy) {
+        gX_RHI_Tex_Paramf(texture.id, (gX_I32)target,
+            gX_RHI_TEXTURE_MAX_ANISOTROPY, (gX_F32)anisotropy);
+    }
 }
 
 gX_I0 gX_Texture_SetWrap(gX_Texture texture, gX_I32 wrap) {
-    raylib_Texture_SetWrap(texture, wrap);
+    //ai: same target rule as filtering; multisample render targets do not
+    //   support sampler wrap state.
+    gX_U32 target = gX_RHI_Tex_GetTarget(texture.id);
+    if (target == gX_RHI_TEXTURE_2D_MULTISAMPLE) return;
+    if (target == 0 || target == gX_RHI_TEXTURE_2D) {
+        raylib_Texture_SetWrap(texture, wrap);
+        return;
+    }
+    gX_I32 value = 0;
+    switch (wrap) {
+        case gX_TEXTURE_WRAP_REPEAT: value = gX_RHI_REPEAT; break;
+        case gX_TEXTURE_WRAP_CLAMP: value = gX_RHI_CLAMP_TO_EDGE; break;
+        case gX_TEXTURE_WRAP_MIRROR_REPEAT: value = gX_RHI_MIRRORED_REPEAT; break;
+        case gX_TEXTURE_WRAP_MIRROR_CLAMP: value = gX_RHI_MIRROR_CLAMP_TO_EDGE; break;
+        default: return;
+    }
+    gX_RHI_Tex_Param(texture.id, (gX_I32)target,
+        gX_RHI_TEXTURE_WRAP_S, value);
+    gX_RHI_Tex_Param(texture.id, (gX_I32)target,
+        gX_RHI_TEXTURE_WRAP_T, value);
 }
 
 //opencode: gX_Texture_Draw, Draw_At, Draw_Fullscreen, Draw_Sprite

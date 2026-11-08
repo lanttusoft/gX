@@ -251,6 +251,18 @@ def main():
                 extra={"GX_CONSOLE_SAVE_DIR": str(save_dir),
                     "GX_NO_SETTINGS_SAVE": "1"},
                 scene="--cartridge-y2k")
+            #ai: Y2K -> shell -> RAY-1 is a different GL state than a direct
+            #   RAY-1 boot; a cubemap filter and dead texSky upload once made
+            #   this transition emit GL_INVALID_OPERATION. Keep the sequence and
+            #   rely on check_errors to reject the class.
+            _transition, transition_log = capture("y2k_to_ray1",
+                "1.0 key 256;1.5 key 264;1.75 key 264;2.0 key 264;"
+                "2.25 key 264;2.5 key 264;2.75 key 264;3.2 key 257;"
+                "5.0 key 264;5.5 key 257", 520, 500, out,
+                extra={"GX_NO_SETTINGS_SAVE": "1"},
+                scene="--cartridge-y2k")
+            require("CARTRIDGE: ray1" in transition_log,
+                "console transition did not reach RAY-1")
             menu_exit, menu_exit_log = capture("menu_exit",
                 "1.0 key 256;2.0 key 264;2.25 key 264;2.5 key 264;"
                 "2.75 key 264;3.0 key 264;3.25 key 264;3.75 key 257",

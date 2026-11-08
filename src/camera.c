@@ -300,6 +300,12 @@ static gX_I0 gX_Camera_Respond(gX_I0) {
             camera.masterIndexSwitchResponse = true;
             break;
         }
+        case gX_SCENE_PHYSICS: {
+            //ai: the physics/particle demo applies its authored camera in the
+            //   scene; the generic camera reset is intentionally a no-op.
+            camera.masterIndexSwitchResponse = true;
+            break;
+        }
         case gX_SCENE_RENDERER_PP: {
             camera.masterIndexSwitchResponse = true;
             break;

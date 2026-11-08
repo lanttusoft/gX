@@ -183,6 +183,10 @@ static gX_I0 gX_RendererRaymarch_Shader_GetLocations(gX_Raymarch_Shader *sha) {
     GX_RM_GET_LOC2(enableLSS,"enableLastStepSample","enable_laststepsample")
     GX_RM_GET_LOC2(enableSS,"enableSignSample","enable_signsample")
     GX_RM_GET_LOC2(enableSky,"enableTexsky","enable_texsky")
+    //ai: texSky is a dead uniform in the current shader; query it so callers
+    //   can skip the cubemap upload instead of targeting location 0.
+    sha->shader.locs.locTexSky = gX_Shader_GetLocation_Multi(
+        sha->shader.shader, 2, "texSky", "texsky");
     
     GX_RM_GET_LOC2(firstColor,"firstColor","firstcolor")
     GX_RM_GET_LOC2(nullColor,"nullColor","nullcolor")
@@ -1927,8 +1931,11 @@ static gX_I0 rm_draw(gX_RendererRaymarch *rm, gX_RenderTexture *outputRT,
                 gX_Shader_SetValue_V2(rm->shader.shader.shader, rm->shader.shader.locs.locRes,
                     (gX_F32v2){(gX_F32)rw, (gX_F32)rh});
 
-                gX_Shader_SetValue_Cubemap(rm->shader.shader.shader,rm->shader.shader.locs.locTexSky,
-                                  rm->texture.skybox.texture);
+                if (rm->shader.shader.locs.locTexSky >= 0) {
+                    gX_Shader_SetValue_Cubemap(rm->shader.shader.shader,
+                        rm->shader.shader.locs.locTexSky,
+                        rm->texture.skybox.texture);
+                }
                 gX_Shader_SetValue_Texture(rm->shader.shader.shader,rm->shader.shader.locs.locTex0,
                                   rm->texture.textures[0].texture);
                 gX_Shader_SetValue_Texture(rm->shader.shader.shader,rm->shader.shader.locs.locTex1,
@@ -2362,8 +2369,11 @@ static gX_I0 rm_cubemap_draw_face(gX_Camera3D *faceCam, gX_I32 faceIndex) {
 
             gX_RendererRaymarch_Shader_SetLocs(rm, *faceCam, time);
 
-            gX_Shader_SetValue_Cubemap(rm->shader.shader.shader, rm->shader.shader.locs.locTexSky,
-                              rm->texture.skybox.texture);
+            if (rm->shader.shader.locs.locTexSky >= 0) {
+                gX_Shader_SetValue_Cubemap(rm->shader.shader.shader,
+                    rm->shader.shader.locs.locTexSky,
+                    rm->texture.skybox.texture);
+            }
             gX_Shader_SetValue_Texture(rm->shader.shader.shader, rm->shader.shader.locs.locTex0,
                               rm->texture.textures[0].texture);
             gX_Shader_SetValue_Texture(rm->shader.shader.shader, rm->shader.shader.locs.locTex1,

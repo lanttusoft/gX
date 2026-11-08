@@ -904,10 +904,13 @@ gX_I0 gX_Shader_SetValue_TextureSlot(gX_Shader shader, gX_I32 location, gX_Textu
 }
 
 gX_I0 gX_Shader_SetValue_Cubemap(gX_Shader shader, gX_I32 location, gX_Texture texture) {
+    //ai: a dead/optimized-out uniform returns -1; never target location 0.
+    if (location < 0 || shader.id == 0 || texture.id == 0) return;
     raylib_Shader_SetValueCubemap(shader,location,texture);
 }
 
 gX_I0 gX_Shader_SetValue_CubemapSlot(gX_Shader shader, gX_I32 location, gX_Texture texture, gX_I32 slot) {
+    if (location < 0 || shader.id == 0 || texture.id == 0) return;
     //opencode: record cubemap slot reads performed by the raylib shader wrapper.
     gX_RHI_BufferAudit_TextureBind(texture.id, (gX_U32)slot, gX_RHI_TEXTURE_CUBE_MAP);
     raylib_Shader_SetValueCubemapSlot(shader, location, texture, slot);

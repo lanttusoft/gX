@@ -72,6 +72,20 @@ gX_U32 gX_RHI_Tex_GetTarget(gX_U32 texId) {
     return gX_TexTarget_Lookup(texId);
 }
 
+gX_I0 gX_RHI_Tex_RegisterTarget(gX_U32 texId, gX_U32 target) {
+    gX_TexTarget_Register(texId, target);
+}
+
+gX_I0 gX_RHI_Tex_UnregisterTarget(gX_U32 texId) {
+    for (gX_U32 i = 0; i < g_texTargetCount; i++) {
+        if (g_texTargetReg[i] == texId) {
+            g_texTargetReg[i] = g_texTargetReg[--g_texTargetCount];
+            g_texTargetVal[i] = g_texTargetVal[g_texTargetCount];
+            return;
+        }
+    }
+}
+
 gX_I0 gX_RHI_Tex_UnitInit(gX_I0) {
     memset(g_texUnits, 0, sizeof(g_texUnits));
     memset(g_texUnitTargets, 0, sizeof(g_texUnitTargets));
@@ -268,6 +282,7 @@ gX_I0 gX_RHI_Tex_GenMipmap(gX_U32 texId, gX_U32 target) {
 gX_I0 gX_RHI_Tex_Delete(gX_U32 texId) {
     if (texId == 0) return;
     gX_RHI_Tex_EvictUnits(texId);
+    gX_RHI_Tex_UnregisterTarget(texId);
     glDeleteTextures(1, &texId);
 }
 

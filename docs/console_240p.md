@@ -357,7 +357,9 @@ by the user; do not change display modes automatically.
   save path. Every capture rejects engine errors, `GL_INVALID_OPERATION` and
   HIGH GL debug messages while keeping MEDIUM shader-recompile notices
   informational, and writes its log beside the screenshot under the scratch
-  directory (`make console-check`).
+  directory (`make console-check`). The Y2K → shell → RAY-1 transition is
+  exercised explicitly; its cubemap filter and dead `texSky` upload no longer
+  emit GL errors.
   Eleven display-free gate tests reject missing/partial telemetry, stale or
   ambiguous click targets, clipped/tiny/off-screen/overlapping controls,
   missing or incorrectly ordered controller focus events, and ambient input/UI

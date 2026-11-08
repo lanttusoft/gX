@@ -28,8 +28,13 @@
 #include "rhi_debug.h"
 #include "rhi_gl.h"
 #include "../common/log.h"
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#if defined(__linux__)
+#include <execinfo.h>
+#include <unistd.h>
+#endif
 
 //opencode: v0.3.8 — storm control. The planar reflection pass emits
 //   ~14 GL_INVALID_OPERATION per frame from raylib's loc-based uniform
@@ -136,6 +141,16 @@ static void GX_DebugCallback(GLenum source, GLenum type, GLuint id,
             s_glDedup[slot].count = 0;
             snprintf(s_glDedup[slot].msg, sizeof(s_glDedup[slot].msg), "%s", message);
         }
+    }
+
+    //ai: opt-in call stack for a GL error whose call site is not obvious.
+    if (message && strstr(message, "GL_INVALID_OPERATION")
+        && getenv("GX_GL_BACKTRACE")) {
+#if defined(__linux__)
+        void *frames[32];
+        int count = backtrace(frames, 32);
+        backtrace_symbols_fd(frames, count, STDERR_FILENO);
+#endif
     }
 
     gX_I32 logLevel = gX_LOG_INFO;

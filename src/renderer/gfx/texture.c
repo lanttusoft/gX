@@ -327,7 +327,12 @@ gX_I32 gX_RendererGFX_RenderTexture_Load(gX_RendererGFX_RenderTexture *map) {
         //opencode: ensure depth texture returns raw depth, not shadow comparison result.
         //   rlgl may set GL_TEXTURE_COMPARE_MODE = GL_COMPARE_R_TO_TEXTURE on depth
         //   textures (for shadow map samplers), causing sampler2D reads to return 0/1.
-        gX_RHI_Tex_Param(map->wrapper.rt.depth.id, gX_RHI_TEXTURE_2D, gX_RHI_TEXTURE_COMPARE_MODE, gX_RHI_NONE);
+        //ai: multisample targets reject the 2D target/compare parameters.
+        if (gX_RHI_Tex_GetTarget(map->wrapper.rt.depth.id)
+                != gX_RHI_TEXTURE_2D_MULTISAMPLE) {
+            gX_RHI_Tex_Param(map->wrapper.rt.depth.id, gX_RHI_TEXTURE_2D,
+                gX_RHI_TEXTURE_COMPARE_MODE, gX_RHI_NONE);
+        }
     }
     gX_Texture_SetWrap(map->wrapper.rt.texture, gX_TEXTURE_WRAP_CLAMP);
     gX_Texture_SetFilter(map->wrapper.rt.texture, map->filter);
