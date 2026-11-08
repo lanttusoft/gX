@@ -9,11 +9,17 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **GFX editor narrow-layout polish**: the 1024 scene header/selection row
+  shortens with tooltips, the preset path stacks Browse when the filename
+  would be cut, the renderer-lab strip wraps all eleven Expert tabs, and the
+  narrow shortcut footer keeps one short hint. `make gfx-editor-layout-check`
+  pins 1024/1600 and 100–175% scale through `GX_UI_SCALE` and
+  `GX_GFX_LAYOUT_TRACE`.
 - **GFX editor rework close-out**: the Phases 1–5 hierarchy, identity,
   showcase, accessibility/scaling and renderer-lab work is recorded as
   present on the current line (it was previously described as future
-  work), with the remaining tab/overlay/label items marked low-severity
-  technical-preview debt. The F1/Help onboarding guide is included.
+  work), and the remaining tab/overlay/label items are closed by the
+  narrow-layout slice. The F1/Help onboarding guide is included.
 - **GFX editor guide**: an F1/Help step-by-step onboarding window covers
   the stage, transform keys, panels, presets, cameras and bug reporting.
   `GX_GFX_GUIDE=force` powers `make gfx-editor-guide-check`; the broader
@@ -200,8 +206,9 @@ Release-Class: minor
   earlier shader-compiler/serializer recovery remains in place. The initial
   recovery measured 17,728 B. A 2026-11-07 pass moved the six vendored Dear
   ImGui tool-UI sources to the same Release `-Os` tier, recovering 278,144 B;
-  the current payload is 3,919,771 B (274,533 B headroom) with unchanged BSS,
-  caps, capabilities, visuals and Debug code generation.
+  after the GFX narrow-layout pass the payload is 3,922,011 B (272,293 B
+  headroom) with 2,701,376 B BSS (3,624 B headroom); caps, capabilities,
+  visuals and Debug code generation are unchanged.
 
 ### Fixed
 - <!-- //ai: 240p console Y2K→RAY-1 GL transition. --> Switching Y2K → shell →

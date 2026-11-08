@@ -134,6 +134,9 @@ check: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_ray1_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_particle_check.py
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/console_grain_check.py
+	@echo "== [gX CI] GFX editor guide + layout =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_editor_guide_check.py
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_editor_layout_check.py
 	@echo "== [gX CI] compressed texture sidecars =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/texture_assets_check.py
 	#ai: ambient-only Phong shading must preserve albedo texture variation.
@@ -320,6 +323,8 @@ check-fast: all
 	python3 scripts/gui_editor_check.py
 	@echo "== [gX fast] GFX editor guide =="
 	python3 scripts/gfx_editor_guide_check.py
+	@echo "== [gX fast] GFX editor layout =="
+	python3 scripts/gfx_editor_layout_check.py
 	@echo "== [gX fast] cursor state machine =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/cursor_check.py
 	@echo "== [gX fast] OK =="
@@ -542,6 +547,8 @@ editor-host-check: all
 	python3 scripts/gui_editor_check.py
 	@echo "== [gX CI] GFX editor guide =="
 	python3 scripts/gfx_editor_guide_check.py
+	@echo "== [gX CI] GFX editor layout =="
+	python3 scripts/gfx_editor_layout_check.py
 
 gui-layout-check: all
 	@echo "== [gX CI] GUI layout pass (text fits its box) =="
@@ -1073,6 +1080,13 @@ gui-editor-check: all
 gfx-editor-guide-check: all
 	@echo "== [gX CI] GFX editor guide =="
 	python3 scripts/gfx_editor_guide_check.py
+
+#ai: GFX editor narrow layout — scene/preset/lab rows and the footer at
+#   1024/1600 and 100/125/175% scale.
+.PHONY: gfx-editor-layout-check
+gfx-editor-layout-check: all
+	@echo "== [gX CI] GFX editor layout =="
+	python3 scripts/gfx_editor_layout_check.py
 
 #ai: physics editor — both open paths render and exit clean, and both route
 #   to the physics sandbox scene; the tuning round trip + live apply pins run

@@ -20,7 +20,7 @@ round-trips presets under `resources/tools/`.
 | Surface | Source | Edits | Tier | Gate / gap |
 |---|---|---|---|---|
 | Global editor host | `src/tools/editor_host.cpp` | always-summonable menu bar (`gX/File/Edit/View/<Active Editor>/Window/Help`), editor registry (GUI, theme, sky, background, physics, wavetable, textwriter, rail, GFX; GFX scene/inspector/asset/footer panels summonable, renderer labs (Models/Sky/World/FX/Lights/Render/Water/Ray/Particles/Refl/Debug) as separate panels, per-suite panel and lab masks), workspace tabs, built-in and user-saved suites (`gx_editor_<suite>.ini`, `gx_editor_suites.txt`, `gx_editor_workspace.txt`), console/quit | Alpha/WIP | `editor-host`; per-panel draw, GFX migration and layout polish pending |
-| GFX editor | `src/tools/gfx/gfx_editor.cpp` | renderer scene (models/materials/lights/camera/sky/weather/decals/water/particles/SSAO/SSR/quality) + blockout/texture/export/bake panels | Beta | full audit matrix; rework Phases 1–5 complete; F1/Help guide; residual low-severity tab/overlay debt |
+| GFX editor | `src/tools/gfx/gfx_editor.cpp` | renderer scene (models/materials/lights/camera/sky/weather/decals/water/particles/SSAO/SSR/quality) + blockout/texture/export/bake panels | Beta | full audit matrix; rework Phases 1–5 complete; F1/Help guide; `gfx-editor-layout` covers 1024/1600 and 100–175% scale |
 | GUI editor | `src/tools/editor/editor.cpp` | markup templates on the GUIPLAYGROUND canvas | Alpha/WIP | `gui-editor` gate; canvas click/drag/resize, tree filter, undo/redo, first-run tour + F1 guide, shipped-markup guard |
 | Theme editor | `src/tools/theme/theme_editor.cpp` | GUI theme tokens (live) | Alpha/WIP | `ui-audit` open path; token-list surface, manual workflow |
 | ThemLab / MaterialsLab / ShaderLab | GUI templates | design previews (no data path) | Alpha/WIP | preview only, no data path |
@@ -38,8 +38,28 @@ The reference GFX editor now has a step-by-step **F1/Help > Editor guide**
 window covering the stage, selection/transform keys, panel layout, preset
 save/load and camera/report routes. `GX_GFX_GUIDE=force` opens it for headless
 coverage; `make gfx-editor-guide-check` pins the GFX-stage open and guide
-trace. The rest of the beta UI rework (panel hierarchy, surface identity and
-default-showcase polish) remains separate work.
+trace. The completed Phase 1–5 rework is documented separately in
+[`gfx_editor_rework.md`](gfx_editor_rework.md); this guide is an onboarding
+layer.
+
+### GFX editor narrow layout (2026-11-08)
+
+The remaining low-severity Phase 1/4/5 debt is closed for the standard
+captures. When the full scene header or selection row would not fit, they
+shorten to **Pick models/lights** and **Frame** / **Free camera** with hover
+tooltips instead of clipping. The preset path stacks **Browse** beneath
+the field when the filename would be cut, so the 1024 inspector shows the
+whole `resources/tools/gfx_showcase.json` path. At stage widths under 420 px
+the shortcut footer keeps only the state line plus one short hint; at 150/175%
+scale it yields the stage entirely.
+
+`make gfx-editor-layout-check` proves the rows and the renderer-lab strip fit
+at 1024x768 and 1600x900 for 100/125/150/175% scale (including all eleven
+Expert labs) and that `resources/settings.json` is unchanged.
+`GX_UI_SCALE=<1.0..1.75>` pins the scale for a headless run, and
+`GX_GFX_LAYOUT_TRACE=1` emits the `GFX_LAYOUT` fit row. The left pane still
+scrolls for its lower sections at the lean floor; that is expected, not
+clipping.
 
 ### GUI editor usability (2026-11-08)
 

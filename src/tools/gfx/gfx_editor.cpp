@@ -456,6 +456,21 @@ static gX_U32 s_assetSourceCount = 0;
 static gX_I1 s_assetsReady = 0;
 static gX_I1 s_assetBrowserOpen = 0;
 static gX_I1 s_shortcutFooterOpen = 1;
+//ai: narrow-layout audit — GX_GFX_LAYOUT_TRACE reports whether the scene,
+//   preset, lab and footer rows fit after the panels draw.
+typedef struct GfxLayoutMetrics {
+    gX_I1 scenePickFits;
+    gX_I1 sceneButtonsFits;
+    gX_I1 presetFits;
+    gX_I1 labsFit;
+    gX_I32 labRows;
+    gX_F32 presetFieldW;
+    gX_F32 presetTextW;
+    gX_F32 footerW;
+    gX_F32 footerH;
+    gX_I32 footerMode; // 0 hidden, 1 minimal, 2 compact, 3 full
+} GfxLayoutMetrics;
+static GfxLayoutMetrics s_layoutMetrics;
 //ai: F1/Help onboarding guide; GX_GFX_GUIDE=force opens it for the gate.
 static gX_I1 s_guideOpen = 0;
 
@@ -2927,14 +2942,24 @@ static gX_I0 gfx_preset_panel(gX_RendererGFX *gfx) {
         ImGui::OpenPopup("Confirm GFX preset overwrite");
         s_presetOverwritePending = 0;
     }
-    //ai: leave real room for the scaled Browse button instead of clipping it.
+    //ai: leave real room for the scaled Browse button instead of clipping it;
+    //   stack Browse under the path when the filename would be cut.
     gX_F32 browseWidth = ImGui::CalcTextSize("Browse").x
         + ImGui::GetStyle().FramePadding.x * 2.0f
         + ImGui::GetStyle().ItemSpacing.x + 6.0f;
-    ImGui::SetNextItemWidth(-browseWidth);
+    gX_F32 available = ImGui::GetContentRegionAvail().x;
+    gX_F32 pathWidth = ImGui::CalcTextSize((const char *)s_presetPath).x
+        + ImGui::GetStyle().FramePadding.x * 2.0f;
+    gX_F32 inlineField = available - browseWidth;
+    gX_I1 stackBrowse = pathWidth > inlineField + 0.5f;
+    gX_F32 fieldWidth = stackBrowse ? available : inlineField;
+    ImGui::SetNextItemWidth(stackBrowse ? -FLT_MIN : -browseWidth);
     ImGui::InputTextWithHint("##presetPath", "preset path",
         s_presetPath, sizeof(s_presetPath));
-    ImGui::SameLine();
+    s_layoutMetrics.presetTextW = pathWidth;
+    s_layoutMetrics.presetFieldW = fieldWidth;
+    s_layoutMetrics.presetFits = pathWidth <= fieldWidth + 0.5f ? 1 : 0;
+    if (!stackBrowse) ImGui::SameLine();
     gfx_preset_browser_popup();
     if (s_presetConfirmPending) {
         ImGui::OpenPopup("Confirm GFX preset load");
@@ -9032,6 +9057,9 @@ static gX_I0 gfx_editor_camera_markers_draw(gX_RendererGFX *gfx) {
 
 static gX_I0 gfx_editor_shortcut_footer(gX_RendererGFX *Gfx,
     gX_I1 FreeCamera) {
+    s_layoutMetrics.footerMode = 0;
+    s_layoutMetrics.footerW = 0.0f;
+    s_layoutMetrics.footerH = 0.0f;
     //opencode: the render capture grabs the frame the camera was applied to,
     //   so keep authoring overlays out of it.
     if (s_renderApplied) return;
@@ -9064,8 +9092,13 @@ static gX_I0 gfx_editor_shortcut_footer(gX_RendererGFX *Gfx,
     if (ImGui::Begin("GFX Shortcut Footer", 0, Flags)) {
         gX_RendererGFX_Model *Model = Gfx ? gfx_model_at(Gfx, s_selModel) : 0;
         gX_RendererGFX_Light *Light = Gfx ? gfx_light_at(Gfx, s_selLight) : 0;
-        gX_I1 Compact = Viewport.width < 640.0f
+        gX_F32 stageW = rightBound - leftBound;
+        gX_I1 Compact = stageW < 640.0f
             || ImGui::GetStyle().FontScaleMain > 1.2f;
+        //ai: the 1024 stage is too small for the full footer card; keep the
+        //   state line and one short hint instead of covering the scene.
+        gX_I1 Minimal = stageW < 420.0f;
+        s_layoutMetrics.footerMode = Minimal ? 1 : (Compact ? 2 : 3);
         const char *Status = FreeCamera ? "FREE CAMERA"
             : (s_draggingModel
                 ? (s_dragMode == gX_GFX_EDITOR_DRAG_ROTATE ? "ROTATE MODEL"
@@ -9075,7 +9108,20 @@ static gX_I0 gfx_editor_shortcut_footer(gX_RendererGFX *Gfx,
                     : (Model ? "MODEL SELECTED"
                         : (Light ? "LIGHT SELECTED" : "EDIT SHORTCUTS"))));
         ImGui::TextColored(ImVec4(0.52f, 0.78f, 1.0f, 1.0f), "%s", Status);
-        if (Compact) {
+        if (Minimal) {
+            const char *Hint = FreeCamera
+                ? "WASD move · Esc exit · F1 help"
+                : (s_draggingModel
+                    ? "R rotate · S scale · X/Y/Z · F1 help"
+                    : (s_draggingLight
+                        ? "X/Y/Z axis · Ctrl snap · F1 help"
+                        : (Model
+                            ? "F frame · MMB orbit · F1 help"
+                            : (Light
+                                ? "Arrows nudge · MMB orbit · F1 help"
+                                : "LMB select · MMB orbit · F1 help"))));
+            ImGui::TextWrapped("%s", Hint);
+        } else if (Compact) {
             if (FreeCamera) {
                 ImGui::TextWrapped("WASD move · E/Q rise/fall · mouse look · Shift faster · Ctrl slower · wheel speed · Esc exit");
             } else if (s_draggingModel) {
@@ -9148,6 +9194,8 @@ static gX_I0 gfx_editor_shortcut_footer(gX_RendererGFX *Gfx,
             gfx_editor_shortcut_hint("RMB", "pan", 0);
             gfx_editor_shortcut_hint("Wheel", "zoom", 0);
         }
+        s_layoutMetrics.footerW = ImGui::GetWindowSize().x;
+        s_layoutMetrics.footerH = ImGui::GetWindowSize().y;
     }
     ImGui::End();
     ImGui::PopStyleColor();
@@ -11691,22 +11739,56 @@ static gX_I0 gfx_pp_panel(gX_RendererPostProcess *pp) {
     }
 }
 
+//ai: measured widths keep narrow two-button rows on one line when possible.
+static gX_F32 gfx_button_width(const char *label) {
+    return ImGui::CalcTextSize(label).x
+        + ImGui::GetStyle().FramePadding.x * 2.0f;
+}
+
 static gX_I0 gfx_scene_panel(gX_RendererGFX *gfx) {
+    gX_F32 contentW = ImGui::GetContentRegionAvail().x;
     bool pick = s_pickEnabled != 0;
-    if (ImGui::Checkbox("Pick models and lights with mouse", &pick))
+    const char *pickLabel = "Pick models and lights with mouse";
+    gX_F32 pickW = ImGui::CalcTextSize(pickLabel).x
+        + ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x;
+    if (pickW > contentW + 0.5f) pickLabel = "Pick models/lights";
+    pickW = ImGui::CalcTextSize(pickLabel).x
+        + ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x;
+    s_layoutMetrics.scenePickFits = pickW <= contentW + 0.5f ? 1 : 0;
+    if (ImGui::Checkbox(pickLabel, &pick))
         s_pickEnabled = pick ? 1 : 0;
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Pick models and lights with mouse");
     gfx_text_disabled_wrapped("Click a model or light marker; drag to move it.");
     gX_RendererGFX_Model *model = gfx_model_at(gfx, s_selModel);
     gX_RendererGFX_Light *light = gfx_light_at(gfx, s_selLight);
+    const char *frameLabel = "Frame selected";
+    const char *freeLabel = "Enter free camera";
+    gX_F32 spacing = ImGui::GetStyle().ItemSpacing.x;
+    gX_F32 fullRow = gfx_button_width(frameLabel) + spacing
+        + gfx_button_width(freeLabel);
+    gX_I1 narrow = fullRow > contentW + 0.5f;
+    if (narrow) {
+        frameLabel = "Frame";
+        freeLabel = "Free camera";
+    }
+    gX_F32 rowWidth = (model || light)
+        ? gfx_button_width(frameLabel) + spacing + gfx_button_width(freeLabel)
+        : gfx_button_width(freeLabel);
+    s_layoutMetrics.sceneButtonsFits = rowWidth <= contentW + 0.5f ? 1 : 0;
     if (model || light) {
-        if (ImGui::Button("Frame selected")) {
+        if (ImGui::Button(frameLabel)) {
             if (model) gfx_camera_frame_model(model);
             else gfx_camera_frame_light(light);
         }
+        if (narrow && ImGui::IsItemHovered())
+            ImGui::SetTooltip("Frame selected");
         ImGui::SameLine();
     }
-    if (ImGui::Button("Enter free camera"))
+    if (ImGui::Button(freeLabel))
         gfx_free_camera_set(1);
+    if (narrow && ImGui::IsItemHovered())
+        ImGui::SetTooltip("Enter free camera");
     ImGui::Separator();
     gX_I1 inspectRaymarch = getenv("GX_RAYMARCH_EDITOR_INSPECT") != NULL;
     if (ImGui::CollapsingHeader("Scene", inspectRaymarch ? 0
@@ -11947,11 +12029,15 @@ static gX_I0 gfx_lab_launcher(gX_I0)
     gX_F32 used = 0.0f;
     gX_F32 spacing = ImGui::GetStyle().ItemSpacing.x;
     gX_F32 pad = ImGui::GetStyle().FramePadding.x * 2.0f;
+    gX_I32 rows = 0;
+    gX_I1 fits = 1;
     for (gX_I32 i = 0; i < GX_GFX_LAB_COUNT; i++) {
         if (!gfx_lab_allowed(i)) continue;
         gX_F32 width = ImGui::CalcTextSize((const char *)kGfxLabs[i].label).x + pad;
+        if (width > avail + 0.5f) fits = 0;
         if (used > 0.0f && used + spacing + width > avail) used = 0.0f;
         else if (used > 0.0f) ImGui::SameLine();
+        if (used == 0.0f) rows++;
         gX_U32 bit = 1u << i;
         bool open = (s_labMask & bit) != 0;
         if (open) ImGui::PushStyleColor(ImGuiCol_Button,
@@ -11963,6 +12049,8 @@ static gX_I0 gfx_lab_launcher(gX_I0)
         if (open) ImGui::PopStyleColor();
         used += width + spacing;
     }
+    s_layoutMetrics.labsFit = fits;
+    s_layoutMetrics.labRows = rows;
 }
 
 //opencode: hold other editor actions while a browser target is captured.
@@ -12229,10 +12317,36 @@ extern "C" gX_I0 gX_Tools_Gfx_Open(gX_I0) {
     gX_TraceLog(gX_LOG_INFO, "Tools: GFX editor open");
 }
 
+//ai: compact narrow-layout trace (GX_GFX_LAYOUT_TRACE) for the layout gate.
+static gX_I0 gfx_editor_layout_trace(gX_F32 scrW, gX_F32 scrH,
+    gX_F32 sceneW, gX_F32 inspectorW) {
+    const gX_I8 *trace = getenv("GX_GFX_LAYOUT_TRACE");
+    if (!trace || !trace[0] || trace[0] == '0') return;
+    if ((ImGui::GetFrameCount() % 30u) != 0u) return;
+    gX_Rectangle viewport = gX_GUI_ViewportBox_Get();
+    gX_F32 stageW = scrW - (s_scenePanelOpen ? sceneW : 0.0f)
+        - (s_inspectorPanelOpen ? inspectorW : 0.0f);
+    gX_TraceLog(gX_LOG_INFO,
+        "GFX_LAYOUT: window=%.0fx%.0f scene=%.0f inspector=%.0f "
+        "stage=%.0f viewport=%.0f pick=%d buttons=%d preset=%d "
+        "presetW=%.0f/%.0f labs=%d rows=%d footer=%d %.0fx%.0f",
+        scrW, scrH, sceneW, inspectorW, stageW, viewport.width,
+        s_layoutMetrics.scenePickFits, s_layoutMetrics.sceneButtonsFits,
+        s_layoutMetrics.presetFits, s_layoutMetrics.presetTextW,
+        s_layoutMetrics.presetFieldW, s_layoutMetrics.labsFit,
+        s_layoutMetrics.labRows, s_layoutMetrics.footerMode,
+        s_layoutMetrics.footerW, s_layoutMetrics.footerH);
+}
+
 //opencode: retain child-window item widths so drag controls have room for labels.
 extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0);
 extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
 #if gX_ENABLE_RENDERER == 1
+    memset(&s_layoutMetrics, 0, sizeof(s_layoutMetrics));
+    s_layoutMetrics.scenePickFits = 1;
+    s_layoutMetrics.sceneButtonsFits = 1;
+    s_layoutMetrics.presetFits = 1;
+    s_layoutMetrics.labsFit = 1;
     gX_I32 palette = gfx_editor_palette_push();
     //opencode: Escape exits free camera; a direct cursor toggle also restores
     //   authoring mode.
@@ -12477,6 +12591,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     gfx_editor_camera_markers_draw(gfx);
     if (s_shortcutFooterOpen) gfx_editor_shortcut_footer(gfx, 0);
     gfx_asset_browser_window(gfx);
+    gfx_editor_layout_trace(scrW, scrH, sceneW, inspectorW);
     if (gfx) gfx_snapshot_headless_smoke(gfx);
     gfx_editor_palette_pop(palette);
 #else

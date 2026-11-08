@@ -252,8 +252,10 @@ The post-change Release measured **3,914,523 B** payload (**279,781 B**
 headroom) and **2,701,344 B** BSS (3,656 B headroom). The later title
 newcomer polish added 1,344 B; the logging-hygiene and console GL
 fixes added 2,560 B; the GUI-editor usability pass added 256 B and the
-GFX-editor guide added 1,088 B, leaving **3,919,771 B** payload
-(**274,533 B** headroom). Caps, baseline and capabilities are unchanged; the title slice
+GFX-editor guide added 1,088 B, and the GFX-editor narrow-layout pass added
+2,240 B, leaving **3,922,011 B** payload (**272,293 B** headroom) and
+**2,701,376 B** BSS (3,624 B headroom). Caps, baseline and capabilities are
+unchanged; the title slice
 changed labels/help only, with no renderer or resource hash change. Validation:
 `make release`, `make lean`, `make payload-audit`, `make check-fast`,
 `make check`, the Release tool-mode smoke for all twelve `GX_TOOLS_OPEN`

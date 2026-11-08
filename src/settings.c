@@ -490,6 +490,15 @@ gX_I32 gX_Settings_Load(gX_I0) {
     }
     //opencode: sanitize saved scale before any ImGui context reads it.
     settings.toolUiScale = gX_Settings_ToolUIScale_Clamp(settings.toolUiScale);
+    //ai: audit hook — pin the tool scale without touching the persisted file.
+    {
+        const gX_I8 *scaleEnv = getenv("GX_UI_SCALE");
+        if (scaleEnv && scaleEnv[0]) {
+            gX_F32 scale = (gX_F32)atof((const char *)scaleEnv);
+            if (isfinite(scale) && scale >= 1.0f && scale <= 1.75f)
+                settings.toolUiScale = scale;
+        }
+    }
     if (settings.uiLevel < GX_SETTINGS_UI_BASIC
         || settings.uiLevel >= GX_SETTINGS_UI_LEVEL_COUNT)
         settings.uiLevel = GX_SETTINGS_UI_ADVANCED;

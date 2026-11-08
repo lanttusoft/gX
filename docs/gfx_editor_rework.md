@@ -68,7 +68,8 @@ Phase 1 status (2026-10-28):
 - Captures at 1024x768, 1600x900 and 1920x1080 were reviewed from the
   rework branch.
 - Remaining Phase 1 debt: the 1024x768 left pane still scrolls for lower
-  sections; long preset path labels and some right-pane labels remain tight.
+  sections (expected). The long preset path and narrow labels/tabs are fixed
+  by the 2026-11-08 narrow-layout slice below.
 
 ## Phase 2 — identity and interaction states
 
@@ -155,8 +156,9 @@ Phase 4 status (2026-10-30):
   The keyboard capture uses three Tab presses through `GX_AI_INPUT` and shows
   the amber focus ring on the Default preset; 150/175% captures are also
   reviewed.
-- Remaining debt: peer-review lenses, verify 150/175% scale, and consider
-  condensing the shortcut footer further at the narrowest width.
+- Remaining debt: peer-review lenses. The 150/175% scale and narrow-footer
+  follow-up is now pinned by `gfx-editor-layout-check`; the 1024 footer keeps
+  only the state line plus one short hint.
 
 Phase 5 status (2026-10-30, re-review):
 
@@ -166,8 +168,25 @@ Phase 5 status (2026-10-30, re-review):
 - Merge gate (7.0) and release-line target (8.0) both pass; no high/medium
   open blocker.
 - Residual low-severity debt: overlay layout at 1024 and tab-strip overflow at
-  the narrow inspector.
+  the narrow inspector — closed by the 2026-11-08 narrow-layout slice below.
 - The editor is release-grade for the v0.19 **technical preview**.
+
+### Narrow-layout polish (2026-11-08)
+
+- The scene header shortens to **Pick models/lights** and the selection row to
+  **Frame** / **Free camera** when the full labels would clip; hover tooltips
+  keep the long names discoverable.
+- The preset path stacks **Browse** beneath the field when the inline row
+  would cut the filename; the default showcase path is fully visible at 1024.
+- The renderer-lab launcher wraps by measured width, including all eleven
+  Expert labs; no tab is clipped.
+- The shortcut footer is minimal below a 420 px stage (state line plus one
+  hint) and yields entirely below the existing safe-width floor. At 150/175%
+  scale the panels leave no safe stage for it, so it stays hidden.
+- `GX_UI_SCALE=<1.0..1.75>` pins the audit scale without touching the saved
+  settings; `GX_GFX_LAYOUT_TRACE=1` emits the `GFX_LAYOUT` fit row.
+- `make gfx-editor-layout-check` covers 1024x768 and 1600x900 at 100/125%
+  plus 150/175% Expert, and fails on any clipped row or settings write.
 
 ## Camera markers
 

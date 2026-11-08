@@ -57,7 +57,7 @@ is the judgment layer on top of it.
 | GUI editor (`--tools`) | three-column dock (`Editor - …`) + status bar + first-run tour popup | tour + direct manipulation + tree filter + undo/redo are covered by `gui-editor-check`; status bar reports canvas/element/selection |
 | Theme editor | `gX Tools - Theme Editor`, fits | token tree + search + compare presets + save path |
 | Theme lab / Materials lab / Shader lab | canvas galleries (no window) | readable at 1024; each pairs with an editor or stands alone |
-| GFX editor | three-column dock (`GFX …`) + menu bar + shortcut footer | the reference surface; rework Phases 1–5 complete; routes to the GFX scene; F1/Help guide covered by `gfx-editor-guide-check` |
+| GFX editor | three-column dock (`GFX …`) + menu bar + shortcut footer | the reference surface; rework Phases 1–5 complete; routes to the GFX scene; F1/Help guide covered by `gfx-editor-guide-check`; narrow rows/footer covered by `gfx-editor-layout-check` |
 | Script debugger | `Scripting - Debug` (module), fits | CLI/env-only (module-gated); console overlay draws on top |
 | Wavetable editor | `gX Tools - Wavetable Editor`, fits | slot/generate/draw/preview; fixture list; opens over any scene |
 | Textwriter editor | `gX Tools - Textwriter Editor`, fits | line list scrolls inside the panel; tag palette compact |
@@ -80,6 +80,11 @@ is the judgment layer on top of it.
 - `docs/api_reference.md`: the tools bullet now spells the opener family and
   the full CLI/`GX_TOOLS_OPEN` sets (the checker reads them; readers stop
   guessing).
+- GFX editor narrow layout (2026-11-08): the scene header/selection row
+  shortens instead of clipping, the preset path stacks its Browse button when
+  needed, and the 1024 shortcut footer is minimal. `gfx-editor-layout-check`
+  pins 1024/1600 and 100–175% scale; `GX_UI_SCALE` and `GFX_LAYOUT` are the
+  audit hooks.
 
 ## Follow-ups (not blocking)
 

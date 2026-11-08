@@ -671,6 +671,14 @@ group = "gui"
 cache = "content"
 description = "GFX editor onboarding guide gate."
 
+[gate.gfx-editor-layout]
+script = "gfx_editor_layout_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "GFX editor narrow layout and scale gate."
+
 [gate.physics-editor]
 script = "physics_editor_check.py"
 args = []

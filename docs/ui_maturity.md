@@ -53,6 +53,9 @@ active tier; the `GX_GFX_PANEL_LABS` hook is filtered by the same gate.
 site uses that accessor instead of `settings.uiLevel` directly. With
 `GX_UI_TRACE=1`, the GFX editor logs one `GFX_UI_LAB` / `GFX_UI_SECTION` row
 per surface and level (`level=`, `name=`, `min=`, `visible=`).
+`GX_UI_SCALE=1.0..1.75` pins the tool text scale in the same audit-only way
+without rewriting `settings.toolUiScale`; `GX_GFX_LAYOUT_TRACE=1` then reports
+the `GFX_LAYOUT` fit row used by the narrow-layout gate.
 
 ## Gate
 
@@ -64,6 +67,9 @@ per surface and level (`level=`, `name=`, `min=`, `visible=`).
   forced and verifies every traced row against its declared minimum, the
   complete lab set, and the Basic/Advanced/Expert section matrix.
 - The editor-host gate also pins the menu open path.
+- `gfx-editor-layout-check` pins the scene/preset/lab rows and footer fit at
+  1024x768 and 1600x900 across 100/125/150/175% scale, and fails if
+  `resources/settings.json` changes.
 
 ## Follow-up
 
