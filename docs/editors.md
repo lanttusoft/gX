@@ -20,7 +20,7 @@ round-trips presets under `resources/tools/`.
 |---|---|---|---|---|
 | Global editor host | `src/tools/editor_host.cpp` | always-summonable menu bar (`gX/File/Edit/View/<Active Editor>/Window/Help`), editor registry (GUI, theme, sky, background, physics, wavetable, textwriter, rail, GFX; GFX scene/inspector/asset/footer panels summonable, renderer labs (Models/Sky/World/FX/Lights/Render/Water/Ray/Particles/Refl/Debug) as separate panels, per-suite panel and lab masks), workspace tabs, built-in and user-saved suites (`gx_editor_<suite>.ini`, `gx_editor_suites.txt`, `gx_editor_workspace.txt`), console/quit | Alpha/WIP | `editor-host`; per-panel draw, GFX migration and layout polish pending |
 | GFX editor | `src/tools/gfx/gfx_editor.cpp` | renderer scene (models/materials/lights/camera/sky/weather/decals/water/particles/SSAO/SSR/quality) + blockout/texture/export/bake panels | Beta | full audit matrix; UI rework open (reference surface) |
-| GUI editor | `src/tools/editor/editor.cpp` | markup templates on the GUIPLAYGROUND canvas | Alpha/WIP | `ui-audit` open path; hard to use — list/property workflow, no direct-manipulation pass or tutorial |
+| GUI editor | `src/tools/editor/editor.cpp` | markup templates on the GUIPLAYGROUND canvas | Alpha/WIP | `gui-editor` gate; canvas click/drag/resize, tree filter, undo/redo, first-run tour + F1 guide, shipped-markup guard |
 | Theme editor | `src/tools/theme/theme_editor.cpp` | GUI theme tokens (live) | Alpha/WIP | `ui-audit` open path; token-list surface, manual workflow |
 | ThemLab / MaterialsLab / ShaderLab | GUI templates | design previews (no data path) | Alpha/WIP | preview only, no data path |
 | Script debugger + console | `gx_shell` module panels | scripting shell (CLI/`GX_TOOLS_OPEN` only — module-gated, so no EXTRAS card) | Alpha/WIP | opt-in module build; CLI-only panel |
@@ -30,6 +30,27 @@ round-trips presets under `resources/tools/`.
 | Camera rail editor | `src/tools/tour/rail_editor.cpp` (**gx_shell module**) | tour camera keyframes: grabs, t/pos/target/fov/bezier, play, JSON presets | Alpha/WIP | no shipped gate; module-side, no undo/tutorial |
 | Background editor | `src/tools/background/background_editor.cpp` (+ shared `bg_panel.cpp`) | background palette/decomposer (shared body), preset files under `resources/tools/background`, the Background polisher entries, reaction pulses | Alpha/WIP | `background-editor`; tuning panel only, authoring loop incomplete, no undo |
 | Sky editor | `src/tools/sky/sky_editor.cpp` | sky look parameters + the **ephemeris clock** (scrub/play), preset files, helpers overlay | Alpha/WIP | `sky-editor`; parameter panel, no undo |
+
+### GUI editor usability (2026-11-08)
+
+The GUI editor's existing direct-manipulation workflow is now explicitly
+covered instead of described as missing: click an element on the canvas to
+select it, drag to move with the 8px snap/grid/guides, use the eight resize
+handles, or nudge with the arrow keys. The left tree has a filter and
+add/duplicate/remove; the right properties panel has plain-language tooltips;
+Ctrl+Z/Ctrl+Y cover value and structural edits, Ctrl+D duplicates, Ctrl+S
+saves, Esc deselects, and F1 opens the guide. First run also shows the
+five-step tour.
+
+Saves honor the same harness guard as the other editors: a gate-launched run
+with `GX_NO_SETTINGS_SAVE=1` refuses to write shipped markup. The headless hooks
+(`GX_TOOLS_SELECT`, `GX_TOOLS_FILTER`, `GX_TOOLS_SOLO`, `GX_TOOLS_ADD`,
+`GX_TOOLS_REMOVE`, `GX_TOOLS_UNDO`, `GX_TOOLS_REDO`, `GX_TOOLS_SAVE`,
+`GX_TOUR=force`) make this testable without a human:
+
+```bash
+make gui-editor-check
+```
 
 Tier separates maturity from coverage:
 

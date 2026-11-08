@@ -251,8 +251,8 @@ editor panels only; they are not in the game render loop. The existing
 The post-change Release measured **3,914,523 B** payload (**279,781 B**
 headroom) and **2,701,344 B** BSS (3,656 B headroom). The later title
 newcomer polish added 1,344 B; the logging-hygiene and console GL
-fixes added 2,560 B in total, leaving **3,918,427 B** payload
-(**275,877 B** headroom). Caps, baseline and capabilities are unchanged; the title slice
+fixes added 2,560 B and the GUI-editor usability pass added 256 B,
+leaving **3,918,683 B** payload (**275,621 B** headroom). Caps, baseline and capabilities are unchanged; the title slice
 changed labels/help only, with no renderer or resource hash change. Validation:
 `make release`, `make lean`, `make payload-audit`, `make check-fast`,
 `make check`, the Release tool-mode smoke for all twelve `GX_TOOLS_OPEN`

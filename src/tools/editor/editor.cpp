@@ -763,6 +763,15 @@ static gX_I0 tools_snapshot_canvas(gX_GUI_Canvas *canvas, gX_Markup *markup) {
 
 extern "C" gX_I32 gX_Tools_Editor_SaveSnapshot(gX_I0) {
     if (!s_savePath[0]) return 1;
+    //ai: the GUI-editor save path also honors the harness guard. Without this
+    //   a gate-launched editor could rewrite the shipped markup it verifies.
+    if (getenv("GX_NO_SETTINGS_SAVE")
+        && strncmp((const char *)s_savePath, "resources/", 10) == 0) {
+        gX_TraceLog(gX_LOG_ERROR,
+            "Tools: refusing to overwrite shipped GUI markup under the harness guard: %s",
+            s_savePath);
+        return 1;
+    }
     gX_GUI_Canvas *canvas = gX_GUI_Canvas_FromIndex(s_targetCanvas);
     if (!canvas) return 1;
     gX_Markup markup;
@@ -1491,9 +1500,14 @@ extern "C" gX_I0 gX_Tools_Editor_Open(gX_I32 canvasIndex, const gX_I8 *markupPat
         if (c0) gX_TraceLog(gX_LOG_INFO, "Tools: canvas %i holds %u elements after open hooks", s_targetCanvas, c0->elements.amount);
     }
     //opencode: GX_TOUR=0 suppresses auto-tour (clean headless captures).
+    //ai: GX_TOUR=force makes onboarding coverage independent of saved state.
     {
         const char *tEnv = getenv("GX_TOUR");
-        if ((!tEnv || tEnv[0] != '0') && !settings.edTourSeen) s_tourStep = 0;
+        if (tEnv && strcmp(tEnv, "force") == 0) s_tourStep = 0;
+        else if ((!tEnv || tEnv[0] != '0') && !settings.edTourSeen) s_tourStep = 0;
+        if (s_tourStep >= 0) {
+            gX_TraceLog(gX_LOG_INFO, "Tools: editor tour opened step=%i", s_tourStep);
+        }
     }
 }
 
@@ -1587,7 +1601,11 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
                     }
                 }
             }
-            if (ImGui::IsKeyPressed(ImGuiKey_F1)) s_helpOpen = !s_helpOpen;
+            if (ImGui::IsKeyPressed(ImGuiKey_F1)) {
+                s_helpOpen = !s_helpOpen;
+                gX_TraceLog(gX_LOG_INFO, "Tools: editor guide %s",
+                    s_helpOpen ? "opened" : "closed");
+            }
         }
     }
 

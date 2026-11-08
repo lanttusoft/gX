@@ -655,6 +655,14 @@ group = "gui"
 cache = "content"
 description = "ui-audit audit gate."
 
+[gate.gui-editor]
+script = "gui_editor_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "GUI editor usability gate."
+
 [gate.physics-editor]
 script = "physics_editor_check.py"
 args = []

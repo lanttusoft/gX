@@ -54,7 +54,7 @@ is the judgment layer on top of it.
 
 | Tool | Layout at the lean floor | Notes |
 |---|---|---|
-| GUI editor (`--tools`) | three-column dock (`Editor - …`) + status bar + first-run tour popup | the tour popup is good onboarding; status bar reports canvas/element/selection |
+| GUI editor (`--tools`) | three-column dock (`Editor - …`) + status bar + first-run tour popup | tour + direct manipulation + tree filter + undo/redo are covered by `gui-editor-check`; status bar reports canvas/element/selection |
 | Theme editor | `gX Tools - Theme Editor`, fits | token tree + search + compare presets + save path |
 | Theme lab / Materials lab / Shader lab | canvas galleries (no window) | readable at 1024; each pairs with an editor or stands alone |
 | GFX editor | three-column dock (`GFX …`) + menu bar + shortcut footer | the reference surface; routes to the GFX scene |

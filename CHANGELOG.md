@@ -9,6 +9,11 @@ SemVer.
 Release-Class: minor
 
 ### Added
+- **GUI editor usability gate and guard**: the existing canvas
+  click/drag/resize, tree filter, undo/redo, shortcut and first-run tour
+  workflow is now documented and covered by `make gui-editor-check`.
+  The editor save path refuses shipped `resources/` markup under the
+  harness guard, and `GX_TOUR=force` makes onboarding testable.
 - **GFX audit close-out**: GX-I024 functional findings are closed and the
   coverage-only residuals are documented in the November follow-up report;
   no engine, gate, threshold or budget behavior changed.
@@ -186,7 +191,7 @@ Release-Class: minor
   earlier shader-compiler/serializer recovery remains in place. The initial
   recovery measured 17,728 B. A 2026-11-07 pass moved the six vendored Dear
   ImGui tool-UI sources to the same Release `-Os` tier, recovering 278,144 B;
-  the current payload is 3,918,427 B (275,877 B headroom) with unchanged BSS,
+  the current payload is 3,918,683 B (275,621 B headroom) with unchanged BSS,
   caps, capabilities, visuals and Debug code generation.
 
 ### Fixed

@@ -316,6 +316,8 @@ check-fast: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gfx_devcube_check.py
 	@echo "== [gX fast] editor host toolbar =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/editor_host_check.py
+	@echo "== [gX fast] GUI editor usability =="
+	python3 scripts/gui_editor_check.py
 	@echo "== [gX fast] cursor state machine =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/cursor_check.py
 	@echo "== [gX fast] OK =="
@@ -534,6 +536,8 @@ cursor-check: all
 editor-host-check: all
 	@echo "== [gX CI] editor host toolbar =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/editor_host_check.py
+	@echo "== [gX CI] GUI editor usability =="
+	python3 scripts/gui_editor_check.py
 
 gui-layout-check: all
 	@echo "== [gX CI] GUI layout pass (text fits its box) =="
@@ -1052,6 +1056,13 @@ colour-independence-check: all
 ui-audit: all
 	@echo "== [gX CI] UI audit (wiring + conventions) =="
 	python3 scripts/ui_audit.py
+
+#ai: GUI editor usability — open/save, first-run tour, structural edits,
+#   undo and the shipped-markup harness guard.
+.PHONY: gui-editor-check
+gui-editor-check: all
+	@echo "== [gX CI] GUI editor usability =="
+	python3 scripts/gui_editor_check.py
 
 #ai: physics editor — both open paths render and exit clean, and both route
 #   to the physics sandbox scene; the tuning round trip + live apply pins run
