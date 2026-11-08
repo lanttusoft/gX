@@ -21,7 +21,7 @@ round-trips presets under `resources/tools/`.
 |---|---|---|---|---|
 | Global editor host | `src/tools/editor_host.cpp` | always-summonable menu bar (`gX/File/Edit/View/<Active Editor>/Window/Help`), editor registry (GUI, theme, sky, background, physics, wavetable, textwriter, rail, GFX; GFX scene/inspector/asset/footer panels summonable, renderer labs (Models/Sky/World/FX/Lights/Render/Water/Ray/Particles/Refl/Debug) as separate panels, per-suite panel and lab masks), workspace tabs, built-in and user-saved suites (`gx_editor_<suite>.ini`, `gx_editor_suites.txt`, `gx_editor_workspace.txt`), console/quit | Alpha/WIP | `editor-host`; per-panel draw, GFX migration and layout polish pending |
 | GFX editor | `src/tools/gfx/gfx_editor.cpp` | renderer scene (models/materials/lights/camera/sky/weather/decals/water/particles/SSAO/SSR/quality) + blockout/texture/export/bake panels | Beta | full audit matrix; rework Phases 1–5 complete; F1/Help guide; `gfx-editor-layout` covers 1024/1600 and 100–175% scale |
-| GUI editor | `src/tools/editor/editor.cpp` | markup templates on the GUIPLAYGROUND canvas | Alpha/WIP | `gui-editor` gate; canvas click/drag/resize, tree filter, undo/redo, first-run tour + F1 guide, shipped-markup guard |
+| GUI editor | `src/tools/editor/editor.cpp` | markup templates on the GUIPLAYGROUND canvas | Alpha/WIP | `gui-editor` gate; canvas click/drag/resize, tree filter, undo/redo, first-run tour + F1 guide, shipped-markup guard, deferred `--tools` markup open and readable tree labels |
 | Theme editor | `src/tools/theme/theme_editor.cpp` | GUI theme tokens (live) | Alpha/WIP | `ui-audit` open path; token-list surface, manual workflow |
 | ThemLab / MaterialsLab / ShaderLab | GUI templates | design previews (no data path) | Alpha/WIP | preview only, no data path |
 | Script debugger + console | `gx_shell` module panels | scripting shell (CLI/`GX_TOOLS_OPEN` only — module-gated, so no EXTRAS card) | Alpha/WIP | opt-in module build; CLI-only panel |
@@ -81,6 +81,21 @@ with `GX_NO_SETTINGS_SAVE=1` refuses to write shipped markup. The headless hooks
 ```bash
 make gui-editor-check
 ```
+
+### v0.42.0 dogfooding fixes (2026-11-08)
+
+The published-beta dogfooding pass found three editor route defects, fixed here:
+`--tools <markup>` now defers its first open until the markup canvas is built
+and reapplies the template once if the clean playground default build races it
+(the shipped demo shows `bg`, `hello`, `stripe` and `gradient` instead of a
+blank canvas with `UNKNOWN (hidden)` rows), the element tree falls back to
+authored text and the generic `element` type instead of bare `UNKNOWN`, and
+`--theme-editor <path>` now loads ImGui before opening so its panel is visible
+like the `GX_TOOLS_OPEN=theme` runtime route. `gui-editor-check` pins the
+deferred open and named demo rows; `editor-host-check` pins the CLI theme
+panel. The GFX guide and Y2K OSD/pause-layout fixes are recorded in the
+[rework](gfx_editor_rework.md#narrow-layout-polish-2026-11-08) and
+[console](console_240p.md#presets) docs.
 
 Tier separates maturity from coverage:
 

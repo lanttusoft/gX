@@ -251,8 +251,9 @@ by the user; do not change display modes automatically.
   black screen with a dim drifting gX mark; the first input is swallowed so
   it wakes the display without activating a hidden control.
   `GX_CONSOLE_IDLE_SECONDS` shortens the timeout for probes. Cartridge boot
-  shows a short boot banner (gX-240 / CARTRIDGE 01 Y2K CGI) that fades after
-  seven seconds; `GX_T_CARTRIDGE_OSD=0` disables that scene-rendered banner.
+  shows a short window-scaled boot banner (gX-240 / CARTRIDGE 01 Y2K CGI;
+  460x76 at 1024x768) that fades after seven seconds;
+  `GX_T_CARTRIDGE_OSD=0` disables that native-overlay banner.
 - <!-- //ai: GX-I010 live status slice; timing controls remain separate work. -->
   **Live console OSD** — a native-resolution status chip shows actual scene
   render dimensions (and, for SSAA, the 320x240 output), Soft/Sharp/Native or
@@ -297,6 +298,8 @@ by the user; do not change display modes automatically.
   the 320x240 scene target. Save-slot descriptions are labels, not dead focus
   stops; LOAD has its own non-overlapping control. Save-browser BACK/East
   returns to the console shell. Native editor/tool panels are unchanged.
+  The playback hint uses a taller chip and a smaller two-line font, so both
+  lines clear the Step/FF row at 640x480, 1024x768 and 1280x720.
 - **Save states** — three slots in `save/console_slot_N.json` hold the
   cartridge id, video profile and orbit camera. While a cartridge runs, **F5**
   saves slot 1 and **F8** loads it; the shell's Save states view lists the

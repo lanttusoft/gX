@@ -52,6 +52,28 @@ def run(tag, extra, frames=90):
     return log
 
 
+def run_tools(tag):
+    environment = dict(os.environ)
+    environment.update({
+        "DISPLAY": audit.display(),
+        "GX_AUDIT_WINDOW": "hidden",
+        "GX_NO_SETTINGS_SAVE": "1",
+        "GX_SKIP_TESTS": "1",
+        "GX_FRAMES": "140",
+        "GX_TOUR": "0",
+        "GX_SYNTH_MUTE": "1",
+    })
+    environment.pop("GX_TOOLS_OPEN", None)
+    result = subprocess.run(
+        [str(BIN), "--tools", "resources/tools/tools_demo.json"],
+        cwd=str(ROOT), env=environment, text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT, timeout=120)
+    log = audit.strip_ansi(result.stdout or "")
+    require(result.returncode == 0,
+        f"{tag}: editor exited {result.returncode}: {log[-500:]}")
+    return log
+
+
 def hook_counts(log, tag):
     match = HOOK_RE.search(log)
     require(match is not None, f"{tag}: deferred-hook trace missing")
@@ -85,6 +107,20 @@ def main():
         require(save_path.is_file(), "editor snapshot file missing")
         snapshot = json.loads(save_path.read_text(encoding="utf-8"))
         require(snapshot.get("elements"), "editor snapshot has no elements")
+
+        #ai: the shipped --tools route must open after the markup canvas is
+        #   built and expose the named demo elements (not UNKNOWN rows).
+        tree = re.search(
+            r"GUI_EDITOR_TREE: canvas=(\d+) elements=(\d+) named=(\d+) "
+            r"labeled=(\d+)", log)
+        require(tree is not None and int(tree.group(4)) > 0,
+            "title editor tree has no readable names or text labels")
+
+        tools = run_tools("tools-markup")
+        require("GUI editor deferred open applied (canvas 0, 4 elements)" in tools,
+            "deferred --tools open did not see the markup canvas")
+        require("GUI_EDITOR_TREE: canvas=0 elements=4 named=4 labeled=4" in tools,
+            "GUI editor tree did not expose the four named demo elements")
 
         tour = run("tour", {"GX_TOUR": "force"})
         require("Tools: editor tour opened step=0" in tour,

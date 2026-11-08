@@ -708,20 +708,34 @@ static gX_I1 cartridge_osd(gX_RendererGFX *gfx, gX_RenderTexture *overlayTgt) {
     gX_F32 alpha = age < 4.0f ? 1.0f : 1.0f - (age - 4.0f) / 3.0f;
     if (alpha < 0.0f) alpha = 0.0f;
     gX_U8 a = (gX_U8)(255.0f * alpha);
+    //ai: the boot banner draws into the native overlay target, not the 320x240
+    //   scene, so scale it with the window instead of leaving a tiny corner
+    //   label; keep a readable floor on small windows.
+    gX_F32 scale = fminf((gX_F32)maindata.screenWidth / 1024.0f,
+        (gX_F32)maindata.screenHeight / 768.0f);
+    if (scale < 0.75f) scale = 0.75f;
+    gX_F32 x = 16.0f * scale;
+    gX_F32 y = 16.0f * scale;
+    gX_F32 w = 460.0f * scale;
+    gX_F32 h = 76.0f * scale;
     if (!s_cartridgeOsdLogged) {
         s_cartridgeOsdLogged = 1;
-        gX_TraceLog(gX_LOG_NOTICE, "CARTRIDGE_OSD: banner");
+        gX_TraceLog(gX_LOG_NOTICE,
+            "CARTRIDGE_OSD: banner scale=%.2f box=%.0fx%.0f",
+            scale, w, h);
     }
     gX_Drawing_BeginTexture(*overlayTgt);
     gX_Camera2D cam2d = {{0,0}, {0,0}, 0.0f, 1.0f};
     gX_Drawing_Begin2D(cam2d);
-    gX_Rectangle_Draw((gX_Rectangle){6, 6, 230, 38},
+    gX_Rectangle_Draw((gX_Rectangle){x, y, w, h},
         (gX_Color){0, 0, 0, (gX_U8)(150.0f * alpha)});
     gX_Font font = gX_Font_GetDefault();
-    gX_RawString_Draw("gX-240", font, (gX_F32v2){10, 10}, (gX_F32v2){0,0},
-        0.0f, 12.0f, 1.0f, (gX_Color){90, 220, 240, a});
-    gX_RawString_Draw("CARTRIDGE 01  Y2K CGI", font, (gX_F32v2){10, 27},
-        (gX_F32v2){0,0}, 0.0f, 10.0f, 1.0f, (gX_Color){235, 240, 255, a});
+    gX_RawString_Draw("gX-240", font,
+        (gX_F32v2){x + 14.0f * scale, y + 12.0f * scale}, (gX_F32v2){0,0},
+        0.0f, 24.0f * scale, scale, (gX_Color){90, 220, 240, a});
+    gX_RawString_Draw("CARTRIDGE 01  Y2K CGI", font,
+        (gX_F32v2){x + 14.0f * scale, y + 42.0f * scale}, (gX_F32v2){0,0},
+        0.0f, 18.0f * scale, scale, (gX_Color){235, 240, 255, a});
     return 1;
 }
 

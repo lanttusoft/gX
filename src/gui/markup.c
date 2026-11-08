@@ -438,6 +438,12 @@ static gX_I0 gX_GUI_Template_MarkupDispatch(gX_I32 canvasIndex) {
     if (gX_GUI_Markup_Load(&markup, gX_markupTemplatePath) != 0) return;
     gX_GUI_Markup_Build(&markup, canvas);
     gX_GUI_Markup_Clear(&markup);
+    gX_GUI_Element *rows = (gX_GUI_Element *)canvas->elements.data;
+    gX_TraceLog(gX_LOG_INFO,
+        "MARKUP: build canvas=%d elements=%u first=%s",
+        canvasIndex, canvas->elements.amount,
+        (canvas->elements.amount > 0 && rows[0].name[0])
+            ? (const char *)rows[0].name : "(none)");
 }
 
 gX_I0 gX_GUI_Template_RegisterMarkup(const gX_I8 *path) {

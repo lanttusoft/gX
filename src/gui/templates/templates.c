@@ -512,7 +512,7 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
     //   Aero glass panel (the bare panel can composite light scene pixels).
     gX_GUI_Builder_Element_Begin(&b);
         gX_GUI_Builder_RectGrid(&b, 2.65f, 6.30f, 2.7f, 0.55f);
-        if (ConsoleMenu) console_pause_rect(&b, 24, 482, 512, 48);
+        if (ConsoleMenu) console_pause_rect(&b, 24, 486, 512, 56);
         gX_GUI_Builder_Color(&b, 8, 10, 18, 250);
         b.currentElement->cornerRadius = gui.style.cornerRadius;
     gX_GUI_Builder_Element_End(&b);
@@ -521,7 +521,7 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
         //   pass); widen the box and keep a shrink guard for themes with
         //   wider type.
         gX_GUI_Builder_RectGrid(&b, 2.8f, 6.35f, 2.4f, 0.4f);
-        if (ConsoleMenu) console_pause_rect(&b, 36, 488, 488, 36);
+        if (ConsoleMenu) console_pause_rect(&b, 36, 494, 488, 44);
         gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
         b.currentElement->stateRendering.RECT_NO_DRAW = true;
         gX_GUI_Builder_Text_Begin(&b);
@@ -532,7 +532,9 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
             if (b.curText) b.curText->autoShrink = true;
             if (ConsoleMenu)
             {
-                gX_GUI_Builder_Text_FontSize(&b, 16.0f * ConsoleTextScale);
+                //ai: two hint lines must clear the playback row and the
+                //   panel bottom; 14px keeps both lines inside the chip.
+                gX_GUI_Builder_Text_FontSize(&b, 14.0f * ConsoleTextScale);
                 gX_GUI_Builder_Text_CenterY(&b);
             }
         gX_GUI_Builder_Text_End(&b);

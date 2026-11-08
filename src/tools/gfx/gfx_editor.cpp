@@ -473,17 +473,51 @@ typedef struct GfxLayoutMetrics {
 static GfxLayoutMetrics s_layoutMetrics;
 //ai: F1/Help onboarding guide; GX_GFX_GUIDE=force opens it for the gate.
 static gX_I1 s_guideOpen = 0;
+static gX_I1 s_guideTraced = 0;
 
 static gX_I0 gfx_guide_set(gX_I1 open) {
     if (s_guideOpen == open) return;
     s_guideOpen = open;
+    if (open) s_guideTraced = 0;
     gX_TraceLog(gX_LOG_INFO, "GFX_EDITOR: guide %s",
         open ? "opened" : "closed");
 }
 
 static gX_I0 gfx_editor_guide(void) {
     if (!s_guideOpen) return;
-    ImGui::SetNextWindowSize(ImVec2(560, 430), ImGuiCond_FirstUseEver);
+    gX_Rectangle stage = gX_GUI_ViewportBox_Get();
+    if (!gui.viewportDocked) {
+        stage.x = s_scenePanelOpen ? s_footerSceneW : 0.0f;
+        stage.width = (gX_F32)maindata.windowWidth - stage.x
+            - (s_inspectorPanelOpen ? s_footerInspectorW : 0.0f);
+        stage.y = 0.0f;
+        stage.height = (gX_F32)maindata.windowHeight;
+    }
+    gX_F32 uiScale = ImGui::GetStyle().FontScaleMain;
+    if (uiScale < 1.0f) uiScale = 1.0f;
+    gX_F32 maxW = stage.width - 24.0f;
+    gX_F32 maxH = stage.height - 24.0f;
+    if (maxW < 320.0f) maxW = 320.0f;
+    if (maxH < 300.0f) maxH = 300.0f;
+    gX_F32 width = 560.0f * uiScale;
+    gX_F32 height = 430.0f * uiScale;
+    if (width > maxW) width = maxW;
+    if (height > maxH) height = maxH;
+    if (width < 280.0f) width = 280.0f;
+    if (height < 280.0f) height = 280.0f;
+    gX_F32 centerX = stage.x + stage.width * 0.5f;
+    gX_F32 centerY = stage.y + stage.height * 0.5f;
+    ImGui::SetNextWindowPos(ImVec2(centerX, centerY), ImGuiCond_Always,
+        ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_Always);
+    if (!s_guideTraced) {
+        s_guideTraced = 1;
+        gX_TraceLog(gX_LOG_INFO,
+            "GFX_EDITOR: guide bounds=%.0fx%.0f at %.0f,%.0f "
+            "stage=%.0fx%.0f at %.0f,%.0f",
+            width, height, centerX - width * 0.5f, centerY - height * 0.5f,
+            stage.width, stage.height, stage.x, stage.y);
+    }
     bool open = true;
     if (ImGui::Begin("GFX editor guide", &open)) {
         ImGui::TextWrapped("1. Stage: middle-drag orbits, Shift+middle-drag pans, wheel zooms. F frames the selection; F6 hides both side panels.");
@@ -12369,7 +12403,6 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     if (input.keyboard.keys[gX_KEY_F6].state.PRESSED)
         gfx_focus_viewport_set(!s_focusViewport);
     gfx_menu_bar(gfx);
-    gfx_editor_guide();
 #ifndef NDEBUG
     gX_Tools_Gfx_BugReport_Test();
 #endif
@@ -12591,6 +12624,7 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     gfx_editor_camera_markers_draw(gfx);
     if (s_shortcutFooterOpen) gfx_editor_shortcut_footer(gfx, 0);
     gfx_asset_browser_window(gfx);
+    gfx_editor_guide();
     gfx_editor_layout_trace(scrW, scrH, sceneW, inspectorW);
     if (gfx) gfx_snapshot_headless_smoke(gfx);
     gfx_editor_palette_pop(palette);

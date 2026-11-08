@@ -101,6 +101,9 @@ static gX_I32 s_undoHead = 0, s_undoCount = 0;
 static gX_U8 *s_redoStack[GX_TOOLS_THEME_UNDO_MAX] = { 0 };
 static gX_I32 s_redoHead = 0, s_redoCount = 0;
 static gX_I1 s_gestureOn = 0;
+//ai: panel-visible trace — the CLI and runtime open paths must both draw the
+//   editor, not just set the runtime flag.
+static gX_I1 s_panelTraced = 0;
 
 static gX_I0 theme_snap_capture(gX_U8 *dst) {
     gX_I32 n = gX_GUI_Style_TokenCount();
@@ -488,6 +491,10 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
         return;
     }
     if (!thOpen) *gX_Tools_RuntimeThemeFlag() = 0;
+    if (!s_panelTraced) {
+        s_panelTraced = 1;
+        gX_TraceLog(gX_LOG_INFO, "THEME_EDITOR: panel=1");
+    }
     ImGui::Text("Theme: %s", s_themePath[0] ? s_themePath : "(none)");
     ImGui::Text("Tokens: %i%s", gX_GUI_Style_TokenCount(),
         s_edited ? " (edited)" : "");

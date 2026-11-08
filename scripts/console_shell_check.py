@@ -33,6 +33,8 @@ CARTRIDGE_RE = re.compile(
 SCENE_RE = re.compile(
     r"SHOWCASE-Y2K: models=(\d+) lights=(\d+) cartridge=(\d+) textured=(\d+)")
 MSAA_RE = re.compile(r"MSAA FBO created: (\d+)x(\d+) msaa=(\d+)")
+OSD_BANNER_RE = re.compile(
+    r"CARTRIDGE_OSD: banner scale=([\d.]+) box=(\d+)x(\d+)")
 
 
 def require(condition, message):
@@ -320,6 +322,16 @@ def main():
                         script, 360, 340, out, scene=scene_flag, extra=extra,
                         width=width, height=height)
                     rows = assert_layout(log, width, height, focus, canvas)
+                    if view == "pause":
+                        #ai: the two-line playback hint must fit under the
+                        #   Step/FF row instead of clipping at its top edge.
+                        hints = [row for row in rows if row["visible"]
+                                 and "F6 STEP" in row["text"]]
+                        require(len(hints) == 1,
+                            f"{width}x{height}: pause hint row missing")
+                        hint = hints[0]
+                        require(hint["measure"][1] <= hint["rect"][3] + 1,
+                            f"{width}x{height}: pause hint text exceeds its box")
                     assert_focus_walk(log, rows, directions, canvas)
             back_script = interaction.click_actions((1.0, saves_button),
                 (2.5, target(elements(populated_log), "BACK")))
@@ -373,6 +385,12 @@ def main():
             "cartridge did not cold boot the GFX renderer")
         require("CARTRIDGE_OSD: banner" in boot_log,
             "cartridge boot OSD missing")
+        banner = OSD_BANNER_RE.findall(boot_log)
+        require(banner, "cartridge boot OSD size trace missing")
+        scale, box_w, box_h = banner[-1]
+        require(float(scale) >= 0.75 and int(box_w) >= 300
+            and int(box_h) >= 50,
+            f"cartridge boot OSD is too small: {banner[-1]}")
         cartridge = CARTRIDGE_RE.findall(boot_log)
         require(cartridge and cartridge[-1] == ("1", "6", "3"),
             f"cartridge profile: {cartridge}")

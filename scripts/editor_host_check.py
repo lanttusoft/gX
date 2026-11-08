@@ -333,7 +333,7 @@ def check_console_resize():
     return len(cold)
 
 
-def run(tag, scene, extra, frames=30, shot=20):
+def run(tag, scene, extra, frames=30, shot=20, extra_args=()):
     directory = OUT / tag
     directory.mkdir(parents=True, exist_ok=True)
     overrides = {
@@ -345,7 +345,7 @@ def run(tag, scene, extra, frames=30, shot=20):
     environment = audit.scene_env(overrides, clean=True)
     result = audit.run_scene(scene, environment, width=WIDTH, height=HEIGHT,
         fps=None, frames=frames, shot_frame=shot, screenshot_dir=directory,
-        timeout=150, check=False)
+        timeout=150, check=False, extra_args=extra_args)
     log = audit.strip_ansi(result.stdout or "")
     image = None
     shot_file = audit.newest_shot(directory)
@@ -377,6 +377,14 @@ def main():
         if delta < 5.0:
             raise RuntimeError(
                 f"toolbar bar not visible in the title (top delta {delta:.2f})")
+
+        #ai: the CLI theme-editor route must draw its panel, not only set the
+        #   runtime flag (the runtime route is covered by ui-audit captures).
+        theme_code, theme_log, _ = run("theme-cli", "--theme-editor", {},
+            frames=90, shot=70,
+            extra_args=("resources/style/theme_blueprint.json",))
+        if theme_code != 0 or "THEME_EDITOR: panel=1" not in theme_log:
+            raise RuntimeError("CLI theme editor did not draw its panel")
 
         toggle_code, toggle_log, _ = run("toggle", "--title", {
             "GX_AI_INPUT": "1.0 key 298;2.0 key 298",

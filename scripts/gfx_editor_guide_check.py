@@ -7,6 +7,7 @@
 #   the editor must still shut down cleanly on the GFX stage. Display hidden.
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 
@@ -15,6 +16,9 @@ import audit_common as audit
 
 ROOT = Path(__file__).resolve().parents[1]
 BIN = ROOT / "build" / "gX_build"
+GUIDE_RE = re.compile(
+    r"GFX_EDITOR: guide bounds=(\d+)x(\d+) at (\d+),(\d+) "
+    r"stage=(\d+)x(\d+) at (\d+),(\d+)")
 
 
 def main():
@@ -52,8 +56,27 @@ def main():
         print("GFX_EDITOR_GUIDE_CHECK: FAIL — editor guide did not open",
               file=sys.stderr)
         return 1
-    print("GFX_EDITOR_GUIDE_CHECK: PASS editor opens on the GFX stage and "
-          "the F1/Help guide opens")
+    matches = GUIDE_RE.findall(log)
+    if not matches:
+        print("GFX_EDITOR_GUIDE_CHECK: FAIL — guide bounds trace missing",
+              file=sys.stderr)
+        return 1
+    width, height, x, y, stage_w, stage_h, stage_x, stage_y = (
+        int(value) for value in matches[-1])
+    if width <= 0 or height <= 0:
+        print("GFX_EDITOR_GUIDE_CHECK: FAIL — guide has no area",
+              file=sys.stderr)
+        return 1
+    if (x < stage_x - 1 or y < stage_y - 1
+            or x + width > stage_x + stage_w + 1
+            or y + height > stage_y + stage_h + 1):
+        print("GFX_EDITOR_GUIDE_CHECK: FAIL — guide is not inside the free "
+              f"stage (guide {x},{y} {width}x{height}; "
+              f"stage {stage_x},{stage_y} {stage_w}x{stage_h})",
+              file=sys.stderr)
+        return 1
+    print("GFX_EDITOR_GUIDE_CHECK: PASS editor opens on the GFX stage, the "
+          "F1/Help guide opens and fits inside the free stage")
     return 0
 
 

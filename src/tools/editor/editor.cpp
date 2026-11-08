@@ -153,6 +153,10 @@ static gX_I1 s_overlayOn = 1;
 //   the siblings' DRAW flags; restored on toggle-off, selection/canvas
 //   change (re-stashed), and editor close.
 static gX_I1 s_soloOn = 0;
+//ai: deferred-open trace pin — the markup route must expose named elements
+//   to the tree, not placeholder UNKNOWN rows.
+static gX_I1 s_treeTraced = 0;
+static gX_I1 s_editorOpened = 0;
 static gX_I1 *s_soloStash = 0;
 static gX_U32 s_soloAmount = 0;
 static gX_I32 s_soloSel = -2;
@@ -1020,12 +1024,28 @@ static gX_I0 tools_panel_tree(gX_GUI_Canvas *canvas) {
         }
         const gX_I8 *ts = gX_GUI_Element_Type_String((gX_I32)el->type);
         gX_I8 label[160];
+        gX_I8 fallbackName[120] = {0};
+        //ai: native template rows often have no authored name. Use the first
+        //   text line so the tree is scannable, and never print bare UNKNOWN.
+        const gX_I8 *displayName = el->name[0] ? el->name : NULL;
+        if (!displayName && el->texts.amount > 0 && el->texts.data) {
+            const gX_GUI_Element_Text *text =
+                (const gX_GUI_Element_Text *)el->texts.data;
+            if (text->text[0]) {
+                snprintf((char *)fallbackName, sizeof(fallbackName), "\"%s\"",
+                    (const char *)text->text);
+                displayName = fallbackName;
+            }
+        }
+        if (!displayName) displayName = "(unnamed)";
+        const gX_I8 *typeLabel = (ts && strcmp((const char *)ts, "UNKNOWN") != 0)
+            ? ts : (const gX_I8 *)"element";
+        gX_U32 rowId = el->id ? el->id : (gX_U32)i;
         //opencode: dock hardening — elide the name to the row width (slim
         //   dock clipped mid-word); id/type stay, full label on tooltip.
         {
-            const gX_I8 *nm = el->name[0] ? el->name : (const gX_I8 *)"(unnamed)";
             gX_I8 nmShow[120];
-            strncpy(nmShow, nm, sizeof(nmShow) - 1);
+            strncpy(nmShow, displayName, sizeof(nmShow) - 1);
             nmShow[sizeof(nmShow) - 1] = '\0';
             gX_F32 avail = ImGui::GetContentRegionAvail().x - 8.0f;
             gX_I32 nmLen = (gX_I32)strlen(nmShow);
@@ -1034,22 +1054,22 @@ static gX_I0 tools_panel_tree(gX_GUI_Canvas *canvas) {
             //   show why their marker floats over empty canvas.
             const gX_I8 *hid = (el->stateRendering.RECT_NO_DRAW || (el->color.a == 0))
                 ? (const gX_I8 *)" (hidden)" : (const gX_I8 *)"";
-            snprintf(label, sizeof(label), "[%u] %s %s%s##el%u", el->id,
-                nmShow, ts ? ts : "?", hid, i);
+            snprintf(label, sizeof(label), "[%u] %s %s%s##el%u", rowId,
+                nmShow, typeLabel, hid, i);
             while ((nmLen > 4) && (avail > 40.0f) && (ImGui::CalcTextSize(label).x > avail)) {
                 nmLen--;
                 nmShow[nmLen] = '\0';
                 cut = 1;
-                snprintf(label, sizeof(label), "[%u] %s %s%s##el%u", el->id,
-                    nmShow, ts ? ts : "?", hid, i);
+                snprintf(label, sizeof(label), "[%u] %s %s%s##el%u", rowId,
+                    nmShow, typeLabel, hid, i);
             }
             if (cut && (nmLen > 3)) {
                 nmShow[nmLen - 3] = '.';
                 nmShow[nmLen - 2] = '.';
                 nmShow[nmLen - 1] = '.';
                 nmShow[nmLen] = '\0';
-                snprintf(label, sizeof(label), "[%u] %s %s%s##el%u", el->id,
-                    nmShow, ts ? ts : "?", hid, i);
+                snprintf(label, sizeof(label), "[%u] %s %s%s##el%u", rowId,
+                    nmShow, typeLabel, hid, i);
             }
         }
         //opencode: visibility eye-toggle — same row, undoable, so hiding
@@ -1110,7 +1130,7 @@ static gX_I0 tools_panel_tree(gX_GUI_Canvas *canvas) {
         ImGui::PopStyleColor();
         //opencode: v0.6.9 — full label on hover (slim dock clips rows).
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("[%u] %s %s", el->id, el->name[0] ? el->name : "(unnamed)", ts ? ts : "?");
+            ImGui::SetTooltip("[%u] %s %s", rowId, displayName, typeLabel);
     }
 }
 
@@ -1448,6 +1468,8 @@ static gX_I0 tools_draw_modals(gX_I0) {
 extern "C" gX_I0 gX_Tools_Editor_Open(gX_I32 canvasIndex, const gX_I8 *markupPath);
 extern "C" gX_I0 gX_Tools_Editor_Open(gX_I32 canvasIndex, const gX_I8 *markupPath) {
     s_targetCanvas = canvasIndex;
+    s_treeTraced = 0;
+    s_editorOpened = 1;
     tools_selection_clear();
     s_pendingSelect = -1;
     tools_edit_lock_set(s_targetCanvas);
@@ -1511,9 +1533,35 @@ extern "C" gX_I0 gX_Tools_Editor_Open(gX_I32 canvasIndex, const gX_I8 *markupPat
     }
 }
 
+extern "C" gX_I0 gX_Tools_Editor_DeferredOpen(gX_I0);
 extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0);
 extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
+    gX_Tools_Editor_DeferredOpen();
     gX_GUI_Canvas *canvas = gX_GUI_Canvas_FromIndex(s_targetCanvas);
+    if (s_editorOpened && canvas && canvas->elements.amount > 0 && !s_treeTraced) {
+        gX_U32 named = 0;
+        gX_U32 labeled = 0;
+        gX_GUI_Element *elements = (gX_GUI_Element *)canvas->elements.data;
+        for (gX_U32 ei = 0; ei < canvas->elements.amount; ei++) {
+            if (elements[ei].name[0]
+                && strcmp(elements[ei].name, "unnamed") != 0) {
+                named++;
+                labeled++;
+            } else if (elements[ei].texts.amount > 0
+                && elements[ei].texts.data) {
+                const gX_GUI_Element_Text *text =
+                    (const gX_GUI_Element_Text *)elements[ei].texts.data;
+                if (text->text[0]) labeled++;
+            }
+        }
+        const gX_I8 *first = elements[0].name[0]
+            ? elements[0].name : (const gX_I8 *)"(none)";
+        gX_TraceLog(gX_LOG_INFO,
+            "GUI_EDITOR_TREE: canvas=%d elements=%u named=%u labeled=%u first=%s",
+            s_targetCanvas, canvas->elements.amount, named, labeled,
+            (const char *)first);
+        s_treeTraced = 1;
+    }
 
     //opencode: deferred headless snapshot — fire once the markup canvas is
     //   built (elements > 0), then clear the request

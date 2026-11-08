@@ -40,6 +40,8 @@
 #include "../gui/gui.h"
 #include "../gui/markup.h"
 #include "../gui/canvas.h"
+#include "../gui/element/element.h"
+#include "../gui/element/struct.h"
 #include "../gui/style.h"
 #include "../common/enum.h"
 #include "../common/log.h"
@@ -113,6 +115,12 @@ const gX_I8 *gX_Tools_Status_TierLabel(gX_ToolTier tier)
 //opencode: v0.6.5 — runtime open flags (CLI inits + EXTRAS buttons set these;
 //   ImGui window-X writes back; draw gate reads).
 static gX_I1 s_runtimeEditor = 0;
+//ai: --tools opens before the markup canvas is built; defer the editor's
+//   first open until the scene has loaded the template's elements.
+static gX_I1 s_editorOpenPending = 0;
+static gX_I1 s_editorMarkupApplied = 0;
+static gX_I32 s_editorOpenWait = 0;
+static gX_I8 s_editorPendingPath[256] = {0};
 static gX_I1 s_runtimeTheme = 0;
 static gX_I1 s_runtimeGfx = 0;
 static gX_I1 s_runtimeWavetable = 0;
@@ -143,10 +151,67 @@ gX_I0 gX_Tools_Init(gX_I0) {
     //opencode: ImGui runtime (editor chrome)
     gX_GUI_Load_ImGui();
 
-    //opencode: editor targets canvas 0 (the markup canvas)
-    gX_Tools_Editor_Open(0, path);
+    //opencode: editor targets canvas 0 (the markup canvas). The scene loads
+    //   the registered template after this init, so defer the open until the
+    //   canvas owns the markup elements; otherwise the tree shows placeholders
+    //   and the canvas renders empty.
+    snprintf((char *)s_editorPendingPath, sizeof(s_editorPendingPath), "%s",
+        (const char *)path);
+    s_editorOpenPending = 1;
+    s_editorMarkupApplied = 0;
+    s_editorOpenWait = 0;
     s_runtimeEditor = 1;
-    gX_TraceLog(gX_LOG_INFO, "Tools: GUI editor open (GUIPLAYGROUND)");
+    gX_TraceLog(gX_LOG_INFO, "Tools: GUI editor open deferred (GUIPLAYGROUND)");
+}
+
+//ai: called by the editor draw chain; opens once the scene has built the
+//   markup canvas (or after a bounded wait for an intentionally empty file).
+gX_I0 gX_Tools_Editor_DeferredOpen(gX_I0) {
+    if (!s_editorOpenPending) return;
+    gX_GUI_Canvas *canvas = gX_GUI_Canvas_FromIndex(0);
+    gX_U32 elements = canvas ? canvas->elements.amount : 0;
+    gX_U32 readable = 0;
+    if (canvas) {
+        gX_GUI_Element *rows = (gX_GUI_Element *)canvas->elements.data;
+        for (gX_U32 ei = 0; ei < elements; ei++) {
+            if (rows[ei].name[0]) {
+                readable++;
+                break;
+            }
+            if (rows[ei].texts.amount > 0 && rows[ei].texts.data) {
+                const gX_GUI_Element_Text *text =
+                    (const gX_GUI_Element_Text *)rows[ei].texts.data;
+                if (text->text[0]) {
+                    readable++;
+                    break;
+                }
+            }
+        }
+    }
+    //ai: on a clean first run the playground scene can build its default
+    //   canvas after the markup template; reapply the registered markup once
+    //   so the editor does not open on four placeholder rows.
+    if (elements > 0 && readable == 0 && !s_editorMarkupApplied) {
+        s_editorMarkupApplied = 1;
+        s_editorOpenWait = 0;
+        gX_Markup markup;
+        if (gX_GUI_Markup_Load(&markup, s_editorPendingPath) == 0) {
+            gX_GUI_Markup_Build(&markup, canvas);
+            gX_GUI_Markup_Clear(&markup);
+            gX_TraceLog(gX_LOG_INFO,
+                "MARKUP: reapplied '%s' for GUI editor canvas=0",
+                (const char *)s_editorPendingPath);
+        }
+        return;
+    }
+    //ai: markup builds allocate the element slots before names/types land;
+    //   wait for a readable row so the tree does not open on placeholders.
+    if ((elements == 0 || readable == 0) && ++s_editorOpenWait < 120) return;
+    s_editorOpenPending = 0;
+    gX_Tools_Editor_Open(0, s_editorPendingPath);
+    gX_TraceLog(gX_LOG_INFO,
+        "Tools: GUI editor deferred open applied (canvas 0, %u elements)",
+        (unsigned)elements);
 }
 
 //opencode: v0.4.0 — theme editor entry. The theme path is already active//   (set via gX_GUI_Style_SetThemePath before gX_GUI_Load), so the title
@@ -161,6 +226,9 @@ gX_I0 gX_Tools_Theme_Init(gX_I0) {
         gX_TraceLog(gX_LOG_WARNING, "Tools: --theme-editor needs a theme path");
         return;
     }
+    //ai: the CLI route opens before the ImGui context; load it first so the
+    //   theme panel is drawn (the runtime opener already does this).
+    gX_GUI_Load_ImGui();
     gX_Tools_SetImGuiThemeMode(1);
     gX_Tools_Theme_Open(path);
     s_runtimeTheme = 1;

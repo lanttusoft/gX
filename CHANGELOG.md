@@ -4,6 +4,32 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.42.1] - 2026-11-08
+
+Release-Class: patch
+
+### Fixed
+- The GUI editor `--tools <markup>` route now defers its first open until the
+  scene has built the markup canvas and reapplies the registered template
+  once if the clean playground default build races it. The shipped demo shows
+  the four named elements on the canvas and in the tree instead of an empty
+  canvas with `UNKNOWN (hidden)` rows.
+- The GUI editor tree falls back to an element's text and the generic
+  `element` type instead of printing bare `UNKNOWN`; native template rows are
+  scannable even when they have no authored name.
+- `--theme-editor <path>` now loads the ImGui context before opening, so the
+  theme panel is visible instead of leaving a blank dock gutter. The runtime
+  `GX_TOOLS_OPEN=theme` route was already correct.
+- The GFX editor F1/Help guide is centered and fitted to the free stage and is
+  drawn above the docked Scene/Inspector panels; the guide gate asserts its
+  bounds.
+- The Y2K cartridge boot OSD scales with the window (460x76 at 1024x768)
+  instead of rendering as a tiny corner label; the console gate asserts a
+  minimum readable size.
+- The Y2K pause menu's playback hint has a taller chip/text box and a smaller
+  font, so both lines clear the Step/FF row; the console gate asserts the text
+  fits its box at all three console sizes.
+
 ## [0.42.0] - 2026-11-08
 
 Release-Class: minor
