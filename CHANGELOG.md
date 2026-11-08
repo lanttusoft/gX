@@ -206,7 +206,7 @@ Release-Class: minor
   earlier shader-compiler/serializer recovery remains in place. The initial
   recovery measured 17,728 B. A 2026-11-07 pass moved the six vendored Dear
   ImGui tool-UI sources to the same Release `-Os` tier, recovering 278,144 B;
-  after the GFX narrow-layout pass the payload is 3,922,011 B (272,293 B
+  after the GFX narrow-layout pass the payload is 3,921,979 B (272,325 B
   headroom) with 2,701,376 B BSS (3,624 B headroom); caps, capabilities,
   visuals and Debug code generation are unchanged.
 

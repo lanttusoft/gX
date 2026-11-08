@@ -253,7 +253,7 @@ headroom) and **2,701,344 B** BSS (3,656 B headroom). The later title
 newcomer polish added 1,344 B; the logging-hygiene and console GL
 fixes added 2,560 B; the GUI-editor usability pass added 256 B and the
 GFX-editor guide added 1,088 B, and the GFX-editor narrow-layout pass added
-2,240 B, leaving **3,922,011 B** payload (**272,293 B** headroom) and
+2,208 B, leaving **3,921,979 B** payload (**272,325 B** headroom) and
 **2,701,376 B** BSS (3,624 B headroom). Caps, baseline and capabilities are
 unchanged; the title slice
 changed labels/help only, with no renderer or resource hash change. Validation:
