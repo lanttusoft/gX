@@ -413,8 +413,28 @@ inline static gX_I0 gX_Log_PrintFormatted(gX_I32 module, gX_I32 logType, const g
     if (module > 0 && module < gX_LOG_MODULE_COUNT && gX_LogState.moduleLevels[module] > 0) {
         effectiveLevel = gX_LogState.moduleLevels[module];
     }
+
+    //ai: special display types live above the enum range; map them to their
+    //   real threshold so --logLevel warning does not leak GREEN/notice lines.
+    gX_I32 filterLevel = logTypePrint;
+    switch (logTypePrint) {
+        case gX_LOG_GREEN:
+        case gX_LOG_MAGENTA:
+        case gX_LOG_DEBUG_NOTICE:
+        case gX_LOG_TRACE_NOTICE:
+        case gX_LOG_TRACE2_NOTICE:
+            filterLevel = gX_LOG_DEBUG;
+            break;
+        case gX_LOG_DEBUG_WARNING:
+        case gX_LOG_TRACE_WARNING:
+        case gX_LOG_TRACE2_WARNING:
+            filterLevel = gX_LOG_WARNING;
+            break;
+        default:
+            break;
+    }
     
-    if (effectiveLevel > logTypePrint) return;
+    if (effectiveLevel > filterLevel) return;
 
     //opencode: record the emitted line in the crash-context ring
     if (gX_LogRingSetting != 0) {

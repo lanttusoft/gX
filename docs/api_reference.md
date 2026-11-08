@@ -659,7 +659,8 @@ It is inactive by default; paths outside `/tmp/` and faces larger than
 
 ## main
 
-- `gX_Parse` — CLI flags (--scene, --test-only, --logLevel, --module, ...)
+- `gX_Parse` — CLI flags (--scene, --test-only, --logLevel/--log-level with
+  named thresholds or 0-13, --module, ...)
 - `gX_Module_*` — dynamic module host (Route A; `docs/dynamic_modules.md`):
   `Load` (dlopen `gX_Module_Entry`, ABI handshake, registration),
   `LoadConfigured` (`--module <path.so>` → `GX_MODULE=a:b` → `modules/*.so`

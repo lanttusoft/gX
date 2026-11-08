@@ -91,7 +91,8 @@ gX_I0 gX_RHI_Tex_SetUnit(gX_U32 slot, gX_U32 texId, gX_U32 target) {
     if (slot >= GX_RHI_MAX_TEX_UNITS) return;
     //opencode: detect target attachment reads and framebuffer feedback loops.
     gX_RHI_BufferAudit_TextureBind(texId, slot, target);
-    //opencode: collision detection — log warning if overwriting an occupied unit
+    //ai: normal bind churn overwrites occupied units; keep the diagnostic at
+    //   TRACE so warning-only runs do not fill with expected cache events.
     if (g_texUnits[slot] != 0 && g_texUnits[slot] != texId) {
         //opencode: deduplicate repeated same-triplet warnings — only log once per unique collision
         static gX_U32 warned[64], warnedCount = 0;
@@ -104,7 +105,7 @@ gX_I0 gX_RHI_Tex_SetUnit(gX_U32 slot, gX_U32 texId, gX_U32 target) {
         }
         if (!seen && warnedCount < 64) {
             warned[warnedCount++] = key;
-            gX_TraceLog(gX_LOG_WARNING, "RHI_TEX: unit %u overwritten: tex %u \xe2\x86\x92 %u", slot, g_texUnits[slot], texId);
+            gX_TraceLog(gX_LOG_TRACE, "RHI_TEX: unit %u overwritten: tex %u \xe2\x86\x92 %u", slot, g_texUnits[slot], texId);
         }
     }
     g_texUnits[slot] = texId;

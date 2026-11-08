@@ -121,7 +121,7 @@ static gX_I0 gX_GUI_Respond_IsTransitionScene(gX_I32 sceneIndex) {
 
 gX_I0 gX_GUI_Respond(gX_I0);
 gX_I0 gX_GUI_Respond(gX_I0) {
-    gX_TRACELOG_PROLOGUE_MODULE(gX_LOG_MODULE_GUI, gX_TraceLog_logtypeLevel, "GUI_Respond","Responding")
+    gX_TRACELOG_PROLOGUE_MODULE(gX_LOG_MODULE_GUI, gX_LOG_TRACE, "GUI_Respond","Responding")
     gX_GUI_Trace_Event("respond", maindata.masterIndex, -1, NULL);
     gui.masterIndexSwitchResponse = false;
     gX_TraceLog_GUI(gX_LOG_DEBUG,"maindata.masterIndex: %i",maindata.masterIndex);
@@ -152,5 +152,5 @@ gX_I0 gX_GUI_Respond(gX_I0) {
     gui.state.INITIAL_LOAD = false;
     
     gui.masterIndexSwitchResponse = true;
-    gX_TRACELOG_EPILOGUE_MODULE(gX_LOG_MODULE_GUI, gX_TraceLog_logtypeLevel, "Responded")
+    gX_TRACELOG_EPILOGUE_MODULE(gX_LOG_MODULE_GUI, gX_LOG_TRACE, "Responded")
 }

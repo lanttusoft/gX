@@ -231,15 +231,18 @@ gX_I0 gX_TraceLog_Error_WriteReport(gX_I0);
     gX_Log_StackPush(funname); \
     gX_Log_Message(gX_LOG_MODULE_DEFAULT, (level), (const gX_I8*)(logpart));
 
+//ai: entry/exit traces are TRACE, never the current threshold. Using the
+//   threshold made every routine prologue appear as WARN under
+//   --logLevel warning and flooded quiet logs with false warnings.
 #define gX_TRACELOG_PROLOGUE(funname,logpart) \
-    gX_TRACELOG_PROLOGUE_LEVEL(gX_LogState.globalLevel,funname,logpart)
+    gX_TRACELOG_PROLOGUE_LEVEL(gX_LOG_TRACE,funname,logpart)
     
 #define gX_TRACELOG_EPILOGUE_LEVEL(level,logpart) \
     gX_Log_Message(gX_LOG_MODULE_DEFAULT, (level), (const gX_I8*)(logpart)); \
     gX_Log_StackPop();
     
 #define gX_TRACELOG_EPILOGUE(logpart) \
-    gX_TRACELOG_EPILOGUE_LEVEL(gX_LogState.globalLevel,logpart);
+    gX_TRACELOG_EPILOGUE_LEVEL(gX_LOG_TRACE,logpart);
     
 #define gX_TRACELOG_EPILOGUE_ERROR(logpart,code) \
     gX_LogState.errorCode = (gX_I32)(code); \

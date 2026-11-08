@@ -14,6 +14,12 @@ Release-Class: minor
   AI and review links under Process and maintenance, and publishes the
   November monthly GFX audit plus memory/gate follow-up with frozen-snapshot
   resolution notes. Local index links resolve in the deterministic archive.
+- **Named log levels**: `--logLevel` now accepts `trace5` through `trace`,
+  `debug`, `info`, `notice`, `warning`/`warnings`/`warn`, `error`, `alert`,
+  `fatal` and `none`/`off` in addition to the numeric 0-13 values, with the
+  `--log-level` alias. `--logLevel warning` emits only warning, error, alert
+  and fatal lines; special GREEN/MAGENTA/notice types are threshold-mapped,
+  and invalid names fail closed before boot.
 - **Title newcomer polish**: the main menu now uses honest `OPEN GFX` and
   `SAVE SLOTS` labels, explains that slot 1 is a demo while the other slots
   are reserved, and adds a footer `HELP` quick-start panel covering controls,
@@ -177,10 +183,16 @@ Release-Class: minor
   earlier shader-compiler/serializer recovery remains in place. The initial
   recovery measured 17,728 B. A 2026-11-07 pass moved the six vendored Dear
   ImGui tool-UI sources to the same Release `-Os` tier, recovering 278,144 B;
-  the current payload is 3,915,867 B (278,437 B headroom) with unchanged BSS,
+  the current payload is 3,917,051 B (277,253 B headroom) with unchanged BSS,
   caps, capabilities, visuals and Debug code generation.
 
 ### Fixed
+- <!-- //ai: logging-level hygiene. --> Routine prologue/epilogue and GUI
+  load/respond traces now use fixed TRACE levels instead of reusing the
+  current threshold as a severity; expected texture-unit bind churn is
+  TRACE too. `--logLevel warning` no longer reports routine loading as
+  false warnings. `scripts/log_level_audit.py` and display-free tests
+  guard the pattern.
 - <!-- //ai: 240p console GL error guard. --> Console gates now reject any
   `GL_INVALID_OPERATION` or HIGH GL debug message in their captures while
   keeping the known MEDIUM shader-recompile notices informational. Targeted

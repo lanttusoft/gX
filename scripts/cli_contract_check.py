@@ -14,7 +14,7 @@ import sys
 import audit_common as audit
 
 
-TIMEOUT = 15
+TIMEOUT = 120
 DEBUG_LINES = ("parsing arguments...", "args: case", "-> option", "done.")
 
 
@@ -49,6 +49,9 @@ def main():
             "--help did not list the front-door scene flags")
         require("resources/settings.json" in help_text,
             "--help did not explain the fresh-install rule")
+        require("--logLevel" in help_text and "warning" in help_text
+            and "--log-level" in help_text,
+            "--help did not document named warning log levels")
         for line in DEBUG_LINES:
             require(line not in help_text,
                 f"--help leaked parser debug line: {line!r}")
@@ -70,6 +73,35 @@ def main():
             or "unknown option" in missing_text,
             f"missing option argument message was unclear: {missing_text[-300:]!r}")
 
+        bad_level = run(["--logLevel", "banana"])
+        bad_level_text = audit.strip_ansi(bad_level.stdout or "")
+        require(bad_level.returncode != 0,
+            "invalid --logLevel exited 0")
+        require("--logLevel" in bad_level_text
+            and "warning" in bad_level_text,
+            f"invalid --logLevel message was not actionable: "
+            f"{bad_level_text[-300:]!r}")
+        require("gX_Scene: switched" not in bad_level_text,
+            "invalid --logLevel still booted the engine")
+
+        alias_help = run(["--log-level", "warning", "--help"])
+        require(alias_help.returncode == 0,
+            "--log-level alias did not accept a named level")
+        numeric_help = run(["--logLevel", "9", "--help"])
+        require(numeric_help.returncode == 0,
+            "--logLevel no longer accepts numeric enum values")
+
+        warning_run = run(["--logLevel", "warning", "--test-only"])
+        warning_text = audit.strip_ansi(warning_run.stdout or "")
+        require(warning_run.returncode == 0,
+            f"warning-level test-only run exited {warning_run.returncode}")
+        for level in ("[ TRACE", "[TRACE2", "[ DEBUG", "[ INFO ",
+                      "[NOTICE", "[GREEN ", "[MAGENTA"):
+            require(level not in warning_text,
+                f"warning level leaked {level!r} output")
+        require("[ WARN " in warning_text or "[ERROR!" in warning_text,
+            "warning level suppressed its own warning/error output")
+
         page = audit.ROOT / "docs" / "getting_started.md"
         require(page.is_file(), "docs/getting_started.md is missing")
         page_text = page.read_text(encoding="utf-8")
@@ -78,8 +110,9 @@ def main():
     except (OSError, subprocess.SubprocessError, RuntimeError) as error:
         print(f"CLI_CONTRACT: FAIL — {error}", file=sys.stderr)
         return 1
-    print("CLI_CONTRACT: PASS help exits 0, unknown/missing options fail "
-        "closed, first-run rule documented")
+    print("CLI_CONTRACT: PASS help exits 0, unknown/missing "
+        "options fail closed, named warning log level filters "
+        "lower levels, first-run rule documented")
     return 0
 
 

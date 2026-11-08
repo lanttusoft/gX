@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <string.h>
+#include <strings.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -36,6 +37,36 @@
 #include "common/color_code.h"
 #include "gui/style.h"
 #include "common/log.h"
+
+//ai: named log thresholds; "warning" is the practical quiet mode (warning,
+//   error, alert and fatal only). Numeric enum values remain accepted.
+static gX_I32 gX_Parse_LogLevel(const gX_I8 *text) {
+    if (!text || !text[0]) return -1;
+    if (!strcasecmp((const char *)text, "all")) return gX_LOG_ALL;
+    if (!strcasecmp((const char *)text, "trace5")) return gX_LOG_TRACE5;
+    if (!strcasecmp((const char *)text, "trace4")) return gX_LOG_TRACE4;
+    if (!strcasecmp((const char *)text, "trace3")) return gX_LOG_TRACE3;
+    if (!strcasecmp((const char *)text, "trace2")) return gX_LOG_TRACE2;
+    if (!strcasecmp((const char *)text, "trace")) return gX_LOG_TRACE;
+    if (!strcasecmp((const char *)text, "debug")) return gX_LOG_DEBUG;
+    if (!strcasecmp((const char *)text, "info")) return gX_LOG_INFO;
+    if (!strcasecmp((const char *)text, "notice")) return gX_LOG_NOTICE;
+    if (!strcasecmp((const char *)text, "warning")
+        || !strcasecmp((const char *)text, "warnings")
+        || !strcasecmp((const char *)text, "warn")) return gX_LOG_WARNING;
+    if (!strcasecmp((const char *)text, "error")) return gX_LOG_ERROR;
+    if (!strcasecmp((const char *)text, "alert")) return gX_LOG_ALERT;
+    if (!strcasecmp((const char *)text, "fatal")) return gX_LOG_FATAL;
+    if (!strcasecmp((const char *)text, "none")
+        || !strcasecmp((const char *)text, "off")) return gX_LOG_NONE;
+    char *end = NULL;
+    long value = strtol((const char *)text, &end, 10);
+    if (end && end != (char *)text && *end == '\0'
+        && value >= gX_LOG_ALL && value <= gX_LOG_NONE) {
+        return (gX_I32)value;
+    }
+    return -1;
+}
 
 //opencode: help function + expanded option handlers
 static gX_I0 gX_Parse_Help(const gX_I8 *name) {
@@ -68,7 +99,9 @@ static gX_I0 gX_Parse_Help(const gX_I8 *name) {
         "      --masterIndex <n>      Startup scene index\n"
         "      --fullScreen           Start in fullscreen\n"
         "      --monitor <n>          Monitor index\n"
-        "      --logLevel <n>         Log level threshold\n"
+        "      --logLevel <level>     Log threshold: trace5..trace, debug, info,\n"
+        "                             notice, warning, error, alert, fatal, none\n"
+        "                             (or 0-13; alias --log-level)\n"
         "      --configFlags <n>      Window config flags\n"
         "      --masterVolume <0-1>   Master volume\n"
         "      --preset <n>           Configuration preset\n"        "      --assets <dir>         Guest asset root, repeatable (fallback-only search dir)\n"
@@ -232,6 +265,7 @@ gX_I32 gX_Parse(int argc, char **argv) {
         {"fullScreen",  no_argument,        NULL, 0},
         {"monitor",     required_argument,  NULL, 0},
         {"logLevel",    required_argument,  NULL, 0},
+        {"log-level",   required_argument,  NULL, 0},
         {"configFlags", required_argument,  NULL, 0},
         {"masterVolume",required_argument,  NULL, 0},
         {"preset",      required_argument,  NULL, 0},
@@ -488,8 +522,17 @@ gX_I32 gX_Parse(int argc, char **argv) {
                 if (!strcmp(long_options[option_index].name,"monitor")) {
                     arguments.monitor = (gX_I32)atoi(optarg);
                 }
-                if (!strcmp(long_options[option_index].name,"logLevel")) {
-                    arguments.logLevel = (gX_I32)atoi(optarg);
+                if (!strcmp(long_options[option_index].name,"logLevel")
+                    || !strcmp(long_options[option_index].name,"log-level")) {
+                    gX_I32 level = gX_Parse_LogLevel(optarg);
+                    if (level < 0) {
+                        fprintf(stderr, "PARSE: --logLevel expects trace5..trace, "
+                            "debug, info, notice, warning, error, alert, fatal, "
+                            "none, or 0-13; got '%s'\n", optarg);
+                        errors = 1;
+                        goto parse_ret;
+                    }
+                    arguments.logLevel = level;
                     arguments.hasLogLevel = true;
                 }
                 if (!strcmp(long_options[option_index].name,"configFlags")) {

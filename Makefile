@@ -80,6 +80,9 @@ check: all
 	#ai: ecosystem discovery is read-only, sanitizes remotes and preserves the local ledger.
 	python3 -m unittest discover -s scripts -p test_repo_ecosystem.py
 	python3 -m unittest discover -s scripts -p test_agent_bus.py
+	#ai: routine logs stay TRACE and the threshold is never reused as a severity.
+	python3 scripts/log_level_audit.py
+	python3 -m unittest discover -s scripts -p test_log_level_audit.py
 	@if [ ! -d ../proofs ]; then \
 	  echo "gX public source beta: full 'make check' needs the proof tree (../proofs)."; \
 	  echo "Use 'make check-fast' for the public source-beta CI."; \
@@ -279,6 +282,9 @@ check-fast: all
 	#ai: ecosystem discovery is read-only, sanitizes remotes and preserves the local ledger.
 	python3 -m unittest discover -s scripts -p test_repo_ecosystem.py
 	python3 -m unittest discover -s scripts -p test_agent_bus.py
+	#ai: routine logs stay TRACE and the threshold is never reused as a severity.
+	python3 scripts/log_level_audit.py
+	python3 -m unittest discover -s scripts -p test_log_level_audit.py
 	@echo "== [gX fast] unit tests =="
 	./build/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/gX_build --test-only && exit 1)
 	@echo "== [gX fast] CLI contract =="
@@ -866,6 +872,12 @@ diffraction-check:
 agent-bus-check:
 	@echo "== [gX CI] agent bus =="
 	python3 -m unittest discover -s scripts -p test_agent_bus.py
+
+.PHONY: logging-check
+logging-check:
+	@echo "== [gX CI] logging levels =="
+	python3 scripts/log_level_audit.py
+	python3 -m unittest discover -s scripts -p test_log_level_audit.py
 
 .PHONY: cli-check
 cli-check: all

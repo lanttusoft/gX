@@ -72,6 +72,55 @@ on-screen `gX_Msg` feed. Env hooks:
   (`{"ts","level","module","msg"}`) instead of the ANSI format; the audit
   gates keep the default. Raw `printf` output (math dumps) stays raw.
 
+`--logLevel` accepts named thresholds as well as the numeric enum:
+`trace5`/`trace4`/`trace3`/`trace2`/`trace`, `debug`, `info`, `notice`,
+`warning` (aliases `warnings`/`warn`), `error`, `alert`, `fatal`, `none`
+(`off`). For a quiet diagnostic run use `--logLevel warning` or the
+`--log-level warning` alias; it emits only warning, error, alert and fatal
+lines. Special display types (`GREEN`, `MAGENTA`, debug/trace notices) are
+mapped to their real threshold, so warning mode does not leak them. An invalid
+name fails closed before boot.
+
+## Logging guidelines
+
+Use the lowest level that is still truthful:
+
+- `TRACE`/`TRACE2`: routine entry/exit, per-item bind/draw/state detail and
+  expected cache churn. The default `DEBUG` threshold hides these; use
+  `--logLevel trace` when diagnosing.
+- `DEBUG`: developer state, one-time setup detail and hot-reload mechanics.
+  Hidden above `debug`.
+- `INFO`: concise progress for normal successful startup, not per-frame work.
+- `NOTICE`: an important normal milestone or user-visible state change; no
+  action is required.
+- `WARNING`: degraded or fallback behavior, or an unexpected condition that
+  needs attention. A warning must be actionable and must not fire per frame
+  or per bind.
+- `ERROR`/`ALERT`/`FATAL`: a failed operation, forced shutdown, or immediate
+  shutdown. Keep the existing stable prefixes so gates can parse them.
+
+Rules:
+
+- Never pass `gX_LogState.globalLevel` or `gX_TraceLog_logtypeLevel` as a
+  message severity; that turns every routine prologue into a false warning
+  under `--logLevel warning`. Use a fixed level. The default
+  `gX_TRACELOG_PROLOGUE`/`EPILOGUE` macros use `TRACE`.
+- Do not log per-frame or per-bind `INFO`/`WARNING` messages; use
+  `TRACE`/`DEBUG`, dedupe, or emit a summary.
+- A warning should name the consequence or fallback, not just the event.
+- `--logLevel warning` must be quiet enough to read. If routine loading or
+  cache lines appear, the call site has the wrong level.
+
+The source guard rejects threshold-as-severity call sites and checks that the
+routine prologue/epilogue macros stay at `TRACE`:
+
+```bash
+make logging-check
+# equivalent:
+python3 scripts/log_level_audit.py
+python3 -m unittest discover -s scripts -p test_log_level_audit.py
+```
+
 Trace sub-levels are **real filter levels**: `--logLevel 5` (trace) hides the
 TRACE2 per-item detail, `--logLevel 4` shows it (`DRAW:` per model, `SHADOW:`
 per point-light pass). They used to be mapped to TRACE before filtering, so

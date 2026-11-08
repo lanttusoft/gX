@@ -619,7 +619,7 @@ gX_Rectangle gX_GUI_GameToScreen(gX_Rectangle r) {
 
 gX_I32 gX_GUI_Load(gX_I0) {
     gX_I32 errors = 0;
-    gX_TRACELOG_PROLOGUE_MODULE(gX_LOG_MODULE_GUI, gX_TraceLog_logtypeLevel, "GUI_Load","Loading GUI system")
+    gX_TRACELOG_PROLOGUE_MODULE(gX_LOG_MODULE_GUI, gX_LOG_TRACE, "GUI_Load","Loading GUI system")
     
     strcpy(gui.name,"GUI");
     strcpy(gui.description,"GUI system for gX");
@@ -853,13 +853,13 @@ gX_I32 gX_GUI_Load(gX_I0) {
     //   loaded GUI. Without this mark, every scene skipped template creation,
     //   including the opt-in GFX viewport-grid composition canvas.
     gui.loaded = true;
-    gX_TRACELOG_EPILOGUE_MODULE(gX_LOG_MODULE_GUI, gX_TraceLog_logtypeLevel, "Loading done")
+    gX_TRACELOG_EPILOGUE_MODULE(gX_LOG_MODULE_GUI, gX_LOG_TRACE, "Loading done")
     return errors;
 }
 
 gX_I32 gX_GUI_Unload(gX_I0) {
     gX_I32 errors = 0;
-    gX_TRACELOG_PROLOGUE_MODULE(gX_LOG_MODULE_GUI, gX_TraceLog_logtypeLevel, "GUI_Unload","Unloading GUI system")
+    gX_TRACELOG_PROLOGUE_MODULE(gX_LOG_MODULE_GUI, gX_LOG_TRACE, "GUI_Unload","Unloading GUI system")
     
     gX_TraceLog_SuppressStart();
     
@@ -893,7 +893,7 @@ gX_I32 gX_GUI_Unload(gX_I0) {
     
     gX_TraceLog_SuppressEnd();
     
-    gX_TRACELOG_EPILOGUE_MODULE(gX_LOG_MODULE_GUI, gX_TraceLog_logtypeLevel, "Unloading done")
+    gX_TRACELOG_EPILOGUE_MODULE(gX_LOG_MODULE_GUI, gX_LOG_TRACE, "Unloading done")
     return errors;
 }
 
