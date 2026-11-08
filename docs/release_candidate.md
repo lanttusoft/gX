@@ -25,13 +25,13 @@ items. Until all three gates and the operations contract hold, gX stays a
 
 | Item | Value |
 | --- | --- |
-| Version | v0.41.0 (beta) |
+| Version | v0.42.0 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 93 quick/full gates (103 manifest entries; 90 unique in a full run); last full run **90/90** on the v0.41.0 code commit `13d67e8` (`AUDIT_CACHE=0`, 1,104.5 s wall) |
+| Audit baseline | 120 manifest entries; **107/107** gates passed in the v0.42.0 full run (`AUDIT_CACHE=0`, 1,511.8 s wall / 2,981.1 s gate time) |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 4,149,851 B (44,453 B headroom), BSS 2,699,712 B (5,288 B headroom) — v0.41.0 `make check` |
-| Release class | MINOR (v0.41.0: scene feature manifest, lazy HDR allocation, editor feature checklist, Basic/Advanced/Expert UI levels) |
+| Lean gate | payload 3,921,979 B (272,325 B headroom), BSS 2,701,376 B (3,624 B headroom) — v0.42.0 `make check` |
+| Release class | MINOR (v0.42.0: gX-240 console shell/cartridges/saves/OSD/playback, SSAA/PRISM-1/film grain/diffraction, GFX editor rework/guide/layout, virtual scene, named log levels, audit/tooling) |
 
 ## Completeness ledger
 
@@ -45,9 +45,9 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Source | Release builds reproduce across extraction paths | holds | `make reproducible-check` (two clean trees, fixed epoch) |
 | Admission | `make check` (build, tests, scene smoke, audits, proofs, lean gate) | holds | release CI logs |
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
-| Admission | full audit matrix green (`make audit-summary-full`) | holds | **90/90** on `13d67e8` (2026-11-04, `AUDIT_CACHE=0`, 1,104.5 s wall / 2,200.0 s gate time) |
+| Admission | full audit matrix green (`make audit-summary-full`) | holds | **107/107** on the v0.42.0 release tree (2026-11-08, `AUDIT_CACHE=0`, 1,511.8 s wall / 2,981.1 s gate time) |
 | Tests | unit suite + contract gates green | holds | `--test-only`, gate manifest |
-| Stability | 3 consecutive full admission runs without a flake | holds | 3 x `make check` on 2026-11-01 (v0.30.0 + readiness docs), logs archived privately; the rare test-only SIGSEGV remains a watch item |
+| Stability | 3 consecutive full admission runs without a flake | holds | 3 x `make check` on 2026-11-08 (`b0fd5f4`, `89aa25d`, v0.42.0 release tree); no flake; the rare test-only SIGSEGV remains a watch item |
 | Docs | documentation index covers public surfaces; API/enum coverage gates | holds | `docs/README.md`, `api_coverage.py`, `enum_coverage.py` |
 | Docs | release notes + changelog for every release | holds | `CHANGELOG.md`, release notes |
 | License | GPL-3.0-or-later; provenance/attribution/copyright audits clean | holds | `provenance_audit.py --strict`, `copyright_audit.py` |
@@ -62,13 +62,17 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 
 ## Known limitations (accepted for the beta line)
 
-- The global editor host and workspaces are **alpha**; the GFX editor is
-  hosted, but its renderer tabs are not split into separate panels yet, and
-  user layouts are runtime files.
-- The GFX editor ships as **beta**; the rework is complete but the UI is not
-  release-grade for every workflow. Every other editor is **alpha/WIP**: a
+- The global editor host and workspaces are **alpha**; the GFX renderer labs
+  are separate floating panels and user layouts are runtime files.
+- The GFX editor ships as **beta**; the Phase 1–5 rework, F1/Help guide and
+  narrow-layout polish are complete for the standard captures, but the UI is
+  not certified for every workflow. Every other editor is **alpha/WIP**: a
   usable preview with known gaps (no undo on most, barebones workflows, no
   tutorials); gate coverage is listed in `docs/editors.md`.
+- gX-240 is an original presentation profile, not ROM/console emulation. The
+  native GUI stays window-sized (no 320x240 GUI); 2x SSAA is the product
+  ceiling and 4x remains a declined probe. Physical CRT/controller validation
+  is parked, so no hardware claim is made.
 - The raymarch renderer is **alpha**: no deferred material buffers or motion
   vectors; cross-renderer shadows/secondary hits and transparent interleaving
   are unsupported.
@@ -102,6 +106,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-04 | v0.40.0: opt-in 4.3 layered point shadows (byte-identical), BC7 orb/testcard sidecars with asset gate, source-lineage audit. Matrix 90/90 on `a46164d`. | owner/agent |
 | 2026-11-04 | v0.40.1: cppcheck 198→0 warnings (allocation/null/format/bounds guards; intentional ImGui casts filtered). Matrix 90/90 on `a7aec02`. | owner/agent |
 | 2026-11-04 | v0.41.0: scene feature manifest + lazy HDR allocation, GFX Features checklist/templates, Basic/Advanced/Expert settings with expert metadata list. Matrix 90/90 on `13d67e8`. | owner/agent |
+| 2026-11-08 | v0.42.0 release prep: MINOR version bump, full admission and 107/107 audit matrix. Packaging/extraction smoke and owner tag/publish pending; no RC claim. Dogfooding, demand, hardware and operations rows remain open. | owner/agent |
 
 ## Change rule
 

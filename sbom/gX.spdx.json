@@ -1,15 +1,15 @@
 {
   "SPDXID": "SPDXRef-DOCUMENT",
   "creationInfo": {
-    "created": "2026-11-04T00:00:00Z",
+    "created": "2026-11-08T00:00:00Z",
     "creators": [
       "Tool: gX-sbom-1.0",
       "Organization: gX project"
     ]
   },
   "dataLicense": "CC0-1.0",
-  "documentNamespace": "https://github.com/lanttusoft/gX/sbom/v0.41.0",
-  "name": "gX-0.41.0",
+  "documentNamespace": "https://github.com/lanttusoft/gX/sbom/v0.42.0",
+  "name": "gX-0.42.0",
   "packages": [
     {
       "SPDXID": "SPDXRef-Package-gX",
@@ -18,7 +18,7 @@
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:github/lanttusoft/gX@v0.41.0",
+          "referenceLocator": "pkg:github/lanttusoft/gX@v0.42.0",
           "referenceType": "purl"
         }
       ],
@@ -28,7 +28,7 @@
       "name": "gX",
       "primaryPackagePurpose": "APPLICATION",
       "supplier": "Organization: gX project",
-      "versionInfo": "0.41.0"
+      "versionInfo": "0.42.0"
     },
     {
       "SPDXID": "SPDXRef-Package-raylib",
