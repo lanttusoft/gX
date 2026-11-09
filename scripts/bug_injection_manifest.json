@@ -77,7 +77,7 @@
       "old": "    gX_Shader_SetValue(shader,loc,&f,gX_SHADER_UNIFORM_FLOAT);",
       "new": "    gX_Shader_SetValue(shader,loc,&f,gX_SHADER_UNIFORM_INT);",
       "command": ["python3", "scripts/uniform_trace_check.py"],
-      "expect_regex": "UNIFORM_TRACE_CHECK: FAIL",
+      "expect_regex": "UNIFORM_MISMATCH|UNIFORM_TRACE_CHECK: FAIL",
       "timeout": 900
     }
   ]

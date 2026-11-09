@@ -90,16 +90,22 @@ paths, assets or unrelated history into the public manifest.
 - `tangent-lineage-reverse` — reverse the gX tangent-boundary fix (gameX-era
   lineage); `--test-only` catches the old read past an indexed quad. This is a
   contained **crash kill** (`expect_crash`), not a clean assertion.
+- `float-uniform-as-int` — gameX R-2 class: float uniforms declared as int.
+  `uniform-trace-check` emits named `UNIFORM_MISMATCH` lines; match those
+  rather than a final FAIL summary.
 
 ## Pilot result (2026-11-10)
 
-All selected entries were killed, none survived. `INPUT 10 FAIL`,
+All six entries were killed, none survived. `INPUT 10 FAIL`,
 `tour width 420 did not scale` and `Skip button clipped` hit the intended
 assertions. The console-idle entry was an **indirect kill**:
 `console-shell-check` failed earlier on a focus-target mismatch rather than the
 idle timeout; record that as gate-ordering debt. The tangent-lineage entry
 aborts with `free(): invalid size`; the harness records it as an expected crash
-kill, and the test should ideally assert cleanly instead of aborting.
+kill, and the test should ideally assert cleanly instead of aborting. The gfx
+float/int entry produced **8,010 named `UNIFORM_MISMATCH` lines**; the trace
+gate has no final FAIL summary, so the manifest matches the named mismatch
+line.
 
 ## Safety
 
