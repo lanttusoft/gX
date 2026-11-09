@@ -1238,6 +1238,11 @@ gX_I1 gX_GUI_Dock_Cramped_Check(gX_I0) {
 
 static gX_I0 gX_GUI_Dock_Update(gX_I0) {
     extern gX_I1 gX_Tools_RuntimeActive(gX_I0);
+    extern gX_I1 *gX_Tools_RuntimeEditorFlag(gX_I0);
+    extern gX_I1 *gX_Tools_RuntimeGfxFlag(gX_I0);
+    extern gX_I1 *gX_Tools_RuntimeThemeFlag(gX_I0);
+    extern gX_I1 *gX_Tools_RuntimeScriptFlag(gX_I0);
+    extern gX_I1 *gX_Tools_RuntimeRailFlag(gX_I0);
     //opencode: GX_TOOLS_CLOSE=<frame> closes all runtime tools once
     //   frameCount hits it (verify restore + script flows; 1 = immediate).
     {
@@ -1252,7 +1257,13 @@ static gX_I0 gX_GUI_Dock_Update(gX_I0) {
             }
         }
     }
-    gX_I1 want = gX_Tools_RuntimeActive();
+    //ai: only editors with a dockable left panel reserve the dock margin;
+    //   floating tool windows keep the scene full-width.
+    gX_I1 want = (*gX_Tools_RuntimeEditorFlag()
+        || *gX_Tools_RuntimeGfxFlag()
+        || *gX_Tools_RuntimeThemeFlag()
+        || *gX_Tools_RuntimeScriptFlag()
+        || *gX_Tools_RuntimeRailFlag()) ? 1 : 0;
     //opencode: harness hook — some calibrated audits compare an undocked
     //   live view to the clean camera render and must keep the overlay layout.
     const gX_I8 *dockDisable = getenv("GX_DOCK_DISABLE");

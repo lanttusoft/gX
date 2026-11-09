@@ -65,6 +65,10 @@ static gX_I32 gX_MainData_Responses(gX_I0) {
     gX_TraceLog_MAIN(gX_LOG_INFO,"Masterindex switched");
     maindata.masterIndexSuccessful = false;
     gX_I32 switcherrors = 0;
+    //ai: the GUI playground intentionally has no renderer/scene/camera
+    //   response; do not report the expected no-op as a switch failure.
+    gX_I1 guiPlayground = arguments.hasTools
+        && maindata.masterIndex == gX_SCENE_GUIPLAYGROUND;
     
     MAIN_RESPONSE_MODULEISLOADED(gui,GUI)
     MAIN_RESPONSE_MODULEISLOADED(input,Input)
@@ -89,8 +93,12 @@ static gX_I32 gX_MainData_Responses(gX_I0) {
 
 #if gX_ENABLE_RENDERER == 1
     if (!renderer.masterIndexSwitchResponse) {
-        gX_TraceLog(gX_LOG_WARNING,"MAIN: Renderer failed to respond");
-        switcherrors++;
+        if (guiPlayground)
+            gX_TraceLog(gX_LOG_DEBUG,"MAIN: Renderer not used by GUI playground");
+        else {
+            gX_TraceLog(gX_LOG_WARNING,"MAIN: Renderer failed to respond");
+            switcherrors++;
+        }
     }
     else gX_TraceLog(gX_LOG_DEBUG,"MAIN: Renderer responded");
 #else
@@ -98,8 +106,12 @@ static gX_I32 gX_MainData_Responses(gX_I0) {
 #endif
 #if gX_ENABLE_SCENE == 1
     if (!scene.masterIndexSwitchResponse) {
-        gX_TraceLog(gX_LOG_WARNING,"MAIN: Scene failed to respond");
-        switcherrors++;
+        if (guiPlayground)
+            gX_TraceLog(gX_LOG_DEBUG,"MAIN: Scene not used by GUI playground");
+        else {
+            gX_TraceLog(gX_LOG_WARNING,"MAIN: Scene failed to respond");
+            switcherrors++;
+        }
     }
     else gX_TraceLog(gX_LOG_DEBUG,"MAIN: Scene responded");
 #else
@@ -107,8 +119,12 @@ static gX_I32 gX_MainData_Responses(gX_I0) {
 #endif
     
     if (!camera.masterIndexSwitchResponse) {
-        gX_TraceLog(gX_LOG_WARNING,"MAIN: Camera failed to respond");
-        switcherrors++;
+        if (guiPlayground)
+            gX_TraceLog(gX_LOG_DEBUG,"MAIN: Camera not used by GUI playground");
+        else {
+            gX_TraceLog(gX_LOG_WARNING,"MAIN: Camera failed to respond");
+            switcherrors++;
+        }
     }
     else gX_TraceLog(gX_LOG_DEBUG,"MAIN: Camera responded");
     

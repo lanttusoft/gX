@@ -73,6 +73,16 @@ def main():
             or "unknown option" in missing_text,
             f"missing option argument message was unclear: {missing_text[-300:]!r}")
 
+        #ai: required_argument must not swallow the next flag as a markup path.
+        tools_missing = run(["--tools", "--screenWidth", "1024"])
+        tools_text = audit.strip_ansi(tools_missing.stdout or "")
+        require(tools_missing.returncode != 0,
+            "missing --tools value exited 0")
+        require("--tools" in tools_text and "markup path" in tools_text,
+            f"--tools missing-value message was unclear: {tools_text[-300:]!r}")
+        require("gX_Scene: switched" not in tools_text,
+            "missing --tools value still booted the engine")
+
         bad_level = run(["--logLevel", "banana"])
         bad_level_text = audit.strip_ansi(bad_level.stdout or "")
         require(bad_level.returncode != 0,

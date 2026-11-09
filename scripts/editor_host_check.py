@@ -386,6 +386,15 @@ def main():
         if theme_code != 0 or "THEME_EDITOR: panel=1" not in theme_log:
             raise RuntimeError("CLI theme editor did not draw its panel")
 
+        #ai: floating tool windows keep the scene full-width; only the docked
+        #   editor/GFX/theme panels may reserve the left gutter.
+        sky_code, sky_log, _ = run("sky-editor-float", "--sky-editor", {},
+            frames=90, shot=70)
+        if sky_code != 0 or "Tools: sky editor opened at runtime" not in sky_log:
+            raise RuntimeError("floating sky editor did not open")
+        if "GUI: dock engaged" in sky_log:
+            raise RuntimeError("floating sky editor requested the viewport dock")
+
         toggle_code, toggle_log, _ = run("toggle", "--title", {
             "GX_AI_INPUT": "1.0 key 298;2.0 key 298",
         }, frames=200, shot=150)

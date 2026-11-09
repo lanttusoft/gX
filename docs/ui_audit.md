@@ -85,6 +85,11 @@ is the judgment layer on top of it.
   needed, and the 1024 shortcut footer is minimal. `gfx-editor-layout-check`
   pins 1024/1600 and 100–175% scale; `GX_UI_SCALE` and `GFX_LAYOUT` are the
   audit hooks.
+- Floating tools (2026-11-09): sky/background/wavetable/textwriter/physics no
+  longer request the dock gutter, so the scene stays full-width and the panels
+  float over it. The GUI/GFX/theme/module editors still dock. `--tools`
+  missing-value parsing and the quiet GUI-playground switch are covered by
+  `cli-check` and `editor-host-check`.
 
 ## Follow-ups (not blocking)
 

@@ -802,6 +802,15 @@ if (!strcmp(long_options[option_index].name,"guest-model")) {
                     arguments.hasThemePath = true;
                 }
                 if (!strcmp(long_options[option_index].name,"tools")) {
+                    //ai: required_argument would otherwise consume the next
+                    //   flag as a markup path; fail closed with one clear line.
+                    if (!optarg || !optarg[0]
+                        || (optarg[0] == '-' && optarg[1] == '-')) {
+                        fprintf(stderr,
+                            "PARSE: --" "tools requires a markup path; run --help for usage\n");
+                        errors = 1;
+                        goto parse_ret;
+                    }
                     strncpy(arguments.toolsMarkupPath, optarg, sizeof(arguments.toolsMarkupPath) - 1);
                     arguments.hasTools = true;
                     arguments.masterIndex = gX_SCENE_GUIPLAYGROUND;
@@ -916,6 +925,11 @@ if (!strcmp(long_options[option_index].name,"guest-model")) {
                 //   fall through to a windowed boot.
                 if (optopt == 'w' || optopt == 'h')
                     fprintf(stderr, "missing argument for -%c; run --help for usage\n", optopt);
+                else if (optopt == 0 && optind > 0 && optind <= argc
+                    && argv[optind - 1][0] == '-' && argv[optind - 1][1] == '-'
+                    && !strcmp(argv[optind - 1] + 2, "tools"))
+                    fprintf(stderr,
+                        "PARSE: --" "tools requires a markup path; run --help for usage\n");
                 else
                     fprintf(stderr, "unknown option; run --help for valid options\n");
                 errors = 1;

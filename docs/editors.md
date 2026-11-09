@@ -97,6 +97,14 @@ panel. The GFX guide and Y2K OSD/pause-layout fixes are recorded in the
 [rework](gfx_editor_rework.md#narrow-layout-polish-2026-11-08) and
 [console](console_240p.md#presets) docs.
 
+The v0.42.2 follow-up removes the floating-tool dock gutter: sky, background,
+wavetable, textwriter and physics keep the scene full-width and float their
+panels, while the GUI/GFX/theme/module editors still dock. `--tools` with no
+value now fails closed instead of consuming the next flag, and the GUI
+playground switch no longer logs expected renderer/scene/camera failures.
+`editor-host-check` pins the floating sky-editor route; `cli-check` pins the
+missing-value error.
+
 Tier separates maturity from coverage:
 
 - **alpha/WIP** — a usable preview; the workflow may be incomplete, and gates

@@ -4,6 +4,20 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.42.2] - 2026-11-09
+
+Release-Class: patch
+
+### Fixed
+- Floating sky/background/wavetable/textwriter/physics editor windows no
+  longer request the viewport dock. The scene keeps the full width and the
+  panels float over it; the GUI/GFX/theme/module editors still dock.
+- `--tools` without a markup path now fails closed with one clear line
+  instead of consuming the next flag (for example `--screenWidth`) as a path.
+- Switching to the GUI playground for `--tools` no longer logs the expected
+  Renderer/Scene/Camera "failed to respond" warnings; the editor-host and GUI
+  editor gates pin the quiet transition and the floating sky-editor route.
+
 ## [0.42.1] - 2026-11-08
 
 Release-Class: patch

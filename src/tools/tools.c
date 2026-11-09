@@ -257,6 +257,8 @@ gX_I1 gX_Tools_RuntimeActive(gX_I0) {
             || s_runtimeBackground || s_runtimeSky) ? 1 : 0;
 }
 
+
+
 //opencode: openers are exclusive — every runtime flag clears before the
 //   opener sets its own (the ImGui chain draws one tool at a time).
 static gX_I0 gX_Tools_ClearRuntimeFlags(gX_I0) {

@@ -121,6 +121,11 @@ def main():
             "deferred --tools open did not see the markup canvas")
         require("GUI_EDITOR_TREE: canvas=0 elements=4 named=4 labeled=4" in tools,
             "GUI editor tree did not expose the four named demo elements")
+        require("MAIN: Masterindex switch errors" not in tools
+            and "MAIN: Renderer failed to respond" not in tools
+            and "MAIN: Scene failed to respond" not in tools
+            and "MAIN: Camera failed to respond" not in tools,
+            "GUI-playground switch still reports expected module failures")
 
         tour = run("tour", {"GX_TOUR": "force"})
         require("Tools: editor tour opened step=0" in tour,

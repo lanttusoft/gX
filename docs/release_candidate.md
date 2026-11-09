@@ -25,13 +25,13 @@ items. Until all three gates and the operations contract hold, gX stays a
 
 | Item | Value |
 | --- | --- |
-| Version | v0.42.1 (beta) |
+| Version | v0.42.2 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 120 manifest entries; **107/107** on the v0.42.0 full run (`AUDIT_CACHE=0`, 1,476.2 s wall / 2,908.7 s gate time); v0.42.1 is a PATCH UI fix that passed `make check`, `check-fast` and the focused editor/console gates |
+| Audit baseline | 120 manifest entries; **107/107** on the v0.42.0 full run (`AUDIT_CACHE=0`, 1,476.2 s wall / 2,908.7 s gate time); v0.42.2 is a PATCH UI/CLI hygiene fix that passed `make check`, `check-fast` and the focused editor/CLI gates |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 3,925,147 B (269,157 B headroom), BSS 2,701,632 B (3,368 B headroom) — v0.42.1 `make check` |
-| Release class | PATCH (v0.42.1: dogfooding fixes — GUI editor deferred markup open/tree labels, theme-editor CLI panel, GFX guide bounds, Y2K boot OSD scale, Y2K pause hint fit) |
+| Lean gate | payload 3,925,723 B (268,581 B headroom), BSS 2,701,632 B (3,368 B headroom) — v0.42.2 `make check` |
+| Release class | PATCH (v0.42.2: floating-tool dock gutter, `--tools` missing-value parsing, GUI-playground switch warning noise) |
 
 ## Completeness ledger
 
@@ -108,6 +108,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-04 | v0.41.0: scene feature manifest + lazy HDR allocation, GFX Features checklist/templates, Basic/Advanced/Expert settings with expert metadata list. Matrix 90/90 on `13d67e8`. | owner/agent |
 | 2026-11-08 | v0.42.0 release prep: MINOR version bump, full admission and 107/107 audit matrix. Packaging/extraction smoke and owner tag/publish pending; no RC claim. Dogfooding, demand, hardware and operations rows remain open. | owner/agent |
 | 2026-11-08 | v0.42.1 PATCH prep: AI proxy dogfooding fixes for the GUI editor deferred markup open/tree labels, theme-editor CLI panel, GFX guide bounds, Y2K boot OSD scale and pause hint fit; focused editor/console gates and `check-fast`. No tag/push/publish; no RC claim. | owner/agent |
+| 2026-11-09 | v0.42.2 PATCH prep: floating-tool dock gutter, `--tools` missing-value fail-closed parsing and GUI-playground warning noise; focused editor/CLI gates and `check-fast`. No tag/push/publish yet; no RC claim. | owner/agent |
 
 ## Change rule
 
