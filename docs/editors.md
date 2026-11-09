@@ -72,6 +72,15 @@ Ctrl+Z/Ctrl+Y cover value and structural edits, Ctrl+D duplicates, Ctrl+S
 saves, Esc deselects, and F1 opens the guide. First run also shows the
 five-step tour.
 
+### GUI editor tour scale (2026-11-09)
+
+The first-run tour card scales with the tool UI at 100–175%; its Back/Next/
+Skip row lays out only the buttons that exist, so the first step cannot push
+Next off the card. `gui-editor-check` pins the card size and button right
+edges at 100% and 175%. Dense title EXTRAS cards keep their maturity
+description for pointer hover but do not draw a focus tooltip over the next
+grid row. The Settings scale slider is labeled **Tool UI**.
+
 Saves honor the same harness guard as the other editors: a gate-launched run
 with `GX_NO_SETTINGS_SAVE=1` refuses to write shipped markup. The headless hooks
 (`GX_TOOLS_SELECT`, `GX_TOOLS_FILTER`, `GX_TOOLS_SOLO`, `GX_TOOLS_ADD`,

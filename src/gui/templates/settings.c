@@ -217,10 +217,10 @@ gX_I0 gX_GUI_Template_Settings(gX_I32 canvasindex) {
     if (gX_Settings_UILevelAllows(GX_SETTINGS_UI_ADVANCED)) {
         gX_GUI_Builder_Widget_ToggleSwitch(&b, 4.1f, 2.8f, 3.0f, 0.45f,
             "Tool Nav", &settings.toolKeyboardNav);
-        //ai: UX pass — "Tool scale: 1.000" truncated to "1..." in the slider box
-        //   (the Sens precedent: the label shares the box with the value).
+        //ai: "Tool UI" names the scope without truncating the shared slider box
+        //   the way "Tool scale: 1.000" did.
         gX_GUI_Builder_Widget_Slider(&b, 4.1f, 3.35f, 3.0f, 0.45f,
-            "Scale", &settings.toolUiScale, 1.0f, 1.75f);
+            "Tool UI", &settings.toolUiScale, 1.0f, 1.75f);
     }
 
     gX_GUI_Builder_Widget_Section(&b, 0.8f, 3.9f, 3.0f, "Audio", 16);
@@ -287,7 +287,7 @@ gX_I0 gX_GUI_Template_Settings(gX_I32 canvasindex) {
         gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
         b.currentElement->stateRendering.RECT_NO_DRAW = true;
         gX_GUI_Builder_Text_Begin(&b);
-            gX_GUI_Builder_Text_Set(&b, "v0.42.4 BETA");
+            gX_GUI_Builder_Text_Set(&b, "v0.42.5 BETA");
             if (b.curText) { b.curText->fontSize = 10; b.curText->color = gui.style.title2.versionText; }
         gX_GUI_Builder_Text_End(&b);
     gX_GUI_Builder_Element_End(&b);

@@ -392,6 +392,9 @@ typedef struct gX_GUI_Element_Rendering {
     gX_U32  TEXTURE_CUSTOM_PARAMS   : 1;
     
     gX_U32  SHAPE_PARENTCOLOR   : 1;
+    //ai: dense grids (title EXTRAS) keep long status text for pointer hover,
+    //    but keyboard focus must not draw a tip over the next row.
+    gX_U32  TOOLTIP_CURSOR_ONLY : 1;
 } gX_GUI_Element_Rendering;
 
 typedef union gX_GUI_Element_Rendering_Bitmask {

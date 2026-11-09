@@ -578,7 +578,11 @@ gX_I0 gX_GUI_Element_Draw(gX_GUI_Element *element, gX_GUI_Canvas *canvas) {
     gX_GUI_Element_Draw_TextInputs(element,canvas);
 
     //opencode: tooltip — show element description on hover or keyboard focus
-    if ((element->state.HOVERED || element->state.FOCUSED) && element->description[0]) {
+    //ai: dense grids can opt out of the focus tip; hover still shows it.
+    gX_I1 showTip = element->state.HOVERED
+        || (element->state.FOCUSED
+            && !element->stateRendering.TOOLTIP_CURSOR_ONLY);
+    if (showTip && element->description[0]) {
         //opencode: engine UI font like every other text (was hardcoded default).
         gX_Font defFont = gui.style.uiFontLoaded ? gui.style.uiFont : gX_Font_GetDefault();
         //opencode: scale with the window like all UI type (was fixed 14px).

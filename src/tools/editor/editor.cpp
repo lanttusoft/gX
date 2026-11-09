@@ -1917,21 +1917,48 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
             if (hl.z > hl.x)
                 tdl->AddRect(ImVec2(hl.x, hl.y), ImVec2(hl.z, hl.w), IM_COL32(120, 180, 240, 255), 0.0f, 0, 3.0f);
         }
-        ImGui::SetNextWindowPos(ImVec2(scrW * 0.5f - 210, scrH * 0.5f - 90), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(420, 180), ImGuiCond_FirstUseEver);
+        //ai: the tour card scales with the tool UI; the old fixed 420x180 card
+        //    clipped its text and Next/Skip row at 150-175% scale.
+        gX_F32 tourScale = ImGui::GetStyle().FontScaleMain;
+        if (tourScale < 1.0f) tourScale = 1.0f;
+        ImVec2 tourSize(420.0f * tourScale, 180.0f * tourScale);
+        ImGui::SetNextWindowPos(ImVec2(scrW * 0.5f - tourSize.x * 0.5f,
+            scrH * 0.5f - tourSize.y * 0.5f), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(tourSize, ImGuiCond_Always);
         ImGui::SetNextWindowFocus();
         bool tourOpen = true;
         if (ImGui::Begin("Editor tour", &tourOpen)) {
             ImGui::Text("%s", titles[s_tourStep]);
             ImGui::TextWrapped("%s", bodies[s_tourStep]);
-            if (s_tourStep > 0 && ImGui::Button("Back")) s_tourStep--;
-            ImGui::SameLine();
-            if (s_tourStep < 4 && ImGui::Button("Next")) s_tourStep++;
-            ImGui::SameLine();
+            gX_F32 nextRight = 0.0f;
+            gX_F32 skipRight = 0.0f;
+            if (s_tourStep > 0) {
+                if (ImGui::Button("Back")) s_tourStep--;
+                ImGui::SameLine();
+            }
+            if (s_tourStep < 4) {
+                if (ImGui::Button("Next")) s_tourStep++;
+                nextRight = ImGui::GetItemRectMax().x;
+                ImGui::SameLine();
+            }
             if (ImGui::Button(s_tourStep == 4 ? "Finish" : "Skip")) {
                 s_tourStep = -1;
                 settings.edTourSeen = 1;
                 settings.dirtyFlag = 1;
+            }
+            skipRight = ImGui::GetItemRectMax().x;
+            if (getenv("GX_TOUR") && strcmp(getenv("GX_TOUR"), "0") != 0) {
+                static gX_I32 lastTourTrace = -2;
+                if (lastTourTrace != s_tourStep) {
+                    ImVec2 windowPos = ImGui::GetWindowPos();
+                    ImVec2 windowSize = ImGui::GetWindowSize();
+                    gX_TraceLog(gX_LOG_INFO,
+                        "TOOLS: editor tour step=%d window=%.0fx%.0f "
+                        "next_right=%.0f skip_right=%.0f window_right=%.0f",
+                        s_tourStep, windowSize.x, windowSize.y,
+                        nextRight, skipRight, windowPos.x + windowSize.x);
+                    lastTourTrace = s_tourStep;
+                }
             }
         }
         ImGui::End();

@@ -4,6 +4,19 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.42.5] - 2026-11-09
+
+Release-Class: patch
+
+### Fixed
+- The GUI editor first-run tour now scales with the tool UI and keeps
+  Back/Next/Skip inside the card at 100% and 175%. `gui-editor-check` pins the
+  window and button extents at both scales.
+- The title EXTRAS tool-status text no longer draws a focus tooltip over the
+  next card in the two-column grid; pointer hover still shows the description.
+- The Settings scale slider is labeled **Tool UI**, so it is not confused with
+  native title/window scaling.
+
 ## [0.42.4] - 2026-11-09
 
 Release-Class: patch

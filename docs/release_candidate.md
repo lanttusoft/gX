@@ -25,13 +25,13 @@ items. Until all three gates and the operations contract hold, gX stays a
 
 | Item | Value |
 | --- | --- |
-| Version | v0.42.4 (beta) |
+| Version | v0.42.5 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 120 manifest entries; **107/107** on the v0.42.0 full run (`AUDIT_CACHE=0`, 1,476.2 s wall / 2,908.7 s gate time); v0.42.4 is a PATCH BSS-recovery slice that passed `make check`, `check-fast`, `uniform-trace-check` and the lean gate |
+| Audit baseline | 120 manifest entries; **107/107** on the v0.42.0 full run (`AUDIT_CACHE=0`, 1,476.2 s wall / 2,908.7 s gate time); v0.42.5 is a PATCH dogfooding fix that passed `make check`, `check-fast`, `gui-editor-check` and `title-flow-check` |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 3,929,115 B (265,189 B headroom), BSS 2,672,544 B (32,456 B headroom) — v0.42.4 `make lean` |
-| Release class | PATCH (v0.42.4: lazy `GX_UNIFORM_TRACE` cache, 29,728 B Release BSS reclaimed, no behavior or cap change) |
+| Lean gate | payload 3,929,403 B (264,901 B headroom), BSS 2,672,544 B (32,456 B headroom) — v0.42.5 `make lean` |
+| Release class | PATCH (v0.42.5: GUI editor tour scale/clipping, title EXTRAS focus tooltip collision, `Tool UI` label) |
 
 ## Completeness ledger
 
@@ -111,6 +111,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-09 | v0.42.2 PATCH prep: floating-tool dock gutter, `--tools` missing-value fail-closed parsing and GUI-playground warning noise; focused editor/CLI gates and `check-fast`. No tag/push/publish yet; no RC claim. | owner/agent |
 | 2026-11-09 | v0.42.3 PATCH prep: digital-only D-pad free-camera fallback and axis-to-D-pad synthesis for the PS1 Classic adapter, console idle blanking fix against resting non-zero axes, gamepad connect/disconnect + D-pad/axis traces and `GX_GAMEPAD_MAPPING`; input unit suite, console gate, focused gates and `check-fast`. Physical PS1 USB adapter evidence captured locally (D-pad axes 0/1 synthesized to up/down/left/right, Cross 7, Circle 6, Start 15) as a user hardware test, not a gate claim. No tag/push/publish yet; no RC claim. | owner/agent |
 | 2026-11-09 | v0.42.4 PATCH prep: GX-I033 BSS recovery by lazy-allocating and freeing the diagnostic-only `GX_UNIFORM_TRACE` cache; 29,728 B BSS reclaimed (2,672,544 B, 32,456 B headroom), +160 B payload, no behavior/cap change. `uniform-trace-check`, `--test-only`, `make lean` and `check-fast` pass. No tag/push/publish yet; no RC claim. | owner/agent |
+| 2026-11-09 | v0.42.5 PATCH prep: GX-I034 dogfooding fixes for the GUI editor tour at 100/175%, the title EXTRAS focus-tooltip collision and the `Tool UI` scale label; `gui-editor-check` pins the tour geometry and the title/editor gates pass. Accepted low/medium polish remains for title pause glass, plain-launch hint, OPEN GFX/RUN DEMO duplicate and narrow GUI-editor dock text. No tag/push/publish yet; no RC claim. | owner/agent |
 
 ## Change rule
 

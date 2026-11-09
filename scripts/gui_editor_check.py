@@ -23,11 +23,30 @@ TOOLS = "Tools: GUI editor"
 HOOK_RE = re.compile(
     r"Tools: deferred hooks applied \(add=(-?\d+) rm=(-?\d+) "
     r"undo=(\d+) redo=(\d+)\) used (\d+) -> (\d+) \(amount (\d+)\)")
+TOUR_RE = re.compile(
+    r"TOOLS: editor tour step=(\d+) window=(\d+)x(\d+) "
+    r"next_right=(\d+) skip_right=(\d+) window_right=(\d+)")
 
 
 def require(condition, message):
     if not condition:
         raise RuntimeError(message)
+
+
+def check_tour(tag, log, scale):
+    matches = TOUR_RE.findall(log)
+    require(matches, f"{tag}: editor tour geometry trace missing")
+    step, width, height, next_right, skip_right, window_right = (
+        float(value) for value in matches[-1])
+    require(step == 0, f"{tag}: tour did not stay on step 0")
+    require(width >= 420.0 * scale * 0.95,
+        f"{tag}: tour width {width:.0f} did not scale for {scale:.2f}x")
+    require(height >= 180.0 * scale * 0.95,
+        f"{tag}: tour height {height:.0f} did not scale for {scale:.2f}x")
+    require(next_right > 0 and next_right <= window_right - 4,
+        f"{tag}: Next button clipped ({next_right:.0f} > {window_right:.0f})")
+    require(skip_right > 0 and skip_right <= window_right - 4,
+        f"{tag}: Skip button clipped ({skip_right:.0f} > {window_right:.0f})")
 
 
 def run(tag, extra, frames=90):
@@ -130,6 +149,11 @@ def main():
         tour = run("tour", {"GX_TOUR": "force"})
         require("Tools: editor tour opened step=0" in tour,
             "first-run editor tour did not open")
+        check_tour("tour", tour, 1.0)
+        tour175 = run("tour-175", {"GX_TOUR": "force", "GX_UI_SCALE": "1.75"})
+        require("Tools: editor tour opened step=0" in tour175,
+            "175% editor tour did not open")
+        check_tour("tour-175", tour175, 1.75)
 
         added = run("add", {"GX_TOOLS_ADD": "0"})
         counts = hook_counts(added, "add")
