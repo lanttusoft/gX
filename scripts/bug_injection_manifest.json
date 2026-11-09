@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "_comment": "Historical entries may come from gX or the gameX lineage. reverse_commit reverses a fix diff reachable from --base; gameX-era fixes that no longer map to the current paths/APIs should be re-expressed as targeted replace mutations with source=gameX and a note. Every entry must be killed by the named gate/test.",
+  "entries": [
+    {
+      "id": "dpad-wrong-index",
+      "description": "Historical digital-pad fallback read raylib trigger/middle slots instead of the left-face D-pad buttons.",
+      "source": "gX",
+      "note": "v0.42.3 D-pad fallback bug, re-expressed without removing gX_Input_Gamepad_SynthesizeDpad so the current unit suite can diagnose it.",
+      "type": "replace",
+      "path": "src/input.c",
+      "old": "        case gX_BIND_MOVE_FORWARD:  return gX_GAMEPAD_BUTTON_LEFT_FACE_UP;\n        case gX_BIND_MOVE_BACKWARD: return gX_GAMEPAD_BUTTON_LEFT_FACE_DOWN;\n        case gX_BIND_MOVE_LEFT:     return gX_GAMEPAD_BUTTON_LEFT_FACE_LEFT;\n        case gX_BIND_MOVE_RIGHT:    return gX_GAMEPAD_BUTTON_LEFT_FACE_RIGHT;",
+      "new": "        case gX_BIND_MOVE_FORWARD:  return GX_GAMEPAD_DPAD_UP;\n        case gX_BIND_MOVE_BACKWARD: return GX_GAMEPAD_DPAD_DOWN;\n        case gX_BIND_MOVE_LEFT:     return GX_GAMEPAD_DPAD_LEFT;\n        case gX_BIND_MOVE_RIGHT:    return GX_GAMEPAD_DPAD_RIGHT;",
+      "command": ["./build/gX_build", "--test-only"],
+      "expect_regex": "TEST_ONLY: [1-9][0-9]* errors",
+      "timeout": 600
+    },
+    {
+      "id": "console-idle-zero-baseline",
+      "description": "Historical console idle detection compared raw axes to zero, so a controller resting at -1 kept the shell awake.",
+      "source": "gX",
+      "note": "v0.42.3 idle calibration bug, re-expressed as the old absolute-axis check while keeping the stored neutral trace.",
+      "type": "replace",
+      "path": "src/gui/gui.c",
+      "old": "            if (fabsf(value - s_consoleIdleGamepadAxis[g][i]) > 0.5f) {",
+      "new": "            if (fabsf(value) > 0.2f) {",
+      "command": ["python3", "scripts/console_shell_check.py"],
+      "expect_regex": "CONSOLE_SHELL: FAIL",
+      "timeout": 900
+    },
+    {
+      "id": "tour-scale-fixed",
+      "description": "Historical GUI editor tour kept a fixed 420x180 card, so 175% scale clipped/removed the button row.",
+      "source": "gX",
+      "note": "v0.42.5 tour fix, scale half re-expressed as a fixed 1.0 scale mutation.",
+      "type": "replace",
+      "path": "src/tools/editor/editor.cpp",
+      "old": "        gX_F32 tourScale = ImGui::GetStyle().FontScaleMain;",
+      "new": "        gX_F32 tourScale = 1.0f;",
+      "command": ["python3", "scripts/gui_editor_check.py"],
+      "expect_regex": "GUI_EDITOR_CHECK: FAIL",
+      "timeout": 900
+    },
+    {
+      "id": "tour-next-row",
+      "description": "Historical GUI editor tour placed SameLine after a conditional Back button, pushing Next off the card on step 0.",
+      "source": "gX",
+      "note": "v0.42.5 tour fix, button-row half re-expressed with the trace kept for a behavioral assertion.",
+      "type": "replace",
+      "path": "src/tools/editor/editor.cpp",
+      "old": "            if (s_tourStep > 0) {\n                if (ImGui::Button(\"Back\")) s_tourStep--;\n                ImGui::SameLine();\n            }",
+      "new": "            if (s_tourStep > 0) {\n                if (ImGui::Button(\"Back\")) s_tourStep--;\n            }\n            ImGui::SameLine();",
+      "command": ["python3", "scripts/gui_editor_check.py"],
+      "expect_regex": "GUI_EDITOR_CHECK: FAIL",
+      "timeout": 900
+    }
+  ]
+}

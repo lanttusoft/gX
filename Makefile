@@ -80,6 +80,8 @@ check: all
 	#ai: ecosystem discovery is read-only, sanitizes remotes and preserves the local ledger.
 	python3 -m unittest discover -s scripts -p test_repo_ecosystem.py
 	python3 -m unittest discover -s scripts -p test_agent_bus.py
+	#ai: mutation harness result classification and manifest checks are display-free.
+	python3 -m unittest discover -s scripts -p test_bug_injection_check.py
 	#ai: routine logs stay TRACE and the threshold is never reused as a severity.
 	python3 scripts/log_level_audit.py
 	python3 -m unittest discover -s scripts -p test_log_level_audit.py
@@ -285,6 +287,8 @@ check-fast: all
 	#ai: ecosystem discovery is read-only, sanitizes remotes and preserves the local ledger.
 	python3 -m unittest discover -s scripts -p test_repo_ecosystem.py
 	python3 -m unittest discover -s scripts -p test_agent_bus.py
+	#ai: mutation harness result classification and manifest checks are display-free.
+	python3 -m unittest discover -s scripts -p test_bug_injection_check.py
 	#ai: routine logs stay TRACE and the threshold is never reused as a severity.
 	python3 scripts/log_level_audit.py
 	python3 -m unittest discover -s scripts -p test_log_level_audit.py
@@ -328,6 +332,13 @@ check-fast: all
 	@echo "== [gX fast] cursor state machine =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/cursor_check.py
 	@echo "== [gX fast] OK =="
+
+#ai: GX-I035 mutation pilot — disposable HEAD archive, historical reverse
+#   patches or targeted mutations, expected gate/test failure per entry.
+.PHONY: bug-injection-check
+bug-injection-check:
+	@echo "== [gX] historical bug injection =="
+	python3 scripts/bug_injection_check.py
 
 #ai: devcube lab-module gate — 60 Hz phase plus the explicit native overlay.
 .PHONY: devcube-check

@@ -47,6 +47,8 @@ Start here:
   license stance for AI-assisted contributions.
 - [Peer-review gate](peer_review_gate.md) — three-lens UX/editor review:
   7/10 minimum, 8/10 target, with evidence.
+- [Bug injection / mutation pilot](bug_injection.md) — disposable historical
+  bug corpus for test-sensitivity checks; opt-in, never release evidence.
 - [AI usage and limitations](ai_disclosure.md) — what AI assisted with,
   review limits and the as-is disclaimer.
 
