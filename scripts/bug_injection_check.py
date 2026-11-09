@@ -259,7 +259,7 @@ def main():
               % (summary["killed"], summary["survived"],
                  summary["unexpected"]), ""]
     (report_dir / "report.md").write_text("\n".join(lines), encoding="utf-8")
-    print("BUG_INJECTION: %s" % report_dir / "report.md")
+    print("BUG_INJECTION: %s" % (report_dir / "report.md"))
     if summary["survived"]:
         return 1
     if summary["unexpected"]:

@@ -88,6 +88,15 @@ paths, assets or unrelated history into the public manifest.
 - `tour-next-row` — unconditional `SameLine()` after a skipped Back button;
   `gui-editor-check`.
 
+## Pilot result (2026-11-10)
+
+All four entries were killed, none survived. Three hit the intended
+assertions: `INPUT 10 FAIL` (D-pad fallback), `tour width 420 did not scale`
+(175%), and `Skip button clipped` (step 0). The console-idle entry was an
+**indirect kill**: `console-shell-check` failed earlier on a focus-target
+mismatch rather than the idle timeout. Record that as gate-ordering debt; add a
+dedicated idle-only assertion before treating this entry as a precise kill.
+
 ## Limits
 
 - Survivors mean the gate/test did not detect that mutation; they are findings,

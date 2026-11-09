@@ -19,7 +19,7 @@
       "id": "console-idle-zero-baseline",
       "description": "Historical console idle detection compared raw axes to zero, so a controller resting at -1 kept the shell awake.",
       "source": "gX",
-      "note": "v0.42.3 idle calibration bug, re-expressed as the old absolute-axis check while keeping the stored neutral trace.",
+      "note": "v0.42.3 idle calibration bug, re-expressed as the old absolute-axis check while keeping the stored neutral trace. Pilot kill is indirect: the console focus-target assertion fires before the idle assertion. Keep as a gate-ordering finding; a dedicated idle-only check should make the kill precise.",
       "type": "replace",
       "path": "src/gui/gui.c",
       "old": "            if (fabsf(value - s_consoleIdleGamepadAxis[g][i]) > 0.5f) {",
