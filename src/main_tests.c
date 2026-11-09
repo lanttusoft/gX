@@ -488,12 +488,56 @@ static gX_I32 gX_Tests_Input(gX_I0) {
         errors++;
     }
 
+    //ai: digital-only pads use the D-pad for free-camera movement.
+    input.gamepad[0].axisMovement[0] = 0.0f;
+    input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_RIGHT].DOWN = true;
+    input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_RIGHT].PRESSED = true;
+    gX_Input_Bind_Process(&input.binds[gX_BIND_MOVE_RIGHT]);
+    if (!input.binds[gX_BIND_MOVE_RIGHT].state.DOWN
+        || !input.binds[gX_BIND_MOVE_RIGHT].state.PRESSED) {
+        gX_TraceLog(gX_LOG_INFO, "INPUT 10 FAIL: dpad movement fallback");
+        errors++;
+    }
+    input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_RIGHT] = (gX_Input_State){0};
+
+    //ai: a digital pad's D-pad arrives on the left-stick axes; synthesize it.
+    input.gamepad[0] = (gX_Input_Gamepad){0};
+    input.gamepad[0].available = true;
+    input.gamepad[0].axisCount = 2;
+    gX_Input_Gamepad_SynthesizeDpad(&input.gamepad[0]);
+    input.gamepad[0].axisMovement[1] = -1.0f;
+    gX_Input_Gamepad_SynthesizeDpad(&input.gamepad[0]);
+    if (!input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_UP].DOWN
+        || !input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_UP].PRESSED) {
+        gX_TraceLog(gX_LOG_INFO, "INPUT 11 FAIL: axis dpad synthesis");
+        errors++;
+    }
+    for (gX_I32 b = 0; b < 4; b++)
+        input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_UP + b]
+            = (gX_Input_State){0};
+    gX_Input_Gamepad_SynthesizeDpad(&input.gamepad[0]);
+    if (!input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_UP].DOWN
+        || input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_UP].PRESSED) {
+        gX_TraceLog(gX_LOG_INFO, "INPUT 12 FAIL: axis dpad held edge");
+        errors++;
+    }
+    for (gX_I32 b = 0; b < 4; b++)
+        input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_UP + b]
+            = (gX_Input_State){0};
+    input.gamepad[0].axisMovement[1] = 0.0f;
+    gX_Input_Gamepad_SynthesizeDpad(&input.gamepad[0]);
+    if (input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_UP].DOWN
+        || !input.gamepad[0].buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_UP].RELEASED) {
+        gX_TraceLog(gX_LOG_INFO, "INPUT 13 FAIL: axis dpad release");
+        errors++;
+    }
+
     gX_Input_Bind_SetName(&input.binds[gX_BIND_CONFIRM], "confirm");
     input.binds[gX_BIND_CONFIRM].state.PRESSED = true;
     gX_Input_State named = gX_Input_Get_Bind_State_Name("confirm");
     gX_Input_State missing = gX_Input_Get_Bind_State_Name("missing");
     if (!named.PRESSED || missing.DOWN || gX_Input_Get_Bind_State_Name(NULL).DOWN) {
-        gX_TraceLog(gX_LOG_INFO, "INPUT 10 FAIL: named bind lookup");
+        gX_TraceLog(gX_LOG_INFO, "INPUT 14 FAIL: named bind lookup");
         errors++;
     }
 

@@ -4,6 +4,24 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.42.3] - 2026-11-09
+
+Release-Class: patch
+
+### Fixed
+- Digital-only controllers (for example a PS1 pad without analog sticks) now
+  use the D-pad as a free-camera movement fallback, including adapters that
+  report the D-pad on the left-stick axes (the four button states are
+  synthesized with hysteresis). Analog sticks remain mapped when present, and
+  `GX_GAMEPAD_DPAD_AXES=off` disables synthesis for a centred wheel or flight
+  stick. The input unit suite pins the fallback and synthesis paths.
+- Console idle blanking no longer stays awake while a controller rests its
+  axes at a non-zero neutral; activity is detected from button presses and
+  axis changes.
+- Gamepad connection diagnostics now log the device name and axis count on
+  connect/disconnect, and `GX_GAMEPAD_MAPPING=<SDL/GLFW mapping string>` can
+  supply a mapping for adapters raylib does not recognise out of the box.
+
 ## [0.42.2] - 2026-11-09
 
 Release-Class: patch

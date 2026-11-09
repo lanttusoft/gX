@@ -25,13 +25,13 @@ items. Until all three gates and the operations contract hold, gX stays a
 
 | Item | Value |
 | --- | --- |
-| Version | v0.42.2 (beta) |
+| Version | v0.42.3 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 120 manifest entries; **107/107** on the v0.42.0 full run (`AUDIT_CACHE=0`, 1,476.2 s wall / 2,908.7 s gate time); v0.42.2 is a PATCH UI/CLI hygiene fix that passed `make check`, `check-fast` and the focused editor/CLI gates |
+| Audit baseline | 120 manifest entries; **107/107** on the v0.42.0 full run (`AUDIT_CACHE=0`, 1,476.2 s wall / 2,908.7 s gate time); v0.42.3 is a PATCH controller-testability fix that passed `make check`, `check-fast` and the focused input/editor gates |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 3,925,723 B (268,581 B headroom), BSS 2,701,632 B (3,368 B headroom) — v0.42.2 `make check` |
-| Release class | PATCH (v0.42.2: floating-tool dock gutter, `--tools` missing-value parsing, GUI-playground switch warning noise) |
+| Lean gate | payload 3,928,987 B (265,317 B headroom), BSS 2,702,272 B (2,728 B headroom) — v0.42.3 `make check` |
+| Release class | PATCH (v0.42.3: digital-only D-pad fallback and axis-to-D-pad synthesis, console idle blanking fix, gamepad connect trace, `GX_GAMEPAD_MAPPING` hook) |
 
 ## Completeness ledger
 
@@ -109,6 +109,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-08 | v0.42.0 release prep: MINOR version bump, full admission and 107/107 audit matrix. Packaging/extraction smoke and owner tag/publish pending; no RC claim. Dogfooding, demand, hardware and operations rows remain open. | owner/agent |
 | 2026-11-08 | v0.42.1 PATCH prep: AI proxy dogfooding fixes for the GUI editor deferred markup open/tree labels, theme-editor CLI panel, GFX guide bounds, Y2K boot OSD scale and pause hint fit; focused editor/console gates and `check-fast`. No tag/push/publish; no RC claim. | owner/agent |
 | 2026-11-09 | v0.42.2 PATCH prep: floating-tool dock gutter, `--tools` missing-value fail-closed parsing and GUI-playground warning noise; focused editor/CLI gates and `check-fast`. No tag/push/publish yet; no RC claim. | owner/agent |
+| 2026-11-09 | v0.42.3 PATCH prep: digital-only D-pad free-camera fallback and axis-to-D-pad synthesis for the PS1 Classic adapter, console idle blanking fix against resting non-zero axes, gamepad connect/disconnect + D-pad/axis traces and `GX_GAMEPAD_MAPPING`; input unit suite, console gate, focused gates and `check-fast`. Physical PS1 USB adapter evidence captured locally (D-pad axes 0/1 synthesized to up/down/left/right, Cross 7, Circle 6, Start 15) as a user hardware test, not a gate claim. No tag/push/publish yet; no RC claim. | owner/agent |
 
 ## Change rule
 

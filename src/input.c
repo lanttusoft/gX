@@ -28,6 +28,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "input.h"
 #include "gui/gui.h"
@@ -116,6 +117,69 @@ gX_I1 gX_Input_Bind_CaptureKey(gX_I32 key) {
     return true;
 }
 
+//ai: digital-only pads (e.g. a PS1 controller without analog sticks) still
+//   need free-camera movement; mirror the D-pad onto the movement axes.
+static gX_I32 gX_Input_MovementDpad(gX_I32 bindIndex) {
+    switch (bindIndex) {
+        case gX_BIND_MOVE_FORWARD:  return gX_GAMEPAD_BUTTON_LEFT_FACE_UP;
+        case gX_BIND_MOVE_BACKWARD: return gX_GAMEPAD_BUTTON_LEFT_FACE_DOWN;
+        case gX_BIND_MOVE_LEFT:     return gX_GAMEPAD_BUTTON_LEFT_FACE_LEFT;
+        case gX_BIND_MOVE_RIGHT:    return gX_GAMEPAD_BUTTON_LEFT_FACE_RIGHT;
+        default: return -1;
+    }
+}
+
+//ai: digital pads such as a PS1 USB adapter expose the D-pad as the left-stick
+//   axes. Synthesize the four raylib D-pad button states with hysteresis so
+//   menu focus, pause navigation and the free-camera fallback see a D-pad.
+//   Pads that rest off-centre (wheels) never enable it; the env kill switch
+//   covers centred sticks that must stay off the menu.
+#define GX_GAMEPAD_DPAD_AXIS_PRESS   0.75f
+#define GX_GAMEPAD_DPAD_AXIS_RELEASE 0.50f
+
+static gX_I1 gX_Input_Gamepad_DpadAxesEnabled(gX_I0) {
+    const gX_I8 *hook = getenv("GX_GAMEPAD_DPAD_AXES");
+    return !(hook && (strcmp((const char *)hook, "0") == 0
+        || strcmp((const char *)hook, "off") == 0));
+}
+
+gX_I0 gX_Input_Gamepad_SynthesizeDpad(gX_Input_Gamepad *pad) {
+    if (!pad) return;
+    gX_I1 axisDown[4] = {0};
+    if (gX_Input_Gamepad_DpadAxesEnabled() && pad->axisCount >= 2) {
+        gX_F32 lx = pad->axisMovement[0];
+        gX_F32 ly = pad->axisMovement[1];
+        if (!pad->dpadAxisReady
+            && fabsf(lx) <= 0.25f && fabsf(ly) <= 0.25f)
+            pad->dpadAxisReady = 1;
+        if (pad->dpadAxisReady) {
+            axisDown[0] = pad->dpadAxisDown[0]
+                ? ly < -GX_GAMEPAD_DPAD_AXIS_RELEASE
+                : ly < -GX_GAMEPAD_DPAD_AXIS_PRESS;
+            axisDown[1] = pad->dpadAxisDown[1]
+                ? lx > GX_GAMEPAD_DPAD_AXIS_RELEASE
+                : lx > GX_GAMEPAD_DPAD_AXIS_PRESS;
+            axisDown[2] = pad->dpadAxisDown[2]
+                ? ly > GX_GAMEPAD_DPAD_AXIS_RELEASE
+                : ly > GX_GAMEPAD_DPAD_AXIS_PRESS;
+            axisDown[3] = pad->dpadAxisDown[3]
+                ? lx < -GX_GAMEPAD_DPAD_AXIS_RELEASE
+                : lx < -GX_GAMEPAD_DPAD_AXIS_PRESS;
+        }
+    }
+    for (gX_I32 d = 0; d < 4; d++) {
+        gX_Input_State *btn =
+            &pad->buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_UP + d];
+        gX_I1 down = btn->DOWN || axisDown[d];
+        btn->PRESSED = down && !pad->dpadPrevDown[d];
+        btn->RELEASED = !down && pad->dpadPrevDown[d];
+        btn->DOWN = down;
+        btn->UP = !down;
+        pad->dpadPrevDown[d] = down;
+        pad->dpadAxisDown[d] = axisDown[d];
+    }
+}
+
 gX_I0 gX_Input_Bind_Process(gX_Input_Bind *bind) {
     if (!bind) return;
     bind->state = (gX_Input_State){0};
@@ -154,6 +218,12 @@ gX_I0 gX_Input_Bind_Process(gX_Input_Bind *bind) {
                     if (mapping == GX_GAMEPAD_AXIS_LY && bindIndex == gX_BIND_MOVE_BACKWARD) axisDown = value > 0.25f;
                     bind->state.DOWN |= axisDown;
                 }
+            }
+            gX_I32 dpad = gX_Input_MovementDpad(bindIndex);
+            if (dpad >= 0) {
+                bind->state.DOWN |= pad->buttons[dpad].DOWN;
+                bind->state.PRESSED |= pad->buttons[dpad].PRESSED;
+                bind->state.RELEASED |= pad->buttons[dpad].RELEASED;
             }
         }
     }
@@ -1101,11 +1171,16 @@ static gX_I1 gX_Input_ConsoleController_Enabled(gX_I0)
     return 0;
 }
 
+//ai: physical-controller diagnostic — GX_GAMEPAD_TRACE=1 logs button edges
+//   and significant axis changes so an adapter's mapping can be verified.
+static gX_F32 s_gamepadTraceAxis[8][8];
+
 //opencode: poll all connected gamepads and update button/axis state.
 //   Iterates up to 8 gamepad slots. For each connected gamepad, polls
 //   up to 64 buttons and up to 8 axes via the wrapper API.
 static gX_I0 gX_Input_Update_Gamepad(gX_I0) {
     if (!maindata.backendLoaded) return;  //opencode: raylib gamepad calls crash before init
+    gX_I1 trace = getenv("GX_GAMEPAD_TRACE") != NULL;
     for (gX_I32 gp = 0; gp < 8; gp++) {
         gX_Input_Gamepad *pad = &input.gamepad[gp];
         gX_I1 wasAvailable = pad->available;
@@ -1117,6 +1192,10 @@ static gX_I0 gX_Input_Update_Gamepad(gX_I0) {
                 strncpy(pad->name, (n && n[0]) ? n : "unknown", sizeof(pad->name) - 1);
                 pad->name[sizeof(pad->name) - 1] = '\0';
                 pad->axisCount = gX_Gamepad_Axis_GetCount(gp);
+                for (gX_I32 a = 0; a < 8; a++) s_gamepadTraceAxis[gp][a] = 0.0f;
+                gX_TraceLog(gX_LOG_INFO,
+                    "INPUT: gamepad %d connected name=\"%s\" axes=%d",
+                    gp, pad->name, pad->axisCount);
             }
             // Poll buttons (0..GX_GAMEPAD_BUTTON_RIGHT_THUMB, max 17).
             //   Raylib only defines 18 buttons — querying indices >17 may
@@ -1129,15 +1208,39 @@ static gX_I0 gX_Input_Update_Gamepad(gX_I0) {
                 btn->UP      = gX_Gamepad_Button_IsUp(gp, b);
                 if (btn->PRESSED) {
                     pad->buttonHistory[input.keyboard.keyHistoryIndexPtr % 16] = (gX_I8)b;
+                    if (trace)
+                        gX_TraceLog(gX_LOG_INFO,
+                            "GAMEPAD_TRACE: pad=%d button=%d", gp, b);
                 }
             }
             // Poll axes (0..pad->axisCount, max 8)
             for (gX_I32 a = 0; a < pad->axisCount && a < 8; a++) {
                 pad->axisMovement[a] = gX_Gamepad_Axis_GetMovement(gp, a);
+                if (trace
+                    && fabsf(pad->axisMovement[a] - s_gamepadTraceAxis[gp][a]) > 0.25f) {
+                    gX_TraceLog(gX_LOG_INFO,
+                        "GAMEPAD_TRACE: pad=%d axis=%d value=%.2f",
+                        gp, a, pad->axisMovement[a]);
+                    s_gamepadTraceAxis[gp][a] = pad->axisMovement[a];
+                }
+            }
+            //ai: digital pads report the D-pad on axes 0/1; synthesize the
+            //   button states after the raw poll so menus and binds agree.
+            gX_Input_Gamepad_SynthesizeDpad(pad);
+            if (trace) {
+                static const gX_I8 *dpadNames[4] = {"up", "right", "down", "left"};
+                for (gX_I32 d = 0; d < 4; d++) {
+                    if (pad->buttons[gX_GAMEPAD_BUTTON_LEFT_FACE_UP + d].PRESSED
+                        && pad->dpadAxisDown[d])
+                        gX_TraceLog(gX_LOG_INFO,
+                            "GAMEPAD_TRACE: pad=%d dpad=%s (axis)", gp, dpadNames[d]);
+                }
             }
         } else {
             // Gamepad disconnected — clear state
             if (wasAvailable) {
+                gX_TraceLog(gX_LOG_INFO, "INPUT: gamepad %d disconnected", gp);
+                for (gX_I32 a = 0; a < 8; a++) s_gamepadTraceAxis[gp][a] = 0.0f;
                 *pad = (gX_Input_Gamepad){0};
             }
         }

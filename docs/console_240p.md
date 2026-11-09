@@ -289,7 +289,17 @@ by the user; do not change display modes automatically.
   to normal speed. Controller slot 0 maps D-pad to navigate, south face to
   confirm, east face to go back, and Start to open/close the menu during
   playback. The shell view and overlay use the shared keyboard/gamepad focus
-  navigation.
+  navigation. Digital-only pads (for example a PS1 controller without analog
+  sticks) use the D-pad for free-camera movement. When an adapter reports the
+  D-pad on the left-stick axes, gX synthesizes the four D-pad buttons so menu
+  focus and pause navigation match a native D-pad; analog sticks stay mapped
+  when present, and `GX_GAMEPAD_DPAD_AXES=off` disables the synthesis for a
+  centred wheel or flight stick. On connect the input log reports
+  `INPUT: gamepad N connected name="…" axes=N`,
+  `GX_GAMEPAD_TRACE=1` logs button edges, synthesized D-pad presses and
+  significant axis changes for mapping checks, and
+  `GX_GAMEPAD_MAPPING=<SDL/GLFW mapping string>` can supply a mapping for
+  adapters raylib does not recognise out of the box.
 - <!-- //ai: compact native shell, save browser and cartridge pause layout. -->
   **Compact native UI** — the shell groups cartridges and video/save controls
   in two columns inside a centered, aspect-fitted 720x560 panel (reference

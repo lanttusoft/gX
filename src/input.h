@@ -138,6 +138,11 @@ typedef struct gX_Input_Gamepad {
     
     gX_I32 axisCount;
     gX_F32 axisMovement[8];
+    //ai: digital pads expose the D-pad on the left-stick axes; these hold the
+    //   synthesized button/hysteresis state so menus and binds see a D-pad.
+    gX_I1 dpadAxisReady;
+    gX_I1 dpadAxisDown[4];
+    gX_I1 dpadPrevDown[4];
 } gX_Input_Gamepad;
 
 #define gX_INPUT_KEYBOARD_KEYS 512
@@ -214,6 +219,9 @@ gX_I0 gX_Input_Bind_SetPersistent(gX_U32 index, gX_I32 key, gX_U32 keyindex);
 gX_I1 gX_Input_Bind_CaptureKey(gX_I32 key);
 gX_I0 gX_Input_Bind_SetName(gX_Input_Bind *bind, const gX_I8 *name);
 gX_I0 gX_Input_Bind_Process(gX_Input_Bind *bind);
+//ai: synthesize D-pad button states from the left-stick axes of digital pads;
+//   call after the raw button poll so button DOWN is the physical state.
+gX_I0 gX_Input_Gamepad_SynthesizeDpad(gX_Input_Gamepad *pad);
 
 //opencode: gamepad constants — generic directional names so backend (N64/PS/Xbox)
 //   maps physical buttons to these. Face buttons use compass directions to avoid

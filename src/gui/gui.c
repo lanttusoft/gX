@@ -1411,6 +1411,14 @@ static gX_Texture s_consoleIdleLogo;
 static gX_I1 s_consoleIdleAssets;
 static gX_F32v2 s_consoleIdleMouse;
 static gX_I1 s_consoleIdleMouseInit;
+//ai: a connected digital pad may rest its hat axes at 0/1/2 or its trigger
+//   axes at -1, so idle detection watches axis changes rather than an assumed
+//   zero neutral; a pad resting at any constant value cannot keep the console
+//   awake.
+static gX_I1 s_consoleIdleGamepadSeen[8];
+static gX_F32 s_consoleIdleGamepadAxis[8][8];
+static const gX_I8 *s_consoleIdleSource = "none";
+static gX_F32 s_consoleIdleTraceLast = -10.0f;
 
 static gX_I1 console_idle_enabled(gX_I0) {
     //ai: the shell itself plus each cartridge profile; the boot flag alone
@@ -1425,29 +1433,59 @@ static gX_I1 console_idle_enabled(gX_I0) {
 }
 
 static gX_I1 console_idle_input(gX_I0) {
+    s_consoleIdleSource = "none";
     for (gX_I32 i = 0; i < gX_INPUT_KEYBOARD_KEYS; i++) {
         if (input.keyboard.keys[i].state.PRESSED
-            || input.keyboard.keys[i].state.DOWN) return 1;
+            || input.keyboard.keys[i].state.DOWN) {
+            s_consoleIdleSource = "keyboard";
+            return 1;
+        }
     }
     if (!s_consoleIdleMouseInit) {
         s_consoleIdleMouse = input.mouse.coord;
         s_consoleIdleMouseInit = 1;
     }
     if (fabsf(input.mouse.coord.x - s_consoleIdleMouse.x) > 0.5f
-        || fabsf(input.mouse.coord.y - s_consoleIdleMouse.y) > 0.5f)
+        || fabsf(input.mouse.coord.y - s_consoleIdleMouse.y) > 0.5f) {
+        s_consoleIdleSource = "mouse-move";
         return 1;
+    }
     if (fabsf(input.mouse.coordDelta.x) > 0.01f
         || fabsf(input.mouse.coordDelta.y) > 0.01f
         || fabsf(input.mouse.scroll) > 0.001f
         || input.mouse.leftButton.DOWN
         || input.mouse.rightButton.DOWN
-        || input.mouse.middleButton.DOWN) return 1;
+        || input.mouse.middleButton.DOWN) {
+        s_consoleIdleSource = "mouse-button";
+        return 1;
+    }
     for (gX_I32 g = 0; g < 8; g++) {
-        if (!input.gamepad[g].available) continue;
-        for (gX_I32 i = 0; i < 64; i++)
-            if (input.gamepad[g].buttons[i].DOWN) return 1;
-        for (gX_I32 i = 0; i < input.gamepad[g].axisCount && i < 8; i++)
-            if (fabsf(input.gamepad[g].axisMovement[i]) > 0.2f) return 1;
+        if (!input.gamepad[g].available) {
+            s_consoleIdleGamepadSeen[g] = 0;
+            continue;
+        }
+        if (!s_consoleIdleGamepadSeen[g]) {
+            for (gX_I32 i = 0; i < input.gamepad[g].axisCount && i < 8; i++)
+                s_consoleIdleGamepadAxis[g][i] = input.gamepad[g].axisMovement[i];
+            s_consoleIdleGamepadSeen[g] = 1;
+            s_consoleIdleSource = "gamepad-connect";
+            return 1;
+        }
+        for (gX_I32 i = 0; i < 64; i++) {
+            if (input.gamepad[g].buttons[i].DOWN) {
+                s_consoleIdleSource = "gamepad-button";
+                return 1;
+            }
+        }
+        for (gX_I32 i = 0; i < input.gamepad[g].axisCount && i < 8; i++) {
+            gX_F32 value = input.gamepad[g].axisMovement[i];
+            if (fabsf(value - s_consoleIdleGamepadAxis[g][i]) > 0.5f) {
+                s_consoleIdleGamepadAxis[g][i] = value;
+                s_consoleIdleSource = "gamepad-axis";
+                return 1;
+            }
+            s_consoleIdleGamepadAxis[g][i] = value;
+        }
     }
     return 0;
 }
@@ -1492,8 +1530,14 @@ gX_I0 gX_GUI_ConsoleIdle_Update(gX_I0) {
         return;
     }
     if (console_idle_input()) {
+        if (getenv("GX_CONSOLE_IDLE_TRACE") && now - s_consoleIdleTraceLast > 1.0f) {
+            gX_TraceLog(gX_LOG_INFO, "CONSOLE_IDLE: activity source=%s",
+                s_consoleIdleSource);
+            s_consoleIdleTraceLast = now;
+        }
         if (s_consoleIdleBlanked || s_consoleIdleAlpha > 0.01f) {
-            gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_IDLE: wake");
+            gX_TraceLog(gX_LOG_NOTICE, "CONSOLE_IDLE: wake source=%s",
+                s_consoleIdleSource);
             console_idle_consume();
         }
         s_consoleIdleMouse = input.mouse.coord;

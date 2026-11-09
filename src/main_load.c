@@ -311,6 +311,16 @@ static gX_I32 gX_Backend_Init(gX_I0) {
         else gX_TargetFPS_Set(maindata.targetFPS);
         gX_ExitKey_Set(input.exitKey);
         maindata.backendLoaded = true;
+        //ai: optional SDL/GLFW gamepad mapping for adapters that raylib does
+        //   not recognise out of the box (e.g. generic PS1 USB bridges).
+        {
+            const gX_I8 *mapping = getenv("GX_GAMEPAD_MAPPING");
+            if (mapping && mapping[0]) {
+                gX_I32 loaded = gX_Gamepad_Mappings_Set(mapping);
+                gX_TraceLog(gX_LOG_INFO,
+                    "INPUT: GX_GAMEPAD_MAPPING loaded (%d)", loaded);
+            }
+        }
         //opencode: v0.6.6 — clamp window to the monitor (the 1536x1152
         //   default overflows smaller screens). Post-window so the monitor
         //   query is valid; skip when fullscreen. Shrinks window+render

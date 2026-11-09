@@ -543,8 +543,9 @@ It is inactive by default; paths outside `/tmp/` and faces larger than
 - `gX_Camera_Request_View` — one-shot authored/save-state view request; the
   next scene response applies it after the per-scene camera reset.
 - `gX_Bind_*` — per-scene input binds; `gX_Input_*` — raw
-  keyboard/mouse/gamepad state (input.c); F4 exit + ESC-cancel handling;
-  `gX_AI_Input_Synth` feeds scripted keyboard/mouse events to ImGui
+  keyboard/mouse/gamepad state (input.c), including D-pad axis synthesis for
+  digital pads; F4 exit + ESC-cancel handling; `gX_AI_Input_Synth` feeds
+  scripted keyboard/mouse events to ImGui
 - `gX_Cursor_*` — cursor state machine (input.h): UI (visible/free) vs
   captured (hidden/locked), owner stack with priorities
   (`gX_Cursor_Push(state, owner, priority)`, `Pop`, `SetDefault`, `Reset`),
