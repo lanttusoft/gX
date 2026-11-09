@@ -261,3 +261,19 @@ changed labels/help only, with no renderer or resource hash change. Validation:
 `make check`, the Release tool-mode smoke for all twelve `GX_TOOLS_OPEN`
 entries, `make ui-audit`, `make gui-interaction-check`, and the focused editor
 checks. This is capacity recovery, not a new reserve policy.
+
+### GX-I033 BSS headroom recovery (2026-11-09)
+
+The v0.42.3 controller diagnostics left BSS at 2,702,272 B (2,728 B headroom),
+leaving no realistic static budget for the next feature slice. A Release-symbol
+audit found `s_uniformTrace[256]` (29,696 B) in `src/wrappers/shader.c`: a
+diagnostic cache used only when `GX_UNIFORM_TRACE` is set. It is now allocated
+lazily with `calloc` on first use and freed by `gX_Shader_Trace_Shutdown()`
+from the normal unload path. Capacity, entry layout, tracing behavior and the
+`uniform-trace-check` gate remain unchanged.
+
+Post-change Release: payload **3,929,115 B** (265,189 B headroom; +160 B),
+BSS **2,672,544 B** (**32,456 B** headroom; -29,728 B). `make lean`,
+`uniform-trace-check`, `--test-only` and `make check-fast` pass. Caps, baseline
+and capabilities are unchanged. This is a measured BSS reclaim, not a cap
+change.

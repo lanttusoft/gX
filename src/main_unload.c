@@ -27,6 +27,7 @@
 #include "main.h"
 #include "input.h"
 #include "wrappers/wrappers.h"
+#include "wrappers/shader.h"
 
 #include "audio.h"
 
@@ -96,6 +97,7 @@ gX_I32 gX_Unload(gX_I0) {
     
     errors = gX_Input_Unload();
     
+    gX_Shader_Trace_Shutdown();
     errors = gX_Backend_DeInit();
     
     gX_TraceLog_MAIN(gX_LOG_INFO,"Unloading done");

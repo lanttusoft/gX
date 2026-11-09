@@ -137,6 +137,7 @@ gX_Shader gX_Shader_Load_Ex(const gX_I8 *vertpath, const gX_I8 *fragpath, const 
 gX_Shader gX_Shader_Load_Geo(const gX_I8 *vertpath, const gX_I8 *geopath, const gX_I8 *fragpath);
 gX_Shader gX_Shader_Load_Prototype(gX_Shader_Prototype proto);
 gX_I0     gX_Shader_Unload( gX_Shader shader);
+gX_I0     gX_Shader_Trace_Shutdown(gX_I0);
 gX_I32    gX_Shader_GetLocation( gX_Shader shader, const gX_I8 *locName);
 gX_I32    gX_Shader_GetLocationAttrib(gX_Shader shader, const gX_I8 *attribName); //opencode: backend-agnostic attribute location query
 gX_I0     gX_Shader_SetValue(         gX_Shader shader, gX_I32 location, gX_I0 *ptr, gX_I32 format);

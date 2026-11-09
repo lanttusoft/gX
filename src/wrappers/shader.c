@@ -761,7 +761,10 @@ typedef struct gX_UniformTraceEntry {
     gX_I1  valid;
 } gX_UniformTraceEntry;
 
-static gX_UniformTraceEntry s_uniformTrace[256];
+//ai: the uniform trace is a diagnostic-only cache; keep its 29.7 KiB off the
+//   Release BSS and allocate it only when GX_UNIFORM_TRACE asks for it.
+#define GX_UNIFORM_TRACE_CAPACITY 256
+static gX_UniformTraceEntry *s_uniformTrace;
 static gX_I32 s_uniformTraceUsed = 0;
 static gX_I32 s_uniformTraceEnabled = -1;
 
@@ -793,6 +796,7 @@ static gX_I1 gX_UniformTrace_Compatible(gX_U32 shaderType, gX_I32 format)
 
 static gX_UniformTraceEntry *gX_UniformTrace_Entry(gX_U32 shader, gX_I32 location)
 {
+    if (!s_uniformTrace) return NULL;
     for (gX_I32 index = 0; index < s_uniformTraceUsed; index++) {
         gX_UniformTraceEntry *entry = &s_uniformTrace[index];
         if (entry->shader == shader && location >= entry->location
@@ -809,9 +813,7 @@ static gX_UniformTraceEntry *gX_UniformTrace_Entry(gX_U32 shader, gX_I32 locatio
             NULL, &size, &type, name);
         gX_I32 base = glGetUniformLocation(shader, name);
         if (base < 0 || location < base || location >= base + size) continue;
-        if (s_uniformTraceUsed >= (gX_I32)(sizeof(s_uniformTrace)
-                / sizeof(s_uniformTrace[0])))
-            return NULL;
+        if (s_uniformTraceUsed >= GX_UNIFORM_TRACE_CAPACITY) return NULL;
         gX_UniformTraceEntry *entry = &s_uniformTrace[s_uniformTraceUsed++];
         entry->shader = shader;
         entry->location = base;
@@ -828,10 +830,19 @@ static gX_I0 gX_UniformTrace_Check(gX_Shader shader, gX_I32 location, gX_I32 for
 {
     if (s_uniformTraceEnabled < 0) {
         s_uniformTraceEnabled = getenv("GX_UNIFORM_TRACE") != NULL;
-        if (s_uniformTraceEnabled)
+        if (s_uniformTraceEnabled) {
+            s_uniformTrace = (gX_UniformTraceEntry *)calloc(
+                GX_UNIFORM_TRACE_CAPACITY, sizeof(*s_uniformTrace));
+            if (!s_uniformTrace) {
+                s_uniformTraceEnabled = 0;
+                gX_TraceLog(gX_LOG_WARNING,
+                    "UNIFORM_TRACE: allocation failed");
+                return;
+            }
             gX_TraceLog(gX_LOG_NOTICE, "UNIFORM_TRACE: enabled");
+        }
     }
-    if (!s_uniformTraceEnabled) return;
+    if (!s_uniformTraceEnabled || !s_uniformTrace) return;
     gX_UniformTraceEntry *entry = gX_UniformTrace_Entry(shader.id, location);
     if (!entry) return;
     if (!gX_UniformTrace_Compatible(entry->type, format))
@@ -839,6 +850,13 @@ static gX_I0 gX_UniformTrace_Check(gX_Shader shader, gX_I32 location, gX_I32 for
             "UNIFORM_MISMATCH shader=%u name=%s loc=%d expected=0x%x upload=0x%x",
             (unsigned)shader.id, entry->name, (int)location,
             (unsigned)entry->type, (unsigned)gX_UniformTrace_Expected(format));
+}
+
+gX_I0 gX_Shader_Trace_Shutdown(gX_I0) {
+    free(s_uniformTrace);
+    s_uniformTrace = NULL;
+    s_uniformTraceUsed = 0;
+    s_uniformTraceEnabled = -1;
 }
 
 gX_I0 gX_Shader_SetValue(gX_Shader shader, gX_I32 location, gX_I0 *ptr, gX_I32 format) {

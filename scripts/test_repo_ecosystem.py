@@ -74,6 +74,8 @@ class EcosystemTests(unittest.TestCase):
         inv.git(path, "config", "user.name", "Owned test fixture")
         inv.git(path, "config", "user.email", "fixture@example.invalid")
         inv.git(path, "config", "commit.gpgsign", "false")
+        #ai: fixture tags must not inherit the host's GPG signing configuration.
+        inv.git(path, "config", "tag.gpgsign", "false")
         inv.git(path, "config", "core.hooksPath",
                 str(self.directory / "empty-hooks"))
         for relative, text in files.items():

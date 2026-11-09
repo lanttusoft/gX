@@ -4,6 +4,21 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.42.4] - 2026-11-09
+
+Release-Class: patch
+
+### Changed
+- Reclaimed 29,728 B of Release BSS by lazy-allocating the diagnostic-only
+  `GX_UNIFORM_TRACE` cache (256 entries, 29,696 B static) and freeing it on the
+  normal unload path. Tracing capacity and behavior are unchanged; payload
+  grows by 160 B. BSS headroom rises from 2,728 B to 32,456 B, restoring room
+  for the next feature slice without raising the cap.
+
+### Fixed
+- Ecosystem fixture tags are forced unsigned, so clean-extraction
+  `check-fast` cannot block on the host's GPG pinentry configuration.
+
 ## [0.42.3] - 2026-11-09
 
 Release-Class: patch
