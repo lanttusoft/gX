@@ -13,21 +13,52 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
 import time
+
+try:
+    import resource
+except ImportError:  # pragma: no cover - POSIX is the supported host
+    resource = None
+
+FORBIDDEN = {
+    "bash", "sh", "dash", "zsh", "sudo", "su", "rm", "rmdir", "dd",
+    "mkfs", "shutdown", "reboot", "poweroff", "kill", "pkill", "killall",
+    "curl", "wget", "ssh", "scp", "sftp", "nc", "ncat", "iptables",
+    "mount", "umount", "chmod", "chown", "systemctl", "crontab",
+}
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "scripts" / "bug_injection_manifest.json"
 DEFAULT_REPORT = ROOT / "build" / "bug-injection"
 
 
+def child_setup():
+    if resource is not None:
+        try:
+            resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+        except (OSError, ValueError):
+            pass
+
+
 def run(command, cwd, timeout, input_text=None, env=None):
-    return subprocess.run(
-        command, cwd=str(cwd), input=input_text, text=True,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
-        env=env)
+    process = subprocess.Popen(
+        command, cwd=str(cwd), stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        env=env, start_new_session=True, preexec_fn=child_setup)
+    try:
+        output, _ = process.communicate(input=input_text, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except OSError:
+            pass
+        process.communicate()
+        raise
+    return subprocess.CompletedProcess(command, process.returncode, output, "")
 
 
 def git(root, *args):
@@ -38,13 +69,33 @@ def git(root, *args):
     return result.stdout
 
 
-def classify(returncode, output, pattern):
+def classify(returncode, output, pattern, expect_crash=False):
     matched = re.search(pattern, output or "", re.M) is not None
+    if expect_crash and returncode < 0:
+        return "killed", matched
     if returncode != 0 and matched:
         return "killed", matched
     if returncode == 0 and not matched:
         return "survived", matched
     return "unexpected", matched
+
+
+def validate_command(entry):
+    command = entry["command"]
+    name = Path(command[0]).name
+    if name in FORBIDDEN:
+        raise ValueError("%s: forbidden command %s" % (entry["id"], name))
+    if command[0].startswith("/") or command[0].startswith(".."):
+        raise ValueError("%s: command must be relative" % entry["id"])
+    if name in ("python", "python3"):
+        if len(command) < 2 or command[1].startswith("-"):
+            raise ValueError("%s: python needs a relative script, not %s"
+                             % (entry["id"], command[1] if len(command) > 1
+                                else "(none)"))
+        script = Path(command[1])
+        if script.is_absolute() or ".." in script.parts:
+            raise ValueError("%s: python script must be inside the tree"
+                             % entry["id"])
 
 
 def load_manifest(path):
@@ -64,12 +115,15 @@ def load_manifest(path):
         except re.error as error:
             raise ValueError("%s: invalid expect_regex: %s"
                              % (entry["id"], error))
+        if "expect_crash" in entry and not isinstance(entry["expect_crash"], bool):
+            raise ValueError("%s: expect_crash must be a boolean" % entry["id"])
         if entry["id"] in seen:
             raise ValueError("duplicate entry id: %s" % entry["id"])
         seen.add(entry["id"])
         if not isinstance(entry["command"], list) or not entry["command"]:
             raise ValueError("%s: command must be a non-empty list"
                              % entry["id"])
+        validate_command(entry)
         kind = entry.get("type", "replace")
         if kind == "reverse_commit":
             if not entry.get("fix_commit") or not entry.get("paths"):
@@ -205,8 +259,11 @@ def main():
                                env=env)
                     gate_log.write_text(gate.stdout or "", encoding="utf-8")
                     returncode = gate.returncode
-                    status, matched = classify(returncode, gate.stdout,
-                                               entry["expect_regex"])
+                    status, matched = classify(
+                        returncode, gate.stdout, entry["expect_regex"],
+                        entry.get("expect_crash", False))
+                    if returncode < 0:
+                        detail += "; crashed with signal %d" % -returncode
             except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
                 status = "error"
                 detail = str(error)
@@ -220,6 +277,7 @@ def main():
                 "status": status,
                 "returncode": returncode,
                 "matched": matched,
+                "crash": returncode is not None and returncode < 0,
                 "detail": detail,
                 "seconds": round(elapsed, 1),
                 "build_log": str(build_log),

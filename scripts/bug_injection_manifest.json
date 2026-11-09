@@ -53,6 +53,32 @@
       "command": ["python3", "scripts/gui_editor_check.py"],
       "expect_regex": "GUI_EDITOR_CHECK: FAIL",
       "timeout": 900
+    },
+    {
+      "id": "tangent-lineage-reverse",
+      "description": "gameX-lineage tangent generation read past an indexed quad / partial soup boundary.",
+      "source": "gameX lineage",
+      "note": "The gX fix 4288636 closed the lineage boundary; reversing only the backend code keeps the current boundary test, which aborts with free(): invalid size. expect_crash records a contained signal kill, not a clean assertion.",
+      "type": "reverse_commit",
+      "fix_commit": "4288636",
+      "paths": ["src/backend/raylib/raylib_wrappers_model.c"],
+      "command": ["./build/gX_build", "--test-only"],
+      "expect_regex": "free\\(\\): invalid size|TEST_ONLY: [1-9][0-9]* errors",
+      "expect_crash": true,
+      "timeout": 600
+    },
+    {
+      "id": "float-uniform-as-int",
+      "description": "gameX R-2 class: float uniforms uploaded as int, producing a named type mismatch.",
+      "source": "gameX lineage",
+      "note": "The uniform-trace gate names the mismatch instead of leaving a black/incorrect render. Keeps the public helper and only changes the declared format.",
+      "type": "replace",
+      "path": "src/common/utils/shader.c",
+      "old": "    gX_Shader_SetValue(shader,loc,&f,gX_SHADER_UNIFORM_FLOAT);",
+      "new": "    gX_Shader_SetValue(shader,loc,&f,gX_SHADER_UNIFORM_INT);",
+      "command": ["python3", "scripts/uniform_trace_check.py"],
+      "expect_regex": "UNIFORM_TRACE_CHECK: FAIL",
+      "timeout": 900
     }
   ]
 }

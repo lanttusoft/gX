@@ -87,15 +87,38 @@ paths, assets or unrelated history into the public manifest.
   `gui-editor-check`.
 - `tour-next-row` — unconditional `SameLine()` after a skipped Back button;
   `gui-editor-check`.
+- `tangent-lineage-reverse` — reverse the gX tangent-boundary fix (gameX-era
+  lineage); `--test-only` catches the old read past an indexed quad. This is a
+  contained **crash kill** (`expect_crash`), not a clean assertion.
 
 ## Pilot result (2026-11-10)
 
-All four entries were killed, none survived. Three hit the intended
-assertions: `INPUT 10 FAIL` (D-pad fallback), `tour width 420 did not scale`
-(175%), and `Skip button clipped` (step 0). The console-idle entry was an
-**indirect kill**: `console-shell-check` failed earlier on a focus-target
-mismatch rather than the idle timeout. Record that as gate-ordering debt; add a
-dedicated idle-only assertion before treating this entry as a precise kill.
+All selected entries were killed, none survived. `INPUT 10 FAIL`,
+`tour width 420 did not scale` and `Skip button clipped` hit the intended
+assertions. The console-idle entry was an **indirect kill**:
+`console-shell-check` failed earlier on a focus-target mismatch rather than the
+idle timeout; record that as gate-ordering debt. The tangent-lineage entry
+aborts with `free(): invalid size`; the harness records it as an expected crash
+kill, and the test should ideally assert cleanly instead of aborting.
+
+## Safety
+
+This is a containment harness for trusted, curated defects, **not a security
+sandbox**.
+
+- Each entry runs in a disposable `git archive` tree with no `.git`; the live
+  worktree is never mutated.
+- Commands are argv lists, never a shell. Shells and dangerous host binaries
+  (`rm`, `dd`, `mkfs`, `sudo`, `kill`, network clients, mount/reboot tools) are
+  rejected; command paths must be relative.
+- Child processes start in a new session; timeouts kill the whole process
+  group; core dumps are disabled. Writes stay in the temp tree and the
+  harness's scratch/report directories.
+- No network access, privilege escalation, persistence, replication or
+  exfiltration is part of the contract. Injections model accidental defects,
+  not malware.
+- A `--keep` tree is untrusted mutated source; inspect it, but do not merge or
+  execute it outside the harness.
 
 ## Limits
 

@@ -29,6 +29,17 @@ class BugInjectionTests(unittest.TestCase):
         self.assertEqual(status, "unexpected")
         self.assertFalse(matched)
 
+    def test_classify_expected_crash(self):
+        status, matched = inj.classify(-6, "", r"GATE: FAIL",
+                                       expect_crash=True)
+        self.assertEqual(status, "killed")
+        self.assertFalse(matched)
+
+    def test_classify_unexpected_crash(self):
+        status, matched = inj.classify(-6, "", r"GATE: FAIL")
+        self.assertEqual(status, "unexpected")
+        self.assertFalse(matched)
+
     def test_manifest_accepts_replace_and_reverse(self):
         manifest = {
             "schema": 1,
