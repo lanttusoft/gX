@@ -116,14 +116,15 @@ idle-only probe or a self-contained fixture exists. Do not count it as killed.
 
 ## Pilot result (2026-11-10)
 
-Five self-contained entries were killed, none survived, and every baseline
-passed. `INPUT 10 FAIL`, `tour width 420 did not scale` and `Skip button
-clipped` hit the intended assertions. The tangent-lineage entry aborts with
-`free(): invalid size`; the harness records the crash handler's exit 134 as an
-expected crash kill, and the test should ideally assert cleanly instead of
-aborting. The gfx float/int entry produced **8,010 named `UNIFORM_MISMATCH`
-lines**; the trace gate has no final FAIL summary, so the manifest matches the
-named mismatch line.
+Five self-contained entries were killed from base `51b24de`, none survived,
+and every baseline passed. `INPUT 10 FAIL`, `tour width 420 did not scale` and
+`Skip button clipped` hit the intended assertions. The tangent-lineage entry
+aborts with `free(): invalid size`; the harness records the crash handler's
+exit 134 as an expected crash kill, and the test should ideally assert cleanly
+instead of aborting. The gfx float/int entry produced **8,010 named
+`UNIFORM_MISMATCH` lines**; the trace gate has no final FAIL summary, so the
+manifest matches the named mismatch line. The self-contained report and logs
+are retained outside the public tree.
 
 The console-idle candidate is **blocked by baseline failure**, not killed. Its
 first run exposed exactly why baseline control matters: the gate failed on the
