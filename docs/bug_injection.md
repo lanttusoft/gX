@@ -57,8 +57,8 @@ failures are non-zero.
   "source": "gX",
   "type": "reverse_commit",
   "fix_commit": "abcdef1",
-  "paths": ["src/file.c"],
-  "command": ["python3", "scripts/check.py"],
+  "paths": ["src/{file}.c"],
+  "command": ["python3", "scripts/{gate}.py"],
   "expect_regex": "CHECK: FAIL",
   "timeout": 900
 }
@@ -71,7 +71,7 @@ or a targeted mutation:
   "id": "targeted-example",
   "source": "gX",
   "type": "replace",
-  "path": "src/file.c",
+  "path": "src/{file}.c",
   "old": "exact text that appears once",
   "new": "the buggy replacement",
   "command": ["./build/gX_build", "--test-only"],
