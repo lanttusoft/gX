@@ -82,6 +82,8 @@ check: all
 	python3 -m unittest discover -s scripts -p test_agent_bus.py
 	#ai: mutation harness result classification and manifest checks are display-free.
 	python3 -m unittest discover -s scripts -p test_bug_injection_check.py
+	#ai: evidence/confidence formulas must keep null, passive 0 and active 0 distinct.
+	python3 -m unittest discover -s scripts -p test_evidence_manifest.py
 	#ai: routine logs stay TRACE and the threshold is never reused as a severity.
 	python3 scripts/log_level_audit.py
 	python3 -m unittest discover -s scripts -p test_log_level_audit.py
@@ -289,6 +291,8 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_agent_bus.py
 	#ai: mutation harness result classification and manifest checks are display-free.
 	python3 -m unittest discover -s scripts -p test_bug_injection_check.py
+	#ai: evidence/confidence formulas must keep null, passive 0 and active 0 distinct.
+	python3 -m unittest discover -s scripts -p test_evidence_manifest.py
 	#ai: routine logs stay TRACE and the threshold is never reused as a severity.
 	python3 scripts/log_level_audit.py
 	python3 -m unittest discover -s scripts -p test_log_level_audit.py
@@ -339,6 +343,15 @@ check-fast: all
 bug-injection-check:
 	@echo "== [gX] historical bug injection =="
 	python3 scripts/bug_injection_check.py
+
+#ai: GX-I036/GX-I039 claim-level evidence manifest — validate the example
+#   contract and derived confidence/volatility states.
+.PHONY: evidence-manifest-check
+evidence-manifest-check:
+	@echo "== [gX] evidence manifest =="
+	python3 -m unittest discover -s scripts -p test_evidence_manifest.py
+	python3 scripts/evidence_manifest.py --check \
+		--manifest scripts/evidence_manifest.example.json
 
 #ai: devcube lab-module gate — 60 Hz phase plus the explicit native overlay.
 .PHONY: devcube-check

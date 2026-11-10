@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "claims": [
+    {
+      "id": "example-positive",
+      "claim": "Example only: evidence predominantly supports the claim.",
+      "assessed": true,
+      "significance": 20,
+      "evidence": [
+        {
+          "level": "formal",
+          "direction": "for",
+          "weight": 60,
+          "artifact": "scripts/test_evidence_manifest.py",
+          "independent": true,
+          "fresh": true,
+          "note": "synthetic example"
+        },
+        {
+          "level": "formal",
+          "direction": "against",
+          "weight": 20,
+          "artifact": "scripts/test_evidence_manifest.py",
+          "independent": true,
+          "fresh": true,
+          "note": "synthetic counter-evidence"
+        }
+      ]
+    },
+    {
+      "id": "example-active-zero",
+      "claim": "Example only: equal weighted evidence leaves confidence at active 0.",
+      "assessed": true,
+      "significance": 20,
+      "evidence": [
+        {
+          "level": "gate",
+          "direction": "for",
+          "weight": 40,
+          "artifact": "scripts/test_evidence_manifest.py",
+          "independent": true,
+          "fresh": true
+        },
+        {
+          "level": "gate",
+          "direction": "against",
+          "weight": 40,
+          "artifact": "scripts/test_evidence_manifest.py",
+          "independent": true,
+          "fresh": true
+        }
+      ]
+    },
+    {
+      "id": "example-passive-zero",
+      "claim": "Example only: assessed, but no evidence exists.",
+      "assessed": true,
+      "significance": 20,
+      "evidence": []
+    },
+    {
+      "id": "example-null",
+      "claim": "Example only: no assessment has been made.",
+      "assessed": false,
+      "significance": 20,
+      "evidence": []
+    }
+  ]
+}

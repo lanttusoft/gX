@@ -49,6 +49,9 @@ Start here:
   7/10 minimum, 8/10 target, with evidence.
 - [Bug injection / mutation pilot](bug_injection.md) — disposable historical
   bug corpus for test-sensitivity checks; opt-in, never release evidence.
+- [Evidence and confidence manifest](evidence_manifest.md) — claim-level
+  verification ladder, for/against weighting, confidence and volatility;
+  reporting only, not a gate.
 - [AI usage and limitations](ai_disclosure.md) — what AI assisted with,
   review limits and the as-is disclaimer.
 
