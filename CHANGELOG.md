@@ -4,6 +4,32 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.42.6] - 2026-11-10
+
+Release-Class: patch
+
+### Added
+- Opt-in **mutation/fault-injection pilot** (`make bug-injection-check`):
+  historical reverse patches and targeted mutations run in disposable
+  non-git archives with baseline controls, intended-failure markers,
+  process-group timeouts, core dumps off, an argv command allowlist and
+  relative path containment. The baseline-controlled pilot kills 5/5 intended
+  entries; the console-idle candidate is blocked by a gitignored settings
+  fixture and is not counted.
+- Opt-in **evidence/confidence manifest** (`scripts/evidence_manifest.py`,
+  `make evidence-manifest-check`): claim-level verification levels, weighted
+  for/against evidence with aggregate per-level caps, signed confidence
+  -100..+100 or null, volatility 0..100, and distinct passive-zero,
+  neutral-only, balanced-low and active-zero states. Reporting only; it does
+  not replace gates, proofs or release decisions.
+- **Agent role charters** (`docs/agent_roles.md`) for implementer, reviewer,
+  tester, verifier, mathematician, counter-example finder, peer reviewer and
+  white-hat, with handoff and independence rules.
+
+### Changed
+- Documentation index links for the new tooling; no renderer, resource, save
+  schema or runtime behavior changed.
+
 ## [0.42.5] - 2026-11-09
 
 Release-Class: patch
