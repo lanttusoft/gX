@@ -1,5 +1,6 @@
 # gX release candidate ledger
 
+<!-- //ai: RC readiness refresh 2026-11-10: current audit matrix, hardware re-run, v0.42.6 publish outcome. -->
 Status: **not a release candidate yet** — ledger opened 2026-11-01 on the
 v0.30.0 line.
 
@@ -28,7 +29,7 @@ items. Until all three gates and the operations contract hold, gX stays a
 | Version | v0.42.6 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 120 manifest entries; **107/107** on the v0.42.0 full run (`AUDIT_CACHE=0`, 1,476.2 s wall / 2,908.7 s gate time); v0.42.6 is a PATCH tooling/docs slice that passed `make check`, `check-fast`, the 38 contract tests and `make evidence-manifest-check` |
+| Audit baseline | 120 manifest entries; **107/107** on the v0.42.6 full run at `32b915a` (`AUDIT_CACHE=0`, 1,490.2 s wall / 2,938.2 s gate time); the v0.42.0 baseline was also 107/107 |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
 | Lean gate | payload 3,929,403 B (264,901 B headroom), BSS 2,672,544 B (32,456 B headroom) — unchanged by the tooling/docs slice; v0.42.6 `make lean` |
 | Release class | PATCH (v0.42.6: opt-in mutation/fault-injection pilot, evidence/confidence manifest and agent role charters; no runtime change) |
@@ -45,7 +46,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Source | Release builds reproduce across extraction paths | holds | `make reproducible-check` (two clean trees, fixed epoch) |
 | Admission | `make check` (build, tests, scene smoke, audits, proofs, lean gate) | holds | release CI logs |
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
-| Admission | full audit matrix green (`make audit-summary-full`) | holds | **107/107** on the v0.42.0 release tree (2026-11-08, `AUDIT_CACHE=0`, 1,476.2 s wall / 2,908.7 s gate time) |
+| Admission | full audit matrix green (`make audit-summary-full`) | holds | **107/107** on the v0.42.6 tree at `32b915a` (2026-11-10, `AUDIT_CACHE=0`, 1,490.2 s wall / 2,938.2 s gate time) |
 | Tests | unit suite + contract gates green | holds | `--test-only`, gate manifest |
 | Stability | 3 consecutive full admission runs without a flake | holds | 3 x `make check` on 2026-11-08 (`b0fd5f4`, `89aa25d`, v0.42.0 release tree); no flake; the rare test-only SIGSEGV remains a watch item |
 | Docs | documentation index covers public surfaces; API/enum coverage gates | holds | `docs/README.md`, `api_coverage.py`, `enum_coverage.py` |
@@ -53,11 +54,11 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | License | GPL-3.0-or-later; provenance/attribution/copyright audits clean | holds | `provenance_audit.py --strict`, `copyright_audit.py` |
 | Assets | no private/gameX assets; no quarantined path tracked | holds | provenance audit + `license/provenance.json` |
 | Packaging | no private members, screenshots or settings in the archive | holds | archive member scan per release |
-| Hardware | reference-class matrix (NVIDIA/AMD/Intel + llvmpipe) attached | open | hardware walk not yet run |
+| Hardware | reference-class matrix (NVIDIA/AMD/Intel + llvmpipe) attached | open | NVIDIA GTX 1060 6GB + llvmpipe re-verified at `32b915a`; AMD/Intel pending |
 | Dogfooding | 5 public-tree sessions recorded | open | gate 1 |
 | Demand | 3 clear signals recorded | open | gate 3 |
 | Security | no credentials; secret-scan/alert review | holds | `secret-scan` quick gate over tracked files + hosted secret scanning |
-| Operations | `publish_readiness.md` executed with no open items | open | gate checklist |
+| Operations | `publish_readiness.md` executed with no open items | open | v0.42.6 runbook executed as a worked example; RC sign-off pending (operations record) |
 | Scope | known limitations documented and accepted | holds | release notes + this ledger |
 
 ## Known limitations (accepted for the beta line)
@@ -113,6 +114,8 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-09 | v0.42.4 PATCH prep: GX-I033 BSS recovery by lazy-allocating and freeing the diagnostic-only `GX_UNIFORM_TRACE` cache; 29,728 B BSS reclaimed (2,672,544 B, 32,456 B headroom), +160 B payload, no behavior/cap change. `uniform-trace-check`, `--test-only`, `make lean` and `check-fast` pass. No tag/push/publish yet; no RC claim. | owner/agent |
 | 2026-11-09 | v0.42.5 PATCH prep: GX-I034 dogfooding fixes for the GUI editor tour at 100/175%, the title EXTRAS focus-tooltip collision and the `Tool UI` scale label; `gui-editor-check` pins the tour geometry and the title/editor gates pass. Accepted low/medium polish remains for title pause glass, plain-launch hint, OPEN GFX/RUN DEMO duplicate and narrow GUI-editor dock text. No tag/push/publish yet; no RC claim. | owner/agent |
 | 2026-11-10 | v0.42.6 PATCH prep: GX-I035 baseline-controlled mutation pilot (5/5 intended, console candidate blocked), GX-I036/GX-I039 evidence/confidence manifest (38 contract tests), GX-I037 agent role charters + independent reviewer pilot. Full `make check`, `check-fast`, `evidence-manifest-check` and focused tests pass. Opt-in tooling/docs only; no runtime/resource behavior change; not RC evidence. No tag/push/publish yet; no RC claim. | owner/agent |
+| 2026-11-10 | v0.42.6 published: signed tag `v0.42.6` (object `cd34928`, target `32b915a`); `main` + tag pushed atomically; GitHub pre-release with archive/checksum, hosted digest and fresh-clone smoke PASS. | owner/agent |
+| 2026-11-10 | RC readiness refresh at `32b915a`: full audit matrix **107/107** (`AUDIT_CACHE=0`, 1,490.2 s wall / 2,938.2 s gate time), NVIDIA GTX 1060 + llvmpipe hardware re-run PASS, v0.42.6 evidence manifest recorded. Blockers: five author sessions, three demand signals, AMD/Intel hardware (or accepted gap), operations sign-off. No RC/silver/gold claim. | owner/agent |
 
 ## Change rule
 
