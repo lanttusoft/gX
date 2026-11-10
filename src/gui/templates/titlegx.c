@@ -811,7 +811,7 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
             struct { const gX_I8 *text; } help[10] = {
                 { "MOVE  ARROWS / D-PAD     CONFIRM  ENTER / SOUTH     BACK  ESC / EAST" },
                 { "OPEN GFX  starts the renderer demo" },
-                { "RUN DEMO  opens the same renderer demo" },
+                { "ESC  opens the pause menu; Back to Title returns here" },
                 { "SAVE SLOTS  slot 1 is the demo; empty slots are reserved" },
                 { "SETTINGS  display, accessibility, audio, themes and keys" },
                 { "DEMOS  Battle, GFX, background, raymarch and gX-240" },
@@ -894,7 +894,9 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
         gX_I32 variant = titleVariant();
         gX_F32 menuH = 0.42f;
         gX_F32 menuStep = 0.49f;
-        gX_I32 menuCount = (variant == TITLEGX_VARIANT_FULL) ? 7
+        //ai: full menu is six rows; RUN DEMO stays only in the play variant
+        //   so OPEN GFX is not duplicated in the front door.
+        gX_I32 menuCount = (variant == TITLEGX_VARIANT_FULL) ? 6
             : (variant == TITLEGX_VARIANT_PLAY ? 3 : 2);
         //opencode: center every density variant on the full-menu visual
         //   midpoint so reduced menus read as intentional compositions.
@@ -923,8 +925,8 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
             itemY += menuStep;
         }
 
-        if (variant != TITLEGX_VARIANT_DEMOS) {
-            // RUN DEMO
+        if (variant == TITLEGX_VARIANT_PLAY) {
+            // RUN DEMO — the play variant has no OPEN GFX shortcut.
             gX_GUI_Builder_Element_Begin(&b);
                 gX_GUI_Builder_RectAnchored(&b, TITLEGX_MENU_W, menuH,
                     GX_GUI_ANCHOR_CENTER, GX_GUI_ANCHOR_START, 0.0f, itemY);

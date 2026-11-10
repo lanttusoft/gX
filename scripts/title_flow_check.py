@@ -13,6 +13,7 @@
 
 import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -38,23 +39,23 @@ TRACE_RE = re.compile(
     r'element=(\d+) name="([^"]*)" text="([^"]*)" rect=(\d+),(\d+),(\d+),(\d+)')
 DESC_RE = re.compile(r'desc="([^"]*)"')
 
-#opencode: menu order is OPEN GFX, RUN DEMO, SAVE SLOTS, SETTINGS, DEMOS,
-#   EXTRAS, QUIT; key codes are gX_KEY_* (DOWN 264, ENTER 257, ESCAPE 256).
-#   ESC is the shared back route on the title and on every sub-view.
+#ai: full menu order is OPEN GFX, SAVE SLOTS, SETTINGS, DEMOS, EXTRAS, QUIT;
+#   key codes are gX_KEY_* (DOWN 264, ENTER 257, ESCAPE 256). ESC is the
+#   shared back route on the title and on every sub-view.
 #opencode: the title entrance cascade delays menu focus past 1s; start the
 #   navigation after it settles so the first Down is not lost.
 #opencode: the first Down focuses OPEN GFX (it does not move); include it as a
 #   warm-up, then the visible menu navigation.
-LOAD_GAME = "2.0 key 264;2.4 key 264;2.8 key 264;3.2 key 257"
-DEMOS = "2.0 key 264;2.4 key 264;2.8 key 264;3.2 key 264;3.6 key 264;4.0 key 257"
+LOAD_GAME = "2.0 key 264;2.4 key 264;2.8 key 257"
+DEMOS = "2.0 key 264;2.4 key 264;2.8 key 264;3.2 key 264;3.6 key 257"
 #ai: drive EXTRAS with a mouse click on its fixed 1024x768 card. The keyboard
 #   route depends on the title entrance focus lock and a fixed Down count;
 #   a slow first frame dropped the early Downs and landed on QUIT, so the
 #   "extras" view was really the quit dialog and extras_layout found no cards.
-EXTRAS = "2.0 move 511 615 200;2.5 click 511 615"
+EXTRAS = "2.0 move 511 592 200;2.5 click 511 592"
 #ai: the console shell sits in the DEMOS hub; drive both with fixed mouse
 #   coordinates so the keyboard focus cascade cannot change the target.
-DEMOS_CLICK = "2.0 move 511 568 200;2.5 click 511 568"
+DEMOS_CLICK = "2.0 move 511 545 200;2.5 click 511 545"
 CONSOLE = DEMOS_CLICK + ";3.5 move 512 578 200;4.0 click 512 578"
 HELP = "2.0 move 759 718 200;2.5 click 759 718"
 VIEWS = (
@@ -140,7 +141,35 @@ def extras_layout(binary):
         raise RuntimeError(f"EXTRAS tool cards share a grid cell: {detail}")
     if len(cells) < 6:
         raise RuntimeError(f"EXTRAS tool grid incomplete: {len(cells)} cards")
+    #ai: the full menu must keep one renderer-demo shortcut. RUN DEMO was
+    #   removed so OPEN GFX is not duplicated; DEMOS remains the hub.
+    menu_texts = set(re.findall(
+        r'element canvas=0 [^\n]*text="([^"]*)"', log))
+    if "OPEN GFX" not in menu_texts:
+        raise RuntimeError("full menu lost the OPEN GFX shortcut")
+    if "RUN DEMO" in menu_texts:
+        raise RuntimeError("full menu reintroduced the duplicate RUN DEMO row")
     return len(cells)
+
+
+def plain_hint(binary):
+    """Fresh-install plain launch must expose the Esc/Back hint branch."""
+    environment = audit.scene_env({
+        "GX_SKIPTITLE": "1",
+        "GX_SKIP_TESTS": "1",
+        "GX_FRAMES": "20",
+    }, clean=True)
+    result = subprocess.run(
+        [str(binary or audit.BIN)], cwd=str(audit.ROOT),
+        env=environment, text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT, timeout=60)
+    log = audit.strip_ansi(result.stdout or "")
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"plain launch exited {result.returncode}: {log[-400:]}")
+    if "PLAIN_HINT: drawn" not in log:
+        raise RuntimeError("plain launch did not draw the Esc/Back hint")
+    return True
 
 
 def main():
@@ -172,6 +201,8 @@ def main():
         cards = extras_layout(arguments.binary)
         print(f"{'extras_layout':<16} {cards:>7}  ok {cards} tool cards, "
               f"distinct grid cells")
+        plain_hint(arguments.binary)
+        print(f"{'plain_hint':<16} {'ok':>7}  Esc/Back hint branch ran")
     except (OSError, RuntimeError, ValueError) as error:
         print(f"TITLE_FLOW_CHECK: FAIL — {error}", file=sys.stderr)
         return 1

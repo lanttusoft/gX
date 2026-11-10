@@ -210,6 +210,10 @@ gX_I32 gX_MainData_Reset(gX_I0) {
     return 0;
 }
 
+//ai: a fresh-install plain launch skips the title; show a one-shot Esc hint
+//   after the GUI state is loaded, since gX_GUI_Load resets the toast state.
+static gX_I1 s_plainLaunchHint = 0;
+
 gX_I32 gX_MainData_Init(gX_I0) {
     gX_I32 errors = 0;
     
@@ -264,6 +268,7 @@ gX_I32 gX_MainData_Init(gX_I0) {
             if (!returning) startScene = gX_SCENE_RENDERER_GFX;
             const gX_I8 *skip = getenv("GX_SKIPTITLE");
             if (skip && skip[0]) startScene = atoi(skip) ? gX_SCENE_RENDERER_GFX : gX_SCENE_TITLE;
+            s_plainLaunchHint = (startScene == gX_SCENE_RENDERER_GFX);
         }
         errors = gX_MainData_Switch(startScene);
     }
@@ -545,6 +550,11 @@ gX_I32 gX_Load(gX_I0) {
 #endif
 #if gX_ENABLE_RENDERER == 1
     errors = gX_Renderer_Load();
+    if (s_plainLaunchHint) {
+        extern gX_I0 gX_Showcase_PlainLaunchHint_Set(gX_I0);
+        gX_Showcase_PlainLaunchHint_Set();
+        s_plainLaunchHint = 0;
+    }
     //ai: direct RAY-1 boot needs the authored module profile after the
     //   renderer heap exists and before the first scene update.
     if (arguments.cartridgeRay1)

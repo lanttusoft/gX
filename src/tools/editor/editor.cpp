@@ -1071,6 +1071,13 @@ static gX_I0 tools_panel_tree(gX_GUI_Canvas *canvas) {
                 snprintf(label, sizeof(label), "[%u] %s %s%s##el%u", rowId,
                     nmShow, typeLabel, hid, i);
             }
+            //ai: unnamed template rows elide to a bare "u..." in a slim dock;
+            //   fall back to the type alone so the row still says something.
+            if (cut && (strcmp(displayName, "(unnamed)") == 0
+                    || strcmp(displayName, "unnamed") == 0)) {
+                snprintf(label, sizeof(label), "[%u] %s##el%u", rowId,
+                    typeLabel, i);
+            }
         }
         //opencode: visibility eye-toggle — same row, undoable, so hiding
         //   needs no trip to Properties. Mutable lookup: elems[] is const.
@@ -1136,13 +1143,17 @@ static gX_I0 tools_panel_tree(gX_GUI_Canvas *canvas) {
 
 static gX_I0 tools_panel_properties(gX_GUI_Canvas *canvas) {
     gX_GUI_Element *el = tools_selection_resolve(canvas);
-    if (!ImGui::CollapsingHeader("Properties", ImGuiTreeNodeFlags_DefaultOpen)) return;
+    //ai: the slim 175% dock clips "Properties"; keep a readable header.
+    const gX_I8 *propsLabel =
+        (ImGui::CalcTextSize("Properties").x + 24.0f
+            <= ImGui::GetContentRegionAvail().x) ? "Properties" : "Props";
+    if (!ImGui::CollapsingHeader(propsLabel, ImGuiTreeNodeFlags_DefaultOpen)) return;
     if (!el) {
         //opencode: empty-state guidance — the bare "no selection" left the
         //   whole column reading as dead (editor audit).
         ImGui::TextDisabled("no selection");
-        ImGui::TextWrapped("Pick a row in the LEFT list, or click an element on the canvas.");
-        ImGui::TextWrapped("The o/x button on each row toggles visibility.");
+        ImGui::TextWrapped("Select a row or click an element.");
+        ImGui::TextWrapped("o/x toggles row visibility.");
         ImGui::Text("elements: %u", canvas->elements.amount);
         return;
     }
@@ -1757,11 +1768,16 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
     gX_F32 menuH = ImGui::GetFrameHeight();
 
     //opencode: LEFT — element tree + add/remove/duplicate + save path
+    //ai: docked titles shorten when the live font/width cannot fit them, so
+    //   175% scale does not clip the panel name. ### keeps the window ID stable.
+    const char *leftTitle = "Editor - Elements###editor_elements";
+    if (docked && ImGui::CalcTextSize("Editor - Elements").x + 48.0f > leftW)
+        leftTitle = "Elements###editor_elements";
     ImGui::SetNextWindowPos(ImVec2(0, menuH), dockCond);
     ImGui::SetNextWindowSize(ImVec2(leftW, scrH - menuH - 28), dockCond);
     ImGui::PushItemWidth(-FLT_MIN);
     bool edOpen = (*gX_Tools_RuntimeEditorFlag()) != 0;
-    if (ImGui::Begin("Editor - Elements", &edOpen)) {
+    if (ImGui::Begin(leftTitle, &edOpen)) {
         //opencode: hint-inside (slim dock clipped the "search" label).
         ImGui::InputTextWithHint("##elfilter", "search elements", s_treeFilter, sizeof(s_treeFilter));
         //opencode: v0.6.7 — canvas tabs (switch target without the menu).
@@ -1827,10 +1843,25 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
     ImGui::PopItemWidth();
 
     //opencode: RIGHT — selection properties
+    //ai: prefer the full inspector name when it fits; fall back to Props at
+    //   high scale instead of clipping "Properti..." in a slim dock.
+    const char *rightTitle = "Editor - Properties###editor_properties";
+    if (docked) {
+        rightTitle = (ImGui::CalcTextSize("Properties").x + 48.0f <= rightW)
+            ? "Properties###editor_properties" : "Props###editor_properties";
+    }
+    static const gX_I8 *s_loggedLeftTitle = NULL;
+    static const gX_I8 *s_loggedRightTitle = NULL;
+    if (s_loggedLeftTitle != leftTitle || s_loggedRightTitle != rightTitle) {
+        gX_TraceLog(gX_LOG_INFO, "GUI_EDITOR_TITLE: left=%s right=%s",
+            leftTitle, rightTitle);
+        s_loggedLeftTitle = leftTitle;
+        s_loggedRightTitle = rightTitle;
+    }
     ImGui::SetNextWindowPos(ImVec2(scrW - rightW, menuH), dockCond);
     ImGui::SetNextWindowSize(ImVec2(rightW, scrH - menuH - 28), dockCond);
     ImGui::PushItemWidth(-FLT_MIN);
-    if (ImGui::Begin("Editor - Properties", &edOpen)) {
+    if (ImGui::Begin(rightTitle, &edOpen)) {
         if (canvas) tools_panel_properties(canvas);
         else ImGui::TextDisabled("no canvas");
     }

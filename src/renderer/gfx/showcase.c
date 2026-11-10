@@ -63,6 +63,16 @@ static gX_I1  s_camOverride = false;
 static gX_I32 s_skyMode = 1; // 0=off 1=procedural 2=cubemap
 //opencode: raw-RT debug view — D cycles: 0=off 1=ssao 2=ssaoBlur 3=depth 4=ssr
 static gX_I32 s_debugView = 0;
+//ai: first-run hint for a plain launch that skips the title (no settings yet).
+//   Drawn by the renderer overlay for a few seconds; not part of the showcase.
+static gX_I1  s_plainLaunchHint = 0;
+static gX_I1  s_plainLaunchHintLogged = 0;
+static gX_F64 s_plainLaunchHintUntil = 0.0;
+
+gX_I0 gX_Showcase_PlainLaunchHint_Set(gX_I0) {
+    s_plainLaunchHint = 1;
+    s_plainLaunchHintUntil = maindata.timeElapsed + 8.0;
+}
 
 //ai: cartridge boot after a prior GFX visit restores the one-shot showcase
 //   defaults and replays the boot OSD so the selected profile can take effect.
@@ -742,7 +752,27 @@ static gX_I1 cartridge_osd(gX_RendererGFX *gfx, gX_RenderTexture *overlayTgt) {
 gX_I0 gX_Showcase_DrawHUD(gX_RendererGFX *gfx, gX_RenderTexture *overlayTgt) {
     if (arguments.cartridgeY2K && arguments.showcase
         && cartridge_osd(gfx, overlayTgt)) return;
-    if (!arguments.showcase || !s_hudVisible) return;
+    if (!arguments.showcase || !s_hudVisible) {
+        if (!arguments.showcase && s_plainLaunchHint
+            && maindata.timeElapsed < s_plainLaunchHintUntil) {
+            if (!s_plainLaunchHintLogged) {
+                gX_TraceLog(gX_LOG_INFO, "PLAIN_HINT: drawn");
+                s_plainLaunchHintLogged = 1;
+            }
+            gX_Drawing_BeginTexture(*overlayTgt);
+            gX_Camera2D cam2d = {{0,0}, {0,0}, 0.0f, 1.0f};
+            gX_Drawing_Begin2D(cam2d);
+            gX_Rectangle_Draw((gX_Rectangle){12, 12, 250, 32},
+                (gX_Color){0, 0, 0, 160});
+            gX_RawString_Draw("ESC menu  /  Back to Title",
+                gX_Font_GetDefault(), (gX_F32v2){20, 20},
+                (gX_F32v2){0,0}, 0.0f, 18.0f, 1.0f,
+                (gX_Color){235, 240, 255, 255});
+            gX_Drawing_End2D();
+            gX_Drawing_EndTexture();
+        }
+        return;
+    }
 
     gX_Drawing_BeginTexture(*overlayTgt);
 

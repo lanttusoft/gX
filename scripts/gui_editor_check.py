@@ -151,6 +151,9 @@ def main():
             "first-run editor tour did not open")
         check_tour("tour", tour, 1.0)
         tour175 = run("tour-175", {"GX_TOUR": "force", "GX_UI_SCALE": "1.75"})
+        require("GUI_EDITOR_TITLE: left=Editor - Elements###editor_elements "
+                "right=Props###editor_properties" in tour175,
+                "175% inspector title did not shorten to Props")
         require("Tools: editor tour opened step=0" in tour175,
             "175% editor tour did not open")
         check_tour("tour-175", tour175, 1.75)

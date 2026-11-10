@@ -335,9 +335,9 @@ def row_title_raymarch_launch(rows):
 
 def row_title_quit_cancel(rows):
     quit_element = find_element(rows.menu(), "QUIT", canvas=0)
-    new_game = find_element(rows.menu(), "RUN DEMO", canvas=0)
-    if not quit_element or not new_game:
-        return False, "QUIT/RUN DEMO target missing"
+    background = find_element(rows.menu(), "SAVE SLOTS", canvas=0)
+    if not quit_element or not background:
+        return False, "QUIT/SAVE SLOTS target missing"
     #opencode: pass A opens the dialog so its buttons come from the real build
     #   (the layout stays template-owned instead of hardcoded).
     script = click_actions((1.0, quit_element))
@@ -347,11 +347,11 @@ def row_title_quit_cancel(rows):
     cancel = find_element(parse_elements(log), "Cancel", canvas=DIALOG_CANVAS)
     if not cancel:
         return False, "dialog Cancel target missing"
-    script = click_actions((1.0, quit_element), (2.0, new_game), (3.2, cancel))
+    script = click_actions((1.0, quit_element), (2.0, background), (3.2, cancel))
     code, log = trace_run("--title", {"GX_AI_INPUT": script}, frames_for(3.6))
     events = parse_events(log)
     background_clicks = [event for event in events
-                         if event["type"] == "click" and event["detail"] == "RUN DEMO"]
+                         if event["type"] == "click" and event["detail"] == "SAVE SLOTS"]
     ok = code == 0 and not background_clicks and ordered(events, [
         {"type": "click", "detail": "QUIT"},
         {"type": "dialog-open"},
