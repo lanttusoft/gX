@@ -26,13 +26,13 @@ items. Until all three gates and the operations contract hold, gX stays a
 
 | Item | Value |
 | --- | --- |
-| Version | v0.42.6 (beta) |
+| Version | v0.42.7 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit plus docs closeouts |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 120 manifest entries; **107/107** on the v0.42.6 full run at `32b915a` (`AUDIT_CACHE=0`, 1,490.2 s wall / 2,938.2 s gate time); the v0.42.0 baseline was also 107/107 |
+| Audit baseline | 120 manifest entries; **107/107** on the v0.42.6 full run at `32b915a` (`AUDIT_CACHE=0`, 1,490.2 s wall / 2,938.2 s gate time). v0.42.7 is a UI-polish PATCH validated by full admission and focused title/GUI/pause gates; re-run the matrix for an RC candidate. |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 3,929,403 B (264,901 B headroom), BSS 2,672,544 B (32,456 B headroom) — unchanged by the tooling/docs slice; v0.42.6 `make lean` |
-| Release class | PATCH (v0.42.6: opt-in mutation/fault-injection pilot, evidence/confidence manifest and agent role charters; no runtime change) |
+| Lean gate | payload 3,930,747 B (263,557 B headroom), BSS 2,672,576 B (32,424 B headroom) — v0.42.7 `make lean` |
+| Release class | PATCH (v0.42.7: title pause contrast, first-run plain-launch Esc hint, duplicate demo row removed, GUI editor 175% text readability; no resource/save-schema change) |
 
 ## Completeness ledger
 
@@ -116,6 +116,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-10 | v0.42.6 PATCH prep: GX-I035 baseline-controlled mutation pilot (5/5 intended, console candidate blocked), GX-I036/GX-I039 evidence/confidence manifest (38 contract tests), GX-I037 agent role charters + independent reviewer pilot. Full `make check`, `check-fast`, `evidence-manifest-check` and focused tests pass. Opt-in tooling/docs only; no runtime/resource behavior change; not RC evidence. No tag/push/publish yet; no RC claim. | owner/agent |
 | 2026-11-10 | v0.42.6 published: signed tag `v0.42.6` (object `cd34928`, target `32b915a`); `main` + tag pushed atomically; GitHub pre-release with archive/checksum, hosted digest and fresh-clone smoke PASS (https://github.com/lanttusoft/gX/releases/tag/v0.42.6). | owner/agent |
 | 2026-11-10 | RC readiness refresh at `32b915a`: full audit matrix **107/107** (`AUDIT_CACHE=0`, 1,490.2 s wall / 2,938.2 s gate time), NVIDIA GTX 1060 + llvmpipe hardware re-run PASS, v0.42.6 evidence manifest recorded. Blockers: five author sessions, three demand signals, AMD/Intel hardware (or accepted gap), operations sign-off. No RC/silver/gold claim. | owner/agent |
+| 2026-11-10 | v0.42.7 PATCH prep: GX-I034 residual polish fixed at `32cdb03` (opaque title pause panel, timed plain-launch Esc/Back hint, duplicate RUN DEMO removed from the full menu, GUI editor inspector/tree/help at 175%). `title-flow-check`, `gui-interaction-check`, `gui-editor-check`, `gui-pause-blur-check`, `gui-glass-check` and `check-fast` pass. No tag/push/publish yet; no RC claim. | owner/agent |
 
 ## Change rule
 

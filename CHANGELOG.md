@@ -4,6 +4,27 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.42.7] - 2026-11-10
+
+Release-Class: patch
+
+### Fixed
+- The title pause panel is opaque enough that the title menu no longer bleeds
+  through the pause controls at 640x480-1280x720. The dim level stays low
+  enough for `gui-pause-blur-check` to keep its blur-contrast margin.
+- A fresh-install plain launch now draws a timed **ESC menu / Back to Title**
+  hint on the GFX overlay, so the first-run route is visible without reading
+  `--help`. `title-flow-check` pins the hint branch.
+- The GUI editor keeps its inspector header, unnamed element rows and
+  empty-state guidance readable in the slim dock at 175% tool scale; the
+  window title falls back to `Props` instead of clipping `Properti...`.
+
+### Changed
+- The full title menu no longer duplicates the renderer demo: **RUN DEMO** is
+  removed from the full menu and remains only in the reduced play variant.
+  **OPEN GFX** and the **DEMOS** hub remain. `title-flow-check` pins the new
+  order and rejects a returning duplicate.
+
 ## [0.42.6] - 2026-11-10
 
 Release-Class: patch
