@@ -36,8 +36,12 @@ def fail(message):
 
 
 def validate_manifest(data):
-    if not isinstance(data, dict) or data.get("schema") != 1:
+    if (not isinstance(data, dict) or isinstance(data.get("schema"), bool)
+            or data.get("schema") != 1):
         fail("manifest schema must be 1")
+    if "base" in data:
+        if not isinstance(data["base"], str) or not data["base"]:
+            fail("manifest base must be a non-empty string")
     claims = data.get("claims")
     if not isinstance(claims, list) or not claims:
         fail("manifest needs a non-empty claims list")
@@ -149,19 +153,17 @@ def compute_claim(claim):
         volatility = 0.0
         status = "neutral-only" if neutral_weight > 0.0 else "passive-zero"
     else:
-        confidence = 100.0 * (for_weight - against_weight) / total
-        volatility = 100.0 * 2.0 * min(for_weight, against_weight) / total
-        confidence = round(confidence, 1)
-        volatility = round(volatility, 1)
-        if abs(confidence) < 0.05:
+        raw_confidence = 100.0 * (for_weight - against_weight) / total
+        raw_volatility = 100.0 * 2.0 * min(for_weight, against_weight) / total
+        confidence = round(raw_confidence, 1)
+        volatility = round(raw_volatility, 1)
+        if abs(raw_confidence) < 0.05:
             status = ("active-zero" if total >= ACTIVE_ZERO_MIN_WEIGHT
                       else "balanced-low")
-        elif confidence > 0.0:
+        elif raw_confidence > 0.0:
             status = "positive"
-        elif confidence < 0.0:
-            status = "negative"
         else:
-            status = "zero"
+            status = "negative"
     items = []
     for item in claim["evidence"]:
         copy = dict(item)
@@ -193,13 +195,15 @@ def value_text(value):
 
 
 def markdown_text(value):
-    return str(value).replace("|", "\\|")
+    return str(value).replace("|", "\\|").replace("\n", " ")
 
 
 def render_markdown(report):
-    lines = ["# Evidence manifest", "",
-             "Confidence is derived from weighted for/against evidence. "
-             "It is not a gate, proof, or release decision.", "",
+    lines = ["# Evidence manifest", ""]
+    if report.get("base"):
+        lines += ["Base: `%s`" % report["base"], ""]
+    lines += ["Confidence is derived from weighted for/against evidence. "
+              "It is not a gate, proof, or release decision.", "",
              "| Claim | Status | Confidence | Volatility | For | Against | "
              "For weight | Against weight | Total weight | Neutral | "
              "Significance |",
@@ -256,6 +260,7 @@ def main():
         validate_manifest(data)
         report = {
             "schema": 1,
+            "base": data.get("base"),
             "claims": [compute_claim(claim) for claim in data["claims"]],
         }
         if arguments.check:

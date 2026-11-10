@@ -23,6 +23,10 @@ def manifest_entry(entry_id="entry", **extra):
         "id": entry_id,
         "command": command(),
         "expect_regex": "FAIL",
+        "type": "replace",
+        "path": "src/x.c",
+        "old": "a",
+        "new": "b",
     }
     value.update(extra)
     return value
@@ -45,9 +49,15 @@ class BugInjectionTests(unittest.TestCase):
         self.assertFalse(matched)
 
     def test_classify_expected_crash(self):
-        status, matched = inj.classify(-6, "", r"GATE: FAIL",
+        status, matched = inj.classify(-6, "crash marker\n", r"crash marker",
                                        expect_crash=True)
         self.assertEqual(status, "killed")
+        self.assertTrue(matched)
+
+    def test_classify_expected_crash_requires_marker(self):
+        status, matched = inj.classify(-6, "", r"crash marker",
+                                       expect_crash=True)
+        self.assertEqual(status, "unexpected")
         self.assertFalse(matched)
 
     def test_classify_expected_crash_handler_exit(self):
@@ -128,6 +138,34 @@ class BugInjectionTests(unittest.TestCase):
             path.write_text(json.dumps(manifest), encoding="utf-8")
             with self.assertRaises(ValueError):
                 inj.load_manifest(path)
+
+    def test_manifest_rejects_numeric_regex(self):
+        entry = manifest_entry()
+        entry["expect_regex"] = 7
+        manifest = {"schema": 1, "entries": [entry]}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "manifest.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                inj.load_manifest(path)
+
+    def test_manifest_rejects_bad_build_timeout(self):
+        entry = manifest_entry(build_timeout=None)
+        manifest = {"schema": 1, "entries": [entry]}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "manifest.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                inj.load_manifest(path)
+
+    def test_blocked_entry_loads_with_reason(self):
+        entry = manifest_entry(blocked="fixture dependency")
+        manifest = {"schema": 1, "entries": [entry]}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "manifest.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            loaded = inj.load_manifest(path)
+        self.assertEqual(loaded["entries"][0]["blocked"], "fixture dependency")
 
     def test_manifest_rejects_duplicate_id(self):
         manifest = {

@@ -76,7 +76,7 @@ def is_crash(returncode):
 
 def classify(returncode, output, pattern, expect_crash=False):
     matched = re.search(pattern, output or "", re.M) is not None
-    if expect_crash and is_crash(returncode):
+    if expect_crash and is_crash(returncode) and matched:
         return "killed", matched
     if returncode != 0 and matched:
         return "killed", matched
@@ -140,6 +140,10 @@ def validate_manifest(data):
             raise ValueError("%s: command must be a non-empty list"
                              % entry["id"])
         validate_command(entry)
+        if (not isinstance(entry["expect_regex"], str)
+                or not entry["expect_regex"]):
+            raise ValueError("%s: expect_regex must be a non-empty string"
+                             % entry["id"])
         try:
             re.compile(entry["expect_regex"])
         except re.error as error:
@@ -150,11 +154,18 @@ def validate_manifest(data):
             raise ValueError("%s: expect_crash must be a boolean" % entry["id"])
         if ("intended" in entry and not isinstance(entry["intended"], bool)):
             raise ValueError("%s: intended must be a boolean" % entry["id"])
-        if "timeout" in entry:
-            timeout = entry["timeout"]
-            if (not isinstance(timeout, (int, float))
-                    or isinstance(timeout, bool) or timeout <= 0):
-                raise ValueError("%s: timeout must be positive" % entry["id"])
+        if "blocked" in entry:
+            if not isinstance(entry["blocked"], str) or not entry["blocked"]:
+                raise ValueError("%s: blocked must be a non-empty string"
+                                 % entry["id"])
+        for key in ("timeout", "build_timeout"):
+            if key not in entry:
+                continue
+            value = entry[key]
+            if (not isinstance(value, (int, float))
+                    or isinstance(value, bool) or value <= 0):
+                raise ValueError("%s: %s must be positive"
+                                 % (entry["id"], key))
         kind = entry.get("type", "replace")
         if kind == "reverse_commit":
             fix = entry.get("fix_commit")
@@ -271,6 +282,9 @@ def main():
                         help="keep both baseline and mutant trees")
     parser.add_argument("--skip-baseline", action="store_true",
                         help="skip the unmutated control run (faster, weaker)")
+    parser.add_argument("--allow-blocked", action="store_true",
+                        help="run entries marked blocked (baseline will "
+                             "normally fail)")
     parser.add_argument("--allow-dirty", action="store_true",
                         help="allow tracked working-tree changes (the test "
                              "still runs against --base)")
@@ -279,7 +293,7 @@ def main():
 
     try:
         manifest = load_manifest(arguments.manifest)
-    except (OSError, ValueError, json.JSONDecodeError) as error:
+    except (OSError, TypeError, ValueError, json.JSONDecodeError) as error:
         print("BUG_INJECTION: manifest error: %s" % error, file=sys.stderr)
         return 2
     entries = manifest["entries"]
@@ -299,6 +313,11 @@ def main():
                 "intended" if entry.get("intended", True) else "indirect",
                 entry.get("description", "")))
         return 0 if entries else 2
+    blocked = [entry["id"] for entry in entries if entry.get("blocked")]
+    if blocked and not arguments.allow_blocked:
+        print("BUG_INJECTION: blocked entries: %s; pass --allow-blocked "
+              "only for investigation" % ", ".join(blocked), file=sys.stderr)
+        return 2
 
     if not arguments.allow_dirty:
         dirty = git(ROOT, "status", "--porcelain", "--untracked-files=no")
@@ -388,6 +407,7 @@ def main():
             "status": status,
             "returncode": returncode,
             "baseline_returncode": baseline_returncode,
+            "baseline_skipped": bool(arguments.skip_baseline),
             "matched": matched,
             "crash": crash,
             "detail": detail,
@@ -415,6 +435,7 @@ def main():
         "schema": 1,
         "base": base,
         "manifest": str(Path(arguments.manifest)),
+        "baseline_skipped": bool(arguments.skip_baseline),
         "results": results,
         "killed": sum(1 for item in results if item["status"] == "killed"),
         "killed_indirect": sum(1 for item in results
@@ -429,7 +450,9 @@ def main():
     (report_dir / "report.json").write_text(
         json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     lines = ["# Bug-injection report", "",
-             "Base: `%s`" % base, "",
+             "Base: `%s`" % base,
+             "Baseline skipped: %s" % (
+                 "yes" if arguments.skip_baseline else "no"), "",
              "| Entry | Source | Intended | Status | RC | Crash | Baseline | "
              "Seconds | Detail |",
              "| --- | --- | --- | --- | ---: | --- | --- | ---: | --- |"]

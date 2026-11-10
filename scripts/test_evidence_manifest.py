@@ -114,6 +114,34 @@ class EvidenceManifestTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             em.validate_manifest(data)
 
+    def test_active_floor_exact(self):
+        result = em.compute_claim(claim([
+            item("gate", "for", 25),
+            item("gate", "against", 25),
+        ]))
+        self.assertEqual(result["status"], "active-zero")
+        self.assertEqual(result["total_weight"], 50.0)
+
+    def test_multilevel_aggregate_cap(self):
+        result = em.compute_claim(claim([
+            item("unit", "for", 55),
+            item("unit", "for", 55),
+        ]))
+        self.assertEqual(result["for_weight"], 55.0)
+
+    def test_schema_bool_rejected(self):
+        data = {"schema": True, "claims": [claim([])]}
+        with self.assertRaises(ValueError):
+            em.validate_manifest(data)
+
+    def test_base_recorded_in_markdown(self):
+        report = {
+            "schema": 1,
+            "base": "deadbeef",
+            "claims": [em.compute_claim(claim([]))],
+        }
+        self.assertIn("Base: `deadbeef`", em.render_markdown(report))
+
     def test_level_cap_rejected(self):
         data = {"schema": 1, "claims": [claim([
             item("unit", "for", 80),
