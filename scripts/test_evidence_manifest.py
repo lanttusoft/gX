@@ -73,6 +73,47 @@ class EvidenceManifestTests(unittest.TestCase):
         self.assertEqual(result["confidence"], 0.0)
         self.assertEqual(result["volatility"], 100.0)
 
+    def test_fresh_discount(self):
+        result = em.compute_claim(claim([
+            item("formal", "for", 80, fresh=False),
+            item("formal", "against", 40),
+        ]))
+        self.assertEqual(result["for_weight"], 40.0)
+        self.assertEqual(result["confidence"], 0.0)
+        self.assertEqual(result["volatility"], 100.0)
+
+    def test_many_weak_claims_are_capped(self):
+        result = em.compute_claim(claim(
+            [item("claimed", "for", 10) for _ in range(10)]
+            + [item("formal", "against", 100)]))
+        self.assertEqual(result["for_weight"], 10.0)
+        self.assertEqual(result["against_weight"], 100.0)
+        self.assertEqual(result["confidence"], -81.8)
+        self.assertNotEqual(result["status"], "active-zero")
+
+    def test_active_zero_requires_mass(self):
+        result = em.compute_claim(claim([
+            item("claimed", "for", 10),
+            item("claimed", "against", 10),
+        ]))
+        self.assertEqual(result["status"], "balanced-low")
+        self.assertEqual(result["total_weight"], 20.0)
+
+    def test_neutral_only(self):
+        result = em.compute_claim(claim([
+            item("unit", "neutral", 50),
+        ]))
+        self.assertEqual(result["status"], "neutral-only")
+        self.assertEqual(result["neutral_weight"], 50.0)
+        self.assertEqual(result["confidence"], 0.0)
+
+    def test_level_type_rejected(self):
+        data = {"schema": 1, "claims": [claim([
+            item([], "for", 10),
+        ])]}
+        with self.assertRaises(ValueError):
+            em.validate_manifest(data)
+
     def test_level_cap_rejected(self):
         data = {"schema": 1, "claims": [claim([
             item("unit", "for", 80),

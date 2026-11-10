@@ -27,6 +27,7 @@ LEVEL_CAPS = {
 DIRECTIONS = ("for", "against", "neutral")
 DEPENDENT_FACTOR = 0.5
 STALE_FACTOR = 0.5
+ACTIVE_ZERO_MIN_WEIGHT = 50.0
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
@@ -77,9 +78,11 @@ def validate_manifest(data):
                         "independent", "fresh"):
                 if key not in item:
                     fail("%s: missing %s" % (prefix, key))
-            if item["level"] not in LEVEL_CAPS:
+            if (not isinstance(item["level"], str)
+                    or item["level"] not in LEVEL_CAPS):
                 fail("%s: unknown level %r" % (prefix, item["level"]))
-            if item["direction"] not in DIRECTIONS:
+            if (not isinstance(item["direction"], str)
+                    or item["direction"] not in DIRECTIONS):
                 fail("%s: unknown direction %r" % (prefix, item["direction"]))
             weight = item["weight"]
             if (not isinstance(weight, (int, float)) or isinstance(weight, bool)
@@ -95,6 +98,8 @@ def validate_manifest(data):
                 fail("%s: independent must be a boolean" % prefix)
             if not isinstance(item["fresh"], bool):
                 fail("%s: fresh must be a boolean" % prefix)
+            if "note" in item and not isinstance(item["note"], str):
+                fail("%s: note must be a string" % prefix)
     return data
 
 
@@ -105,6 +110,17 @@ def effective_weight(item):
     if not item["fresh"]:
         value *= STALE_FACTOR
     return value
+
+
+def directional_weight(claim, direction):
+    by_level = {}
+    for item in claim["evidence"]:
+        if item["direction"] != direction:
+            continue
+        level = item["level"]
+        by_level[level] = by_level.get(level, 0.0) + effective_weight(item)
+    return sum(min(value, LEVEL_CAPS[level])
+               for level, value in by_level.items())
 
 
 def compute_claim(claim):
@@ -119,10 +135,10 @@ def compute_claim(claim):
                   if item["direction"] == "for")
     raw_against = sum(float(item["weight"]) for item in claim["evidence"]
                       if item["direction"] == "against")
-    for_weight = sum(effective_weight(item) for item in claim["evidence"]
-                     if item["direction"] == "for")
-    against_weight = sum(effective_weight(item) for item in claim["evidence"]
-                         if item["direction"] == "against")
+    for_weight = directional_weight(claim, "for")
+    against_weight = directional_weight(claim, "against")
+    neutral_weight = sum(effective_weight(item) for item in claim["evidence"]
+                         if item["direction"] == "neutral")
     total = for_weight + against_weight
     if not assessed:
         confidence = None
@@ -131,14 +147,15 @@ def compute_claim(claim):
     elif total <= 0.0:
         confidence = 0.0
         volatility = 0.0
-        status = "passive-zero"
+        status = "neutral-only" if neutral_weight > 0.0 else "passive-zero"
     else:
         confidence = 100.0 * (for_weight - against_weight) / total
         volatility = 100.0 * 2.0 * min(for_weight, against_weight) / total
         confidence = round(confidence, 1)
         volatility = round(volatility, 1)
-        if abs(confidence) < 0.05 and volatility > 0.0:
-            status = "active-zero"
+        if abs(confidence) < 0.05:
+            status = ("active-zero" if total >= ACTIVE_ZERO_MIN_WEIGHT
+                      else "balanced-low")
         elif confidence > 0.0:
             status = "positive"
         elif confidence < 0.0:
@@ -163,6 +180,7 @@ def compute_claim(claim):
         "raw_against_weight": round(raw_against, 1),
         "for_weight": round(for_weight, 1),
         "against_weight": round(against_weight, 1),
+        "neutral_weight": round(neutral_weight, 1),
         "total_weight": round(total, 1),
         "confidence": confidence,
         "volatility": volatility,
@@ -174,25 +192,33 @@ def value_text(value):
     return "null" if value is None else "%.1f" % value
 
 
+def markdown_text(value):
+    return str(value).replace("|", "\\|")
+
+
 def render_markdown(report):
     lines = ["# Evidence manifest", "",
              "Confidence is derived from weighted for/against evidence. "
              "It is not a gate, proof, or release decision.", "",
              "| Claim | Status | Confidence | Volatility | For | Against | "
-             "For weight | Against weight | Significance |",
-             "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+             "For weight | Against weight | Total weight | Neutral | "
+             "Significance |",
+             "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | "
+             "---: | ---: | ---: |"]
     for claim in report["claims"]:
-        lines.append("| `%s` | %s | %s | %s | %d | %d | %.1f | %.1f | %s |"
+        lines.append("| `%s` | %s | %s | %s | %d | %d | %.1f | %.1f | "
+                     "%.1f | %.1f | %s |"
                      % (claim["id"], claim["status"],
                         value_text(claim["confidence"]),
                         value_text(claim["volatility"]),
                         claim["for_count"], claim["against_count"],
                         claim["for_weight"], claim["against_weight"],
+                        claim["total_weight"], claim["neutral_weight"],
                         "null" if claim["significance"] is None
                         else "%.0f" % claim["significance"]))
     for claim in report["claims"]:
         lines += ["", "## %s" % claim["id"], "",
-                  claim["claim"], "",
+                  markdown_text(claim["claim"]), "",
                   "Status: **%s**; confidence %s; volatility %s; "
                   "significance %s." % (
                       claim["status"], value_text(claim["confidence"]),
@@ -209,7 +235,8 @@ def render_markdown(report):
                                 item["weight"], item["effective_weight"],
                                 "yes" if item["independent"] else "no",
                                 "yes" if item["fresh"] else "no",
-                                item["artifact"], item.get("note", "")))
+                                markdown_text(item["artifact"]),
+                                markdown_text(item.get("note", ""))))
         else:
             lines.append("No evidence items.")
     return "\n".join(lines) + "\n"
@@ -239,7 +266,7 @@ def main():
         else:
             print(render_markdown(report), end="")
         return 0
-    except (OSError, ValueError, json.JSONDecodeError) as error:
+    except (OSError, TypeError, ValueError, json.JSONDecodeError) as error:
         print("EVIDENCE_MANIFEST: FAIL — %s" % error, file=sys.stderr)
         return 1
 

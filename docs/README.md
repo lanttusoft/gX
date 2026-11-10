@@ -52,6 +52,9 @@ Start here:
 - [Evidence and confidence manifest](evidence_manifest.md) — claim-level
   verification ladder, for/against weighting, confidence and volatility;
   reporting only, not a gate.
+- [Agent roles and independence](agent_roles.md) — harness-neutral implementer,
+  reviewer, tester, verifier, mathematician, counter-example finder, peer
+  reviewer and white-hat charters; advisory, not a security boundary.
 - [AI usage and limitations](ai_disclosure.md) — what AI assisted with,
   review limits and the as-is disclaimer.
 

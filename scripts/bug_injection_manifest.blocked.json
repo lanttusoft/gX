@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "_comment": "Blocked mutation candidates. Not part of the default passing corpus; baseline control must pass before promotion.",
+  "entries": [
+    {
+      "id": "console-idle-zero-baseline",
+      "description": "Historical console idle detection compared raw axes to zero, so a controller resting at -1 kept the shell awake.",
+      "source": "gX",
+      "note": "v0.42.3 idle calibration bug, re-expressed as the old absolute-axis check while keeping the stored neutral trace. Pilot kill is indirect: the console focus-target assertion fires before the idle assertion. Keep as a gate-ordering finding; a dedicated idle-only check should make the kill precise. Baseline control must pass; this entry is knowingly indirect and is reported separately.",
+      "type": "replace",
+      "path": "src/gui/gui.c",
+      "old": "            if (fabsf(value - s_consoleIdleGamepadAxis[g][i]) > 0.5f) {",
+      "new": "            if (fabsf(value) > 0.2f) {",
+      "command": [
+        "python3",
+        "scripts/console_shell_check.py"
+      ],
+      "expect_regex": "CONSOLE_SHELL: FAIL",
+      "timeout": 900,
+      "intended": false,
+      "blocked": "console_shell_check depends on the gitignored 320x240 settings fixture; the unmutated archive baseline fails without it. Add a self-contained idle-only probe before enabling this entry."
+    }
+  ]
+}

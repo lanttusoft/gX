@@ -45,9 +45,12 @@ Each item is `for`, `against` or `neutral`.
 - Raw weights are summed per direction for transparency.
 - Effective weight discounts dependent/correlated sources (`×0.5`) and stale
   inputs (`×0.5`). The report shows both raw and effective weights.
-- Counts show breadth; weights show strength. Ten weak assertions do not
-  outweigh one kernel-checked proof.
-- Neutral items are counted but do not enter the formula.
+- **Aggregate cap:** effective weights are summed per level and direction, then
+  capped at that level's weight cap. Ten `claimed` items cannot exceed the
+  `claimed` cap of 10, so they cannot outweigh one `formal` item of 100.
+- Counts show breadth; weights show strength.
+- Neutral items are counted and their effective weight is reported, but they
+  do not enter the formula.
 
 ## Derived confidence and volatility
 
@@ -63,12 +66,17 @@ Special states:
 | State | Meaning |
 | --- | --- |
 | `not-assessed` | confidence `null`, volatility `null`; no assessment made |
-| `passive-zero` | assessed, `F + A = 0`; confidence 0, volatility 0 |
-| `active-zero` | `F ≈ A`, both substantial; confidence 0, high volatility |
+| `passive-zero` | assessed, no effective for/against **or neutral** weight; confidence 0, volatility 0 |
+| `neutral-only` | assessed, only neutral evidence; confidence 0, volatility 0, neutral weight reported |
+| `balanced-low` | `F ≈ A` but total weight below the 50-point active-zero floor |
+| `active-zero` | `F ≈ A` and total weight at least 50; confidence 0, high volatility |
 | `positive` / `negative` | net weighted support / opposition |
 
 `null` is not passive 0. A claim explicitly assessed as having no evidence is
-passive 0; a claim nobody has assessed is null.
+passive 0; a claim nobody has assessed is null. Neutral evidence is not the
+same as no evidence. Active zero requires a minimum total weight, so two tiny
+opposing items do not masquerade as substantial contention. The summary table
+reports total and neutral weight so confidence can be read with its mass.
 
 ## Schematic
 

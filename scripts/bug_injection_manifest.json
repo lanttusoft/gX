@@ -11,22 +11,12 @@
       "path": "src/input.c",
       "old": "        case gX_BIND_MOVE_FORWARD:  return gX_GAMEPAD_BUTTON_LEFT_FACE_UP;\n        case gX_BIND_MOVE_BACKWARD: return gX_GAMEPAD_BUTTON_LEFT_FACE_DOWN;\n        case gX_BIND_MOVE_LEFT:     return gX_GAMEPAD_BUTTON_LEFT_FACE_LEFT;\n        case gX_BIND_MOVE_RIGHT:    return gX_GAMEPAD_BUTTON_LEFT_FACE_RIGHT;",
       "new": "        case gX_BIND_MOVE_FORWARD:  return GX_GAMEPAD_DPAD_UP;\n        case gX_BIND_MOVE_BACKWARD: return GX_GAMEPAD_DPAD_DOWN;\n        case gX_BIND_MOVE_LEFT:     return GX_GAMEPAD_DPAD_LEFT;\n        case gX_BIND_MOVE_RIGHT:    return GX_GAMEPAD_DPAD_RIGHT;",
-      "command": ["./build/gX_build", "--test-only"],
-      "expect_regex": "TEST_ONLY: [1-9][0-9]* errors",
+      "command": [
+        "./build/gX_build",
+        "--test-only"
+      ],
+      "expect_regex": "INPUT 10 FAIL: dpad movement fallback",
       "timeout": 600
-    },
-    {
-      "id": "console-idle-zero-baseline",
-      "description": "Historical console idle detection compared raw axes to zero, so a controller resting at -1 kept the shell awake.",
-      "source": "gX",
-      "note": "v0.42.3 idle calibration bug, re-expressed as the old absolute-axis check while keeping the stored neutral trace. Pilot kill is indirect: the console focus-target assertion fires before the idle assertion. Keep as a gate-ordering finding; a dedicated idle-only check should make the kill precise.",
-      "type": "replace",
-      "path": "src/gui/gui.c",
-      "old": "            if (fabsf(value - s_consoleIdleGamepadAxis[g][i]) > 0.5f) {",
-      "new": "            if (fabsf(value) > 0.2f) {",
-      "command": ["python3", "scripts/console_shell_check.py"],
-      "expect_regex": "CONSOLE_SHELL: FAIL",
-      "timeout": 900
     },
     {
       "id": "tour-scale-fixed",
@@ -37,8 +27,11 @@
       "path": "src/tools/editor/editor.cpp",
       "old": "        gX_F32 tourScale = ImGui::GetStyle().FontScaleMain;",
       "new": "        gX_F32 tourScale = 1.0f;",
-      "command": ["python3", "scripts/gui_editor_check.py"],
-      "expect_regex": "GUI_EDITOR_CHECK: FAIL",
+      "command": [
+        "python3",
+        "scripts/gui_editor_check.py"
+      ],
+      "expect_regex": "tour width 420 did not scale",
       "timeout": 900
     },
     {
@@ -50,8 +43,11 @@
       "path": "src/tools/editor/editor.cpp",
       "old": "            if (s_tourStep > 0) {\n                if (ImGui::Button(\"Back\")) s_tourStep--;\n                ImGui::SameLine();\n            }",
       "new": "            if (s_tourStep > 0) {\n                if (ImGui::Button(\"Back\")) s_tourStep--;\n            }\n            ImGui::SameLine();",
-      "command": ["python3", "scripts/gui_editor_check.py"],
-      "expect_regex": "GUI_EDITOR_CHECK: FAIL",
+      "command": [
+        "python3",
+        "scripts/gui_editor_check.py"
+      ],
+      "expect_regex": "Skip button clipped",
       "timeout": 900
     },
     {
@@ -61,9 +57,14 @@
       "note": "The gX fix 4288636 closed the lineage boundary; reversing only the backend code keeps the current boundary test, which aborts with free(): invalid size. expect_crash records a contained signal kill, not a clean assertion.",
       "type": "reverse_commit",
       "fix_commit": "4288636",
-      "paths": ["src/backend/raylib/raylib_wrappers_model.c"],
-      "command": ["./build/gX_build", "--test-only"],
-      "expect_regex": "free\\(\\): invalid size|TEST_ONLY: [1-9][0-9]* errors",
+      "paths": [
+        "src/backend/raylib/raylib_wrappers_model.c"
+      ],
+      "command": [
+        "./build/gX_build",
+        "--test-only"
+      ],
+      "expect_regex": "free\\(\\): invalid size|gX crash: signal",
       "expect_crash": true,
       "timeout": 600
     },
@@ -76,8 +77,11 @@
       "path": "src/common/utils/shader.c",
       "old": "    gX_Shader_SetValue(shader,loc,&f,gX_SHADER_UNIFORM_FLOAT);",
       "new": "    gX_Shader_SetValue(shader,loc,&f,gX_SHADER_UNIFORM_INT);",
-      "command": ["python3", "scripts/uniform_trace_check.py"],
-      "expect_regex": "UNIFORM_MISMATCH|UNIFORM_TRACE_CHECK: FAIL",
+      "command": [
+        "python3",
+        "scripts/uniform_trace_check.py"
+      ],
+      "expect_regex": "UNIFORM_MISMATCH",
       "timeout": 900
     }
   ]
