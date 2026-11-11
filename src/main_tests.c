@@ -32,11 +32,14 @@
 #include <unistd.h>
 
 #include "common/alloc.h"
+#include "common/error.h"
 #include "common/hashmap.h"
 #include "common/heap.h"
 #include "common/log.h"
 #include "common/msg.h"
 #include "common/utils.h"
+#include "rhi/rhi_fbo.h"
+#include "rhi/rhi_tex.h"
 #include "rhi/rhi_event_log.h"
 #include "common/types/3d.h"
 #include "resource/resource.h"
@@ -145,6 +148,27 @@ gX_I32 gX_Tests_Threading(gX_I0);
 //opencode: background renderer CPU tests (param oscillators, transitions, imgpro)
 //   Cluster-gated: renderer/background/tests.c compiles only in full builds.
 #if gX_ENABLE_RENDERER == 1
+//ai: RHI failure reporting must set a stable code before any GL call; these
+//   invalid-argument paths are context-free and permanent admission controls.
+static gX_I32 gX_Tests_RHIErrorCodes(gX_I0)
+{
+    gX_I32 errors = 0;
+    gX_Error_Clear();
+    if (gX_RHI_Tex_Storage3D(0, 0, 0, 0, 0, 0, 0) != -1) errors++;
+    const gX_ErrorInfo *info = gX_Error_Get();
+    if (!info || info->code != GX_ERR_INVALID
+        || !strstr((const char *)info->message, "invalid texture storage")) errors++;
+    gX_Error_Clear();
+    if (gX_RHI_Tex_Storage2D(0, 0, 0, 0, 0, 0) != -1) errors++;
+    info = gX_Error_Get();
+    if (!info || info->code != GX_ERR_INVALID) errors++;
+    gX_Error_Clear();
+    if (gX_RHI_Tex_Samples(0) != 0) errors++;
+    if (gX_Error_Get()->code != GX_ERR_NONE) errors++;
+    if (errors == 0) gX_TraceLog(gX_LOG_INFO, "RHI ERROR CODE tests: all passed");
+    return errors;
+}
+
 gX_I32 gX_Tests_Background(gX_I0);
 gX_I32 gX_Tests_Raymarch(gX_I0);
 //opencode: textwriter parser tests (TXT loader, tags, capacity guards)
@@ -4307,6 +4331,9 @@ gX_I32 gX_Tests(gX_I0) {
     
     errors += gX_Alloc_Tests();
     errors += gX_Tests_ScreenshotPath();
+#if gX_ENABLE_RENDERER == 1
+    errors += gX_Tests_RHIErrorCodes();
+#endif
     errors += gX_Msg_Tests();
     errors += gX_HashMap_Tests();
     errors += gX_RHI_EventLog_Tests();
