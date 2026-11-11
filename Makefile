@@ -66,6 +66,8 @@ check: all
 	python3 -m unittest discover -s scripts -p test_console_shell_check.py
 	#ai: H3 — GUI capture helpers must reject a failing engine exit.
 	python3 -m unittest discover -s scripts -p test_gui_capture_exit.py
+	#ai: M5 — the plain-launch hint gate checks drawn pixels.
+	python3 -m unittest discover -s scripts -p test_title_flow_check.py
 	python3 -m unittest discover -s scripts -p test_console_osd_check.py
 	python3 -m unittest discover -s scripts -p test_console_playback_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa_check.py
@@ -277,6 +279,8 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_console_shell_check.py
 	#ai: H3 — GUI capture helpers must reject a failing engine exit.
 	python3 -m unittest discover -s scripts -p test_gui_capture_exit.py
+	#ai: M5 — the plain-launch hint gate checks drawn pixels.
+	python3 -m unittest discover -s scripts -p test_title_flow_check.py
 	python3 -m unittest discover -s scripts -p test_console_osd_check.py
 	python3 -m unittest discover -s scripts -p test_console_playback_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa_check.py

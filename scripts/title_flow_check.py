@@ -153,22 +153,54 @@ def extras_layout(binary):
 
 
 def plain_hint(binary):
-    """Fresh-install plain launch must expose the Esc/Back hint branch."""
+    """Fresh-install plain launch must draw the Esc/Back hint pixels."""
+    directory = OUT / "plain_hint"
+    directory.mkdir(parents=True, exist_ok=True)
+    for stale in directory.glob("gXss_*.png"):
+        stale.unlink()
     environment = audit.scene_env({
         "GX_SKIPTITLE": "1",
         "GX_SKIP_TESTS": "1",
-        "GX_FRAMES": "20",
+        "GX_FRAMES": "60",
+        "GX_SHOT_FRAME": "60",
+        "GX_FIXED_DT": "0.0166666667",
+        "GX_SCREENSHOT_DIR": str(directory),
     }, clean=True)
     result = subprocess.run(
-        [str(binary or audit.BIN)], cwd=str(audit.ROOT),
-        env=environment, text=True, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT, timeout=60)
+        [str(binary or audit.BIN), "--screenWidth", "1024",
+         "--screenHeight", "768", "--ai-screenshot-final"],
+        cwd=str(audit.ROOT), env=environment, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60)
     log = audit.strip_ansi(result.stdout or "")
     if result.returncode != 0:
         raise RuntimeError(
             f"plain launch exited {result.returncode}: {log[-400:]}")
     if "PLAIN_HINT: drawn" not in log:
         raise RuntimeError("plain launch did not draw the Esc/Back hint")
+    shot = audit.newest_shot(directory)
+    if shot is None:
+        raise RuntimeError("plain launch produced no hint screenshot")
+    image = audit.load_rgb(shot)
+    if image.shape[:2] != (768, 1024):
+        raise RuntimeError(
+            f"plain hint capture is {image.shape[1]}x{image.shape[0]}")
+    return assert_hint_pixels(image)
+
+
+def assert_hint_pixels(image):
+    """Require the dark hint panel and light glyphs in the screenshot."""
+    hint = image[12:44, 12:262]
+    background = image[12:44, 300:550]
+    darkened = float(background.mean() - hint.mean())
+    #ai: M5 — the trace alone is not evidence. Require the dark panel and the
+    #   light glyphs in the screenshot, so removing the draw calls fails.
+    if darkened < 40.0:
+        raise RuntimeError(
+            f"plain hint panel is not visible (darkened {darkened:.1f} luma)")
+    bright = float((hint > 200.0).all(axis=2).mean())
+    if bright < 0.02 or bright > 0.35:
+        raise RuntimeError(
+            f"plain hint text is not visible (bright fraction {bright:.3f})")
     return True
 
 
