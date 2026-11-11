@@ -59,6 +59,8 @@ check: all
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	python3 -m unittest discover -s scripts -p test_version_suggest.py
 	python3 -m unittest discover -s scripts -p test_gate_manifest.py
+	#ai: M4 — one retry, with first-verdict provenance.
+	python3 -m unittest discover -s scripts -p test_audit_summary.py
 	python3 -m unittest discover -s scripts -p test_model_import.py
 	#ai: console layout/focus gates must reject missing telemetry and broken controls.
 	python3 -m unittest discover -s scripts -p test_console_shell_check.py
@@ -268,6 +270,8 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	python3 -m unittest discover -s scripts -p test_version_suggest.py
 	python3 -m unittest discover -s scripts -p test_gate_manifest.py
+	#ai: M4 — one retry, with first-verdict provenance.
+	python3 -m unittest discover -s scripts -p test_audit_summary.py
 	python3 -m unittest discover -s scripts -p test_model_import.py
 	#ai: display-free rejection controls for console layout and controller traversal.
 	python3 -m unittest discover -s scripts -p test_console_shell_check.py

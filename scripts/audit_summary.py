@@ -256,21 +256,6 @@ def main():
         return {"gate": name, "ok": ok, "seconds": seconds,
                 "verdict": verdict}
 
-    #opencode: parallel runs launch several GL contexts at once; startup or
-    #   timing contention can flake a gate. Retry any failure once and keep
-    #   the first verdict on record, so flakiness stays visible in the report
-    #   instead of being silently absorbed.
-    def run_gate_with_retry(gate):
-        record = run_gate(gate)
-        if not record["ok"]:
-            print(f"{record['gate']:20s} failed, retrying once "
-                  f"({record['verdict']})", flush=True)
-            first_verdict = record["verdict"]
-            record = run_gate(gate)
-            record["retried"] = True
-            record["first_verdict"] = first_verdict
-        return record
-
     summary_start = time.perf_counter()
     print(f"audit summary: {len(ordered)} gates"
           + (" (full)" if args.full else " (quick)")
@@ -279,8 +264,7 @@ def main():
     if args.jobs > 1:
         with concurrent.futures.ThreadPoolExecutor(
                 max_workers=args.jobs) as pool:
-            futures = [pool.submit(run_gate_with_retry, gate)
-                       for gate in ordered]
+            futures = [pool.submit(run_gate, gate) for gate in ordered]
             for future in concurrent.futures.as_completed(futures):
                 record = future.result()
                 results.append(record)
@@ -290,10 +274,10 @@ def main():
                       flush=True)
         order = {gate[0]: index for index, gate in enumerate(ordered)}
         results.sort(key=lambda record: order[record["gate"]])
-        #opencode: a parallel-only failure can be capture/context contention,
-        #   not a product failure. Re-run it alone after the batch; a genuine
-        #   failure still fails, but a shared-GPU flake does not poison the
-        #   matrix. The first parallel verdict stays attached for visibility.
+        #ai: M4 — one retry total. A parallel-only failure can be capture or
+        #   context contention, so re-run it alone once after the batch; a
+        #   genuine failure still fails. Keep the first verdict and duration
+        #   attached instead of running a third attempt.
         gate_by_name = {gate[0]: gate for gate in ordered}
         for index, record in enumerate(results):
             if record["ok"]:
@@ -301,6 +285,9 @@ def main():
             print(f"{record['gate']:20s} retry-sequential "
                   f"({record['verdict']})", flush=True)
             retry = run_gate(gate_by_name[record["gate"]])
+            retry["retried"] = True
+            retry["first_verdict"] = record["verdict"]
+            retry["first_seconds"] = record["seconds"]
             retry["seconds"] += record["seconds"]
             retry["parallel_verdict"] = record["verdict"]
             retry["verdict"] += " (sequential retry)"

@@ -43,8 +43,9 @@ reuse or a re-run inspectable.
   audit gates; an unmapped build input conservatively selects all gates.
 - Per-gate cache policy is honored: `cache = "never"` bypasses the cache for
   `profile` and `cache`; the rest use content-addressed passes. A failure in
-  a parallel batch is retried sequentially after the batch; the first
-  parallel verdict stays attached so contention remains visible.
+  a parallel batch is retried sequentially **once** after the batch; the first
+  parallel verdict and duration stay attached so contention remains visible,
+  and a second failure is final rather than a third attempt.
 - `AUDIT_CACHE_DIR=/path` opts into a shared cache directory. Entries are
   stored per gate and per content key, merged under a file lock and written
   atomically, so parallel worktrees do not lose passes. The directory is not
