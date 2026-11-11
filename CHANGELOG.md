@@ -4,6 +4,64 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.44.0] - 2026-11-11
+
+Release-Class: minor
+
+### Added
+- `gX_Settings_Path()` and the `GX_SETTINGS_PATH` test/audit hook: callers can
+  point persistence at a private settings file without touching the author's
+  `resources/settings.json`.
+- `gX_Text_ScreenshotEx(buffer, size)` builds screenshot paths into a
+  caller-sized buffer; long capture roots keep the full directory and `.png`
+  suffix. The fixed-size `gX_Text_Screenshot()` remains as a compatibility
+  wrapper.
+- Shared tool-UI scale helpers used by floating tool panels to widen with the
+  ImGui text scale instead of clipping fixed-width controls.
+- Permanent `gui-layout-175` gate for template text fit at 175%, plus
+  context-free RHI failure-code controls in `--test-only`.
+- Fault-injection tests for GUI capture exits, plain-launch hint pixels,
+  pause-panel opacity, summary retry policy, alternate-manifest execution and
+  evidence freshness.
+
+### Fixed
+- **Audit settings isolation:** test and audit contexts use private
+  `GX_SETTINGS_PATH` files under `GX_SCRATCH`; parallel gates no longer
+  rewrite, delete or restore the shared user settings file.
+- **Capture exit handling:** pause-blur, glass, shadow, cursor-light,
+  effect-contrast, HUD-contrast and depth captures reject a nonzero engine
+  exit even when a screenshot exists.
+- **Alternate manifests:** `gates.py --manifest PATH run` passes the same
+  manifest to the runner; a missing explicit manifest fails instead of using
+  the default. `build.sh` is declared as a build input.
+- **Cache freshness:** the audit cache digest follows
+  `[defaults].build_inputs` from `gates.toml`, covering `patches/`, `modules/`
+  and `external/raylib/`, and excludes VCS metadata.
+- **Retry policy:** a parallel gate failure receives exactly one sequential
+  retry; a second failure is final and the first verdict and duration stay in
+  the report.
+- **Plain-launch hint:** `title-flow-check` verifies the dark panel and light
+  glyph pixels, not only the trace line.
+- **Pause-panel opacity:** the gate pins the theme alpha and models the
+  rendered panel fill, catching a 245 -> 200 regression.
+- **Evidence freshness:** worktree fingerprints include untracked file
+  contents, so editing an untracked header invalidates a stamp.
+- **Empty selections:** `audit_summary.py --only` with no names exits 2
+  instead of reporting a green 0/0 run.
+- **Long capture roots:** screenshot paths keep the full directory and `.png`
+  suffix, fixing the release-gate truncation.
+- **High-scale tool panels:** GUI editor, theme, sky, background, wavetable,
+  textwriter, physics and rail panels reflow at 175% instead of clipping
+  fixed-width rows and labels.
+
+### Changed
+- The audit matrix grows from 107 to 108 gates with `gui-layout-175`.
+- `check-fast` includes the 175% template layout pass and the new
+  fault-injection/unit controls.
+
+No save, preset or resource format changed. New public entry points are
+additive; there is no intentional ABI break.
+
 ## [0.43.0] - 2026-11-11
 
 Release-Class: minor
