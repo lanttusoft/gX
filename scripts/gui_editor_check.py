@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -107,6 +108,45 @@ def hook_counts(log, tag):
     }
 
 
+#ai: GUI-H1 — undo/save must survive the GUI refresh pass. This is the audit's
+#   Duplicate -> Edit > Undo -> Save route on a disposable shipped markup.
+def run_undo_save(target, shots):
+    environment = dict(os.environ)
+    environment.update({
+        "DISPLAY": audit.display(),
+        "GX_AUDIT_WINDOW": "hidden",
+        "GX_AUDIT_FULLSIZE": "1",
+        "GX_NO_SETTINGS_SAVE": "1",
+        "GX_SKIP_TESTS": "1",
+        "GX_SYNTH_MUTE": "1",
+        "GX_AUDIO_MUTE": "1",
+        "GX_FIXED_DT": "0.0166666667",
+        "GX_FRAMES": "400",
+        "GX_SHOT_FRAME": "395",
+        "GX_GUI_TRACE": "1",
+        "GX_GFX_LAYOUT_TRACE": "1",
+        "GX_TOUR": "0",
+        "GX_UI_SCALE": "1.00",
+        "GX_DOCK_DISABLE": "1",
+        "GX_TOOLS_SELECT": "1",
+        "GX_SCREENSHOT_DIR": str(shots),
+        "GX_AI_INPUT": (
+            "1.0 move 73 143 200;1.5 click 73 143;"
+            "2.5 move 172 10 200;2.9 click 172 10;"
+            "3.4 move 190 32 200;3.8 click 190 32;"
+            "4.5 move 150 143 200;4.9 click 150 143"),
+    })
+    result = subprocess.run(
+        [str(BIN), "--tools", str(target), "--screenWidth", "1024",
+         "--screenHeight", "768", "--ai-screenshot-final"],
+        cwd=str(ROOT), env=environment, text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT, timeout=180)
+    log = audit.strip_ansi(result.stdout or "")
+    require(result.returncode == 0,
+        f"undo/save probe exited {result.returncode}: {log[-500:]}")
+    return log
+
+
 def main():
     if not BIN.is_file():
         print("GUI_EDITOR_CHECK: FAIL — missing binary", file=sys.stderr)
@@ -172,6 +212,21 @@ def main():
         counts = hook_counts(undo, "remove-undo")
         require(counts["after"] == counts["before"],
             f"undo did not restore remove {counts['before']} -> {counts['after']}")
+
+        #ai: GUI-H1 regression — Undo must not be wiped by the next GUI refresh
+        #   before Save writes the restored markup.
+        undo_path = Path(temporary.name) / "undo-save.json"
+        undo_shots = Path(temporary.name) / "undo-shots"
+        undo_shots.mkdir()
+        shutil.copyfile(ROOT / "resources" / "tools" / "tools_demo.json",
+            undo_path)
+        run_undo_save(undo_path, undo_shots)
+        restored = json.loads(undo_path.read_text(encoding="utf-8"))
+        require(len(restored.get("elements", [])) == 4,
+            "undo/save wrote an empty or truncated markup canvas")
+        require({element.get("name") for element in restored["elements"]}
+            == {"bg", "hello", "stripe", "gradient"},
+            "undo/save did not preserve the shipped element names")
 
         probe = ROOT / "resources/tools/gui_editor_guard_probe.json"
         probe.unlink(missing_ok=True)

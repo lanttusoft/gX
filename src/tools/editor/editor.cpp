@@ -400,8 +400,9 @@ static gX_I0 tools_snap_restore(const gX_Tools_EditorSnap *s, gX_GUI_Canvas *can
         }
     }
     if (!tools_selection_resolve(canvas)) tools_selection_clear();
-    canvas->refresh = true;
-    gui.refresh = true;
+    //ai: GUI-H1 — the snapshot already restored the canvas heap. Do not request
+    //   a template refresh: the next GUI pass would clear it and rebuild
+    //   template ID 0, destroying the restored markup before Save.
 }
 
 #define GX_TOOLS_UNDO_MAX 32
