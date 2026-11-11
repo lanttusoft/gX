@@ -31,10 +31,12 @@ than assuming the setting covers every surface.
 
 - **Default** — the standard dark theme;
 - **High Contrast** — stronger surface/text pairs;
-- **Color-safe** — a colour-vision-oriented palette;
-- **Aero** — the Frutiger Aero tool styling.
+- **Color-safe** — a colour-vision-oriented palette.
 
-The native and tool UIs use the same theme tokens. The state/HUD contrast
+The shared theme system also includes **Aero** (the Frutiger Aero tool
+styling). Select it from the tool UI theme menu; the native Settings view does
+not currently expose an Aero radio. The native and tool UIs use the same theme
+tokens. The state/HUD contrast
 gates cover the shipped theme pairs and fixed HUD ROIs; they do not certify
 every dynamic menu or third-party asset. The colour-independence review
 records the non-colour cues used by battle states and provides
