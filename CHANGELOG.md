@@ -4,6 +4,45 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.43.0] - 2026-11-11
+
+Release-Class: minor
+
+### Added
+- Ordered RHI event-log access: `gX_RHI_EventLog_Count()`,
+  `gX_RHI_EventLog_At()` and `gX_RHI_EventLog_Dropped()`. `At(0)` is the oldest
+  retained event, so wrapped rings read chronologically. The legacy
+  `gX_RHI_EventLog_Get()` remains as the raw array accessor.
+- `gX_RHI_Tex_TargetRegistryFull()` exposes the latched 1024-entry target
+  registry state used by target-aware binding.
+
+### Fixed
+- **Message-history overflow:** a NOTICE-or-higher log line of 128+ bytes no
+  longer overflows the 128-byte on-screen history entry; long lines truncate
+  with a visible `...` marker. The Debug suite covers 127/128/200-byte input
+  and the last slot.
+- **RHI allocation reporting:** `gX_RHI_Tex_Storage2D/3D` validate arguments,
+  drain pending GL errors, check the post-call error, return `-1` with
+  `GX_ERR_INVALID`/`GX_ERR_UNSUPPORTED`/`GX_ERR_GL`, and record a last-error
+  trace instead of reporting success after a failed allocation.
+- **MSAA sample query:** `gX_RHI_Tex_Samples()` queries the multisample target
+  with `glGetTexLevelParameteriv`, returning the real sample count instead of
+  zero plus `GL_INVALID_OPERATION`/`GL_INVALID_ENUM`.
+- **FBO diagnostics:** incomplete or name-failed framebuffers set `GX_ERR_GL`
+  so an unrelated earlier last-error cannot survive the failure.
+- **Hashmap correctness:** tombstone insertion now checks the full probe chain
+  before reusing a slot, preventing duplicate keys and stale-value
+  resurrection. Resize allocation failure returns `0` from `Set` without
+  evicting a live entry.
+- **Texture-target overflow:** once the 1024-entry registry is full,
+  `gX_RHI_Tex_BindOnUnit()` refuses an unregistered texture rather than
+  guessing `GL_TEXTURE_2D`, issuing a wrong-target bind and recording a false
+  shadow target.
+- **Clean-checkout console gates:** all console gates supply their own
+  deterministic 320x240 Soft settings fixture and restore any user
+  `resources/settings.json` byte-for-byte. The docs-path audit treats that
+  gitignored runtime file as generated.
+
 ## [0.42.7] - 2026-11-10
 
 Release-Class: patch
