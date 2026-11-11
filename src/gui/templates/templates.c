@@ -254,6 +254,17 @@ static gX_I0 console_pause_rect(gX_GUI_Builder *b,
         width * Scale, height * Scale);
 }
 
+//ai: GUI-M3 — grid text must follow the height-limited cell size, not only
+//   the width-based text scaler. 16:9 windows otherwise make labels taller
+//   than their 0.5-grid rows (pause buttons and the debug overlay).
+static gX_F32 grid_text_scale(gX_GUI_Builder *b) {
+    if (b->width <= 0 || b->height <= 0) return 1.0f;
+    gX_F32 widthScale = (gX_F32)b->width / 1024.0f;
+    gX_F32 heightScale = (gX_F32)b->height / 768.0f;
+    if (widthScale <= 0.0f) return 1.0f;
+    return heightScale / widthScale;
+}
+
 //ai: explicit-size console button for split rows (video/output, playback).
 static gX_I0 console_pause_button_at(gX_GUI_Builder *b, const gX_I8 *label,
     gX_F32 x, gX_F32 y, gX_F32 width, gX_F32 height,
@@ -402,7 +413,7 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
             gX_GUI_Builder_Text_Begin(&b); \
                 gX_GUI_Builder_Text_Set(&b, label); \
                 gX_GUI_Builder_Text_CenterX(&b); \
-                gX_GUI_Builder_Text_FontSize(&b, 42.0f); \
+                gX_GUI_Builder_Text_FontSize(&b, 42.0f * grid_text_scale(&b)); \
                 gX_GUI_Builder_Text_Spacing(&b, 5); \
                 if (b.curText) b.curText->autoShrink = true; \
                 if (ConsoleMenu) \
@@ -530,6 +541,8 @@ gX_I0 gX_GUI_Template_EscapeMenu(gX_I32 canvasindex) {
             gX_GUI_Builder_Text_Color(&b, gui.style.escape.hintText);
             gX_GUI_Builder_Text_CenterX(&b);
             if (b.curText) b.curText->autoShrink = true;
+            if (b.curText && !ConsoleMenu)
+                b.curText->fontSize = 32.0f * grid_text_scale(&b);
             if (ConsoleMenu)
             {
                 //ai: two hint lines must clear the playback row and the
@@ -588,7 +601,7 @@ gX_I0 gX_GUI_Template_DebugDisplay(gX_I32 canvasindex) {
             gX_GUI_Builder_Text_Color(&b, (gX_Color){255, 255, 255, 255});
             //opencode: rows are 18-20px tall — the 32px default clipped every
             //   label into the next row (layout pass); widget scale fits.
-            if (b.curText) { b.curText->fontSize = gui.style.smallSize; b.curText->autoShrink = true; }
+            if (b.curText) { b.curText->fontSize = gui.style.smallSize * grid_text_scale(&b); b.curText->autoShrink = true; }
         gX_GUI_Builder_Text_End(&b);
     gX_GUI_Builder_Element_End(&b);
 
@@ -610,7 +623,7 @@ gX_I0 gX_GUI_Template_DebugDisplay(gX_I32 canvasindex) {
             gX_GUI_Builder_Text_Begin(&b);
                 gX_GUI_Builder_Text_Set(&b, rows[i]);
                 gX_GUI_Builder_Text_Color(&b, (gX_Color){200, 200, 220, 220});
-                if (b.curText) { b.curText->fontSize = gui.style.smallSize; b.curText->autoShrink = true; }
+                if (b.curText) { b.curText->fontSize = gui.style.smallSize * grid_text_scale(&b); b.curText->autoShrink = true; }
             gX_GUI_Builder_Text_End(&b);
         gX_GUI_Builder_Element_End(&b);
     }
