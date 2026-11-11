@@ -36,6 +36,7 @@
 #include "common/heap.h"
 #include "common/log.h"
 #include "common/msg.h"
+#include "common/utils.h"
 #include "rhi/rhi_event_log.h"
 #include "common/types/3d.h"
 #include "resource/resource.h"
@@ -81,6 +82,37 @@ gX_I32 gX_Tests(gX_I0) {
 static gX_I0 gX_Tests_TempPath(const gX_I8 *name, gX_I8 *out, size_t size)
 {
     snprintf((char *)out, size, "/tmp/gx_test_%ld_%s", (long)getpid(), name);
+}
+
+//ai: long capture roots must keep the full path and the .png suffix; the old
+//   fixed 128-byte writer truncated both.
+static gX_I32 gX_Tests_ScreenshotPath(gX_I0)
+{
+    gX_I8 previous[512];
+    const gX_I8 *current = getenv("GX_SCREENSHOT_DIR");
+    gX_I1 hadPrevious = current != NULL;
+    if (current) snprintf((char *)previous, sizeof(previous), "%s", (const char *)current);
+    gX_I8 longDir[320];
+    for (gX_I32 i = 0; i < 300; i++) longDir[i] = 'a';
+    longDir[300] = '\0';
+    gX_I8 path[1024];
+    setenv("GX_SCREENSHOT_DIR", (const char *)longDir, 1);
+    gX_Text_ScreenshotEx(path, sizeof(path));
+    gX_I32 errors = 0;
+    size_t length = strlen((const char *)path);
+    if (strncmp((const char *)path, (const char *)longDir, 300) != 0)
+    {
+        gX_TraceLog(gX_LOG_INFO, "SCREENSHOT PATH: directory truncated: %s", path);
+        errors++;
+    }
+    if (length < 4 || strcmp((const char *)path + length - 4, ".png") != 0)
+    {
+        gX_TraceLog(gX_LOG_INFO, "SCREENSHOT PATH: suffix lost: %s", path);
+        errors++;
+    }
+    if (hadPrevious) setenv("GX_SCREENSHOT_DIR", (const char *)previous, 1);
+    else unsetenv("GX_SCREENSHOT_DIR");
+    return errors;
 }
 
 extern gX_I0 gX_GUI_Test_Dock_RTs_WindowSize(gX_I0);
@@ -4274,6 +4306,7 @@ gX_I32 gX_Tests(gX_I0) {
     gX_I32 errors = 0;
     
     errors += gX_Alloc_Tests();
+    errors += gX_Tests_ScreenshotPath();
     errors += gX_Msg_Tests();
     errors += gX_HashMap_Tests();
     errors += gX_RHI_EventLog_Tests();

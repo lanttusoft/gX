@@ -86,6 +86,9 @@ gX_I32 gX_LoadingState_Handler(gX_LoadingState *state, gX_I0 (*loadf)(), gX_I0 (
 gX_I8 *gX_Text_Split_GetLast(const gX_I8 *string, gX_I8 delimiter);
 
 gX_I0 gX_Text_Screenshot(gX_I8 *text);
+//ai: long capture roots need an explicit buffer size; the fixed-size wrapper
+//   above keeps existing callers compatible.
+gX_I0 gX_Text_ScreenshotEx(gX_I8 *text, gX_U32 size);
 
 gX_I32 gX_String_JSON_Object(gX_I8 *bfr, gX_JSON_Object *obj);
 

@@ -303,8 +303,8 @@ gX_I32 gX_MainData_Update_After(gX_I0) {
             static gX_U64 lastBurst = 0;
             if (lastBurst != maindata.frameCount) {
                 lastBurst = maindata.frameCount;
-                gX_I8 burstPath[256];
-                gX_Text_Screenshot(burstPath);
+                gX_I8 burstPath[1024];
+                gX_Text_ScreenshotEx(burstPath, sizeof(burstPath));
                 const gX_I8 *screenshotDir = getenv("GX_SCREENSHOT_DIR");
                 if (!screenshotDir || !screenshotDir[0]) screenshotDir = "screenshot";
                 snprintf(burstPath, sizeof(burstPath), "%s/burst_%03llu.png",
@@ -401,8 +401,8 @@ gX_I32 gX_MainData_Update_After(gX_I0) {
     }
     
     if (maindata.screenshot) {
-        gX_TextLine text;
-        gX_Text_Screenshot(text);
+        gX_TextLine1024 text;
+        gX_Text_ScreenshotEx(text, sizeof(text));
         gX_TakeScreenShot(text);
         maindata.screenshot = false;
     }

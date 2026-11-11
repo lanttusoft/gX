@@ -309,8 +309,8 @@ static void Script_SetRenderScale(float scale) {
 // ===========================================================================
 
 static void Script_TakeScreenshot(void) {
-    gX_TextLine text;
-    gX_Text_Screenshot(text);
+    gX_TextLine1024 text;
+    gX_Text_ScreenshotEx(text, sizeof(text));
     gX_TakeScreenShot(text);
     gX_TraceLog_SCRIPTING(gX_LOG_INFO, "screenshot -> screenshot/%s", text);
 }

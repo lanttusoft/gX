@@ -80,7 +80,9 @@ this source beta.
 - `gX_TraceLog(level, fmt, ...)` — logging with module macros
   (gX_TraceLog_GFX/GUI/MAIN/RENDER...)
 - `gX_LogState.globalLevel` — log threshold
-- `gX_Text_Format/Replace/...` — string utils
+- `gX_Text_Format/Replace/...` — string utils, including the screenshot path
+  builder: `gX_Text_Screenshot` uses the fixed text-line buffer and
+  `gX_Text_ScreenshotEx(buffer, size)` supports long capture roots
 - `gX_ColorCode_*` — bounded 45×45 screen-transfer frame for screen-only
   hardware diagnostics:
   Encode/Decode/Render/Palette. The default 16-colour, 4-bit palette covers

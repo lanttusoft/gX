@@ -239,7 +239,7 @@ gX_I8 *gX_Text_Split_GetLast(const gX_I8 *string, gX_I8 delimiter) {
     return last;
 }
 
-gX_I0 gX_Text_Screenshot(gX_I8 *text) {
+gX_I0 gX_Text_ScreenshotEx(gX_I8 *text, gX_U32 size) {
     time_t t = time(NULL);
     struct tm *timedata = localtime(&t);
     int year = timedata->tm_year;
@@ -258,9 +258,14 @@ gX_I0 gX_Text_Screenshot(gX_I8 *text) {
     if (!screenshotDir || !screenshotDir[0]) screenshotDir = "screenshot";
     const gX_I8 *separator = screenshotDir[strlen((const char *)screenshotDir) - 1] == '/'
         ? "" : "/";
-    snprintf(text, sizeof(gX_TextLine), "%s%sgXss_%s.png",
+    if (!text || size == 0) return;
+    snprintf((char *)text, (size_t)size, "%s%sgXss_%s.png",
              screenshotDir, separator, timeFormat);
     
+}
+
+gX_I0 gX_Text_Screenshot(gX_I8 *text) {
+    gX_Text_ScreenshotEx(text, sizeof(gX_TextLine));
 }
 
 gX_I32 gX_String_JSON_Object(gX_I8 *bfr, gX_JSON_Object *obj) {
