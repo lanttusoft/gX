@@ -24,10 +24,20 @@ import sys
 import time
 from pathlib import Path
 
+import gate_manifest
+
 
 ROOT = Path(__file__).resolve().parent.parent
-CACHE_VERSION = 4
+CACHE_VERSION = 5
 CACHE_PATH = ROOT / "build" / ".audit_cache.json"
+
+#ai: M3 — fallback when a disposable root has no gates.toml; keep it in sync
+#   with [defaults].build_inputs rather than the old hardcoded subset.
+FALLBACK_BUILD_INPUTS = (
+    "src/", "resources/", "scripts/", "cmake/", "CMakeLists.txt",
+    "build.sh", "Makefile", ".gitmodules", "patches/", "modules/",
+    "external/raylib/",
+)
 
 #ai: process-local memo — audit runs hash hundreds of requests but the inputs
 #   do not change during one run. Tests pass use_cache=False.
@@ -93,6 +103,8 @@ def _hash_tree(digest, root, relative):
         if not path.is_file():
             continue
         rel = path.relative_to(root)
+        if ".git" in rel.parts:
+            continue
         if "__pycache__" in rel.parts or rel.name.endswith(".pyc"):
             continue
         digest.update(str(rel).encode())
@@ -126,12 +138,26 @@ def _hash_profile(digest, root, binary=None):
         f"platform:{platform.system()}:{platform.machine()}\0".encode())
 
 
+def _build_inputs(root):
+    """Manifest-declared build inputs, or the mirrored fallback list."""
+    try:
+        manifest = gate_manifest.load(root / "gates.toml")
+    except (OSError, RuntimeError, ValueError):
+        manifest = None
+    if manifest:
+        declared = manifest["defaults"].get("build_inputs") or []
+        if declared:
+            return [str(item) for item in declared]
+    return list(FALLBACK_BUILD_INPUTS)
+
+
 def build_input_digest(root=None, binary=None, use_cache=True):
     """Deterministic digest of everything that determines a gate's build.
 
-    Inputs: src/, resources/, scripts/, cmake/, the top-level build files,
-    the frozen raylib headers, the selected CMake profile (plus a custom
-    binary's sibling profile), and toolchain/build environment identity.
+    The input list comes from gates.toml [defaults].build_inputs so the cache
+    and the --changed planner cannot drift. The selected CMake profile (plus a
+    custom binary's sibling profile) and toolchain/build environment identity
+    are hashed in addition to those declared inputs.
     """
     root = Path(root or ROOT).resolve()
     binary_path = str(Path(binary).resolve()) if binary else ""
@@ -141,18 +167,17 @@ def build_input_digest(root=None, binary=None, use_cache=True):
 
     digest = hashlib.sha256()
     digest.update(f"gx-audit-inputs-v{CACHE_VERSION}\0".encode())
-    for relative in ("src", "resources", "scripts", "cmake"):
-        _hash_tree(digest, root, relative)
-    for relative in ("CMakeLists.txt", "build.sh", "Makefile", ".gitmodules"):
-        digest.update(relative.encode())
-        digest.update(b"\0")
-        _hash_file(digest, root / relative)
-    #opencode: the frozen raylib API is a build input even though it lives in a
-    #   submodule; hashing the public headers catches a version/API change.
-    for relative in ("external/raylib/src/raylib.h", "external/raylib/src/rlgl.h"):
-        digest.update(relative.encode())
-        digest.update(b"\0")
-        _hash_file(digest, root / relative)
+    for relative in _build_inputs(root):
+        normalized = relative.rstrip("/")
+        if not normalized:
+            continue
+        path = root / normalized
+        if relative.endswith("/") or path.is_dir():
+            _hash_tree(digest, root, normalized)
+        else:
+            digest.update(relative.encode())
+            digest.update(b"\0")
+            _hash_file(digest, path)
     _hash_profile(digest, root, binary if binary else None)
 
     value = digest.hexdigest()

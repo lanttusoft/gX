@@ -101,10 +101,12 @@ release certificate.
   drift; a gate can exist in one path and be absent from another.
 - The base digest hashes every file under `scripts/`, so editing one gate
   script invalidates every gate. It is conservative but over-invalidates.
-- Some build inputs are outside the hashed set: `patches/raylib-*.patch`,
-  `modules/`, most of `external/`, `license/`, and the `proofs/` tree. A
-  change there can affect a build or a proof gate without invalidating the
-  cache.
+- Build inputs used to be a hardcoded subset outside the manifest.
+  Fixed: `audit_cache.build_input_digest()` now follows
+  `[defaults].build_inputs` from `gates.toml`, including `patches/`,
+  `modules/` and `external/raylib/`; disposable roots without a manifest use
+  the same list as a fallback. VCS metadata is excluded from tree hashes.
+  `license/` and the `proofs/` tree remain outside engine gate caching.
 - The planner uses group-level input globs, not per-file dependencies;
   `src/common/` and `resources/tools/` still over-select.
 - `make check` still does not use the gate cache, and `version_check.TIERS`

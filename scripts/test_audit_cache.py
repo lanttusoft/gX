@@ -29,6 +29,13 @@ class BuildInputDigestTests(unittest.TestCase):
         (root / "build.sh").write_text("#!/bin/sh\n")
         (root / "Makefile").write_text("all:\n")
         (root / ".gitmodules").write_text("[submodule \"external/raylib\"]\n")
+        (root / "patches").mkdir()
+        (root / "patches" / "raylib-test.patch").write_text("patch v1\n")
+        (root / "modules").mkdir()
+        (root / "modules" / "lab.c").write_text("module v1\n")
+        (root / "external" / "raylib" / "src").mkdir(parents=True)
+        (root / "external" / "raylib" / "src" / "rmodels.c").write_text(
+            "raylib model v1\n")
         (root / "build").mkdir()
         (root / "build" / "CMakeCache.txt").write_text(
             "CMAKE_BUILD_TYPE:STRING=Debug\n"
@@ -74,6 +81,49 @@ class BuildInputDigestTests(unittest.TestCase):
             before = self.digest(root)
             (root / "scripts" / "audit_common.py").write_text("# helper v2\n")
             self.assertNotEqual(before, self.digest(root))
+
+    def test_build_wrapper_change_invalidates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.make_root(directory)
+            before = self.digest(root)
+            (root / "build.sh").write_text("#!/bin/sh\nset -e\n")
+            self.assertNotEqual(before, self.digest(root))
+
+    def test_patch_change_invalidates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.make_root(directory)
+            before = self.digest(root)
+            (root / "patches" / "raylib-test.patch").write_text("patch v2\n")
+            self.assertNotEqual(before, self.digest(root))
+
+    def test_module_change_invalidates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.make_root(directory)
+            before = self.digest(root)
+            (root / "modules" / "lab.c").write_text("module v2\n")
+            self.assertNotEqual(before, self.digest(root))
+
+    def test_raylib_source_change_invalidates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.make_root(directory)
+            before = self.digest(root)
+            (root / "external" / "raylib" / "src" / "rmodels.c").write_text(
+                "raylib model v2\n")
+            self.assertNotEqual(before, self.digest(root))
+
+    def test_manifest_build_inputs_drive_digest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.make_root(directory)
+            (root / "custom").mkdir()
+            (root / "custom" / "input.bin").write_text("custom v1\n")
+            (root / "gates.toml").write_text(
+                '[defaults]\nbuild_inputs = ["custom/"]\n', encoding="utf-8")
+            before = self.digest(root)
+            (root / "custom" / "input.bin").write_text("custom v2\n")
+            self.assertNotEqual(before, self.digest(root))
+            before = self.digest(root)
+            (root / "src" / "main.c").write_text("int main(void) { return 2; }\n")
+            self.assertEqual(before, self.digest(root))
 
     def test_custom_binary_profile_invalidates(self):
         with tempfile.TemporaryDirectory() as directory:
