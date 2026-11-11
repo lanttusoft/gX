@@ -89,9 +89,11 @@ even for free-look scenes (`INPUT: audit window keeps the cursor`);
 
 `scripts/audit_common.py` holds the helpers the per-effect checks share:
 
-- `settings_preserved()` / `with_settings_preserved()` — restore
-  the local `settings.json` under `resources/` if a probe rewrites it; this
-  generated file need not exist in a clean checkout.
+- `settings_preserved()` / `with_settings_preserved()` — run the probe against
+  a private copy of the local `settings.json` under `resources/`, so parallel
+  gates cannot rewrite or delete the user's file; this generated file need not
+  exist in a clean checkout. `console_settings()` and
+  `engine_default_settings()` use the same private-path mechanism.
 - `scene_env()` / `run_scene()` — deterministic env (no settings save, audit
   window) and one scene run with optional screenshot.
 - `CapturePool` — parallel captures with private per-probe directories, a

@@ -75,9 +75,34 @@ def display():
 def strip_hooks(environment):
     """Remove ambient test hooks so a probe's own overrides are authoritative."""
     for key in list(environment):
+        if key == "GX_SETTINGS_PATH":
+            continue
         if key.startswith(HOOK_PREFIXES) or key in HOOK_KEYS:
             environment.pop(key, None)
     return environment
+
+
+@contextlib.contextmanager
+def _settings_override(seed_bytes=None, seed_json=None):
+    """Point the engine at a private settings file for this process tree."""
+    base = Path(os.environ.get("GX_SCRATCH", "/tmp/opencode"))
+    base.mkdir(parents=True, exist_ok=True)
+    directory = Path(tempfile.mkdtemp(prefix="gx_settings_", dir=base))
+    path = directory / "settings.json"
+    if seed_bytes is not None:
+        path.write_bytes(seed_bytes)
+    elif seed_json is not None:
+        path.write_text(json.dumps(seed_json, indent=2) + "\n", encoding="utf-8")
+    previous = os.environ.get("GX_SETTINGS_PATH")
+    os.environ["GX_SETTINGS_PATH"] = str(path)
+    try:
+        yield path
+    finally:
+        if previous is None:
+            os.environ.pop("GX_SETTINGS_PATH", None)
+        else:
+            os.environ["GX_SETTINGS_PATH"] = previous
+        shutil.rmtree(directory, ignore_errors=True)
 
 
 def strip_ansi(text):
@@ -107,17 +132,11 @@ def dock_viewport(log, width, height):
 
 @contextlib.contextmanager
 def settings_preserved():
-    """Restore resources/settings.json when a probe rewrites it anyway."""
+    """Run against a private copy of the user's settings file."""
     settings = ROOT / "resources" / "settings.json"
     previous = settings.read_bytes() if settings.exists() else None
-    try:
+    with _settings_override(seed_bytes=previous):
         yield
-    finally:
-        if previous is not None:
-            if not settings.exists() or settings.read_bytes() != previous:
-                settings.write_bytes(previous)
-        elif settings.exists():
-            settings.unlink()
 
 
 #ai: M8 — console gates need a deterministic 320x240 Soft profile; an ignored
@@ -137,19 +156,9 @@ CONSOLE_SETTINGS = {
 
 @contextlib.contextmanager
 def console_settings():
-    """Run with the console fixture, restoring the exact user file."""
-    settings = ROOT / "resources" / "settings.json"
-    previous = settings.read_bytes() if settings.exists() else None
-    settings.parent.mkdir(parents=True, exist_ok=True)
-    settings.write_text(json.dumps(CONSOLE_SETTINGS, indent=2) + "\n",
-                        encoding="utf-8")
-    try:
+    """Run with a private console fixture; never touch the user file."""
+    with _settings_override(seed_json=CONSOLE_SETTINGS):
         yield
-    finally:
-        if previous is not None:
-            settings.write_bytes(previous)
-        elif settings.exists():
-            settings.unlink()
 
 
 def with_settings_preserved(callback):
@@ -160,23 +169,14 @@ def with_settings_preserved(callback):
 
 @contextlib.contextmanager
 def engine_default_settings():
-    """Run with no persisted user settings, then restore the exact file.
+    """Run with no persisted user settings (private, missing path).
 
     Reflection gates need deterministic window/FOV/console defaults; a
     gitignored 320x240 console settings file must not silently change the
-    captured resolution or camera. The file is restored even on failure.
+    captured resolution or camera. The user file stays untouched.
     """
-    settings = ROOT / "resources" / "settings.json"
-    previous = settings.read_bytes() if settings.exists() else None
-    if settings.exists():
-        settings.unlink()
-    try:
+    with _settings_override():
         yield
-    finally:
-        if previous is not None:
-            settings.write_bytes(previous)
-        elif settings.exists():
-            settings.unlink()
 
 
 def scene_env(env=None, clean=False, **extra):

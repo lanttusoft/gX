@@ -777,7 +777,8 @@ the not-in-slice list live in `docs/scripting.md`.
 - `gX_Settings_*` — window/audio/accessibility persistence
   (the locally generated `settings.json` under `resources/`), including tool UI scale, keyboard navigation,
   and live-previewable Default, High Contrast, and Color Vision Friendly themes;
-  dirty-flag + save-on-exit; CLI overrides window size/FOV
+  dirty-flag + save-on-exit; CLI overrides window size/FOV;
+  `GX_SETTINGS_PATH` points tests and audits at a private settings file
 - `gX_MainData_*` — global state, scene switching, exit
 - `gX_asm_*` — register/hello debug helpers (src/asm)
 - `gX_AI_*` / `gX_AiScript_*` — AI probe (kept uncompiled behind

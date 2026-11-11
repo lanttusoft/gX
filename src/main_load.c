@@ -258,7 +258,7 @@ gX_I32 gX_MainData_Init(gX_I0) {
         //   this to plain stdio for now.)
         gX_I32 startScene = gX_SCENE_TITLE;
         {
-            FILE *probe = fopen("resources/settings.json", "rb");
+            FILE *probe = fopen((const char *)gX_Settings_Path(), "rb");
             gX_I1 returning = (probe != NULL);
             if (probe) fclose(probe);
             if (!returning) {

@@ -481,21 +481,27 @@ gX_I32 gX_Settings_Reset(gX_I0) {
     return 0;
 }
 
+const gX_I8 *gX_Settings_Path(gX_I0) {
+    const gX_I8 *path = (const gX_I8 *)getenv("GX_SETTINGS_PATH");
+    return (path && path[0]) ? path : (const gX_I8 *)"resources/settings.json";
+}
+
 gX_I32 gX_Settings_Load(gX_I0) {
     json.schema = &settings.schema;
+    const gX_I8 *path = gX_Settings_Path();
     //ai: a missing settings file is the expected first-run state, not a load
     //   failure. Probe first so the JSON loader does not emit a WARN before
     //   the newcomer reaches the title.
-    FILE *probe = fopen("resources/settings.json", "rb");
+    FILE *probe = fopen((const char *)path, "rb");
     gX_I1 exists = probe != NULL;
     if (probe) fclose(probe);
-    if (!exists || gX_JSON_Load("resources/settings.json") != 0) {
+    if (!exists || gX_JSON_Load((const char *)path) != 0) {
         if (!exists) {
             gX_TraceLog(gX_LOG_INFO,
                 "Settings_Load: no settings file yet — using defaults");
         } else {
             gX_TraceLog(gX_LOG_NOTICE,
-                "Settings_Load: could not load resources/settings.json — using defaults");
+                "Settings_Load: could not load %s — using defaults", path);
         }
         settings.toolUiScale = gX_Settings_ToolUIScale_Env(
             gX_Settings_ToolUIScale_Clamp(settings.toolUiScale));
@@ -582,7 +588,7 @@ gX_I32 gX_Settings_Save(gX_I0) {
         return 0;
     }
     json.schema = &settings.schema;
-    gX_JSON_Save("resources/settings.json");
+    gX_JSON_Save((const char *)gX_Settings_Path());
     settings.dirtyFlag = false;
     gX_TraceLog(gX_LOG_INFO, "Settings saved");
     return 0;

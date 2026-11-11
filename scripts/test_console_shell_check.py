@@ -125,47 +125,116 @@ class ConsoleGateTests(unittest.TestCase):
             for key in ambient:
                 self.assertNotIn(key, environment)
 
+    def test_final_subprocess_environment_keeps_private_settings(self):
+        private = "/tmp/opencode/private-settings/settings.json"
+        with mock.patch.dict(os.environ, {"GX_SETTINGS_PATH": private}), \
+                mock.patch.object(console.audit.subprocess, "run") as run:
+            run.return_value = mock.Mock(returncode=0, stdout="")
+            console.audit.run_scene("--console-shell", {"GX_GUI_TRACE": "1"}, clean=True)
+            environment = run.call_args.kwargs["env"]
+            self.assertEqual(environment["GX_SETTINGS_PATH"], private)
 
-#ai: M8 — the console gates must own their 320x240 Soft fixture and restore the
-#   user file exactly, including after an exception.
+
+#ai: M8/H2 — settings context managers use a private GX_SETTINGS_PATH and
+#   never mutate the shared user file. The engine env hook is restored.
 class ConsoleSettingsFixtureTests(unittest.TestCase):
-    def test_console_fixture_is_deterministic_and_removed(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            with mock.patch.object(console.audit, "ROOT", root):
-                with console.audit.console_settings():
-                    settings = root / "resources" / "settings.json"
-                    data = json.loads(settings.read_text(encoding="utf-8"))
-                    self.assertEqual(data["screenWidth"], 320)
-                    self.assertEqual(data["screenHeight"], 240)
-                    self.assertEqual(data["presentFilter"], 1)
-                    self.assertEqual(data["consoleSSAA2x"], 0)
-                self.assertFalse(settings.exists())
+    def enter(self, root, context):
+        environment = mock.patch.dict(os.environ, {
+            "GX_SCRATCH": str(root / "scratch")}, clear=False)
+        previous = os.environ.get("GX_SETTINGS_PATH")
+        return environment, previous, context
 
-    def test_existing_settings_are_restored_byte_for_byte(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            settings = root / "resources" / "settings.json"
-            settings.parent.mkdir(parents=True)
-            original = b'{"user":true,"screenWidth":1024}\n'
-            settings.write_bytes(original)
-            with mock.patch.object(console.audit, "ROOT", root):
-                with console.audit.console_settings():
-                    self.assertNotEqual(settings.read_bytes(), original)
-            self.assertEqual(settings.read_bytes(), original)
-
-    def test_settings_are_restored_after_exception(self):
+    def test_console_fixture_is_private_and_removed(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             settings = root / "resources" / "settings.json"
             settings.parent.mkdir(parents=True)
             original = b'{"user":true}\n'
             settings.write_bytes(original)
-            with mock.patch.object(console.audit, "ROOT", root), \
+            environment, previous, context = self.enter(
+                root, console.audit.console_settings())
+            with mock.patch.object(console.audit, "ROOT", root), environment:
+                with context:
+                    path = Path(os.environ["GX_SETTINGS_PATH"])
+                    self.assertNotEqual(path, settings)
+                    data = json.loads(path.read_text(encoding="utf-8"))
+                    self.assertEqual(data["screenWidth"], 320)
+                    self.assertEqual(data["screenHeight"], 240)
+                    self.assertEqual(data["presentFilter"], 1)
+                    self.assertEqual(data["consoleSSAA2x"], 0)
+                self.assertEqual(settings.read_bytes(), original)
+                self.assertFalse(path.exists())
+                self.assertEqual(os.environ.get("GX_SETTINGS_PATH"), previous)
+
+    def test_settings_preserved_copies_without_touching_user_file(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            settings = root / "resources" / "settings.json"
+            settings.parent.mkdir(parents=True)
+            original = b'{"user":true,"screenWidth":1024}\n'
+            settings.write_bytes(original)
+            environment, previous, context = self.enter(
+                root, console.audit.settings_preserved())
+            with mock.patch.object(console.audit, "ROOT", root), environment:
+                with context:
+                    path = Path(os.environ["GX_SETTINGS_PATH"])
+                    self.assertNotEqual(path, settings)
+                    path.write_bytes(b'{"temporary":true}\n')
+                self.assertEqual(settings.read_bytes(), original)
+                self.assertFalse(path.exists())
+                self.assertEqual(os.environ.get("GX_SETTINGS_PATH"), previous)
+
+    def test_engine_defaults_use_a_missing_private_path(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            settings = root / "resources" / "settings.json"
+            settings.parent.mkdir(parents=True)
+            original = b'{"user":true,"screenWidth":320}\n'
+            settings.write_bytes(original)
+            environment, previous, context = self.enter(
+                root, console.audit.engine_default_settings())
+            with mock.patch.object(console.audit, "ROOT", root), environment:
+                with context:
+                    path = Path(os.environ["GX_SETTINGS_PATH"])
+                    self.assertNotEqual(path, settings)
+                    self.assertFalse(path.exists())
+                self.assertEqual(settings.read_bytes(), original)
+                self.assertFalse(path.exists())
+                self.assertEqual(os.environ.get("GX_SETTINGS_PATH"), previous)
+
+    def test_private_paths_do_not_collide(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            settings = root / "resources" / "settings.json"
+            settings.parent.mkdir(parents=True)
+            settings.write_bytes(b'{"user":true}\n')
+            environment, _previous, context = self.enter(
+                root, console.audit.settings_preserved())
+            with mock.patch.object(console.audit, "ROOT", root), environment:
+                with context:
+                    first = os.environ["GX_SETTINGS_PATH"]
+                with console.audit.settings_preserved():
+                    second = os.environ["GX_SETTINGS_PATH"]
+                self.assertNotEqual(first, second)
+                self.assertEqual(settings.read_bytes(), b'{"user":true}\n')
+
+    def test_settings_path_is_restored_after_exception(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            settings = root / "resources" / "settings.json"
+            settings.parent.mkdir(parents=True)
+            original = b'{"user":true}\n'
+            settings.write_bytes(original)
+            environment, previous, context = self.enter(
+                root, console.audit.console_settings())
+            with mock.patch.object(console.audit, "ROOT", root), environment, \
                     self.assertRaisesRegex(RuntimeError, "probe failed"):
-                with console.audit.console_settings():
+                with context:
+                    path = Path(os.environ["GX_SETTINGS_PATH"])
                     raise RuntimeError("probe failed")
             self.assertEqual(settings.read_bytes(), original)
+            self.assertFalse(path.exists())
+            self.assertEqual(os.environ.get("GX_SETTINGS_PATH"), previous)
 
 
 if __name__ == "__main__":
