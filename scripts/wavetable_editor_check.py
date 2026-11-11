@@ -64,7 +64,7 @@ def main():
     #   hook self-documenting when a typo sneaks into a gate).
     result = run([], clean_env(GX_TOOLS_OPEN="wavetable_typo"))
     log = audit.strip_ansi(result.stdout + result.stderr)
-    if "expects editor|theme|themlab|materials|gfx|script|wavetable" not in log:
+    if "expects editor|theme|themlab|materials|shaderlab|gfx|script|wavetable" not in log:
         failures.append("unknown GX_TOOLS_OPEN value missing the hint")
 
     if failures:

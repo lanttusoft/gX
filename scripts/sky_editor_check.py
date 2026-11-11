@@ -64,7 +64,7 @@ def main():
     #opencode: the unknown-value hint names the accepted set.
     result = run([], clean_env(GX_TOOLS_OPEN="sky_typo"))
     log = audit.strip_ansi(result.stdout + result.stderr)
-    if "expects editor|theme|themlab|materials|gfx|script|wavetable|textwriter|physics|rail|background|sky" not in log:
+    if "expects editor|theme|themlab|materials|shaderlab|gfx|script|wavetable|textwriter|physics|rail|background|sky" not in log:
         failures.append("unknown GX_TOOLS_OPEN value missing the hint")
 
     if failures:

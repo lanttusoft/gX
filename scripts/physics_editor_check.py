@@ -68,7 +68,7 @@ def main():
     #   self-documenting when a typo sneaks into a gate).
     result = run([], clean_env(GX_TOOLS_OPEN="physics_typo"))
     log = audit.strip_ansi(result.stdout + result.stderr)
-    if "expects editor|theme|themlab|materials|gfx|script|wavetable|textwriter|physics" not in log:
+    if "expects editor|theme|themlab|materials|shaderlab|gfx|script|wavetable|textwriter|physics" not in log:
         failures.append("unknown GX_TOOLS_OPEN value missing the hint")
 
     #ai: toolgun leg — GX_TOOLS_TOOLGUN=1 opens the shared crosshair/tool
