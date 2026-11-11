@@ -193,7 +193,7 @@ static gX_I0 tools_open_runtime_by_name(const gX_I8 *name) {
     else if (!strcmp((const char *)name, "sky")) gX_Tools_OpenSky_Runtime();
 }
 
-gX_I0 gX_Tools_EditorSystem_Tick(gX_U64 frame) {
+gX_I0 tools_editor_system_tick(gX_U64 frame) {
     static gX_U64 lastClosed = (gX_U64)-1;
     static gX_U64 lastReopened = (gX_U64)-1;
     const gX_I8 *closeAt = getenv("GX_TOOLS_CLOSE_AT");
@@ -385,7 +385,7 @@ gX_I0 gX_Tools_OpenTheme_Runtime(gX_I0) {
 
 //ai: closing the theme editor also closes its paired Theme Lab preview; a
 //   standalone theme editor leaves an unrelated audit canvas alone.
-gX_I0 gX_Tools_CloseTheme_Runtime(gX_I0) {
+gX_I0 tools_close_theme_runtime(gX_I0) {
     if (!s_runtimeTheme && !s_themeLabPaired) return;
     gX_TraceLog(gX_LOG_INFO, "EDITOR_SYSTEM: theme close paired=%d",
         s_themeLabPaired);
@@ -517,7 +517,7 @@ gX_I0 gX_Tools_Close_Runtime(gX_I0) {
     extern gX_I0 gX_Tools_Physics_Shutdown(gX_I0);
     //ai: v0.44.1 — close the paired Theme Lab and any active GUI lab before
     //   flags reset, otherwise the preview canvas stays visible.
-    gX_Tools_CloseTheme_Runtime();
+    tools_close_theme_runtime();
     if (gui.auditTemplateID == gX_GUI_TEMPLATE_MATERIALSLAB
         || gui.auditTemplateID == gX_GUI_TEMPLATE_SHADERLAB) {
         tools_lab_hide(gui.auditTemplateID);

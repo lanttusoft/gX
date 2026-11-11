@@ -491,20 +491,20 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
         ? "gX Tools - Theme###theme_editor"
         : "gX Tools - Theme Editor###theme_editor";
     if (!thOpen) {
-        gX_Tools_CloseTheme_Runtime();
+        tools_close_theme_runtime();
         return;
     }
     if (input.keyboard.keys[gX_KEY_ESCAPE].state.PRESSED) {
-        gX_Tools_CloseTheme_Runtime();
+        tools_close_theme_runtime();
         return;
     }
     if (!ImGui::Begin(themeTitle, &thOpen)) {
         ImGui::End();
         ImGui::PopItemWidth();
-        if (!thOpen) gX_Tools_CloseTheme_Runtime();
+        if (!thOpen) tools_close_theme_runtime();
         return;
     }
-    if (!thOpen) gX_Tools_CloseTheme_Runtime();
+    if (!thOpen) tools_close_theme_runtime();
     if (!s_panelTraced) {
         s_panelTraced = 1;
         gX_TraceLog(gX_LOG_INFO, "THEME_EDITOR: panel=1");
@@ -572,7 +572,7 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
     if (ImGui::Button("Save theme")) theme_save(s_themePath);
     ImGui::SameLine();
     ImGui::SameLine();
-    if (ImGui::Button("Close")) gX_Tools_CloseTheme_Runtime();
+    if (ImGui::Button("Close")) tools_close_theme_runtime();
     if (ImGui::Button("Reload from file") && s_themePath[0]) {
         gX_GUI_Style_SetThemePath(s_themePath);
         gX_GUI_Style_LoadDefault();

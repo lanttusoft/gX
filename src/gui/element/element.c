@@ -594,15 +594,15 @@ gX_I0 gX_GUI_Element_Draw(gX_GUI_Element *element, gX_GUI_Canvas *canvas) {
     
 }
 
-gX_I0 gX_GUI_Element_TooltipClear(gX_I0) {
+gX_I0 gui_element_tooltip_clear(gX_I0) {
     s_tooltipElement = NULL;
     s_tooltipCanvas = NULL;
 }
 
-gX_I0 gX_GUI_Element_TooltipFlush(gX_GUI_Canvas *canvas) {
+gX_I0 gui_element_tooltip_flush(gX_GUI_Canvas *canvas) {
     gX_GUI_Element *element = s_tooltipElement;
     if (!element || s_tooltipCanvas != canvas) {
-        gX_GUI_Element_TooltipClear();
+        gui_element_tooltip_clear();
         return;
     }
     gX_Font defFont = gui.style.uiFontLoaded ? gui.style.uiFont : gX_Font_GetDefault();
@@ -635,5 +635,5 @@ gX_I0 gX_GUI_Element_TooltipFlush(gX_GUI_Canvas *canvas) {
     gX_Rectangle_Draw_Parameters(tipBg, tp);
     gX_RawString_Draw(element->description, defFont, tipPos, (gX_F32v2){0,0},
         0.0f, tipSize, 1, gX_WHITE);
-    gX_GUI_Element_TooltipClear();
+    gui_element_tooltip_clear();
 }

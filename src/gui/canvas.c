@@ -421,7 +421,7 @@ gX_I0 gX_GUI_Canvas_Draw( gX_GUI_Canvas *canvas) {
     gX_GUI_Element *elements = canvas->elements.data;
     if (!elements) return;
     g_guiCanvasDrawCount++;
-    gX_GUI_Element_TooltipClear();
+    gui_element_tooltip_clear();
 
     //opencode: audit — render order is an index list, NOT a physical sort.
     //   Sorting gX_GUI_Element structs in place desynchronized the parallel
@@ -498,7 +498,7 @@ gX_I0 gX_GUI_Canvas_Draw( gX_GUI_Canvas *canvas) {
             if (canvas->clipRect.width > 0) {
                 gX_Drawing_EndScissor();
             }
-            gX_GUI_Element_TooltipFlush(canvas);
+            gui_element_tooltip_flush(canvas);
             gX_Drawing_EndBlend();
         gX_Drawing_EndTexture();
 
@@ -553,7 +553,7 @@ gX_I0 gX_GUI_Canvas_Draw( gX_GUI_Canvas *canvas) {
                 gX_GUI_Element_Draw(element,canvas);
             }
         }
-        gX_GUI_Element_TooltipFlush(canvas);
+        gui_element_tooltip_flush(canvas);
         gX_Drawing_EndBlend();
     }
     

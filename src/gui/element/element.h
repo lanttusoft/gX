@@ -76,8 +76,8 @@ gX_I0 gX_GUI_Element_Make(          gX_GUI_Element *element, gX_I32 index);
 gX_I0 gX_GUI_Element_Update(        gX_GUI_Element *element, gX_GUI_Canvas *canvas);
 gX_I0 gX_GUI_Element_Draw(          gX_GUI_Element *element, gX_GUI_Canvas *canvas);
 //ai: v0.44.1 — deferred tooltip overlay: draw after all elements in a canvas.
-gX_I0 gX_GUI_Element_TooltipClear(gX_I0);
-gX_I0 gX_GUI_Element_TooltipFlush(gX_GUI_Canvas *canvas);
+gX_I0 gui_element_tooltip_clear(gX_I0);
+gX_I0 gui_element_tooltip_flush(gX_GUI_Canvas *canvas);
 
 //opencode: run the per-element data-module update loop (declared here for the
 //   callback-context unit tests).

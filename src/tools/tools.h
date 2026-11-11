@@ -59,9 +59,9 @@ gX_I1 gX_Tools_RuntimeActive(gX_I0);
 gX_I0 gX_Tools_OpenEditor_Runtime(gX_I0);
 gX_I0 gX_Tools_OpenTheme_Runtime(gX_I0);
 //ai: v0.44.1 — close the theme editor and its paired Theme Lab preview.
-gX_I0 gX_Tools_CloseTheme_Runtime(gX_I0);
+gX_I0 tools_close_theme_runtime(gX_I0);
 //ai: v0.44.1 — deterministic open/close/reopen hook for editor-system-check.
-gX_I0 gX_Tools_EditorSystem_Tick(gX_U64 frame);
+gX_I0 tools_editor_system_tick(gX_U64 frame);
 gX_I0 gX_Tools_OpenThemLab_Runtime(gX_I0);
 gX_I0 gX_Tools_OpenMaterials_Runtime(gX_I0);
 //opencode: shader experiment gallery runtime opener.
