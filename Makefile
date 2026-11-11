@@ -62,6 +62,8 @@ check: all
 	python3 -m unittest discover -s scripts -p test_model_import.py
 	#ai: console layout/focus gates must reject missing telemetry and broken controls.
 	python3 -m unittest discover -s scripts -p test_console_shell_check.py
+	#ai: H3 — GUI capture helpers must reject a failing engine exit.
+	python3 -m unittest discover -s scripts -p test_gui_capture_exit.py
 	python3 -m unittest discover -s scripts -p test_console_osd_check.py
 	python3 -m unittest discover -s scripts -p test_console_playback_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa_check.py
@@ -269,6 +271,8 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_model_import.py
 	#ai: display-free rejection controls for console layout and controller traversal.
 	python3 -m unittest discover -s scripts -p test_console_shell_check.py
+	#ai: H3 — GUI capture helpers must reject a failing engine exit.
+	python3 -m unittest discover -s scripts -p test_gui_capture_exit.py
 	python3 -m unittest discover -s scripts -p test_console_osd_check.py
 	python3 -m unittest discover -s scripts -p test_console_playback_check.py
 	python3 -m unittest discover -s scripts -p test_console_ssaa_check.py

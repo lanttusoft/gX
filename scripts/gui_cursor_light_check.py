@@ -59,10 +59,10 @@ def capture_glint(theme_path, directory, glint_on):
     }, clean=True)
     if not glint_on:
         environment["GX_GUI_CURSOR_GLINT"] = "0"
+    #ai: H3 — a present screenshot must not hide a failing engine exit.
     result = audit.run_scene("--gfx", environment, width=None, height=None,
                              fps=None, frames=110, shot_frame=100,
-                             screenshot_dir=directory, timeout=TIMEOUT,
-                             check=False)
+                             screenshot_dir=directory, timeout=TIMEOUT)
     shot = audit.newest_shot(directory)
     if shot is None:
         raise RuntimeError(f"capture missing (exit {result.returncode})")
@@ -78,10 +78,10 @@ def capture(theme_path, position, directory):
         "GX_GUI_THEME": str(theme_path),
         "GX_AI_INPUT": f"1.0 move {position[0]} {position[1]} 300",
     }, clean=True)
+    #ai: H3 — a present screenshot must not hide a failing engine exit.
     result = audit.run_scene("--title", environment, width=None, height=None,
                              fps=None, frames=110, shot_frame=100,
-                             screenshot_dir=directory, timeout=TIMEOUT,
-                             check=False)
+                             screenshot_dir=directory, timeout=TIMEOUT)
     shot = audit.newest_shot(directory)
     if shot is None:
         raise RuntimeError(f"capture missing (exit {result.returncode})")

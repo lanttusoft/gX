@@ -46,10 +46,10 @@ def capture(menu, directory):
     if menu:
         over["GX_GUI_SHOW_MENU"] = "1"
     environment = audit.scene_env(over, clean=True)
+    #ai: H3 — a present screenshot must not hide a failing engine exit.
     result = audit.run_scene(SCENE, environment, width=None, height=None,
                              fps=None, frames=FRAMES, shot_frame=SHOT_FRAME,
-                             screenshot_dir=directory, timeout=TIMEOUT,
-                             check=False)
+                             screenshot_dir=directory, timeout=TIMEOUT)
     shot = audit.newest_shot(directory)
     if shot is None:
         raise RuntimeError(f"capture missing (exit {result.returncode})")

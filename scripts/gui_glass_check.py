@@ -49,10 +49,10 @@ def capture(theme_path, directory, extra=None):
     }, clean=True)
     for key, value in (extra or {}).items():
         environment[key] = str(value)
+    #ai: H3 — a present screenshot must not hide a failing engine exit.
     result = audit.run_scene("--title", environment, width=None, height=None,
                              fps=None, frames=90, shot_frame=80,
-                             screenshot_dir=directory, timeout=TIMEOUT,
-                             check=False)
+                             screenshot_dir=directory, timeout=TIMEOUT)
     shot = audit.newest_shot(directory)
     if shot is None:
         raise RuntimeError(f"capture missing (exit {result.returncode})")

@@ -158,11 +158,12 @@ def capture_scene(scene, directory):
         "GX_FIXED_DT": "0.0166666667",
         **config["env"],
     }, clean=True)
+    #ai: H3 — a present screenshot must not hide a failing engine exit.
     result = audit.run_scene(
         config["flag"], environment,
         width=WIDTH, height=HEIGHT, fps=60,
         frames=FRAMES, shot_frame=FRAME, screenshot_dir=directory,
-        extra_args=config["extra"], check=False, timeout=120)
+        extra_args=config["extra"], timeout=120)
     shot = audit.newest_shot(directory)
     if shot is None:
         raise RuntimeError(f"{scene} produced no screenshot (exit "

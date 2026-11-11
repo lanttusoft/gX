@@ -71,10 +71,10 @@ def capture(template, overrides, directory, force_shadow=True):
         environment["GX_GUI_TEXT_SHADOW"] = "1"
     for key, value in overrides.items():
         environment[key] = str(value)
+    #ai: H3 — a present screenshot must not hide a failing engine exit.
     result = audit.run_scene("--title", environment, width=None, height=None,
                              fps=None, frames=90, shot_frame=80,
-                             screenshot_dir=directory, timeout=TIMEOUT,
-                             check=False)
+                             screenshot_dir=directory, timeout=TIMEOUT)
     shot = audit.newest_shot(directory)
     if shot is None:
         raise RuntimeError(f"{template} capture missing (exit {result.returncode})")
