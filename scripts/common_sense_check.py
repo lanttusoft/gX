@@ -45,6 +45,13 @@ DOC_PATH_RE = re.compile(
     r"(?<![\w/.-])(src|scripts|resources|docs|harness|proofs|license)/"
     r"[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.{}%-]+)*")
 
+#ai: M8 — settings.json is a runtime-generated, gitignored file. Docs may name
+#   it as the user-facing settings path; a clean checkout must not fail because
+#   the file is absent until first launch.
+GENERATED_PATHS = {
+    "resources/settings.json",
+}
+
 
 def text_of(paths, suffixes=None):
     parts = []
@@ -94,6 +101,8 @@ def scan_missing_doc_paths():
         for match in DOC_PATH_RE.finditer(doc.read_text(errors="ignore")):
             path = match.group(0).rstrip(".,:;)`\"'")
             if "{" in path or "%" in path or path.endswith("/"):
+                continue
+            if path in GENERATED_PATHS:
                 continue
             if not (PROJECT / path).exists():
                 missing.append(f"{doc.relative_to(PROJECT)}:{path}")

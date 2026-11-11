@@ -71,7 +71,7 @@ def main():
             scene=kwargs.pop("scene", "--cartridge-y2k"), **kwargs)
 
     try:
-        with console.audit.settings_preserved():
+        with console.audit.console_settings():
             for width, height in ((640, 480), (1024, 768), (1280, 720)):
                 on, log = capture(f"ready_{width}x{height}", frames=90, shot=70,
                     width=width, height=height)

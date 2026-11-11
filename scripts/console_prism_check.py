@@ -237,7 +237,7 @@ def main():
     OUT = out
 
     try:
-        with console.audit.settings_preserved():
+        with console.audit.console_settings():
             # Precise RGB565/scanline/triad A/B on the smooth showcase fixture.
             off = capture_fixture("fixture_off", 0)
             on = capture_fixture("fixture_on", 1)

@@ -111,7 +111,7 @@ def main():
     OUT = out
 
     try:
-        with console.audit.settings_preserved():
+        with console.audit.console_settings():
             # Matched 60 Hz GPU cost: baseline 320x240 vs 2x SSAA.
             base_ms = run_profile("base", False)
             ssaa_ms = run_profile("ssaa", True)

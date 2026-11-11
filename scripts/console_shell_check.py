@@ -194,7 +194,7 @@ def main():
         require("--console-shell" in help_text,
             "--console-shell missing from --help")
 
-        with audit.settings_preserved():
+        with audit.console_settings():
             shell, shell_log = capture("shell", None, 80, 60, out)
             shell_rows = elements(shell_log)
             sharp_button = target(shell_rows, "320x240 SHARP")

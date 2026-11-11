@@ -4,8 +4,11 @@
 # This file is part of gX. See LICENSE.
 
 #ai: negative controls for the console gate itself; no engine or display needed.
+import json
 import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import console_shell_check as console
@@ -121,6 +124,48 @@ class ConsoleGateTests(unittest.TestCase):
             self.assertEqual(environment["GX_NO_SETTINGS_SAVE"], "1")
             for key in ambient:
                 self.assertNotIn(key, environment)
+
+
+#ai: M8 — the console gates must own their 320x240 Soft fixture and restore the
+#   user file exactly, including after an exception.
+class ConsoleSettingsFixtureTests(unittest.TestCase):
+    def test_console_fixture_is_deterministic_and_removed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with mock.patch.object(console.audit, "ROOT", root):
+                with console.audit.console_settings():
+                    settings = root / "resources" / "settings.json"
+                    data = json.loads(settings.read_text(encoding="utf-8"))
+                    self.assertEqual(data["screenWidth"], 320)
+                    self.assertEqual(data["screenHeight"], 240)
+                    self.assertEqual(data["presentFilter"], 1)
+                    self.assertEqual(data["consoleSSAA2x"], 0)
+                self.assertFalse(settings.exists())
+
+    def test_existing_settings_are_restored_byte_for_byte(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            settings = root / "resources" / "settings.json"
+            settings.parent.mkdir(parents=True)
+            original = b'{"user":true,"screenWidth":1024}\n'
+            settings.write_bytes(original)
+            with mock.patch.object(console.audit, "ROOT", root):
+                with console.audit.console_settings():
+                    self.assertNotEqual(settings.read_bytes(), original)
+            self.assertEqual(settings.read_bytes(), original)
+
+    def test_settings_are_restored_after_exception(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            settings = root / "resources" / "settings.json"
+            settings.parent.mkdir(parents=True)
+            original = b'{"user":true}\n'
+            settings.write_bytes(original)
+            with mock.patch.object(console.audit, "ROOT", root), \
+                    self.assertRaisesRegex(RuntimeError, "probe failed"):
+                with console.audit.console_settings():
+                    raise RuntimeError("probe failed")
+            self.assertEqual(settings.read_bytes(), original)
 
 
 if __name__ == "__main__":

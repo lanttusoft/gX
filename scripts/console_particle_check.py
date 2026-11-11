@@ -86,7 +86,7 @@ def main():
     OUT = out
 
     try:
-        with audit.settings_preserved():
+        with audit.console_settings():
             direct, direct_log = capture("direct", None, frames=180, shot=160,
                 extra={"GX_T_CARTRIDGE_OSD": "0"})
             require_profile(direct_log)

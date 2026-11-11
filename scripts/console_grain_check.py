@@ -64,7 +64,7 @@ def main():
     OUT = out
 
     try:
-        with console.audit.settings_preserved():
+        with console.audit.console_settings():
             visual_extra = {
                 "GX_VIRTUAL_WIDTH": "320", "GX_VIRTUAL_HEIGHT": "240",
                 "GX_PRESENT_FILTER": "1", "GX_CONSOLE_OSD": "0",

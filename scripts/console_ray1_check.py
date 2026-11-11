@@ -93,7 +93,7 @@ def main():
     OUT = out
 
     try:
-        with audit.settings_preserved():
+        with audit.console_settings():
             # Direct profile boot, plus a raw raymarch reference for the
             # authored camera/quality difference.
             direct, direct_log = capture("direct", None, frames=180, shot=160,

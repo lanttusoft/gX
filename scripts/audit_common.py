@@ -120,6 +120,38 @@ def settings_preserved():
             settings.unlink()
 
 
+#ai: M8 — console gates need a deterministic 320x240 Soft profile; an ignored
+#   user settings file must not decide whether PRISM-1/GRAIN rows exist.
+CONSOLE_SETTINGS = {
+    "schema": 1,
+    "screenWidth": 320,
+    "screenHeight": 240,
+    "windowWidth": 1024,
+    "windowHeight": 768,
+    "presentFilter": 1,
+    "consoleSSAA2x": 0,
+    "consolePRISM1": 0,
+    "consoleGrain": 0,
+}
+
+
+@contextlib.contextmanager
+def console_settings():
+    """Run with the console fixture, restoring the exact user file."""
+    settings = ROOT / "resources" / "settings.json"
+    previous = settings.read_bytes() if settings.exists() else None
+    settings.parent.mkdir(parents=True, exist_ok=True)
+    settings.write_text(json.dumps(CONSOLE_SETTINGS, indent=2) + "\n",
+                        encoding="utf-8")
+    try:
+        yield
+    finally:
+        if previous is not None:
+            settings.write_bytes(previous)
+        elif settings.exists():
+            settings.unlink()
+
+
 def with_settings_preserved(callback):
     """Callback form kept for the existing per-effect checks."""
     with settings_preserved():

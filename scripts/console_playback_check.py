@@ -86,7 +86,7 @@ def main():
 
     trace = {"GX_CONSOLE_PLAYBACK_TRACE": "1"}
     try:
-        with console.audit.settings_preserved():
+        with console.audit.console_settings():
             # Real pause: the scene and status chip are frozen while the menu is open.
             pause_extra = {**trace, "GX_T_CARTRIDGE_OSD": "0"}
             paused_a, pause_log = capture("paused_a", "1.0 key 256",

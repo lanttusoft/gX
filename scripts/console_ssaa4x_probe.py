@@ -102,7 +102,7 @@ def main():
     OUT = out
 
     try:
-        with console.audit.settings_preserved():
+        with console.audit.console_settings():
             base_ms = run_profile("base", 0)
             two_ms = run_profile("two", 1)
             four_ms = run_profile("four", 4)
