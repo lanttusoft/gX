@@ -1136,6 +1136,12 @@ gui-editor-check: all
 	@echo "== [gX CI] GUI editor usability =="
 	python3 scripts/gui_editor_check.py
 
+#ai: v0.44.1 — cross-editor lifecycle/toolbars/lab cleanup gate.
+.PHONY: editor-system-check
+editor-system-check: all
+	@echo "== [gX CI] editor system lifecycle =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/editor_system_check.py
+
 #ai: GFX editor onboarding — F1/Help guide opens on the GFX stage.
 .PHONY: gfx-editor-guide-check
 gfx-editor-guide-check: all

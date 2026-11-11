@@ -75,8 +75,16 @@ def ui_version(path):
 
 
 def tag_versions():
-    result = subprocess.run(["git", "tag", "-l", "v*"], cwd=PROJECT,
-                            stdout=subprocess.PIPE, text=True, check=True)
+    #ai: source archives have no .git; mirror checks still apply, the tag
+    #   relationship is skipped instead of crashing.
+    try:
+        result = subprocess.run(["git", "tag", "-l", "v*"], cwd=PROJECT,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True, check=False)
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
     parsed = [(parse(line), line) for line in result.stdout.split()]
     return [(version, tag) for version, tag in parsed if version]
 
@@ -213,7 +221,7 @@ def main():
             issues.append("readme.txt: no version on the version line")
         if not changelog:
             issues.append("CHANGELOG.md: no released version header")
-        if not tags:
+        if tags is not None and not tags:
             issues.append("git: no v* tags")
         if readme and changelog and readme[:3] != changelog[:3]:
             issues.append(f"readme {format_version(readme)} != changelog "

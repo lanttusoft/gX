@@ -686,6 +686,7 @@ gX_I32 gX_Load(gX_I0) {
             extern gX_I0 gX_Tools_OpenTheme_Runtime(gX_I0);
             extern gX_I0 gX_Tools_OpenThemLab_Runtime(gX_I0);
             extern gX_I0 gX_Tools_OpenMaterials_Runtime(gX_I0);
+            extern gX_I0 gX_Tools_OpenShaderLab_Runtime(gX_I0);
             extern gX_I0 gX_Tools_OpenGfx_Runtime(gX_I0);
             extern gX_I0 gX_Tools_OpenScript_Runtime(gX_I0);
             extern gX_I0 gX_Tools_OpenWavetable_Runtime(gX_I0);
@@ -698,6 +699,7 @@ gX_I32 gX_Load(gX_I0) {
             else if (!strcmp(openEnv, "theme")) gX_Tools_OpenTheme_Runtime();
             else if (!strcmp(openEnv, "themlab")) gX_Tools_OpenThemLab_Runtime();
             else if (!strcmp(openEnv, "materials")) gX_Tools_OpenMaterials_Runtime();
+            else if (!strcmp(openEnv, "shaderlab")) gX_Tools_OpenShaderLab_Runtime();
             else if (!strcmp(openEnv, "gfx")) gX_Tools_OpenGfx_Runtime();
             else if (!strcmp(openEnv, "script")) gX_Tools_OpenScript_Runtime();
             else if (!strcmp(openEnv, "wavetable")) gX_Tools_OpenWavetable_Runtime();
@@ -706,7 +708,7 @@ gX_I32 gX_Load(gX_I0) {
             else if (!strcmp(openEnv, "rail")) gX_Tools_OpenRail_Runtime();
             else if (!strcmp(openEnv, "background")) gX_Tools_OpenBackground_Runtime();
             else if (!strcmp(openEnv, "sky")) gX_Tools_OpenSky_Runtime();
-            else gX_TraceLog(gX_LOG_WARNING, "MAIN: GX_TOOLS_OPEN expects editor|theme|themlab|materials|gfx|script|wavetable|textwriter|physics|rail|background|sky — got '%s'", openEnv);
+            else gX_TraceLog(gX_LOG_WARNING, "MAIN: GX_TOOLS_OPEN expects editor|theme|themlab|materials|shaderlab|gfx|script|wavetable|textwriter|physics|rail|background|sky — got '%s'", openEnv);
         }
     }
     

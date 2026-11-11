@@ -771,9 +771,11 @@ the not-in-slice list live in `docs/scripting.md`.
   `--materialslab`, `--shaderlab`, `--gfx-editor`, `--script-editor`,
   `--wavetable-editor`, `--textwriter-editor`, `--physics-editor`,
   `--rail-editor`, `--background-editor`, `--sky-editor`. `GX_TOOLS_OPEN` =
-  editor|theme|themlab|materials|gfx|script|wavetable|textwriter|physics|rail|background|sky
+  editor|theme|themlab|materials|shaderlab|gfx|script|wavetable|textwriter|physics|rail|background|sky
   is the headless hook; the rail panel is drawn by the gx_shell module.
 - `gX_Tools_Close_Runtime` — close all runtime tools (window X closes one)
+- `gX_Tools_EditorSystem_Tick` — deterministic open/close/reopen hook used by
+  `editor-system-check`; not a user-facing control
 - `gX_Tests` — unit tests (math + heap + JSON), 0 errors = green
 - `gX_Load` → `gX_Loop` → `gX_Unload` — lifecycle
 - `gX_Settings_*` — window/audio/accessibility persistence

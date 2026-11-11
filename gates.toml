@@ -313,6 +313,15 @@ group = "gui"
 cache = "content"
 description = "title-flow audit gate."
 
+#ai: v0.44.1 — open/close/reopen, toolbar and lab cleanup matrix.
+[gate.editor-system]
+script = "editor_system_check.py"
+args = []
+tier = ["full"]
+group = "gui"
+cache = "content"
+description = "Cross-editor lifecycle, toolbar and lab cleanup."
+
 [gate.gui-interaction]
 script = "gui_interaction_check.py"
 args = []

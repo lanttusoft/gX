@@ -32,8 +32,10 @@
 //   system being complete (breaks the gui-creates-gui loop).
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "tools.h"
+#include "editor_host.h"
 #include "../main.h"
 #include "../input.h"
 #include "../module/module.h"
@@ -134,6 +136,88 @@ static gX_I1 s_runtimePhysics = 0;
 //ai: scripting debugger panel — opt-in builds only (opener logs a hint when
 //   GX_USE_ANGELSCRIPT is off).
 static gX_I1 s_runtimeScript = 0;
+static gX_I1 s_themeLabPaired = 0;
+
+//ai: v0.44.1 — one preview-lifecycle path for the GUI labs. The old Back
+//   callbacks hid canvas 2 but the open paths did not restore UPDATE/DRAW.
+static gX_I0 tools_lab_show(gX_I32 templateID) {
+    gui.auditTemplateID = templateID;
+    if (gui.canvases.meta) {
+        gui.canvases.meta[2].UPDATE = true;
+        gui.canvases.meta[2].DRAW = true;
+    }
+    gX_GUI_AddMake(templateID, 2);
+}
+
+static gX_I0 tools_lab_hide(gX_I32 templateID) {
+    gX_TraceLog(gX_LOG_INFO,
+        "EDITOR_SYSTEM: lab hide template=%d active=%d",
+        templateID, gui.auditTemplateID);
+    if (gui.auditTemplateID == templateID) gui.auditTemplateID = -1;
+    gX_GUI_Canvas *lab = gX_GUI_Canvas_FromIndex(2);
+    if (lab) {
+        gX_GUI_Canvas_Clear(lab);
+        lab->templateID = gX_GUI_TEMPLATE_NULL;
+    }
+    if (gui.canvases.meta) {
+        gui.canvases.meta[2].UPDATE = false;
+        gui.canvases.meta[2].DRAW = false;
+    }
+    gX_GUI_Canvas *title = gX_GUI_Canvas_FromIndex(0);
+    if (title) title->refresh = true;
+    //ai: rebuild the title after hiding a lab; keeping the cleared lab canvas
+    //   visible left the next frame without the title elements.
+    gX_GUI_AddMake(gX_GUI_TEMPLATE_TITLEGX, 0);
+    gX_GUI_Focus_Clear();
+}
+
+static gX_I0 tools_host_open(gX_I0) {
+    gX_EditorHost_SetOpen(1);
+}
+
+//ai: v0.44.1 — deterministic lifecycle hook for editor-system-check.
+static gX_I0 tools_open_runtime_by_name(const gX_I8 *name) {
+    if (!name || !name[0]) return;
+    if (!strcmp((const char *)name, "editor")) gX_Tools_OpenEditor_Runtime();
+    else if (!strcmp((const char *)name, "theme")) gX_Tools_OpenTheme_Runtime();
+    else if (!strcmp((const char *)name, "themlab")) gX_Tools_OpenThemLab_Runtime();
+    else if (!strcmp((const char *)name, "materials")) gX_Tools_OpenMaterials_Runtime();
+    else if (!strcmp((const char *)name, "shaderlab")) gX_Tools_OpenShaderLab_Runtime();
+    else if (!strcmp((const char *)name, "gfx")) gX_Tools_OpenGfx_Runtime();
+    else if (!strcmp((const char *)name, "script")) gX_Tools_OpenScript_Runtime();
+    else if (!strcmp((const char *)name, "wavetable")) gX_Tools_OpenWavetable_Runtime();
+    else if (!strcmp((const char *)name, "textwriter")) gX_Tools_OpenTextwriter_Runtime();
+    else if (!strcmp((const char *)name, "physics")) gX_Tools_OpenPhysics_Runtime();
+    else if (!strcmp((const char *)name, "rail")) gX_Tools_OpenRail_Runtime();
+    else if (!strcmp((const char *)name, "background")) gX_Tools_OpenBackground_Runtime();
+    else if (!strcmp((const char *)name, "sky")) gX_Tools_OpenSky_Runtime();
+}
+
+gX_I0 gX_Tools_EditorSystem_Tick(gX_U64 frame) {
+    static gX_U64 lastClosed = (gX_U64)-1;
+    static gX_U64 lastReopened = (gX_U64)-1;
+    const gX_I8 *closeAt = getenv("GX_TOOLS_CLOSE_AT");
+    const gX_I8 *reopenAt = getenv("GX_TOOLS_REOPEN_AT");
+    const gX_I8 *openId = getenv("GX_TOOLS_OPEN");
+    if (closeAt && closeAt[0]) {
+        gX_U64 target = (gX_U64)strtoull((const char *)closeAt, NULL, 10);
+        if (frame == target && lastClosed != frame) {
+            lastClosed = frame;
+            gX_Tools_Close_Runtime();
+            gX_TraceLog(gX_LOG_INFO, "EDITOR_SYSTEM: closed frame=%llu",
+                (unsigned long long)frame);
+        }
+    }
+    if (reopenAt && reopenAt[0]) {
+        gX_U64 target = (gX_U64)strtoull((const char *)reopenAt, NULL, 10);
+        if (frame == target && lastReopened != frame) {
+            lastReopened = frame;
+            tools_open_runtime_by_name(openId);
+            gX_TraceLog(gX_LOG_INFO, "EDITOR_SYSTEM: reopened frame=%llu",
+                (unsigned long long)frame);
+        }
+    }
+}
 //opencode: preserve the scene's camera-cursor mode across the GFX editor.
 
 gX_I0 gX_Tools_Init(gX_I0) {
@@ -293,30 +377,43 @@ gX_I0 gX_Tools_OpenTheme_Runtime(gX_I0) {
     //   for other theme files).
     gX_Tools_Theme_Open(GX_GUI_STYLE_DEFAULT_PATH);
     gX_Tools_ClearRuntimeFlags();
+    s_themeLabPaired = 0;
     s_runtimeTheme = 1;
+    tools_host_open();
     gX_TraceLog(gX_LOG_INFO, "Tools: theme editor opened at runtime");
+}
+
+//ai: closing the theme editor also closes its paired Theme Lab preview; a
+//   standalone theme editor leaves an unrelated audit canvas alone.
+gX_I0 gX_Tools_CloseTheme_Runtime(gX_I0) {
+    if (!s_runtimeTheme && !s_themeLabPaired) return;
+    gX_TraceLog(gX_LOG_INFO, "EDITOR_SYSTEM: theme close paired=%d",
+        s_themeLabPaired);
+    if (s_themeLabPaired) {
+        tools_lab_hide(gX_GUI_TEMPLATE_THEMLAB);
+        s_themeLabPaired = 0;
+    }
+    s_runtimeTheme = 0;
 }
 
 gX_I0 gX_Tools_OpenThemLab_Runtime(gX_I0) {    //opencode: preview onto canvas 2 (audit re-queue keeps it across
     //   clearAll) + theme editor over it (the documented pair).
-    gui.auditTemplateID = gX_GUI_TEMPLATE_THEMLAB;
-    gX_GUI_AddMake(gX_GUI_TEMPLATE_THEMLAB, 2);
+    tools_lab_show(gX_GUI_TEMPLATE_THEMLAB);
     gX_Tools_OpenTheme_Runtime();
+    s_themeLabPaired = 1;
     gX_TraceLog(gX_LOG_INFO, "Tools: themlab opened at runtime");
 }
 
 //opencode: material response gallery uses the same persistent canvas-2 audit
 //   path as ThemeLab but does not open an ImGui window over the preview.
 gX_I0 gX_Tools_OpenMaterials_Runtime(gX_I0) {
-    gui.auditTemplateID = gX_GUI_TEMPLATE_MATERIALSLAB;
-    gX_GUI_AddMake(gX_GUI_TEMPLATE_MATERIALSLAB, 2);
+    tools_lab_show(gX_GUI_TEMPLATE_MATERIALSLAB);
     gX_TraceLog(gX_LOG_INFO, "Tools: materials lab opened at runtime");
 }
 
 //opencode: shader experiment gallery — same canvas-2 audit path as Materials.
 gX_I0 gX_Tools_OpenShaderLab_Runtime(gX_I0) {
-    gui.auditTemplateID = gX_GUI_TEMPLATE_SHADERLAB;
-    gX_GUI_AddMake(gX_GUI_TEMPLATE_SHADERLAB, 2);
+    tools_lab_show(gX_GUI_TEMPLATE_SHADERLAB);
     gX_TraceLog(gX_LOG_INFO, "Tools: shader lab opened at runtime");
 }
 
@@ -341,6 +438,7 @@ gX_I0 gX_Tools_OpenTextwriter_Runtime(gX_I0) {
     gX_Tools_Textwriter_Reset();
     gX_Tools_ClearRuntimeFlags();
     s_runtimeTextwriter = 1;
+    tools_host_open();
     gX_TraceLog(gX_LOG_INFO, "Tools: textwriter editor opened at runtime");
 }
 
@@ -391,6 +489,7 @@ gX_I0 gX_Tools_OpenBackground_Runtime(gX_I0) {
     gX_Tools_SetImGuiThemeMode(0);
     gX_Tools_ClearRuntimeFlags();
     s_runtimeBackground = 1;
+    tools_host_open();
     gX_TraceLog(gX_LOG_INFO, "Tools: background editor opened at runtime");
 }
 
@@ -407,6 +506,7 @@ gX_I0 gX_Tools_OpenSky_Runtime(gX_I0) {
     gX_Tools_SetImGuiThemeMode(0);
     gX_Tools_ClearRuntimeFlags();
     s_runtimeSky = 1;
+    tools_host_open();
     gX_TraceLog(gX_LOG_INFO, "Tools: sky editor opened at runtime");
 }
 
@@ -415,6 +515,13 @@ gX_I0 gX_Tools_Close_Runtime(gX_I0) {
     extern gX_I0 gX_Tools_Editor_SoloRestore(gX_I0);
     extern gX_I0 gX_Tools_Wavetable_Shutdown(gX_I0);
     extern gX_I0 gX_Tools_Physics_Shutdown(gX_I0);
+    //ai: v0.44.1 — close the paired Theme Lab and any active GUI lab before
+    //   flags reset, otherwise the preview canvas stays visible.
+    gX_Tools_CloseTheme_Runtime();
+    if (gui.auditTemplateID == gX_GUI_TEMPLATE_MATERIALSLAB
+        || gui.auditTemplateID == gX_GUI_TEMPLATE_SHADERLAB) {
+        tools_lab_hide(gui.auditTemplateID);
+    }
     gX_Tools_Editor_ClearEditLock();
     gX_Tools_Editor_SoloRestore();
     gX_Tools_Wavetable_Shutdown();

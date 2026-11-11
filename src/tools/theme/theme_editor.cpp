@@ -39,6 +39,8 @@ extern "C" {
 #include "../../common/marshal/json.h"
 #include "../../main.h"
 #include "../../common/log.h"
+#include "../../common/enum/keys.h"
+#include "../../input.h"
 }
 
 #include "../imgui/imgui.h"
@@ -488,13 +490,21 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
     const char *themeTitle = gui.viewportDocked
         ? "gX Tools - Theme###theme_editor"
         : "gX Tools - Theme Editor###theme_editor";
+    if (!thOpen) {
+        gX_Tools_CloseTheme_Runtime();
+        return;
+    }
+    if (input.keyboard.keys[gX_KEY_ESCAPE].state.PRESSED) {
+        gX_Tools_CloseTheme_Runtime();
+        return;
+    }
     if (!ImGui::Begin(themeTitle, &thOpen)) {
         ImGui::End();
         ImGui::PopItemWidth();
-        if (!thOpen) *gX_Tools_RuntimeThemeFlag() = 0;
+        if (!thOpen) gX_Tools_CloseTheme_Runtime();
         return;
     }
-    if (!thOpen) *gX_Tools_RuntimeThemeFlag() = 0;
+    if (!thOpen) gX_Tools_CloseTheme_Runtime();
     if (!s_panelTraced) {
         s_panelTraced = 1;
         gX_TraceLog(gX_LOG_INFO, "THEME_EDITOR: panel=1");
@@ -562,7 +572,7 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
     if (ImGui::Button("Save theme")) theme_save(s_themePath);
     ImGui::SameLine();
     ImGui::SameLine();
-    if (ImGui::Button("Close")) *gX_Tools_RuntimeThemeFlag() = 0;
+    if (ImGui::Button("Close")) gX_Tools_CloseTheme_Runtime();
     if (ImGui::Button("Reload from file") && s_themePath[0]) {
         gX_GUI_Style_SetThemePath(s_themePath);
         gX_GUI_Style_LoadDefault();

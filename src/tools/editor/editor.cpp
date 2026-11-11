@@ -465,6 +465,9 @@ static gX_I0 tools_redo_pop(gX_GUI_Canvas *canvas) {
 //   when the ImGui window is not hovered (WantCaptureMouse false).
 //=============================================================================
 
+//ai: v0.44.1 — ignore the mouse press that opened the editor; arm canvas
+//   gestures only after a release, then require a fresh press.
+static gX_I1 s_canvasArmed = 0;
 static gX_I32 s_dragMode = 0;      // 0 none, 1 move, 2 TL, 3 TR, 4 BL, 5 BR,
                                    // 6 L, 7 R, 8 T, 9 B
 static gX_I32 s_dragSel = -1;
@@ -512,6 +515,14 @@ static gX_I0 tools_canvas_drag(gX_GUI_Canvas *canvas) {
     gX_I1 pressed = input.mouse.leftButton.PRESSED != 0;
     gX_I1 down = input.mouse.leftButton.DOWN != 0;
     gX_I1 captured = ImGui::GetIO().WantCaptureMouse != 0;
+
+    if (!s_canvasArmed) {
+        if (down) {
+            s_pressCaptured = 1;
+            return;
+        }
+        s_canvasArmed = 1;
+    }
 
     if (pressed) {
         //opencode: press routing — a press that starts on ImGui can never
@@ -602,6 +613,7 @@ extern "C" gX_I32 gX_Tools_Editor_TestInputCapture(gX_I0) {
     gX_F32v2 savedDragStartMouse = s_dragStartMouse;
     gX_Rectangle savedDragStartRect = s_dragStartRect;
     gX_I1 savedPressCaptured = s_pressCaptured;
+    gX_I1 savedCanvasArmed = s_canvasArmed;
     gX_F32v2 savedMouse = input.mouse.coord;
     gX_I1 savedPressed = input.mouse.leftButton.PRESSED;
     gX_I1 savedDown = input.mouse.leftButton.DOWN;
@@ -615,6 +627,7 @@ extern "C" gX_I32 gX_Tools_Editor_TestInputCapture(gX_I0) {
     s_dragMode = 0;
     s_dragSel = -1;
     s_pressCaptured = 0;
+    s_canvasArmed = 0;
     if (gX_GUI_Canvas_Load(&canvas) != 0
         || gX_GUI_Canvas_Add_Element(&canvas) != 0) {
         errors++;
@@ -648,6 +661,26 @@ extern "C" gX_I32 gX_Tools_Editor_TestInputCapture(gX_I0) {
         input.mouse.leftButton.RELEASED = true;
         tools_canvas_drag(&canvas);
         if (s_pressCaptured || s_dragMode != 0) errors++;
+
+        //ai: v0.44.1 — the release arms gestures; a fresh press must drag.
+        input.mouse.coord = (gX_F32v2){150.0f, 100.0f};
+        input.mouse.leftButton.PRESSED = true;
+        input.mouse.leftButton.DOWN = true;
+        input.mouse.leftButton.RELEASED = false;
+        input.mouse.leftButton.UP = false;
+        ImGui::GetIO().WantCaptureMouse = false;
+        tools_canvas_drag(&canvas);
+        if (s_dragMode != 1 || s_dragSel != 0) errors++;
+        input.mouse.coord = (gX_F32v2){170.0f, 120.0f};
+        input.mouse.leftButton.PRESSED = false;
+        tools_canvas_drag(&canvas);
+        if (element->rect.x == initialRect.x
+            && element->rect.y == initialRect.y) errors++;
+        input.mouse.leftButton.DOWN = false;
+        input.mouse.leftButton.UP = true;
+        input.mouse.leftButton.RELEASED = true;
+        tools_canvas_drag(&canvas);
+        if (s_dragMode != 0 || s_pressCaptured) errors++;
         gX_GUI_Canvas_Unload(&canvas);
     }
 
@@ -659,6 +692,7 @@ extern "C" gX_I32 gX_Tools_Editor_TestInputCapture(gX_I0) {
     s_dragStartMouse = savedDragStartMouse;
     s_dragStartRect = savedDragStartRect;
     s_pressCaptured = savedPressCaptured;
+    s_canvasArmed = savedCanvasArmed;
     input.mouse.coord = savedMouse;
     input.mouse.leftButton.PRESSED = savedPressed;
     input.mouse.leftButton.DOWN = savedDown;
@@ -1509,6 +1543,7 @@ extern "C" gX_I0 gX_Tools_Editor_Open(gX_I32 canvasIndex, const gX_I8 *markupPat
     s_targetCanvas = canvasIndex;
     s_treeTraced = 0;
     s_editorOpened = 1;
+    s_canvasArmed = 0;
     tools_selection_clear();
     s_pendingSelect = -1;
     tools_edit_lock_set(s_targetCanvas);
@@ -1569,6 +1604,28 @@ extern "C" gX_I0 gX_Tools_Editor_Open(gX_I32 canvasIndex, const gX_I8 *markupPat
         if (s_tourStep >= 0) {
             gX_TraceLog(gX_LOG_INFO, "Tools: editor tour opened step=%i", s_tourStep);
         }
+    }
+}
+
+//ai: v0.44.1 — the tour card is centered, so its copy is centered line by
+//   line instead of leaving left-aligned text in a centered card.
+static gX_I0 tools_tour_center_text(const gX_I8 *text) {
+    const gX_I8 *line = text;
+    while (line && *line) {
+        const gX_I8 *end = strchr((const char *)line, '\n');
+        gX_I32 length = end ? (gX_I32)(end - line) : (gX_I32)strlen((const char *)line);
+        if (length >= 256) length = 255;
+        gX_I8 buffer[256];
+        memcpy(buffer, line, (size_t)length);
+        buffer[length] = '\0';
+        gX_F32 width = ImGui::CalcTextSize((const char *)buffer).x;
+        gX_F32 available = ImGui::GetContentRegionAvail().x;
+        if (width < available) {
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX()
+                + (available - width) * 0.5f);
+        }
+        ImGui::TextUnformatted((const char *)buffer);
+        line = end ? end + 1 : NULL;
     }
 }
 
@@ -1659,7 +1716,16 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
         if (canvas && !io.WantTextInput) {
             gX_I32 selectionIndex = tools_selection_index(canvas);
             gX_I1 hasSel = selectionIndex >= 0;
-            if (ImGui::IsKeyPressed(ImGuiKey_Escape)) { tools_selection_clear(); s_dragMode = 0; }
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+                if (s_tourStep >= 0) {
+                    s_tourStep = -1;
+                    settings.edTourSeen = 1;
+                    settings.dirtyFlag = 1;
+                } else {
+                    tools_selection_clear();
+                    s_dragMode = 0;
+                }
+            }
             selectionIndex = tools_selection_index(canvas);
             hasSel = selectionIndex >= 0;
             if (ImGui::IsKeyPressed(ImGuiKey_Delete) && hasSel) s_confirmRemove = 1;
@@ -1978,11 +2044,11 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
     if (s_tourStep >= 0 && s_tourStep <= 4) {
         const gX_I8 *titles[5] = { "1/5 Pick", "2/5 Move", "3/5 Tweak", "4/5 Keep", "5/5 Go" };
         const gX_I8 *bodies[5] = {
-            "Pick an element in the LEFT list (or click it on canvas). Search filters long lists.",
-            "Drag it to move (8px snap, View toggles). White squares resize. Arrows nudge, Del removes (asks first).",
-            "Recolor + tweak on the RIGHT. Hover any label for plain help. Sliders type numbers.",
-            "Add / Duplicate / Remove live under the list. Ctrl+S saves the markup. Ctrl+Z undoes edits (not add/remove).",
-            "F1 reopens the full guide anytime. Have fun — Esc deselects, X closes a tool.",
+            "Pick an element in the LEFT list\n(or click it on canvas). Search filters long lists.",
+            "Drag it to move (8px snap, View toggles).\nWhite squares resize. Arrows nudge, Del removes.",
+            "Recolor + tweak on the RIGHT.\nHover any label for plain help. Sliders type numbers.",
+            "Add / Duplicate / Remove live under the list.\nCtrl+S saves the markup. Ctrl+Z undoes edits.",
+            "F1 reopens the full guide anytime.\nHave fun - Esc deselects, X closes a tool.",
         };
         //opencode: highlight target per step (default studio rects; tour
         //   runs pre-drag so FirstUseEver positions hold).
@@ -2002,14 +2068,16 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
         gX_F32 tourScale = ImGui::GetStyle().FontScaleMain;
         if (tourScale < 1.0f) tourScale = 1.0f;
         ImVec2 tourSize(420.0f * tourScale, 180.0f * tourScale);
+        gX_F32 tourY = scrH - tourSize.y - 48.0f;
+        if (tourY < ImGui::GetFrameHeight() + 8.0f)
+            tourY = ImGui::GetFrameHeight() + 8.0f;
         ImGui::SetNextWindowPos(ImVec2(scrW * 0.5f - tourSize.x * 0.5f,
-            scrH * 0.5f - tourSize.y * 0.5f), ImGuiCond_FirstUseEver);
+            tourY), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(tourSize, ImGuiCond_Always);
-        ImGui::SetNextWindowFocus();
         bool tourOpen = true;
         if (ImGui::Begin("Editor tour", &tourOpen)) {
-            ImGui::Text("%s", titles[s_tourStep]);
-            ImGui::TextWrapped("%s", bodies[s_tourStep]);
+            tools_tour_center_text(titles[s_tourStep]);
+            tools_tour_center_text(bodies[s_tourStep]);
             gX_F32 nextRight = 0.0f;
             gX_F32 skipRight = 0.0f;
             if (s_tourStep > 0) {

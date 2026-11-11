@@ -831,6 +831,9 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
                         b.currentElement->stateRendering.TEXT_CENTER_X = true;
                         if (b.curText) {
                             b.curText->fontSize = 12;
+                            //ai: v0.44.1 — 12px text with the global 3px
+                            //   tracking reads as disconnected glyphs at 1024.
+                            b.curText->spacing = 1;
                             b.curText->color = gui.style.title2.saveSlotText;
                             b.curText->autoShrink = true;
                         }
@@ -1098,6 +1101,7 @@ gX_I0 gX_GUI_Template_TitleGX(gX_I32 canvasindex) {
                         gX_GUI_Builder_Text_Set(&b, foot[fi].label);
                         titlegx_MenuUseTitleFont(&b);
                         b.currentElement->stateRendering.TEXT_CENTER_X = true;
+                        b.currentElement->stateRendering.TEXT_CENTER_Y = true;
                         if (b.curText) {
                             b.curText->fontSize = 10;
                             b.curText->color = gui.style.title2.footerText;

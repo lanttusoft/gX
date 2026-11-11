@@ -75,6 +75,9 @@ class EvidenceStampChecks(unittest.TestCase):
         git("init", "-q")
         git("config", "user.email", "evidence@example.invalid")
         git("config", "user.name", "Evidence Fixture")
+        #ai: disposable fixtures never inherit the author's commit signing.
+        git("config", "commit.gpgsign", "false")
+        git("config", "tag.gpgsign", "false")
         (root / "tracked.txt").write_text("tracked\n", encoding="utf-8")
         git("add", "tracked.txt")
         git("commit", "-q", "-m", "fixture")

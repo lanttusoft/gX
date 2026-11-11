@@ -539,6 +539,9 @@ static gX_I0 gX_GUI_Element_Draw_Rect(gX_GUI_Element *element, gX_GUI_Canvas *ca
     gX_Rectangle_Draw_Parameters(element->rect, params);
 }
 
+static gX_GUI_Element *s_tooltipElement = NULL;
+static gX_GUI_Canvas *s_tooltipCanvas = NULL;
+
 gX_I0 gX_GUI_Element_Draw(gX_GUI_Element *element, gX_GUI_Canvas *canvas) {
     
     //opencode: rounded focus ring follows the button corner radius instead of
@@ -583,44 +586,54 @@ gX_I0 gX_GUI_Element_Draw(gX_GUI_Element *element, gX_GUI_Canvas *canvas) {
         || (element->state.FOCUSED
             && !element->stateRendering.TOOLTIP_CURSOR_ONLY);
     if (showTip && element->description[0]) {
-        //opencode: engine UI font like every other text (was hardcoded default).
-        gX_Font defFont = gui.style.uiFontLoaded ? gui.style.uiFont : gX_Font_GetDefault();
-        //opencode: scale with the window like all UI type (was fixed 14px).
-        gX_F32 tipScale = (gX_F32)maindata.screenWidth / 1024.0f * gX_scale_mult;
-        if (tipScale < 0.5f) tipScale = 0.5f;
-        if (tipScale > 4.0f) tipScale = 4.0f;
-        gX_F32 tipSize = 14.0f * tipScale;
-        //opencode: cursor-anchored on hover — element-anchored tips collided
-        //   with tight rows once type scaled with the window (extras audit);
-        //   keyboard focus keeps the element anchor (no cursor relation).
-        gX_F32v2 tipPos;
-        if (element->state.HOVERED) {
-            tipPos.x = input.mouse.coord.x + 14.0f;
-            tipPos.y = input.mouse.coord.y + 20.0f;
-        } else {
-            tipPos.x = element->rect.x;
-            tipPos.y = element->rect.y + element->rect.height + 4.0f;
-        }
-        // flip above if below screen, clamp so top edge stays visible
-        if (tipPos.y + tipSize > (gX_F32)maindata.screenHeight) {
-            tipPos.y = element->rect.y - tipSize - 4.0f;
-            if (tipPos.y < 2.0f) tipPos.y = 2.0f;
-        }
-        // clamp X so tooltip doesn't extend past right edge
-        gX_F32v2 tipLen = gX_RawString_Measure(element->description, defFont, tipSize, 1);
-        if (tipPos.x + tipLen.x + 8 > (gX_F32)maindata.screenWidth) {
-            tipPos.x = (gX_F32)maindata.screenWidth - tipLen.x - 12.0f;
-            if (tipPos.x < 2.0f) tipPos.x = 2.0f;
-        }
-        gX_Rectangle tipBg = {tipPos.x - 4, tipPos.y - 2, tipLen.x + 8, tipSize + 4};
-        gX_Rectangle_Draw(tipBg, (gX_Color){8, 8, 14, 235});
-        //opencode: visible plate edge — the dark fill vanishes on dark panels,
-        //   making floating tips read as broken in-place text (extras audit).
-        gX_Rectangle_Parameters tp = { 0 };
-        tp.lines = true;
-        tp.colors[0] = gui.style.blueprint.accentColor;
-        gX_Rectangle_Draw_Parameters(tipBg, tp);
-        gX_RawString_Draw(element->description, defFont, tipPos, (gX_F32v2){0,0}, 0.0f, tipSize, 1, gX_WHITE);
+        //ai: v0.44.1 — defer the tooltip to the canvas overlay pass. Drawing
+        //   it inline let later columns/buttons paint over it.
+        s_tooltipElement = element;
+        s_tooltipCanvas = canvas;
     }
     
+}
+
+gX_I0 gX_GUI_Element_TooltipClear(gX_I0) {
+    s_tooltipElement = NULL;
+    s_tooltipCanvas = NULL;
+}
+
+gX_I0 gX_GUI_Element_TooltipFlush(gX_GUI_Canvas *canvas) {
+    gX_GUI_Element *element = s_tooltipElement;
+    if (!element || s_tooltipCanvas != canvas) {
+        gX_GUI_Element_TooltipClear();
+        return;
+    }
+    gX_Font defFont = gui.style.uiFontLoaded ? gui.style.uiFont : gX_Font_GetDefault();
+    gX_F32 tipScale = (gX_F32)maindata.screenWidth / 1024.0f * gX_scale_mult;
+    if (tipScale < 0.5f) tipScale = 0.5f;
+    if (tipScale > 4.0f) tipScale = 4.0f;
+    gX_F32 tipSize = 14.0f * tipScale;
+    gX_F32v2 tipPos;
+    if (element->state.HOVERED) {
+        tipPos.x = input.mouse.coord.x + 14.0f;
+        tipPos.y = input.mouse.coord.y + 20.0f;
+    } else {
+        tipPos.x = element->rect.x;
+        tipPos.y = element->rect.y + element->rect.height + 4.0f;
+    }
+    if (tipPos.y + tipSize > (gX_F32)maindata.screenHeight) {
+        tipPos.y = element->rect.y - tipSize - 4.0f;
+        if (tipPos.y < 2.0f) tipPos.y = 2.0f;
+    }
+    gX_F32v2 tipLen = gX_RawString_Measure(element->description, defFont, tipSize, 1);
+    if (tipPos.x + tipLen.x + 8 > (gX_F32)maindata.screenWidth) {
+        tipPos.x = (gX_F32)maindata.screenWidth - tipLen.x - 12.0f;
+        if (tipPos.x < 2.0f) tipPos.x = 2.0f;
+    }
+    gX_Rectangle tipBg = {tipPos.x - 4, tipPos.y - 2, tipLen.x + 8, tipSize + 4};
+    gX_Rectangle_Draw(tipBg, (gX_Color){8, 8, 14, 235});
+    gX_Rectangle_Parameters tp = { 0 };
+    tp.lines = true;
+    tp.colors[0] = gui.style.blueprint.accentColor;
+    gX_Rectangle_Draw_Parameters(tipBg, tp);
+    gX_RawString_Draw(element->description, defFont, tipPos, (gX_F32v2){0,0},
+        0.0f, tipSize, 1, gX_WHITE);
+    gX_GUI_Element_TooltipClear();
 }

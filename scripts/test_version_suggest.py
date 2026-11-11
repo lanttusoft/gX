@@ -6,10 +6,20 @@
 #opencode: version policy tests — changelog classification, file signals and
 #   the declared-class/numeric-bump agreement.
 
+import tempfile
 import unittest
+from pathlib import Path
+from unittest import mock
 
 import version_check as check
 import version_suggest as suggest
+
+
+class NoGitTests(unittest.TestCase):
+    def test_archive_without_git_skips_tags(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.object(check, "PROJECT", Path(directory)):
+            self.assertIsNone(check.tag_versions())
 
 
 class ChangelogTests(unittest.TestCase):

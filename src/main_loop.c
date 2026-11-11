@@ -221,6 +221,11 @@ gX_I32 gX_Loop(gX_I0) {
             struct timespec frameEnd;
             if (benchmarkFile) clock_gettime(CLOCK_MONOTONIC, &frameStart);
             maindata.frameCount++;
+            //ai: v0.44.1 — deterministic editor lifecycle probe for the gate.
+            {
+                extern gX_I0 gX_Tools_EditorSystem_Tick(gX_U64 frame);
+                gX_Tools_EditorSystem_Tick(maindata.frameCount);
+            }
             errors = gX_Loop_Update();
             errors = gX_Loop_Draw();
             if (benchmarkFile) {
