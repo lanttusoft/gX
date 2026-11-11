@@ -1141,6 +1141,33 @@ static gX_I0 tools_panel_tree(gX_GUI_Canvas *canvas) {
     }
 }
 
+//ai: GUI-H2 — ImGui ColorEdit4 reads float[4]; gX_Color is four bytes. Convert
+//   explicitly instead of casting the byte storage to float pointers.
+static gX_U8 tools_color_byte(gX_F32 value) {
+    if (value <= 0.0f) return 0;
+    if (value >= 1.0f) return 255;
+    return (gX_U8)(value * 255.0f + 0.5f);
+}
+
+static gX_I1 tools_color_edit4(const gX_I8 *label, gX_Color *color,
+    ImGuiColorEditFlags flags) {
+    if (!color) return 0;
+    float channels[4] = {
+        color->r / 255.0f,
+        color->g / 255.0f,
+        color->b / 255.0f,
+        color->a / 255.0f,
+    };
+    gX_I1 changed = ImGui::ColorEdit4(label, channels, flags);
+    if (changed) {
+        color->r = tools_color_byte(channels[0]);
+        color->g = tools_color_byte(channels[1]);
+        color->b = tools_color_byte(channels[2]);
+        color->a = tools_color_byte(channels[3]);
+    }
+    return changed;
+}
+
 static gX_I0 tools_panel_properties(gX_GUI_Canvas *canvas) {
     gX_GUI_Element *el = tools_selection_resolve(canvas);
     //ai: the slim 175% dock clips "Properties"; keep a readable header.
@@ -1166,7 +1193,7 @@ static gX_I0 tools_panel_properties(gX_GUI_Canvas *canvas) {
         ImGui::SetItemTooltip("Width, canvas pixels. White squares on canvas resize.");
     ImGui::DragFloat("h", &el->rect.height, 1.0f, 0.0f, 2048.0f, "%.0f");
         ImGui::SetItemTooltip("Height, canvas pixels.");
-    ImGui::ColorEdit4("color", (float *)&el->color,
+    tools_color_edit4("color", &el->color,
         ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_NoInputs);
         ImGui::SetItemTooltip("Fill color + opacity. Transparent (A=0) hides the box but keeps children.");
     ImGui::DragFloat("scale", &el->params.scale.x, 0.01f, 0.1f, 10.0f, "%.2f");
@@ -1219,7 +1246,7 @@ static gX_I0 tools_panel_properties(gX_GUI_Canvas *canvas) {
         ImGui::InputText("text", t->text, gX_GUI_ELEMENT_TEXT_MAX);
         ImGui::DragFloat("fontSize", &t->fontSize, 1.0f, 1.0f, 256.0f, "%.0f");
         ImGui::SetItemTooltip("Text height in pixels.");
-        ImGui::ColorEdit4("text color", (float *)&t->color, ImGuiColorEditFlags_NoInputs);
+        tools_color_edit4("text color", &t->color, ImGuiColorEditFlags_NoInputs);
         ImGui::SetItemTooltip("Text fill color + opacity.");
     } else {
         ImGui::TextDisabled("no text module (type RECT)");
