@@ -154,8 +154,8 @@ extern gX_Settings settings;
 gX_I32 gX_Settings_Init(gX_I0);
 gX_I32 gX_Settings_Reset(gX_I0);
 gX_I32 gX_Settings_Load(gX_I0);
-//ai: H2 — test/audit override for the persisted settings path. Unset/empty
-//   uses the normal resources/settings.json.
+//ai: H2 — test/audit override for the persisted settings path. Unset or empty
+//   uses the default resources/settings.json path.
 const gX_I8 *gX_Settings_Path(gX_I0);
 //ai: settings manifest for the tiered UI and the expert value list.
 gX_U32 gX_Settings_FieldCount(gX_I0);
