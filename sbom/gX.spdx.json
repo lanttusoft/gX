@@ -8,8 +8,8 @@
     ]
   },
   "dataLicense": "CC0-1.0",
-  "documentNamespace": "https://github.com/lanttusoft/gX/sbom/v0.44.0",
-  "name": "gX-0.44.0",
+  "documentNamespace": "https://github.com/lanttusoft/gX/sbom/v0.44.1",
+  "name": "gX-0.44.1",
   "packages": [
     {
       "SPDXID": "SPDXRef-Package-gX",
@@ -18,7 +18,7 @@
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:github/lanttusoft/gX@v0.44.0",
+          "referenceLocator": "pkg:github/lanttusoft/gX@v0.44.1",
           "referenceType": "purl"
         }
       ],
@@ -28,7 +28,7 @@
       "name": "gX",
       "primaryPackagePurpose": "APPLICATION",
       "supplier": "Organization: gX project",
-      "versionInfo": "0.44.0"
+      "versionInfo": "0.44.1"
     },
     {
       "SPDXID": "SPDXRef-Package-raylib",

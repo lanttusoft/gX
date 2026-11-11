@@ -4,6 +4,40 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.44.1] - 2026-11-11
+
+Release-Class: patch
+
+### Fixed
+- **GUI editor input arming:** the mouse press that opens the editor can no
+  longer select or drag an element on the first frame. Canvas gestures arm
+  only after a release and then require a fresh press.
+- **GUI editor tour:** Esc now dismisses it and records it as seen; the card
+  no longer steals focus every frame, sits lower on the screen, and centers
+  its title/body copy.
+- **Theme editor close:** Esc and the host Close Editor route now work in
+  addition to the window X; the bottom Close button remains.
+- **Theme Lab cleanup:** closing the theme editor closes its paired Theme Lab
+  preview and rebuilds the title instead of leaving a stale preview canvas.
+- **Shader/Materials Lab re-entry:** hiding a lab no longer leaves canvas 2
+  with UPDATE/DRAW off; enter -> exit -> re-enter restores the preview.
+- **Small-editor toolbars:** theme, sky, background and textwriter editors
+  open the host toolbar automatically instead of requiring F9.
+- **EXTRAS tooltips:** active tooltips are deferred to the canvas overlay
+  pass, so right-column buttons no longer cover them.
+- **Title readability:** Help body tracking drops from the global 3px to 1px,
+  and the HELP/CREDITS footer labels are vertically centered.
+- **Source archives:** `version-check` skips Git tag checks when `.git` is
+  absent instead of crashing; mirror checks still run.
+
+### Changed
+- Added `editor-system-check`: toolbar activation, close/reopen for every
+  editor and lab, and title return after closing the theme/lab previews. The
+  full matrix grows from 108 to 109 gates.
+- Disposable evidence test fixtures disable inherited commit/tag signing.
+
+No save, preset or resource format changed.
+
 ## [0.44.0] - 2026-11-11
 
 Release-Class: minor
