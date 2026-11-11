@@ -11,6 +11,7 @@ build_inputs = [
   "scripts/",
   "cmake/",
   "CMakeLists.txt",
+  "build.sh",
   "Makefile",
   "patches/",
   "modules/",

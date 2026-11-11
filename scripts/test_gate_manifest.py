@@ -119,6 +119,16 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(gate_manifest.plan(
             self.manifest, "quick", ["docs/README.md"]), [])
 
+    def test_build_wrapper_selects_all(self):
+        selected = gate_manifest.plan(
+            self.manifest, "quick", ["build.sh"])
+        names = {item["gate"] for item in selected}
+        quick = {gate["name"] for gate in gate_manifest.select_tier(
+            self.manifest, "quick")}
+        self.assertEqual(names, quick)
+        self.assertTrue(all("unmapped build input" in item["reason"]
+                            for item in selected))
+
     def test_explain(self):
         gate = gate_manifest.explain(self.manifest, "water")
         self.assertIsNotNone(gate)
