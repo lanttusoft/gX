@@ -100,7 +100,8 @@ gX_U32 gX_RHI_Tex_CreateMultisample(gX_U32 samples, gX_I32 internalFormat,
 //   levels: mipmap levels (1 for single-level array).
 //   internalFormat: sized internal format (e.g. gX_RHI_DEPTH_COMPONENT24).
 //   w, h: per-layer dimensions; depth: number of layers.
-//   Returns 0 on success.
+//   Returns 0 on success; -1 with GX_ERR_INVALID/GX_ERR_UNSUPPORTED/GX_ERR_GL
+//   and a last-error trace on invalid input or GL failure.
 gX_I32 gX_RHI_Tex_Storage3D(gX_U32 texId, gX_I32 target, gX_I32 levels,
     gX_I32 internalFormat, gX_U32 w, gX_U32 h, gX_U32 depth);
 
@@ -110,7 +111,8 @@ gX_I32 gX_RHI_Tex_Storage3D(gX_U32 texId, gX_I32 target, gX_I32 levels,
 //   Without immutable storage the RHI allocates per-face-per-mip glTexImage2D
 //   with an explicit MAX_LEVEL so the texture stays complete.
 //   texId must be a name from gX_RHI_Tex_Gen (no prior storage).
-//   Returns 0 on success.
+//   Returns 0 on success; -1 with GX_ERR_INVALID/GX_ERR_UNSUPPORTED/GX_ERR_GL
+//   and a last-error trace on invalid input or GL failure.
 gX_I32 gX_RHI_Tex_Storage2D(gX_U32 texId, gX_I32 target, gX_I32 levels,
     gX_I32 internalFormat, gX_U32 w, gX_U32 h);
 
@@ -130,6 +132,9 @@ gX_U32  gX_RHI_Tex_GetTarget(gX_U32 texId);
 //   parameter/bind calls (notably raylib cubemaps).
 gX_I0   gX_RHI_Tex_RegisterTarget(gX_U32 texId, gX_U32 target);
 gX_I0   gX_RHI_Tex_UnregisterTarget(gX_U32 texId);
+// Latches after the 1024-entry target registry overflows. BindOnUnit refuses
+// to guess GL_TEXTURE_2D for an unregistered texture in that state.
+gX_I1   gX_RHI_Tex_TargetRegistryFull(gX_I0);
 
 //opencode: texture unit shadow table — tracks bindings for debugging
 #define GX_RHI_MAX_TEX_UNITS 32

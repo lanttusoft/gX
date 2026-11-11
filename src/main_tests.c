@@ -32,8 +32,11 @@
 #include <unistd.h>
 
 #include "common/alloc.h"
+#include "common/hashmap.h"
 #include "common/heap.h"
 #include "common/log.h"
+#include "common/msg.h"
+#include "rhi/rhi_event_log.h"
 #include "common/types/3d.h"
 #include "resource/resource.h"
 #include "module/devcube_phase.h"
@@ -4271,6 +4274,9 @@ gX_I32 gX_Tests(gX_I0) {
     gX_I32 errors = 0;
     
     errors += gX_Alloc_Tests();
+    errors += gX_Msg_Tests();
+    errors += gX_HashMap_Tests();
+    errors += gX_RHI_EventLog_Tests();
     errors += gX_Tests_SettingsUI();
     errors += gX_Tests_Hardware();
     errors += gX_Tests_Polisher();

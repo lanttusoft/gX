@@ -61,9 +61,14 @@ gX_I0 gX_HashMap_DeInit(    gX_HashMap *map);
 
 gX_U64 gX_HashMap_Hash(     const gX_I0 *key, gX_U32 keyLen);
 
+//ai: RC-L1/L2 — returns the stored value pointer, or 0 when initialization or
+//   growth fails; a tombstone insertion never bypasses the duplicate check.
 gX_I0 *gX_HashMap_Set(      gX_HashMap *map, const gX_I0 *key, gX_U32 keyLen, gX_I0 *value);
 gX_I0 *gX_HashMap_Get(      gX_HashMap *map, const gX_I0 *key, gX_U32 keyLen);
 gX_I0 *gX_HashMap_Remove(   gX_HashMap *map, const gX_I0 *key, gX_U32 keyLen);
+
+//ai: RC-L1 regression tests — tombstone collision/reinsert (Debug suite).
+gX_I32 gX_HashMap_Tests(gX_I0);
 
 #ifdef __cplusplus
 }

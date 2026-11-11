@@ -38,6 +38,7 @@
 #include "rhi_buffer_audit.h"
 #include "../common/log.h"
 #include "../common/macros.h"
+#include "../common/error.h"
 #include "rhi_gl.h"
 #include "rhi_bindless.h"
 
@@ -106,6 +107,7 @@ static gX_U32 g_programSwitchCount = 0;
 static gX_U32 g_textureBindCount = 0;
 static gX_U32 g_fboSwitchCount = 0;
 static gX_U32 g_lastProgramId = 0;
+static gX_I1 s_targetRegistryBindWarned = 0;
 
 gX_U32 gX_RHI_GetAndResetDrawCalls(gX_I0) {
     gX_U32 v = g_drawCallCount; g_drawCallCount = 0; return v;
@@ -496,12 +498,24 @@ gX_I0 gX_RHI_Trace_ProbeTex(gX_U32 texId, gX_U32 x, gX_U32 y, const gX_I8 *label
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+//ai: RC-L3 — once the target registry is full, an unregistered texture has no
+//   known target. Refuse the bind instead of guessing GL_TEXTURE_2D, emitting
+//   GL_INVALID_OPERATION and recording a shadow binding that did not happen.
 //opencode: bind 2D texture to a specific unit, then reset to unit 0.
 gX_I0 gX_RHI_Tex_BindOnUnit(gX_U32 texId, gX_U32 slot) {
     //opencode: use the texture's registered target — hardcoding GL_TEXTURE_2D
     //   bound 2D ARRAY textures (e.g. CSM array on unit 22) through the wrong
     //   target, flooding GL_INVALID_OPERATION "target doesn't match" per draw.
     gX_U32 target = gX_RHI_Tex_GetTarget(texId);
+    if (target == 0 && texId != 0 && gX_RHI_Tex_TargetRegistryFull()) {
+        if (!s_targetRegistryBindWarned) {
+            s_targetRegistryBindWarned = 1;
+            GX_ERROR_SET(GX_ERR_STATE,
+                "texture %u has no registered target and the registry is full",
+                texId);
+        }
+        return;
+    }
     if (target == 0) target = GL_TEXTURE_2D;
     g_textureBindCount++;
     gX_RHI_Tex_SetUnit(slot, texId, target);

@@ -29,11 +29,13 @@
 #include "rhi_debug.h"
 #include "rhi_caps.h"
 #include "rhi_buffer_audit.h"
+#include "rhi_state.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include "rhi_gl.h"
 #include "../common/log.h"
+#include "../common/error.h"
 
 //opencode: texture unit shadow table — tracks which texture is bound to each unit
 #define GX_RHI_MAX_TEX_UNITS 32
@@ -48,17 +50,26 @@ static gX_U32 g_texUnitTargets[GX_RHI_MAX_TEX_UNITS];
 static gX_U32 g_texTargetReg[GX_RHI_TEX_TARGET_REG_MAX];
 static gX_U32 g_texTargetVal[GX_RHI_TEX_TARGET_REG_MAX];
 static gX_U32 g_texTargetCount = 0;
+static gX_I1 g_texTargetFull = 0;
 
-static gX_I0 gX_TexTarget_Register(gX_U32 texId, gX_U32 target) {
-    if (texId == 0) return;
+static gX_I1 gX_TexTarget_Register(gX_U32 texId, gX_U32 target) {
+    if (texId == 0) return 0;
     for (gX_U32 i = 0; i < g_texTargetCount; i++) {
-        if (g_texTargetReg[i] == texId) { g_texTargetVal[i] = target; return; }
+        if (g_texTargetReg[i] == texId) { g_texTargetVal[i] = target; return 1; }
     }
     if (g_texTargetCount < GX_RHI_TEX_TARGET_REG_MAX) {
         g_texTargetReg[g_texTargetCount] = texId;
         g_texTargetVal[g_texTargetCount] = target;
         g_texTargetCount++;
+        return 1;
     }
+    if (!g_texTargetFull) {
+        g_texTargetFull = 1;
+        GX_ERROR_SET(GX_ERR_STATE,
+            "texture target registry full (%u entries); new targets are unregistered",
+            (unsigned)GX_RHI_TEX_TARGET_REG_MAX);
+    }
+    return 0;
 }
 
 static gX_U32 gX_TexTarget_Lookup(gX_U32 texId) {
@@ -74,6 +85,10 @@ gX_U32 gX_RHI_Tex_GetTarget(gX_U32 texId) {
 
 gX_I0 gX_RHI_Tex_RegisterTarget(gX_U32 texId, gX_U32 target) {
     gX_TexTarget_Register(texId, target);
+}
+
+gX_I1 gX_RHI_Tex_TargetRegistryFull(gX_I0) {
+    return g_texTargetFull;
 }
 
 gX_I0 gX_RHI_Tex_UnregisterTarget(gX_U32 texId) {
@@ -333,13 +348,50 @@ gX_I0 gX_RHI_Tex_Paramfv(gX_U32 texId, gX_I32 target, gX_I32 pname, const gX_F32
     glTexParameterfv(target, pname, param);
 }
 
+//ai: RC-M1 — storage entry points must reject invalid dimensions before GL and
+//   convert a post-call GL error into a real failure with a stable code.
+static gX_I32 gX_TexStorage_Validate(gX_U32 texId, gX_I32 target, gX_I32 levels,
+    gX_U32 w, gX_U32 h, gX_U32 depth)
+{
+    if (texId != 0 && levels >= 1 && w != 0 && h != 0 && depth != 0) return 0;
+    GX_ERROR_SET(GX_ERR_INVALID,
+        "invalid texture storage: tex=%u target=0x%x levels=%d size=%ux%ux%u",
+        texId, target, levels, w, h, depth);
+    return -1;
+}
+
+static gX_I0 gX_TexStorage_DrainPending(const gX_I8 *operation)
+{
+    gX_U32 pending = gX_RHI_GetError();
+    if (pending == GL_NO_ERROR) return;
+    gX_U32 count = 1;
+    while (gX_RHI_GetError() != GL_NO_ERROR) count++;
+    gX_TraceLog(gX_LOG_WARNING,
+        "RHI_TEX: %u pending GL error(s), first 0x%x, before %s",
+        count, pending, operation ? operation : "?");
+}
+
+static gX_I32 gX_TexStorage_CheckGL(gX_U32 texId, gX_I32 target,
+    gX_I32 levels, const gX_I8 *operation)
+{
+    gX_U32 error = gX_RHI_GetError();
+    if (error == GL_NO_ERROR) return 0;
+    GX_ERROR_SET(GX_ERR_GL,
+        "%s failed: tex=%u target=0x%x levels=%d gl=0x%x",
+        operation ? operation : "texture storage", texId, target, levels, error);
+    return -1;
+}
+
 gX_I32 gX_RHI_Tex_Storage3D(gX_U32 texId, gX_I32 target, gX_I32 levels,
     gX_I32 internalFormat, gX_U32 w, gX_U32 h, gX_U32 depth)
 {
+    if (gX_TexStorage_Validate(texId, target, levels, w, h, depth) != 0) return -1;
+    gX_TexStorage_DrainPending("Storage3D");
     if (texId) glBindTexture((GLenum)target, texId);
     if (gX_TexHasImmutableStorage()) {
         glTexStorage3D((GLenum)target, (GLint)levels, (GLenum)internalFormat,
             (GLsizei)w, (GLsizei)h, (GLsizei)depth);
+        if (gX_TexStorage_CheckGL(texId, target, levels, "Storage3D") != 0) return -1;
         gX_TexTarget_Register(texId, (gX_U32)target);
         return 0;
     }
@@ -350,7 +402,8 @@ gX_I32 gX_RHI_Tex_Storage3D(gX_U32 texId, gX_I32 target, gX_I32 levels,
     {
         gX_I32 format = 0, type = 0;
         if (!gX_TexFallbackFormatType(internalFormat, &format, &type)) {
-            gX_TraceLog(gX_LOG_ERROR, "RHI_TEX: Storage3D fallback has no format mapping for internal 0x%x",
+            GX_ERROR_SET(GX_ERR_UNSUPPORTED,
+                "Storage3D fallback has no format mapping for internal 0x%x",
                 (unsigned)internalFormat);
             return -1;
         }
@@ -363,6 +416,7 @@ gX_I32 gX_RHI_Tex_Storage3D(gX_U32 texId, gX_I32 target, gX_I32 levels,
                 (GLenum)format, (GLenum)type, NULL);
         }
         glTexParameteri((GLenum)target, GL_TEXTURE_MAX_LEVEL, levels - 1);
+        if (gX_TexStorage_CheckGL(texId, target, levels, "Storage3D") != 0) return -1;
         gX_TexTarget_Register(texId, (gX_U32)target);
         return 0;
     }
@@ -392,17 +446,21 @@ gX_I32 gX_RHI_Tex_Compressed2D(gX_U32 texId, gX_I32 level,
 gX_I32 gX_RHI_Tex_Storage2D(gX_U32 texId, gX_I32 target, gX_I32 levels,
     gX_I32 internalFormat, gX_U32 w, gX_U32 h)
 {
+    if (gX_TexStorage_Validate(texId, target, levels, w, h, 1) != 0) return -1;
+    gX_TexStorage_DrainPending("Storage2D");
     if (texId) glBindTexture((GLenum)target, texId);
     if (gX_TexHasImmutableStorage()) {
         glTexStorage2D((GLenum)target, (GLint)levels, (GLenum)internalFormat,
             (GLsizei)w, (GLsizei)h);
+        if (gX_TexStorage_CheckGL(texId, target, levels, "Storage2D") != 0) return -1;
         gX_TexTarget_Register(texId, (gX_U32)target);
         return 0;
     }
     {
         gX_I32 format = 0, type = 0;
         if (!gX_TexFallbackFormatType(internalFormat, &format, &type)) {
-            gX_TraceLog(gX_LOG_ERROR, "RHI_TEX: Storage2D fallback has no format mapping for internal 0x%x",
+            GX_ERROR_SET(GX_ERR_UNSUPPORTED,
+                "Storage2D fallback has no format mapping for internal 0x%x",
                 (unsigned)internalFormat);
             return -1;
         }
@@ -427,6 +485,7 @@ gX_I32 gX_RHI_Tex_Storage2D(gX_U32 texId, gX_I32 target, gX_I32 levels,
             }
         }
         glTexParameteri((GLenum)target, GL_TEXTURE_MAX_LEVEL, levels - 1);
+        if (gX_TexStorage_CheckGL(texId, target, levels, "Storage2D") != 0) return -1;
         gX_TexTarget_Register(texId, (gX_U32)target);
         return 0;
     }

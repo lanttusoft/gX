@@ -34,6 +34,7 @@
 static gX_RHI_Event g_events[GX_RHI_EVENT_LOG_SIZE];
 static gX_U32 g_eventHead = 0;
 static gX_U32 g_eventCount = 0;
+static gX_U32 g_eventDropped = 0;
 static gX_U32 g_eventFrame = 0;
 
 static gX_F64 now_seconds(gX_I0) {
@@ -60,6 +61,7 @@ gX_I0 gX_RHI_EventLog_Push(gX_RHI_EventType type,
     }
     g_eventHead = (g_eventHead + 1) % GX_RHI_EVENT_LOG_SIZE;
     if (g_eventCount < GX_RHI_EVENT_LOG_SIZE) g_eventCount++;
+    else g_eventDropped++;
 }
 
 gX_I0 gX_RHI_EventLog_NextFrame(gX_I0) { g_eventFrame++; }
@@ -68,10 +70,56 @@ gX_I0 gX_RHI_EventLog_Clear(gX_I0)
 {
     g_eventHead = 0;
     g_eventCount = 0;
+    g_eventDropped = 0;
 }
 
 const gX_RHI_Event *gX_RHI_EventLog_Get(gX_U32 *outCount)
 {
     if (outCount) *outCount = g_eventCount;
     return g_events;
+}
+
+//ai: RC-L4 — logical accessors: At(0) is the oldest retained event, regardless
+//   of where the raw ring wrapped. Get() remains for source compatibility.
+gX_U32 gX_RHI_EventLog_Count(gX_I0)
+{
+    return g_eventCount;
+}
+
+const gX_RHI_Event *gX_RHI_EventLog_At(gX_U32 logicalIndex)
+{
+    if (logicalIndex >= g_eventCount) return 0;
+    gX_U32 start = (g_eventHead + GX_RHI_EVENT_LOG_SIZE - g_eventCount)
+        % GX_RHI_EVENT_LOG_SIZE;
+    return &g_events[(start + logicalIndex) % GX_RHI_EVENT_LOG_SIZE];
+}
+
+gX_U32 gX_RHI_EventLog_Dropped(gX_I0)
+{
+    return g_eventDropped;
+}
+
+//ai: RC-L4 regression — 300 pushes retain 256 events in chronological order
+//   (44..299), expose the 44 dropped events and reject out-of-range access.
+gX_I32 gX_RHI_EventLog_Tests(gX_I0)
+{
+    gX_I32 errors = 0;
+    gX_RHI_EventLog_Clear();
+    for (gX_U32 index = 0; index < 300; index++)
+    {
+        gX_RHI_EventLog_Push(GX_RHI_EVENT_ERROR, index, 0, 0, "sequence");
+    }
+    if (gX_RHI_EventLog_Count() != GX_RHI_EVENT_LOG_SIZE) errors++;
+    if (gX_RHI_EventLog_Dropped() != 44) errors++;
+    {
+        const gX_RHI_Event *first = gX_RHI_EventLog_At(0);
+        const gX_RHI_Event *last = gX_RHI_EventLog_At(255);
+        if (!first || first->id0 != 44) errors++;
+        if (!last || last->id0 != 299) errors++;
+        if (gX_RHI_EventLog_At(256) != 0) errors++;
+    }
+    gX_RHI_EventLog_Clear();
+    if (gX_RHI_EventLog_Count() != 0) errors++;
+    if (gX_RHI_EventLog_Dropped() != 0) errors++;
+    return errors;
 }

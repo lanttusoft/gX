@@ -54,6 +54,9 @@ gX_I32 gX_Msg_Output_Push(const gX_I8 *message);
 
 gX_I32 gX_Msg_Output_Push_Type(const gX_I8 *message, gX_I32 type);
 
+//ai: RC-H1 regression tests — bounded history copy (Debug test suite).
+gX_I32 gX_Msg_Tests(gX_I0);
+
 gX_I32 gX_Msg_Show(const gX_I8 *name);
 
 #endif //GX_MSG_H

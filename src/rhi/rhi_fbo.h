@@ -44,6 +44,7 @@ typedef gX_U32 gX_RHI_FBO;  // GL framebuffer name (0 = default framebuffer)
 
 // Lifecycle
 //   name: optional label for GL_KHR_debug (pass NULL for anonymous).
+//   Returns 0 on name-allocation or incomplete-FBO failure and sets GX_ERR_GL.
 gX_RHI_FBO gX_RHI_FBO_Create(gX_U32 colorTex, gX_U32 depthTex, const gX_I8 *name);
 gX_I0      gX_RHI_FBO_Delete(gX_RHI_FBO fbo);
 
@@ -80,7 +81,8 @@ gX_RHI_FBO gX_RHI_GetDrawFBOResolved(gX_I0);
 gX_U32 gX_RHI_FBO_ColorName(gX_RHI_FBO fbo);
 
 // Texture sample count (0/1 = single-sample sampleable; >1 = multisample,
-// not sampleable with sampler2D).
+// not sampleable with sampler2D). Queries the multisample target's level
+// parameter; returns 0 for non-multisample textures and failed queries.
 gX_U32 gX_RHI_Tex_Samples(gX_U32 tex);
 
 // Blit — convenience wrapper for glBlitFramebuffer

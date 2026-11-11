@@ -220,6 +220,9 @@ this source beta.
   texture-bind, explicit full-write, feedback, and per-pass lifecycle tracing
   (`GX_GFX_BUFFER_AUDIT`)
 - `gX_RHI_FBO_*` — FBO create/bind/attach/blit (deferred deletes)
+<!-- //ai: RC-L4 — chronological event-log access after ring wrap. -->
+- `gX_RHI_EventLog_*` — bounded draw/error breadcrumbs; `Count`/`At`/`Dropped`
+  expose chronological order after wrap (`Get` remains the raw array)
 - `gX_RHI_Buf_*` — VBO/UBO create/upload
 - `gX_RHI_State_*` / `gl_state` — enable/disable/blend/depth/cull
 - `gX_RHI_Caps_*` — capability queries

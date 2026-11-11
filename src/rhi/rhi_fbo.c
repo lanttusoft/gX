@@ -36,13 +36,20 @@
 #include "rhi_tex.h"
 #include "../common/log.h"
 #include "../common/macros.h"
+#include "../common/error.h"
 
 static gX_RHI_FBO g_drawFbo = 0;
 static gX_RHI_FBO g_readFbo = 0;
 
+//ai: RC-M3 — an incomplete FBO is a GL failure, not a silent zero; record the
+//   code so a caller cannot read an unrelated stale last-error afterwards.
 gX_RHI_FBO gX_RHI_FBO_Create(gX_U32 colorTex, gX_U32 depthTex, const gX_I8 *name) {
     gX_U32 fbo = 0;
     glGenFramebuffers(1, &fbo);
+    if (fbo == 0) {
+        GX_ERROR_SET(GX_ERR_GL, "FBO name allocation failed (color=%u depth=%u)", colorTex, depthTex);
+        return 0;
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     if (colorTex) {
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
@@ -68,7 +75,9 @@ gX_RHI_FBO gX_RHI_FBO_Create(gX_U32 colorTex, gX_U32 depthTex, const gX_I8 *name
     if (depthTex) glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-        gX_TraceLog(gX_LOG_ERROR, "RHI_FBO: FBO incomplete (status=0x%x, color=%u depth=%u) name='%s'", status, colorTex, depthTex, name ? name : "?");
+        GX_ERROR_SET(GX_ERR_GL,
+            "FBO incomplete (status=0x%x, color=%u depth=%u) name='%s'",
+            status, colorTex, depthTex, name ? name : "?");
         glDeleteFramebuffers(1, &fbo);
         g_drawFbo = 0;
         g_readFbo = 0;
@@ -110,15 +119,17 @@ gX_U32 gX_RHI_FBO_ColorName(gX_RHI_FBO fbo) {
 //   TEXTURE_SAMPLES is only queryable on multisample textures — asking a
 //   single-sampled texture is INVALID_ENUM on strict drivers (NVIDIA
 //   tolerates it), so answer 0 from the target registry without touching GL.
+//ai: RC-M2 — GL_TEXTURE_SAMPLES is a level parameter on the multisample
+//   target; querying GL_TEXTURE_2D both misses the binding and raises errors.
 gX_U32 gX_RHI_Tex_Samples(gX_U32 tex) {
     if (gX_RHI_Tex_GetTarget(tex) != (gX_U32)gX_RHI_TEXTURE_2D_MULTISAMPLE) return 0;
     GLint bound = 0;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &bound);
-    glBindTexture(GL_TEXTURE_2D, (GLuint)tex);
+    glGetIntegerv(GL_TEXTURE_BINDING_2D_MULTISAMPLE, &bound);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, (GLuint)tex);
     GLint samples = 0;
-    glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SAMPLES, &samples);
-    glBindTexture(GL_TEXTURE_2D, (GLuint)bound);
-    return (gX_U32)samples;
+    glGetTexLevelParameteriv(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_TEXTURE_SAMPLES, &samples);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, (GLuint)bound);
+    return samples > 0 ? (gX_U32)samples : 0;
 }
 
 gX_I0 gX_RHI_FBO_Delete(gX_RHI_FBO fbo) {

@@ -63,6 +63,12 @@ gX_I0 gX_RHI_EventLog_Clear(gX_I0);
 // Returns pointer to ring buffer and sets *outCount to number of events
 const gX_RHI_Event *gX_RHI_EventLog_Get(gX_U32 *outCount);
 
+//ai: RC-L4 — ordered diagnostics; At(0) is the oldest retained event.
+gX_U32 gX_RHI_EventLog_Count(gX_I0);
+const gX_RHI_Event *gX_RHI_EventLog_At(gX_U32 logicalIndex);
+gX_U32 gX_RHI_EventLog_Dropped(gX_I0);
+gX_I32 gX_RHI_EventLog_Tests(gX_I0);
+
 #ifdef __cplusplus
 }
 #endif

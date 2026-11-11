@@ -51,6 +51,14 @@ APIs may return `gX_Error` directly where callers branch on the reason. Gates
 assert `name=` (stable) rather than prose — `error_check` pins
 `name=not-found` and `name=parse` today.
 
+<!-- //ai: RC-M1/RC-M3 — document the repaired RHI allocation boundaries. -->
+RHI allocation boundaries follow the same rule:
+`gX_RHI_Tex_Storage2D/3D` return `-1` with `GX_ERR_INVALID`,
+`GX_ERR_UNSUPPORTED` or `GX_ERR_GL` on invalid input or GL failure, and
+`gX_RHI_FBO_Create` returns `0` with `GX_ERR_GL` on name-allocation or
+incomplete-framebuffer failure. `gX_RHI_Tex_Samples` remains a data query
+(0 for single-sample or failed lookup).
+
 ## Tools
 
 - `make error-handling-check` — static scan: silent stubs (strict, must be
