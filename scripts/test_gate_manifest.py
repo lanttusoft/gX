@@ -6,10 +6,16 @@
 #opencode: gate manifest contract tests — completeness, tiers, group inputs,
 #   shared harness invalidation and unmapped build inputs.
 
+import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 import gate_manifest
+import gates
 
 
 class ManifestTests(unittest.TestCase):
@@ -123,6 +129,55 @@ class ManifestTests(unittest.TestCase):
         tuples = gate_manifest.as_tuples(self.manifest)
         self.assertEqual(len(tuples), len(self.manifest["gates"]))
         self.assertEqual(len(tuples[0]), 5)
+
+
+#ai: M1 — an alternate manifest must reach the runner, not just the planner.
+class ManifestCliTests(unittest.TestCase):
+    def manifest(self, directory):
+        path = Path(directory) / "alternate.toml"
+        path.write_text(
+            '[defaults]\ntimeout = 30\n\n'
+            '[groups.content]\ninputs = ["docs/"]\n\n'
+            '[gate.matrix]\n'
+            'script = "gates.py"\n'
+            'args = ["explain", "definitely-not-a-gate"]\n'
+            'tier = "full"\n'
+            'group = "content"\n',
+            encoding="utf-8")
+        return path
+
+    def test_run_passes_manifest_to_summary(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = self.manifest(temporary)
+            manifest = gate_manifest.load(path)
+            arguments = SimpleNamespace(
+                tier="all", files=None, changed=None, jobs=1,
+                no_cache=True, evidence=None, manifest=str(path))
+            with mock.patch.object(gates.subprocess, "call",
+                                   return_value=0) as call:
+                self.assertEqual(gates.command_run(manifest, arguments), 0)
+            command = call.call_args.args[0]
+            self.assertIn("--manifest", command)
+            self.assertEqual(command[command.index("--manifest") + 1],
+                             str(path.resolve()))
+
+    def test_run_executes_the_alternate_manifest_script(self):
+        binary = gate_manifest.ROOT / "build" / "gX_build"
+        if not binary.is_file():
+            self.skipTest("engine binary is required for the CLI fixture")
+        with tempfile.TemporaryDirectory() as temporary:
+            path = self.manifest(temporary)
+            result = subprocess.run(
+                [sys.executable,
+                 str(gate_manifest.ROOT / "scripts" / "gates.py"),
+                 "--manifest", str(path), "run", "--tier", "all",
+                 "--no-cache"],
+                cwd=gate_manifest.ROOT, text=True,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                timeout=60)
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("unknown gate definitely-not-a-gate", result.stdout)
+        self.assertIn("AUDIT_SUMMARY: FAIL", result.stdout)
 
 
 if __name__ == "__main__":

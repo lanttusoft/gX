@@ -86,7 +86,11 @@ def command_run(manifest, arguments):
     if not names:
         print("GATES: no affected gates")
         return 0
-    command = [sys.executable, str(SUMMARY), "--only", ",".join(names)]
+    command = [sys.executable, str(SUMMARY)]
+    #ai: M1 — execute against the same manifest that selected the names.
+    if arguments.manifest:
+        command += ["--manifest", str(Path(arguments.manifest).resolve())]
+    command += ["--only", ",".join(names)]
     if arguments.jobs > 1:
         command += ["--jobs", str(arguments.jobs)]
     if arguments.no_cache:

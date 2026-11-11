@@ -36,6 +36,8 @@ reuse or a re-run inspectable.
   `cache` self-test is a `tooling`-tier gate, not an engine gate.
 - `scripts/gates.py` adds `list`, `plan`, `run`, `explain` and `cache`;
   `make gates-list`, `gates-plan`, `gates-run` and `gates-check` wrap it.
+  `--manifest PATH` applies to execution as well as selection: the runner
+  receives the same manifest instead of reloading the default.
 - `--changed REF` (or `--files a,b`) maps a Git diff to affected gates through
   declared group inputs and shared harness files. `docs/` changes select no
   audit gates; an unmapped build input conservatively selects all gates.

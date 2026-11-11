@@ -123,9 +123,11 @@ GATES = []
 MANIFEST = None
 
 
-def load_gates():
+def load_gates(path=None):
     global GATES, MANIFEST
-    manifest = gate_manifest.load()
+    manifest = gate_manifest.load(path)
+    if path is not None and manifest is None:
+        raise RuntimeError(f"manifest missing: {path}")
     MANIFEST = manifest
     if manifest:
         GATES = gate_manifest.as_tuples(manifest)
@@ -151,6 +153,8 @@ def main():
         description="Run the curated GPU audit gates and report a summary.")
     parser.add_argument("--full", action="store_true",
                         help="include the editor/preset gates (slower)")
+    parser.add_argument("--manifest", metavar="PATH",
+                        help="gate manifest path (default: gates.toml)")
     parser.add_argument("--only", metavar="NAMES",
                         help="comma-separated gate names")
     parser.add_argument("--list", action="store_true",
@@ -170,7 +174,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        load_gates()
+        load_gates(args.manifest)
     except (OSError, RuntimeError, ValueError) as error:
         print(f"audit summary: manifest error: {error}", file=sys.stderr)
         return 1
