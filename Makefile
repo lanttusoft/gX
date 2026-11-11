@@ -68,6 +68,8 @@ check: all
 	python3 -m unittest discover -s scripts -p test_gui_capture_exit.py
 	#ai: M6 — pause-panel opacity is pinned against the theme and render.
 	python3 -m unittest discover -s scripts -p test_gui_pause_blur.py
+	#ai: 175% text-fit gate reports template clipping but ignores the debug HUD.
+	python3 -m unittest discover -s scripts -p test_gui_layout_check.py
 	#ai: M5 — the plain-launch hint gate checks drawn pixels.
 	python3 -m unittest discover -s scripts -p test_title_flow_check.py
 	python3 -m unittest discover -s scripts -p test_console_osd_check.py
@@ -283,6 +285,8 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_gui_capture_exit.py
 	#ai: M6 — pause-panel opacity is pinned against the theme and render.
 	python3 -m unittest discover -s scripts -p test_gui_pause_blur.py
+	#ai: 175% text-fit gate reports template clipping but ignores the debug HUD.
+	python3 -m unittest discover -s scripts -p test_gui_layout_check.py
 	#ai: M5 — the plain-launch hint gate checks drawn pixels.
 	python3 -m unittest discover -s scripts -p test_title_flow_check.py
 	python3 -m unittest discover -s scripts -p test_console_osd_check.py
@@ -349,6 +353,9 @@ check-fast: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/editor_host_check.py
 	@echo "== [gX fast] GUI editor usability =="
 	python3 scripts/gui_editor_check.py
+	@echo "== [gX fast] GUI layout at 175% =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/gui_layout_check.py --quick \
+		--scale 1.75 --output /tmp/opencode/gui_layout_175
 	@echo "== [gX fast] GFX editor guide =="
 	python3 scripts/gfx_editor_guide_check.py
 	@echo "== [gX fast] GFX editor layout =="
@@ -600,6 +607,13 @@ editor-host-check: all
 gui-layout-check: all
 	@echo "== [gX CI] GUI layout pass (text fits its box) =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gui_layout_check.py
+
+#ai: permanent 175% text-fit gate for the common templates; the full pass
+#   above stays at 100% while this pins the high-scale reflow.
+gui-layout-175-check: all
+	@echo "== [gX CI] GUI layout pass at 175% =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/gui_layout_check.py --quick \
+		--scale 1.75 --output /tmp/opencode/gui_layout_175
 
 #opencode: text-shadow gate — themed tokens reach bitmap + SDF drawing,
 #   zeroed tokens disable cleanly, and text still fits with shadows forced.

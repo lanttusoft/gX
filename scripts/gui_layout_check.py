@@ -38,6 +38,9 @@ INTENTIONAL = {
     ("GUITESTER", "SDF 96px"):
         "3x font-scale demo: the label intentionally exceeds its demo panel",
 }
+#ai: canvas 6 is the debug HUD overlay, not a template; its 1px debug rows are
+#   not front-end text-fit findings.
+IGNORED_CANVASES = {6}
 
 
 def template_names():
@@ -56,12 +59,13 @@ def parse_names(value, known, parser, option):
     return names
 
 
-def run_template(name, timeout):
+def run_template(name, timeout, scale=1.0):
     environment = audit.scene_env({
         "GX_SKIP_TESTS": "1",
         "GX_FIXED_DT": "0.0166666667",
         "GX_GUI_TRACE": "1",
         "GX_GUI_TEMPLATE_FORCE": name,
+        "GX_UI_SCALE": f"{scale:.2f}",
     }, clean=True)
     result = audit.run_scene("--title", environment, width=None, height=None,
                              fps=None, frames=60, timeout=timeout, check=False)
@@ -77,6 +81,8 @@ def findings(log, template):
     shrunk = 0
     seen = set()
     for match in ELEMENT_RE.finditer(log):
+        if int(match.group(1)) in IGNORED_CANVASES:
+            continue
         if not match.group(4):
             continue
         truncated = match.group(16) == "1"
@@ -120,9 +126,14 @@ def main():
                         help="comma-separated template names to omit")
     parser.add_argument("--timeout", type=int, default=90,
                         help="seconds allowed for each run")
+    parser.add_argument("--scale", type=float, default=1.0,
+                        help="tool UI scale (default 1.0; use 1.75 for the "
+                             "high-scale text-fit gate)")
     args = parser.parse_args()
     if args.timeout < 1:
         parser.error("--timeout must be positive")
+    if not 0.75 <= args.scale <= 2.0:
+        parser.error("--scale must be between 0.75 and 2.0")
     if not audit.BIN.is_file():
         print(f"GUI-LAYOUT: FAIL — missing binary: {audit.BIN}", file=sys.stderr)
         return 1
@@ -152,7 +163,7 @@ def main():
         for name in templates:
             if name not in selected:
                 continue
-            log = run_template(name, args.timeout)
+            log = run_template(name, args.timeout, args.scale)
             problems, allowed, shrunk = findings(log, name)
             total_problems += len(problems)
             total_allowed += len(allowed)
@@ -178,6 +189,7 @@ def main():
     report = os.path.join(out_dir, "gui_layout.md")
     with open(report, "w", encoding="utf-8") as handle:
         handle.write("# gX GUI Layout Pass\n\n")
+        handle.write(f"Tool UI scale: {args.scale:.2f}x\n\n")
         handle.write("Text-fit verdict per template (engine draw-truth bounds).\n\n")
         handle.write("| Template | Result | Problems | Intentional | Shrink-guarded |\n")
         handle.write("|---|---|---:|---:|---:|\n")
@@ -194,8 +206,9 @@ def main():
                              f"{record['measure'][1]:.0f})\n")
         handle.write(f"\n{len(rows) - failures}/{len(rows)} rows passed.\n")
     print(f"\nGUI-LAYOUT: {'PASS' if not failures else 'FAIL'} "
-          f"({len(rows) - failures}/{len(rows)} rows; {total_problems} problems, "
-          f"{total_allowed} intentional; report: {report})")
+          f"at {args.scale:.2f}x ({len(rows) - failures}/{len(rows)} rows; "
+          f"{total_problems} problems, {total_allowed} intentional; "
+          f"report: {report})")
     return 1 if failures else 0
 
 

@@ -69,7 +69,9 @@ the `GFX_LAYOUT` fit row used by the narrow-layout gate.
 - The editor-host gate also pins the menu open path.
 - `gfx-editor-layout-check` pins the scene/preset/lab rows and footer fit at
   1024x768 and 1600x900 across 100/125/150/175% scale, and fails if
-  `resources/settings.json` changes.
+  `resources/settings.json` changes. `gui-layout-175-check` (and the
+  `gui-layout-175` manifest gate) pins the common EscapeMenu/GuiTester/
+  Settings text fit at 175%.
 
 ## Follow-up
 

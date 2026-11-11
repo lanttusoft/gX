@@ -144,6 +144,15 @@ group = "gui"
 cache = "content"
 description = "gui-layout-quick audit gate."
 
+#ai: permanent 175% text-fit pin for the common templates.
+[gate.gui-layout-175]
+script = "gui_layout_check.py"
+args = ["--quick", "--scale", "1.75", "--output", "/tmp/opencode/gui_layout_175"]
+tier = ["quick"]
+group = "gui"
+cache = "content"
+description = "gui-layout-175 audit gate."
+
 [gate.dither]
 script = "dither_check.py"
 args = []
