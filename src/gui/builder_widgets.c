@@ -1301,7 +1301,7 @@ gX_I0 gX_GUI_Builder_Widget_Stepper(gX_GUI_Builder *b,
             b->currentElement->stateRendering.TEXT_CENTER_Y = true;
             //opencode: widget-scale type — the 32px text default truncates
             //   inside the value cell (theme-lab audit).
-            if (b->curText) { b->curText->fontSize = gui.style.smallSize; b->curText->autoShrink = true; }
+            if (b->curText) { b->curText->fontSize = gui.style.smallSize; b->curText->autoShrink = true; b->curText->color = gui.style.textColor; }
         gX_GUI_Builder_Text_End(b);
     gX_GUI_Builder_Element_End(b);
 
