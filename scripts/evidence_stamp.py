@@ -67,11 +67,25 @@ def git_state(root=ROOT):
         return {"revision": "unknown", "worktree": "unknown"}
     status = _git(root, "status", "--porcelain")
     diff = _git(root, "diff", "HEAD", "--binary")
-    if status is None or diff is None:
+    untracked = _git(root, "ls-files", "--others", "--exclude-standard", "-z")
+    if status is None or diff is None or untracked is None:
         return {"revision": revision.stdout.decode("utf-8", "replace").strip(),
             "worktree": "unknown"}
     dirty = status.stdout + b"\0" + diff.stdout
-    has_changes = bool(status.stdout.strip()) or bool(diff.stdout)
+    #ai: M7 — git status names an untracked file but not its bytes; hash the
+    #   content so an edited untracked build input cannot reuse a stamp.
+    for raw in untracked.stdout.split(b"\0"):
+        if not raw:
+            continue
+        path = Path(root) / raw.decode("utf-8", "replace")
+        dirty += b"untracked:" + raw + b"\0"
+        try:
+            dirty += sha256_file(path).encode()
+        except OSError:
+            dirty += b"<missing>"
+        dirty += b"\0"
+    has_changes = (bool(status.stdout.strip()) or bool(diff.stdout)
+                   or bool(untracked.stdout.strip()))
     worktree = hashlib.sha256(dirty).hexdigest() if has_changes else None
     return {"revision": revision.stdout.decode("utf-8", "replace").strip(),
         "worktree": worktree}

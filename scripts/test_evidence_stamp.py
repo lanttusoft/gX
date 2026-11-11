@@ -6,6 +6,7 @@
 #ai: GX-I018 evidence stamp matching/rejection controls; timestamps are checked
 #   for ordering but revision/input hashes decide freshness.
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -62,6 +63,36 @@ class EvidenceStampChecks(unittest.TestCase):
         with self.assertRaises(ValueError):
             evidence_stamp.make_stamp("lean", "PASS", utc="2026-01-01 00:00:00",
                 git=self.git, inputs=self.inputs)
+
+    def git_fixture(self, directory):
+        root = Path(directory)
+
+        def git(*arguments):
+            subprocess.run(["git", "-C", str(root), *arguments],
+                           check=True, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+
+        git("init", "-q")
+        git("config", "user.email", "evidence@example.invalid")
+        git("config", "user.name", "Evidence Fixture")
+        (root / "tracked.txt").write_text("tracked\n", encoding="utf-8")
+        git("add", "tracked.txt")
+        git("commit", "-q", "-m", "fixture")
+        return root
+
+    def test_untracked_content_changes_worktree_hash(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.git_fixture(directory)
+            untracked = root / "guest.h"
+            untracked.write_text("#define VALUE 1\n", encoding="utf-8")
+            first = evidence_stamp.git_state(root)
+            self.assertIsNotNone(first["worktree"])
+            untracked.write_text("#define VALUE 2\n", encoding="utf-8")
+            second = evidence_stamp.git_state(root)
+            self.assertNotEqual(first["worktree"], second["worktree"])
+            untracked.write_text("#define VALUE 2\n", encoding="utf-8")
+            third = evidence_stamp.git_state(root)
+            self.assertEqual(second["worktree"], third["worktree"])
 
 
 if __name__ == "__main__":

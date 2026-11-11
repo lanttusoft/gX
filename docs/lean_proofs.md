@@ -160,7 +160,8 @@ transitive axioms and the C/Lean correspondence remains unproved.
 or a C contract-gate run. A stamp records:
 
 - an observational UTC timestamp and the result;
-- the current Git revision plus a dirty-worktree fingerprint;
+- the current Git revision plus a dirty-worktree fingerprint (status, tracked
+  diff bytes and the contents of untracked files);
 - SHA-256 hashes of `proofs.lock.json`, `gates.toml`, `.lean_baseline`,
   `.lean_budget.json` and the audit/gate harness scripts;
 - audit details (families/modules/theorem count, or tier/gate names).
