@@ -40,7 +40,10 @@ reuse or a re-run inspectable.
   receives the same manifest instead of reloading the default.
 - `--changed REF` (or `--files a,b`) maps a Git diff to affected gates through
   declared group inputs and shared harness files. `docs/` changes select no
-  audit gates; an unmapped build input conservatively selects all gates.
+  audit gates; an unmapped build input conservatively selects all gates. A
+  direct `audit_summary.py --only` with no names is rejected (exit 2) rather
+  than reporting a green 0/0 run; the planner's no-affected-gates outcome is a
+  separate, intentional no-op.
 - Per-gate cache policy is honored: `cache = "never"` bypasses the cache for
   `profile` and `cache`; the rest use content-addressed passes. A failure in
   a parallel batch is retried sequentially **once** after the batch; the first

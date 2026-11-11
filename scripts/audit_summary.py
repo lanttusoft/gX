@@ -188,6 +188,9 @@ def main():
     selected = set(names)
     if args.only:
         requested = {item.strip() for item in args.only.split(",") if item.strip()}
+        #ai: L1 — an explicit empty selection is not a green zero-work run.
+        if not requested:
+            parser.error("--only needs at least one gate name")
         unknown = sorted(requested - names)
         if unknown:
             parser.error("unknown gate(s): " + ", ".join(unknown))

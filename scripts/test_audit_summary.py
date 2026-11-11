@@ -31,6 +31,23 @@ raise SystemExit(0 if ok else 1)
 '''
 
 
+#ai: L1 — an explicitly empty --only selection must not be a green 0/0 run.
+class EmptySelectionTests(unittest.TestCase):
+    def test_empty_only_is_rejected(self):
+        for selection in (",", " , "):
+            with self.subTest(selection=selection):
+                result = subprocess.run(
+                    [sys.executable,
+                     str(gate_manifest.ROOT / "scripts" / "audit_summary.py"),
+                     "--only", selection, "--no-cache"],
+                    cwd=gate_manifest.ROOT, text=True,
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    timeout=30)
+                self.assertEqual(result.returncode, 2, result.stdout)
+                self.assertIn("at least one gate name", result.stdout)
+                self.assertNotIn("AUDIT_SUMMARY: PASS", result.stdout)
+
+
 class RetryPolicyTests(unittest.TestCase):
     def run_summary(self, fail_before):
         binary = gate_manifest.ROOT / "build" / "gX_build"
