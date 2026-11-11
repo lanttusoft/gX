@@ -31,6 +31,7 @@
 //   --wavetable-editor, GX_TOOLS_OPEN=wavetable, or the title EXTRAS menu;
 //   exclusive with the other runtime editors.
 #include "../imgui/imgui.h"
+#include "../tools_ui_scale.h"
 
 #include "../../audio/synth.h"
 #include "../../common/log.h"
@@ -131,7 +132,7 @@ extern "C" gX_I0 gX_Tools_Wavetable_Draw(gX_I0) {
         return;
     }
 
-    ImGui::SetNextWindowSize(ImVec2(560, 620), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(gX_Tools_UI_ScaleWidth(560.0f), 620), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(60, 60), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("gX Tools - Wavetable Editor", &open)) {
         gX_Synth_Wavetable *wt = WtEditor_Slot();
@@ -256,7 +257,7 @@ extern "C" gX_I0 gX_Tools_Wavetable_Draw(gX_I0) {
 
         // ---- fixture round trip ----
         ImGui::SeparatorText("file (raw little-endian float32)");
-        ImGui::SetNextItemWidth(-150.0f);
+        ImGui::SetNextItemWidth(-(150.0f * gX_Tools_UI_Scale()));
         ImGui::InputText("##wtpath", (char *)s_wtPath, sizeof(s_wtPath));
         ImGui::SameLine();
         if (ImGui::Button("Save .f32")) {

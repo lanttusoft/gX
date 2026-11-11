@@ -42,6 +42,7 @@ extern "C" {
 }
 
 #include "../imgui/imgui.h"
+#include "../tools_ui_scale.h"
 #include "../tools.h"
 
 #include <string.h>
@@ -476,7 +477,7 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
             if (sizeFrames < 5) {
                 if (sizeFrames == 0)
                     ImGui::SetNextWindowPos(ImVec2(40, 40), ImGuiCond_Always);
-                ImGui::SetNextWindowSize(ImVec2(520, tsh > 100 ? tsh - 60 : 1000), ImGuiCond_Always);
+                ImGui::SetNextWindowSize(ImVec2(gX_Tools_UI_ScaleWidth(520.0f), tsh > 100 ? tsh - 60 : 1000), ImGuiCond_Always);
                 sizeFrames++;
             }
         }
@@ -484,7 +485,10 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
     }
     ImGui::PushItemWidth(-FLT_MIN);
     bool thOpen = (*gX_Tools_RuntimeThemeFlag()) != 0;
-    if (!ImGui::Begin("gX Tools - Theme Editor", &thOpen)) {
+    const char *themeTitle = gui.viewportDocked
+        ? "gX Tools - Theme###theme_editor"
+        : "gX Tools - Theme Editor###theme_editor";
+    if (!ImGui::Begin(themeTitle, &thOpen)) {
         ImGui::End();
         ImGui::PopItemWidth();
         if (!thOpen) *gX_Tools_RuntimeThemeFlag() = 0;
@@ -495,11 +499,10 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
         s_panelTraced = 1;
         gX_TraceLog(gX_LOG_INFO, "THEME_EDITOR: panel=1");
     }
-    ImGui::Text("Theme: %s", s_themePath[0] ? s_themePath : "(none)");
+    ImGui::TextWrapped("Theme: %s", s_themePath[0] ? s_themePath : "(none)");
     ImGui::Text("Tokens: %i%s", gX_GUI_Style_TokenCount(),
         s_edited ? " (edited)" : "");
     ImGui::InputTextWithHint("##search", "filter tokens... (R = reset)", s_search, sizeof(s_search));
-    ImGui::SameLine();
     if (ImGui::SmallButton("Reset all") && s_baselineCount > 0) {
         for (gX_I32 i = 0; i < s_baselineCount; i++) theme_reset_token(i);
         gX_GUI_Style_MarkRefresh();
@@ -523,17 +526,17 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
             s_gestureOn = 0;
         }
     }
-    ImGui::TextDisabled("Edits apply live. R resets a token. Ctrl+Z undoes.");
-    theme_panel_group("title2", "title2 (title screen)");
-    theme_panel_group("blueprint", "blueprint (line-art preview)");
-    theme_panel_group("core", "core (global)");
-    theme_panel_group("shared", "shared (accents)");
-    theme_panel_group("escape", "escape (pause menu)");
-    theme_panel_group("battle", "battle (HUD)");
-    theme_panel_group("a11y", "a11y (surfaces + motion)");
+    ImGui::TextWrapped("Edits apply live. R resets a token. Ctrl+Z undoes.");
+    theme_panel_group("title2", "title2");
+    theme_panel_group("blueprint", "blueprint");
+    theme_panel_group("core", "core");
+    theme_panel_group("shared", "shared");
+    theme_panel_group("escape", "escape");
+    theme_panel_group("battle", "battle");
+    theme_panel_group("a11y", "a11y");
 
     ImGui::Separator();
-    ImGui::TextDisabled("Compare presets (undoable via Ctrl+Z):");
+    ImGui::TextWrapped("Compare presets (undoable via Ctrl+Z):");
     if (ImGui::SmallButton("Default")) {
         theme_undo_push();
         strncpy(s_themePath, "resources/style/theme.json", sizeof(s_themePath) - 1);
@@ -554,7 +557,7 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
         theme_capture_baseline();
     }
     ImGui::Separator();
-    ImGui::InputText("save path", s_themePath, sizeof(s_themePath));
+    ImGui::InputTextWithHint("##savepath", "save path", s_themePath, sizeof(s_themePath));
     bool dirty = s_edited;
     if (ImGui::Button("Save theme")) theme_save(s_themePath);
     ImGui::SameLine();

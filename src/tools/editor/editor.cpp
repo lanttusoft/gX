@@ -1185,7 +1185,7 @@ static gX_I0 tools_panel_properties(gX_GUI_Canvas *canvas) {
         ImGui::Text("elements: %u", canvas->elements.amount);
         return;
     }
-    ImGui::InputText("name", el->name, gX_GUI_ELEMENT_NAMEBFR_SIZE);
+    ImGui::InputTextWithHint("##name", "name", el->name, gX_GUI_ELEMENT_NAMEBFR_SIZE);
     ImGui::DragFloat("x", &el->rect.x, 1.0f, -2048.0f, 2048.0f, "%.0f");
         ImGui::SetItemTooltip("Left edge, canvas pixels. Arrows nudge; drag on canvas to move.");
     ImGui::DragFloat("y", &el->rect.y, 1.0f, -2048.0f, 2048.0f, "%.0f");
@@ -1197,16 +1197,16 @@ static gX_I0 tools_panel_properties(gX_GUI_Canvas *canvas) {
     tools_color_edit4("color", &el->color,
         ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_NoInputs);
         ImGui::SetItemTooltip("Fill color + opacity. Transparent (A=0) hides the box but keeps children.");
-    ImGui::DragFloat("scale", &el->params.scale.x, 0.01f, 0.1f, 10.0f, "%.2f");
+    ImGui::DragFloat("Scl", &el->params.scale.x, 0.01f, 0.1f, 10.0f, "%.2f");
         ImGui::SetItemTooltip("Size multiplier around center (1 = off). Used by hover pulse.");
     el->params.scale.y = el->params.scale.x;
-    ImGui::DragFloat("angle", &el->params.angle, 0.5f, -360.0f, 360.0f, "%.1f");
+    ImGui::DragFloat("Ang", &el->params.angle, 0.5f, -360.0f, 360.0f, "%.1f");
         ImGui::SetItemTooltip("Rotation, degrees.");
     ImGui::Checkbox("visible", (bool *)&el->visible);
         ImGui::SetItemTooltip("Uncheck to hide (stays in list, skipped by hit-test).");
 
     gX_I32 layer = (gX_I32)el->layer;
-    if (ImGui::DragInt("layer", &layer, 1, 0, 255)) el->layer = (gX_U8)layer;
+    if (ImGui::DragInt("Lyr", &layer, 1, 0, 255)) el->layer = (gX_U8)layer;
 
     //opencode: v0.6.8 — flag groups collapsed by default (declutter).
     if (ImGui::CollapsingHeader("state")) {
@@ -1225,7 +1225,7 @@ static gX_I0 tools_panel_properties(gX_GUI_Canvas *canvas) {
         ImGui::SetItemTooltip("Greyed out at 40%% alpha; ignores input.");
     }
 
-    if (ImGui::CollapsingHeader("rendering")) {
+    if (ImGui::CollapsingHeader("Render")) {
         gX_GUI_Element_Rendering_Bitmask rb;
         rb.rendering = el->stateRendering;
         bool v;
@@ -1796,6 +1796,9 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
         ImGui::EndMainMenuBar();
     }
     gX_F32 menuH = ImGui::GetFrameHeight();
+    //ai: GUI-M4 — the status strip must grow with the scaled font; a fixed
+    //   28px row clipped the 175% text.
+    gX_F32 statusH = ImGui::GetFrameHeight() + 8.0f;
 
     //opencode: LEFT — element tree + add/remove/duplicate + save path
     //ai: docked titles shorten when the live font/width cannot fit them, so
@@ -1804,7 +1807,7 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
     if (docked && ImGui::CalcTextSize("Editor - Elements").x + 48.0f > leftW)
         leftTitle = "Elements###editor_elements";
     ImGui::SetNextWindowPos(ImVec2(0, menuH), dockCond);
-    ImGui::SetNextWindowSize(ImVec2(leftW, scrH - menuH - 28), dockCond);
+    ImGui::SetNextWindowSize(ImVec2(leftW, scrH - menuH - statusH), dockCond);
     ImGui::PushItemWidth(-FLT_MIN);
     bool edOpen = (*gX_Tools_RuntimeEditorFlag()) != 0;
     if (ImGui::Begin(leftTitle, &edOpen)) {
@@ -1861,7 +1864,13 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
         } // !docked (tabs row)
         //opencode: the canvas combo above already shows the target — the
         //   duplicate line only restated it (editor audit).
-        ImGui::Text("Markup: %s", s_markupPath[0] ? s_markupPath : "(none)");
+        const gX_I8 *markupName = s_markupPath[0] ? s_markupPath : "(none)";
+        if (s_markupPath[0]) {
+            const gX_I8 *slash = (const gX_I8 *)strrchr((const char *)s_markupPath, '/');
+            if (slash) markupName = slash + 1;
+        }
+        ImGui::Text("Markup: %s", markupName);
+        if (s_markupPath[0]) ImGui::SetItemTooltip("%s", s_markupPath);
         if (canvas) {
             ImGui::Text("Elements: %u", canvas->elements.amount);
             tools_panel_toolbar(canvas);
@@ -1889,7 +1898,7 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
         s_loggedRightTitle = rightTitle;
     }
     ImGui::SetNextWindowPos(ImVec2(scrW - rightW, menuH), dockCond);
-    ImGui::SetNextWindowSize(ImVec2(rightW, scrH - menuH - 28), dockCond);
+    ImGui::SetNextWindowSize(ImVec2(rightW, scrH - menuH - statusH), dockCond);
     ImGui::PushItemWidth(-FLT_MIN);
     if (ImGui::Begin(rightTitle, &edOpen)) {
         if (canvas) tools_panel_properties(canvas);
@@ -1904,8 +1913,8 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
         tools_solo_restore(gX_GUI_Canvas_FromIndex(s_targetCanvas));
     }
     //opencode: BOTTOM — status bar (pinned thin chrome)
-    ImGui::SetNextWindowPos(ImVec2(0, scrH - 28), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(scrW, 28), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(0, scrH - statusH), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(scrW, statusH), ImGuiCond_Always);
     if (ImGui::Begin("##editor_status", 0,
         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings)) {
@@ -1919,16 +1928,26 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
         }
         //opencode: state left, hint right-dim — the single mixed pipe-string
         //   read as one cryptic blob (editor audit).
-        ImGui::Text("canvas %i | %u el | sel #%i %s @ (%.0f,%.0f) %.0fx%.0f | snap %s grid %s",
-            s_targetCanvas, canvas ? canvas->elements.amount : 0, selectionIndex, selName, sx, sy, sw, sh,
-            s_snapOn ? "on" : "off", s_gridOn ? "on" : "off");
-        ImGui::SameLine();
-        {
+        //ai: GUI-M4 — at 175% the full status line cannot fit a docked 1024
+        //   window; use the compact form and only draw the hint when it fits.
+        if (ImGui::GetFontSize() > 18.0f) {
+            ImGui::Text("c%i | %u el | sel #%i %.20s | snap %s",
+                s_targetCanvas, canvas ? canvas->elements.amount : 0,
+                selectionIndex, selName, s_snapOn ? "on" : "off");
+        } else {
+            ImGui::Text("canvas %i | %u el | sel #%i %s @ (%.0f,%.0f) %.0fx%.0f | snap %s grid %s",
+                s_targetCanvas, canvas ? canvas->elements.amount : 0, selectionIndex, selName, sx, sy, sw, sh,
+                s_snapOn ? "on" : "off", s_gridOn ? "on" : "off");
+        }
+        if (ImGui::GetFontSize() <= 18.0f) {
             const gX_I8 *hint = "click select - drag move - handles resize - Ctrl+Z undo";
             gX_F32 hw = ImGui::CalcTextSize(hint).x + ImGui::GetStyle().ItemSpacing.x;
             gX_F32 avail = ImGui::GetContentRegionAvail().x;
-            if (hw < avail) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + avail - hw);
-            ImGui::TextDisabled("%s", hint);
+            if (hw < avail) {
+                ImGui::SameLine();
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + avail - hw);
+                ImGui::TextDisabled("%s", hint);
+            }
         }
     }
     ImGui::End();

@@ -46,6 +46,7 @@
 #endif
 
 #include "../imgui/imgui.h"
+#include "../tools_ui_scale.h"
 
 #include "../../scene/scene.h"
 #include "../../scene/physics.h"
@@ -424,7 +425,7 @@ extern "C" gX_I0 gX_Tools_Physics_Draw(gX_I0) {
         return;
     }
 
-    ImGui::SetNextWindowSize(ImVec2(700, 720), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(gX_Tools_UI_ScaleWidth(700.0f), 720), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(60, 40), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("gX Tools - Physics Editor", &open)) {
         gX_ScenePhysics *sc = &scene.physicsScene;
@@ -556,7 +557,7 @@ extern "C" gX_I0 gX_Tools_Physics_Draw(gX_I0) {
             if (changed) PeEditor_Apply(t);
 
             ImGui::SeparatorText("presets (" GX_PE_DIR ")");
-            ImGui::SetNextItemWidth(-215.0f);
+            ImGui::SetNextItemWidth(-(215.0f * gX_Tools_UI_Scale()));
             ImGui::InputText("##pepath", (char *)s_pePath, sizeof(s_pePath));
             ImGui::SameLine();
             if (ImGui::Button("Save")) {

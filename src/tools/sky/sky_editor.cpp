@@ -38,6 +38,7 @@
 #include "raymath.h"
 
 #include "../imgui/imgui.h"
+#include "../tools_ui_scale.h"
 
 #include "../../common/log.h"
 #include "../../game/game.h"
@@ -140,7 +141,7 @@ extern "C" gX_I0 gX_Tools_Sky_Draw(gX_I0) {
         s_skyeTimeSec = gamedata.ephemeris.timeSec;
     }
 
-    ImGui::SetNextWindowSize(ImVec2(560, 660), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(gX_Tools_UI_ScaleWidth(560.0f), 660), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(60, 60), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("gX Tools - Sky Editor", &open)) {
         gX_RendererSky *sky = Skye_Active();
@@ -153,7 +154,7 @@ extern "C" gX_I0 gX_Tools_Sky_Draw(gX_I0) {
                 Skye_ApplyTime(s_skyeTimeSec + gX_FrameTime_Get() * (gX_F64)s_skyeSpeed);
             }
             gX_F32 tSec = (gX_F32)s_skyeTimeSec;
-            ImGui::SetNextItemWidth(-170.0f);
+            ImGui::SetNextItemWidth(-(170.0f * gX_Tools_UI_Scale()));
             if (ImGui::SliderFloat("sec", &tSec, 0.0f, (gX_F32)GX_SKYE_YEAR_SEC * 2.0f, "%.0f")) {
                 Skye_ApplyTime((gX_F64)tSec);
             }
@@ -193,7 +194,7 @@ extern "C" gX_I0 gX_Tools_Sky_Draw(gX_I0) {
 
             // ---- preset files ----
             ImGui::SeparatorText("presets (" GX_SKYE_DIR ")");
-            ImGui::SetNextItemWidth(-215.0f);
+            ImGui::SetNextItemWidth(-(215.0f * gX_Tools_UI_Scale()));
             ImGui::InputText("##skyepath", (char *)s_skyePath, sizeof(s_skyePath));
             ImGui::SameLine();
             if (ImGui::Button("Load .json")) Skye_Load(sky, s_skyePath);

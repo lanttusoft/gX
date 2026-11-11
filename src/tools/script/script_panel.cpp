@@ -28,6 +28,7 @@
 //   and Continue/Step/Over/Out controls. The host owns the pause (line
 //   callback); this is chrome over the gX_Scripting_Debug_* API.
 #include "../imgui/imgui.h"
+#include "../tools_ui_scale.h"
 #include "../tools.h"
 
 #include <stdio.h>
@@ -44,7 +45,7 @@ extern "C" gX_I0 gX_Tools_Script_Draw(gX_I0) {
     if (!g_scripting.loaded) return;
 
     gX_I1 panelOpen = (*gX_Tools_RuntimeScriptFlag()) != 0;
-    ImGui::SetNextWindowSize(ImVec2(560, 380), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(gX_Tools_UI_ScaleWidth(560.0f), 380), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(40, 40), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Scripting - Debug", &panelOpen)) {
         ImGui::Text("failures %d | scripts %u | %s",

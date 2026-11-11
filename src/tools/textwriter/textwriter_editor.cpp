@@ -37,6 +37,7 @@
 #include "raymath.h"
 
 #include "../imgui/imgui.h"
+#include "../tools_ui_scale.h"
 
 #include "../../renderer/renderer.h"
 #include "../../renderer/textwriter.h"
@@ -150,7 +151,7 @@ extern "C" gX_I0 gX_Tools_Textwriter_Draw(gX_I0) {
     gX_I1 open = *gX_Tools_RuntimeTextwriterFlag();
     if (!open) return;
 
-    ImGui::SetNextWindowSize(ImVec2(660, 660), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(gX_Tools_UI_ScaleWidth(660.0f), 660), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(60, 60), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("gX Tools - Textwriter Editor", &open)) {
         gX_RendererTextWriter *tw = TwEditor_Instance();
@@ -160,7 +161,7 @@ extern "C" gX_I0 gX_Tools_Textwriter_Draw(gX_I0) {
             gX_TextWriter_LineBuffer *buf = &tw->lineBuffer;
 
             // ---- file row ----
-            ImGui::SetNextItemWidth(-215.0f);
+            ImGui::SetNextItemWidth(-(215.0f * gX_Tools_UI_Scale()));
             ImGui::InputText("##twpath", (char *)s_twPath, sizeof(s_twPath));
             ImGui::SameLine();
             if (ImGui::Button("Load .txt")) TwEditor_LoadPath(tw, s_twPath);
@@ -256,7 +257,7 @@ extern "C" gX_I0 gX_Tools_Textwriter_Draw(gX_I0) {
                 ImGui::SameLine();
                 ImGui::Text("%3u", i);
                 ImGui::SameLine();
-                ImGui::SetNextItemWidth(-46.0f);
+                ImGui::SetNextItemWidth(-(46.0f * gX_Tools_UI_Scale()));
                 if (ImGui::InputText("##line", (char *)buf->lines[i], GX_TEXTWRITER_LINE_LENGTH)) {
                     if (i == buf->currentLine) TwEditor_RefreshLine(tw, i);
                 }

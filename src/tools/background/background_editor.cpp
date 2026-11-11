@@ -36,6 +36,7 @@
 #include "raymath.h"
 
 #include "../imgui/imgui.h"
+#include "../tools_ui_scale.h"
 
 #include "../../common/log.h"
 #include "../../common/polisher.h"
@@ -123,7 +124,7 @@ extern "C" gX_I0 gX_Tools_Background_Draw(gX_I0) {
         Bge_RefreshFiles();
     }
 
-    ImGui::SetNextWindowSize(ImVec2(560, 680), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(gX_Tools_UI_ScaleWidth(560.0f), 680), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(60, 60), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("gX Tools - Background Editor", &open)) {
         gX_RendererBackground *bg = gX_Tools_BG_Active();
@@ -136,7 +137,7 @@ extern "C" gX_I0 gX_Tools_Background_Draw(gX_I0) {
 
             // ---- preset files ----
             ImGui::SeparatorText("presets (" GX_BGE_DIR ")");
-            ImGui::SetNextItemWidth(-215.0f);
+            ImGui::SetNextItemWidth(-(215.0f * gX_Tools_UI_Scale()));
             ImGui::InputText("##bgepath", (char *)s_bgePath, sizeof(s_bgePath));
             ImGui::SameLine();
             if (ImGui::Button("Load .json")) Bge_Load(bg, s_bgePath);

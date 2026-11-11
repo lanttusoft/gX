@@ -36,6 +36,7 @@
 #include "raymath.h"
 
 #include "../imgui/imgui.h"
+#include "../tools_ui_scale.h"
 
 #include "../../common/log.h"
 #include "../../scripting/tour/tour_camera.h"
@@ -106,7 +107,7 @@ extern "C" gX_I0 gX_Tools_Rail_Draw(gX_I0) {
         RailEditor_Status("ready — fly the camera and Grab; Play replays the rail");
     }
 
-    ImGui::SetNextWindowSize(ImVec2(660, 580), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(gX_Tools_UI_ScaleWidth(660.0f), 580), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(60, 60), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("gX Tools - Camera Rail Editor", &open)) {
         gX_I32 count = gX_TourCamera_RailCount();
@@ -145,7 +146,7 @@ extern "C" gX_I0 gX_Tools_Rail_Draw(gX_I0) {
         }
 
         // ---- persistence ----
-        ImGui::SetNextItemWidth(-215.0f);
+        ImGui::SetNextItemWidth(-(215.0f * gX_Tools_UI_Scale()));
         ImGui::InputText("##railpath", (char *)s_railPath, sizeof(s_railPath));
         ImGui::SameLine();
         if (ImGui::Button("Load .json")) RailEditor_Load(s_railPath);
