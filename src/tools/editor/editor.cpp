@@ -1641,7 +1641,7 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
     //opencode: undo/redo hotkeys + gesture snapshot capture (unchanged)
     {
         ImGuiIO &io = ImGui::GetIO();
-        if (!io.WantTextInput && !io.WantCaptureKeyboard) {
+        if (!io.WantTextInput) {
             if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z)) {
                 if (io.KeyShift) tools_redo_pop(canvas);
                 else tools_undo_pop(canvas);
@@ -1653,9 +1653,10 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
         } else {
             s_gestureCaptured = 0;
         }
-        //opencode: v0.6.6 — shortcuts (skipped while typing in a text field
-        //   so Delete/arrows/Ctrl+Z keep editing text).
-        if (canvas && !io.WantTextInput && !io.WantCaptureKeyboard) {
+        //opencode: v0.6.6 — shortcuts (skipped only while actually typing in a
+        //   text field; ImGui keyboard navigation otherwise swallows every
+        //   editor shortcut even when no text entry is active).
+        if (canvas && !io.WantTextInput) {
             gX_I32 selectionIndex = tools_selection_index(canvas);
             gX_I1 hasSel = selectionIndex >= 0;
             if (ImGui::IsKeyPressed(ImGuiKey_Escape)) { tools_selection_clear(); s_dragMode = 0; }
@@ -1668,7 +1669,7 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
             if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S)) {
                 tools_save_request();
             }
-            if (hasSel) {
+            if (hasSel && !ImGui::IsAnyItemActive()) {
                 gX_F32 step = io.KeyShift ? 8.0f : 1.0f;
                 gX_I1 moved = 0;
                 gX_GUI_Element *el = tools_selection_resolve(canvas);
@@ -1683,8 +1684,9 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
                             el->rect.y = tools_grid(el->rect.y);
                         }
                         tools_undo_push(canvas);
-                        canvas->refresh = true;
-                        gui.refresh = true;
+                        //ai: GUI-M1 — moving a live element does not require a
+                        //   template rebuild; requesting one cleared the
+                        //   canvas before the next Save.
                     }
                 }
             }

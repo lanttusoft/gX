@@ -108,9 +108,9 @@ def hook_counts(log, tag):
     }
 
 
-#ai: GUI-H1 — undo/save must survive the GUI refresh pass. This is the audit's
-#   Duplicate -> Edit > Undo -> Save route on a disposable shipped markup.
-def run_undo_save(target, shots):
+#ai: GUI-H1/M1 — toolbar/menu actions on a disposable shipped markup. Used for
+#   undo/save survival and for shortcuts while an ImGui pane has keyboard focus.
+def run_tools_actions(target, shots, actions):
     environment = dict(os.environ)
     environment.update({
         "DISPLAY": audit.display(),
@@ -130,11 +130,7 @@ def run_undo_save(target, shots):
         "GX_DOCK_DISABLE": "1",
         "GX_TOOLS_SELECT": "1",
         "GX_SCREENSHOT_DIR": str(shots),
-        "GX_AI_INPUT": (
-            "1.0 move 73 143 200;1.5 click 73 143;"
-            "2.5 move 172 10 200;2.9 click 172 10;"
-            "3.4 move 190 32 200;3.8 click 190 32;"
-            "4.5 move 150 143 200;4.9 click 150 143"),
+        "GX_AI_INPUT": actions,
     })
     result = subprocess.run(
         [str(BIN), "--tools", str(target), "--screenWidth", "1024",
@@ -143,7 +139,7 @@ def run_undo_save(target, shots):
         stderr=subprocess.STDOUT, timeout=180)
     log = audit.strip_ansi(result.stdout or "")
     require(result.returncode == 0,
-        f"undo/save probe exited {result.returncode}: {log[-500:]}")
+        f"action probe exited {result.returncode}: {log[-500:]}")
     return log
 
 
@@ -220,13 +216,52 @@ def main():
         undo_shots.mkdir()
         shutil.copyfile(ROOT / "resources" / "tools" / "tools_demo.json",
             undo_path)
-        run_undo_save(undo_path, undo_shots)
+        run_tools_actions(undo_path, undo_shots,
+            "1.0 move 73 143 200;1.5 click 73 143;"
+            "2.5 move 172 10 200;2.9 click 172 10;"
+            "3.4 move 190 32 200;3.8 click 190 32;"
+            "4.5 move 150 143 200;4.9 click 150 143")
         restored = json.loads(undo_path.read_text(encoding="utf-8"))
         require(len(restored.get("elements", [])) == 4,
             "undo/save wrote an empty or truncated markup canvas")
         require({element.get("name") for element in restored["elements"]}
             == {"bg", "hello", "stripe", "gradient"},
             "undo/save did not preserve the shipped element names")
+
+        #ai: GUI-M1 regression — Ctrl+Z must work while an ImGui pane has
+        #   keyboard focus; without the fix the duplicate survives Save.
+        shortcut_path = Path(temporary.name) / "shortcut-undo-save.json"
+        shortcut_shots = Path(temporary.name) / "shortcut-shots"
+        shortcut_shots.mkdir()
+        shutil.copyfile(ROOT / "resources" / "tools" / "tools_demo.json",
+            shortcut_path)
+        run_tools_actions(shortcut_path, shortcut_shots,
+            "1.0 move 73 143 200;1.5 click 73 143;"
+            "2.5 key 90 0 1;3.5 move 150 143 200;4.0 click 150 143")
+        shortcut_saved = json.loads(shortcut_path.read_text(encoding="utf-8"))
+        require(len(shortcut_saved.get("elements", [])) == 4,
+            "Ctrl+Z shortcut did not undo the duplicate before Save")
+
+        #ai: GUI-M1 regression — arrow nudge must move the selected element and
+        #   Save must keep all four roots (no refresh wipe).
+        nudge_path = Path(temporary.name) / "nudge-save.json"
+        nudge_shots = Path(temporary.name) / "nudge-shots"
+        nudge_shots.mkdir()
+        shutil.copyfile(ROOT / "resources" / "tools" / "tools_demo.json",
+            nudge_path)
+        shipped = json.loads(nudge_path.read_text(encoding="utf-8"))
+        shipped_hello = next(element for element in shipped["elements"]
+            if element.get("name") == "hello")
+        run_tools_actions(nudge_path, nudge_shots,
+            "1.0 move 500 450 200;2.0 key 262;"
+            "3.0 move 150 143 200;3.4 click 150 143")
+        nudged = json.loads(nudge_path.read_text(encoding="utf-8"))
+        require(len(nudged.get("elements", [])) == 4,
+            "arrow nudge/save wrote an empty or truncated canvas")
+        nudged_hello = next(element for element in nudged["elements"]
+            if element.get("name") == "hello")
+        require(nudged_hello.get("gx") != shipped_hello.get("gx"),
+            "arrow nudge did not move the selected element before Save")
 
         probe = ROOT / "resources/tools/gui_editor_guard_probe.json"
         probe.unlink(missing_ok=True)
