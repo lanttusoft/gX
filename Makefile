@@ -297,7 +297,11 @@ check-fast: all
 	python3 scripts/log_level_audit.py
 	python3 -m unittest discover -s scripts -p test_log_level_audit.py
 	@echo "== [gX fast] unit tests =="
-	./build/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/gX_build --test-only && exit 1)
+#ai: H1 — require both the process exit and the exact zero-error marker; a
+#   matching grep line alone must not turn a failed test run into a pass.
+	@status=0; ./build/gX_build --test-only > $${GX_SCRATCH:-/tmp/opencode}/gx_test_only_fast.log 2>&1 || status=$$?; \
+	  cat $${GX_SCRATCH:-/tmp/opencode}/gx_test_only_fast.log; \
+	  grep -q "TEST_ONLY: 0 errors" $${GX_SCRATCH:-/tmp/opencode}/gx_test_only_fast.log && test $$status -eq 0
 	@echo "== [gX fast] CLI contract =="
 	python3 scripts/cli_contract_check.py
 	@echo "== [gX fast] attribution =="
@@ -400,7 +404,10 @@ check-kernel:
 	cmake -B build/kernel -DGX_ENABLE_RENDERER=OFF -DCMAKE_BUILD_TYPE=Debug -DGX_COMPUTE=OFF
 	cmake --build build/kernel -j$$(nproc)
 	@echo "== [gX kernel] unit tests =="
-	./build/kernel/gX_build --test-only 2>&1 | grep -E "TEST_ONLY" || (./build/kernel/gX_build --test-only && exit 1)
+#ai: H1 — same admission rule as check-fast: exit status and zero errors.
+	@status=0; ./build/kernel/gX_build --test-only > $${GX_SCRATCH:-/tmp/opencode}/gx_test_only_kernel_fast.log 2>&1 || status=$$?; \
+	  cat $${GX_SCRATCH:-/tmp/opencode}/gx_test_only_kernel_fast.log; \
+	  grep -q "TEST_ONLY: 0 errors" $${GX_SCRATCH:-/tmp/opencode}/gx_test_only_kernel_fast.log && test $$status -eq 0
 	@echo "== [gX kernel] NULL boot (30 frames, clean unload) =="
 	GX_FRAMES=30 GX_NO_SETTINGS_SAVE=1 ./build/kernel/gX_build --ai-screenshot-final >/dev/null 2>&1
 	@echo "== [gX kernel] OK =="
