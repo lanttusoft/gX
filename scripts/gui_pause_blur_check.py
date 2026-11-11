@@ -38,6 +38,12 @@ PANEL_INSET = 6
 MODEL_MAX = 1.0        # backdrop vs blur+dim model (correct ~0.3; dim-only 1.3)
 BLUR_MARGIN = 0.5      # model must beat the dim-only fit by this margin
 PANEL_MIN = 30.0       # panel region differs from the scene (correct ~72)
+#ai: M6 — pin the shipped pause-panel opacity and model its fill over the
+#   blurred/dimmed backdrop, so 245 -> 200 cannot hide behind the presence
+#   threshold. The patch is flat panel background inside the top-left corner.
+PANEL_ALPHA_MIN = 240
+PANEL_MODEL_MAX = 3.0
+PANEL_PATCH = (200 / 1024, 152 / 768, 260 / 1024, 200 / 768)
 
 
 def capture(menu, directory):
@@ -111,9 +117,13 @@ class Rows:
         print(f"{name:<24} {'PASS' if ok else 'FAIL'}  {note}", flush=True)
 
 
-def load_theme():
+def load_escape():
     theme = json.loads(THEME_PATH.read_text(encoding="utf-8"))
-    return theme["escape"]["dimOverlay"]
+    return theme["escape"]
+
+
+def load_theme():
+    return load_escape()["dimOverlay"]
 
 
 def row_backdrop_current_frame(rows):
@@ -149,6 +159,29 @@ def row_panel_present(rows):
     return ok, f"pause panel and buttons render over the scene ({delta:.0f} luma)"
 
 
+def row_panel_opacity(rows):
+    escape = load_escape()
+    panel = escape["panelBg"]
+    alpha = panel[3]
+    if alpha < PANEL_ALPHA_MIN:
+        return False, f"pause panel alpha {alpha} < {PANEL_ALPHA_MIN}"
+    scene = rows.images["scene"]
+    menu = rows.images["menu"]
+    height, width = scene.shape[:2]
+    x0, y0, x1, y1 = (int(PANEL_PATCH[0] * width),
+                      int(PANEL_PATCH[1] * height),
+                      int(PANEL_PATCH[2] * width),
+                      int(PANEL_PATCH[3] * height))
+    backdrop = dim_overlay(blur_scene(scene), escape["dimOverlay"])
+    mix = alpha / 255.0
+    expected = backdrop[y0:y1, x0:x1] * (1.0 - mix) \
+        + np.array(panel[:3], dtype=np.float64) * mix
+    delta = float(np.abs(menu[y0:y1, x0:x1] - expected).mean())
+    ok = delta <= PANEL_MODEL_MAX
+    return ok, (f"panel fill matches alpha {alpha}/255 "
+                f"(delta {delta:.2f}, max {PANEL_MODEL_MAX:g})")
+
+
 def row_determinism(rows):
     with tempfile.TemporaryDirectory(prefix="pause_blur_repeat_", dir="/tmp/opencode") as temp:
         repeat = capture(True, Path(temp))
@@ -160,6 +193,7 @@ ROWS = [
     ("backdrop-current-frame", row_backdrop_current_frame),
     ("blur-applied", row_blur_applied),
     ("panel-present", row_panel_present),
+    ("panel-opacity", row_panel_opacity),
     ("determinism", row_determinism),
 ]
 
