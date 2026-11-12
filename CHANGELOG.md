@@ -4,6 +4,31 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.45.0] - 2026-11-12
+
+Release-Class: minor
+
+### Added
+- **Global offline report:** **Shift+F10** opens the internal report form from
+  any scene, loading the ImGui chrome on demand. Plain F10 remains the
+  developer console. The GFX editor keeps its Help-menu route and renderer
+  diagnostics; the form uses the shared tool scale and stacked labels.
+- **Locked editor canvas:** the GUI editor starts locked, so left-drag cannot
+  select, move or resize elements. The wheel zooms 0.5–4× around the cursor,
+  middle-drag pans, and the toolbar Unlock toggle enables element gestures.
+  Fit resets the editor-local view; closing restores the runtime transform.
+- **Lab navigation:** Theme Lab gains a Back to Title control; Materials Lab
+  and Shader Lab keep their existing Back routes.
+- **Preview parity check:** `editor-system-check` now compares the GUI editor
+  preview against the runtime title in a center crop, alongside default lock,
+  unlock, zoom, view reset and Shift+F10 controls.
+
+### Changed
+- Selection/hit-test/drag and overlay mapping follow the editor view
+  transform, so zoomed editing remains consistent.
+
+No save, preset or resource format changed.
+
 ## [0.44.2] - 2026-11-12
 
 Release-Class: patch
