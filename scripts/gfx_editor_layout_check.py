@@ -28,6 +28,11 @@ KEYS = ("windowW", "windowH", "scene", "inspector", "stage", "viewport",
 GRID_RE = re.compile(
     r"GFX_ASSET_GRID path=(\S+) avail=(\d+) item=(\d+) "
     r"line=(\d+) height=(\d+)")
+PICKER_GEOM_RE = re.compile(
+    r"EDITOR_PICKER: geometry id=(\S+) window=(\d+),(\d+),(\d+),(\d+) "
+    r"items=(\d+)")
+PICKER_ITEM_RE = re.compile(
+    r"EDITOR_PICKER: item id=(\S+) path=(\S+) avail=(\d+) item=(\d+)")
 
 
 def run(name, width, height, scale, level):
@@ -103,6 +108,49 @@ def check_asset_grid(name, width, height, scale):
                 f"(line {line}px)")
 
 
+def check_preset_picker(name, width, height, scale):
+    environment = dict(os.environ)
+    environment.update({
+        "DISPLAY": audit.display(),
+        "GX_AUDIT_WINDOW": "hidden",
+        "GX_NO_SETTINGS_SAVE": "1",
+        "GX_SKIP_TESTS": "1",
+        "GX_DOCK_DISABLE": "1",
+        "GX_FRAMES": "80",
+        "GX_UI_SCALE": scale,
+        "GX_GFX_LAYOUT_TRACE": "1",
+        "GX_GFX_PRESET_PICKER": "1",
+        "GX_EDITOR_PICKER_TRACE": "1",
+    })
+    try:
+        result = subprocess.run(
+            [str(BIN), "--gfx", "--gfx-editor",
+             "--screenWidth", str(width), "--screenHeight", str(height)],
+            cwd=str(ROOT), env=environment, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
+    except (OSError, subprocess.SubprocessError) as error:
+        raise RuntimeError(f"{name}: {error}") from error
+    log = audit.strip_ansi(result.stdout or "")
+    if result.returncode != 0:
+        raise RuntimeError(f"{name}: preset picker exited {result.returncode}: "
+                           f"{log[-500:]}")
+    for command in ("gfx.preset.load", "gfx.preset.reload", "gfx.preset.save"):
+        require(f"EDITOR_COMMAND: register {command}" in log,
+                f"{name}: command {command} was not registered")
+    geometry = PICKER_GEOM_RE.search(log)
+    require(geometry, f"{name}: picker geometry trace missing")
+    _, x0, y0, x1, y1, items = geometry.groups()
+    require(int(x0) >= 0 and int(y0) >= 0
+            and int(x1) <= width and int(y1) <= height,
+            f"{name}: picker window {x0},{y0},{x1},{y1} leaves the display")
+    require(int(items) > 0, f"{name}: picker has no preset items")
+    rows = PICKER_ITEM_RE.findall(log)
+    require(rows, f"{name}: picker item trace missing")
+    for _, path, avail, item in rows:
+        require(int(item) <= int(avail) + 16,
+                f"{name}: picker path '{path}' is {item}px in a {avail}px row")
+
+
 def check_common(name, row, width, height, minimum_stage):
     require(row["windowW"] == width and row["windowH"] == height,
             f"{name}: unexpected window {row['windowW']}x{row['windowH']}")
@@ -155,6 +203,8 @@ def main():
 
         check_asset_grid("asset-1024-100", 1024, 768, "1.00")
         check_asset_grid("asset-1024-175", 1024, 768, "1.75")
+        check_preset_picker("preset-1024-100", 1024, 768, "1.00")
+        check_preset_picker("preset-1024-175", 1024, 768, "1.75")
 
         wide = run("1600-125", 1600, 900, "1.25", "advanced")
         check_common("1600-125", wide, 1600, 900, 600)
@@ -179,7 +229,7 @@ def main():
         return 1
     print("GFX_EDITOR_LAYOUT_CHECK: PASS scene/preset/lab rows fit at "
           "1024/1600 and 100/125/150/175% scale; the 1024 footer is condensed; "
-          "asset paths ellipsize inside their cells")
+          "asset paths ellipsize and preset picker rows fit their cells")
     return 0
 
 

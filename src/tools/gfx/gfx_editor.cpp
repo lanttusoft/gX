@@ -78,6 +78,8 @@
 #include "../../gui/gui.h"
 #include "../../input.h"
 #include "../editor_host.h"
+#include "../editor/editor_commands.h"
+#include "../editor/editor_picker.h"
 #include "../../wrappers/input.h"
 #include "../../wrappers/camera.h"
 
@@ -207,7 +209,6 @@ static gX_I8 s_presetPath[256] = "resources/tools/gfx_showcase.json";
 static gX_I8 s_presetStatus[160] = { 0 };
 static gX_I1 s_presetStatusOK = 1;
 //opencode: transient search, selection, and filesystem index for the preset browser.
-static gX_I8 s_presetSearch[128] = { 0 };
 static gX_I8 s_presetSelectedPath[256] = { 0 };
 #define GX_GFX_PRESET_MAX 96
 //ai: the browser index is heap-backed so the Release BSS budget stays flat.
@@ -707,6 +708,8 @@ static gX_I1 s_headlessMaterialMapCheckDone = 0;
 static gX_I1 s_headlessAssetRootCheckDone = 0;
 //ai: headless asset-browser open for layout/text-clip captures.
 static gX_I1 s_headlessAssetBrowserDone = 0;
+//ai: GX-I043 — headless preset picker open for command/picker captures.
+static gX_I1 s_headlessPresetPickerDone = 0;
 //opencode: headless prefab check (gate hook): capture the fixture's selected
 //   model + nearby lights, place a copy 2m along +X, and report the counts.
 static gX_I1 s_headlessPrefabCheckDone = 0;
@@ -1331,50 +1334,44 @@ static gX_I0 gfx_preset_assets_release(gX_I0) {
     }
 }
 
-//opencode: the preset browser uses the same explicit replace confirmation as typed paths.
+//ai: GX-I043 — one shared picker; accepting a preset only stages the path
+//   and opens the existing replace confirmation.
+static gX_I0 gfx_preset_picker_accept(const gX_I8 *path, gX_I0 *user) {
+    (void)user;
+    if (!path || !path[0]) return;
+    snprintf(s_presetPath, sizeof(s_presetPath), "%s", path);
+    snprintf(s_presetSelectedPath, sizeof(s_presetSelectedPath), "%s", path);
+    s_presetConfirmPending = 1;
+    gX_TraceLog(gX_LOG_INFO, "GFX_PRESET: accept %s", s_presetPath);
+}
+
+static gX_I0 gfx_preset_picker_open(gX_I0) {
+    gfx_preset_assets_scan();
+    static gX_EditorPickerItem items[GX_GFX_PRESET_MAX];
+    gX_I32 count = 0;
+    for (gX_U32 pi = 0; pi < s_presetFileCount && count < GX_GFX_PRESET_MAX; pi++) {
+        items[count].path = s_presetFiles[pi];
+        items[count].label = s_presetFiles[pi];
+        count++;
+    }
+    gX_EditorPickerRequest request = {
+        "gfx.preset",
+        "Load GFX preset",
+        "Search GFX presets...",
+        items,
+        count,
+        s_presetSelectedPath[0] ? s_presetSelectedPath : s_presetPath,
+        gfx_preset_picker_accept,
+        NULL,
+    };
+    gX_EditorPicker_Open(&request);
+    gX_TraceLog(gX_LOG_INFO, "GFX_PRESET: picker open count=%d", count);
+}
+
+//opencode: the preset browser uses the same shared picker and explicit
+//   replace confirmation as typed paths.
 static gX_I0 gfx_preset_browser_popup(gX_I0) {
-    if (ImGui::Button("Browse")) {
-        gfx_preset_assets_scan();
-        s_presetSearch[0] = 0;
-        ImGui::OpenPopup("GFX Preset Browser");
-    }
-    if (!ImGui::BeginPopupModal("GFX Preset Browser", NULL,
-            ImGuiWindowFlags_AlwaysAutoResize)) return;
-    ImGui::InputTextWithHint("##gfxPresetSearch", "Search GFX presets...",
-        s_presetSearch, sizeof(s_presetSearch));
-    ImGui::BeginChild("GfxPresetFiles", ImVec2(560.0f, 300.0f), true);
-    gX_U32 matching = 0;
-    for (gX_U32 pi = 0; pi < s_presetFileCount; pi++) {
-        const gX_I8 *path = s_presetFiles[pi];
-        if (!gfx_text_search_matches(path, s_presetSearch)) continue;
-        matching++;
-        gX_I1 selected = strcmp(s_presetSelectedPath, path) == 0;
-        if (ImGui::Selectable(path, selected))
-            snprintf(s_presetSelectedPath, sizeof(s_presetSelectedPath), "%s", path);
-    }
-    if (matching == 0) ImGui::TextDisabled("No GFX presets match this search.");
-    ImGui::EndChild();
-    ImGui::TextWrapped("Selected: %s", s_presetSelectedPath[0]
-        ? s_presetSelectedPath : "none");
-    gX_I1 pathFits = s_presetSelectedPath[0]
-        && strlen(s_presetSelectedPath) < sizeof(s_presetPath);
-    ImGui::BeginDisabled(!pathFits);
-    if (ImGui::Button("Use path")) {
-        snprintf(s_presetPath, sizeof(s_presetPath), "%s", s_presetSelectedPath);
-        ImGui::CloseCurrentPopup();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Load and replace...")) {
-        snprintf(s_presetPath, sizeof(s_presetPath), "%s", s_presetSelectedPath);
-        ImGui::CloseCurrentPopup();
-        s_presetConfirmPending = 1;
-    }
-    ImGui::EndDisabled();
-    ImGui::SameLine();
-    if (ImGui::Button("Refresh")) gfx_preset_assets_scan();
-    ImGui::SameLine();
-    if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
-    ImGui::EndPopup();
+    if (ImGui::Button("Browse")) gX_EditorCommands_Run("gfx.preset.load");
 }
 
 //opencode: v0.6.10 — JSON preset persistence for live GFX authoring.
@@ -2970,9 +2967,48 @@ static gX_I0 gfx_preset_load(gX_RendererGFX *gfx) {
     }
 }
 
+//ai: GX-I043 — preset actions are commands first; the panel and headless
+//   probes dispatch the same IDs.
+static gX_I1 gfx_preset_cmd_enabled(gX_I0 *user) {
+    (void)user;
+    return gfx_state() ? 1 : 0;
+}
+
+static gX_I0 gfx_preset_cmd_load(gX_I0 *user) {
+    (void)user;
+    gfx_preset_picker_open();
+}
+
+static gX_I0 gfx_preset_cmd_reload(gX_I0 *user) {
+    (void)user;
+    ImGui::OpenPopup("Confirm GFX preset load");
+}
+
+static gX_I0 gfx_preset_cmd_save(gX_I0 *user) {
+    (void)user;
+    gfx_preset_save(gfx_state());
+}
+
+static gX_I0 gfx_preset_commands_register(gX_I0) {
+    static gX_I1 registered = 0;
+    if (registered) return;
+    registered = 1;
+    gX_EditorCommand commands[] = {
+        { "gfx.preset.load", "Load preset...", "Ctrl+O",
+          gfx_preset_cmd_enabled, gfx_preset_cmd_load, NULL },
+        { "gfx.preset.reload", "Reload current preset", NULL,
+          gfx_preset_cmd_enabled, gfx_preset_cmd_reload, NULL },
+        { "gfx.preset.save", "Save preset", "Ctrl+S",
+          gfx_preset_cmd_enabled, gfx_preset_cmd_save, NULL },
+    };
+    for (gX_U32 i = 0; i < sizeof(commands) / sizeof(commands[0]); i++)
+        gX_EditorCommands_Register(&commands[i]);
+}
+
 //opencode: v0.6.10 — shared preset bar; load is confirmed because it replaces
 //   all live models, lights, and textures.
 static gX_I0 gfx_preset_panel(gX_RendererGFX *gfx) {
+    gfx_preset_commands_register();
     ImGui::SeparatorText("Preset");
     if (s_presetOverwritePending) {
         ImGui::OpenPopup("Confirm GFX preset overwrite");
@@ -3021,8 +3057,10 @@ static gX_I0 gfx_preset_panel(gX_RendererGFX *gfx) {
     if (gX_Tools_ImGui_GradientButton("Save preset", ImVec2(0.0f, 0.0f),
             IM_COL32(178, 120, 54, 255), IM_COL32(96, 58, 88, 255),
             IM_COL32(255, 244, 224, 255)))
-        gfx_preset_save(gfx);
-    if (ImGui::Button("Load preset")) ImGui::OpenPopup("Confirm GFX preset load");
+        gX_EditorCommands_Run("gfx.preset.save");
+    if (ImGui::Button("Load preset")) gX_EditorCommands_Run("gfx.preset.load");
+    if (ImGui::Button("Reload current"))
+        gX_EditorCommands_Run("gfx.preset.reload");
     if (s_presetStatus[0]) {
         ImVec4 color = s_presetStatusOK
             ? ImVec4(0.45f, 0.90f, 0.60f, 1.0f)
@@ -7871,6 +7909,13 @@ static gX_I0 gfx_preset_headless_hooks(gX_RendererGFX *gfx) {
         && !s_headlessMaterialAssetCheckDone && maindata.frameCount >= 3) {
         gfx_material_asset_headless_check(materialAssetPath);
         s_headlessMaterialAssetCheckDone = 1;
+    }
+    const char *presetPicker = getenv("GX_GFX_PRESET_PICKER");
+    if (presetPicker && presetPicker[0] && !s_headlessPresetPickerDone
+        && maindata.frameCount >= 3) {
+        gfx_preset_picker_open();
+        s_headlessPresetPickerDone = 1;
+        gX_TraceLog(gX_LOG_INFO, "GFX_PRESET: headless picker open");
     }
     const char *assetBrowser = getenv("GX_GFX_ASSET_BROWSER");
     if (assetBrowser && assetBrowser[0] && !s_headlessAssetBrowserDone

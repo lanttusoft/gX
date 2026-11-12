@@ -752,6 +752,12 @@ the not-in-slice list live in `docs/scripting.md`.
   registry, workspace suites and per-suite layouts. `Toggle`, `SetOpen`,
   `IsOpen`, `Update`, `Draw`; `GX_EDITOR_HOST=1` opens it for captures and
   `GX_EDITOR_WORKSPACE=<name>` selects a suite
+- `gX_EditorCommands_*` — internal editor command registry (GX-I043):
+  `Register`, `Unregister`, `Run`, `Enabled`, `Count`, `At`. Commands are
+  copied into a bounded table; menus, buttons and headless probes share IDs.
+- `gX_EditorPicker_*` — internal shared ImGui picker (GX-I043): `Open`, `Draw`,
+  `IsOpen`. The caller supplies the item list and accept callback; the picker
+  never writes or loads by itself.
 - `gX_Tools_Gfx_LabPanel*` — renderer lab panels: `Mask`, `Count`,
   `Label` (Models/Sky/World/FX/Lights/Render/Water; bit order matches the
   panel list). `GX_GFX_PANEL_LABS=<mask>` pins the mask for captures and the

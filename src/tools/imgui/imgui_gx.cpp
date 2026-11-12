@@ -51,6 +51,7 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0);
 extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0);
 extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0);
 extern "C" gX_I0 gX_Tools_BugReport_DrawGlobal(gX_I0);
+extern "C" gX_I0 gX_EditorPicker_Draw(gX_I0);
 extern "C" gX_I0 gX_Tools_Wavetable_Draw(gX_I0);
 extern "C" gX_I1 *gX_Tools_RuntimeGfxFlag(gX_I0);
 extern "C" gX_I1 *gX_Tools_RuntimeEditorFlag(gX_I0);
@@ -636,6 +637,8 @@ static gX_I0 gX_GUI_ImGui_Draw2D(gX_I0) {
         gX_Module_OverlayDraw();
         //ai: global Shift+F10 report form; GFX diagnostics remain available.
         gX_Tools_BugReport_DrawGlobal();
+        //ai: GX-I043 — shared picker is global so any tool can open it.
+        gX_EditorPicker_Draw();
     }
     rlImGuiEnd();
     gX_GL_State_Pop();

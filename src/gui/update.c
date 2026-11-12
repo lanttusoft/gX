@@ -405,10 +405,12 @@ gX_I0 gX_GUI_Update(gX_I0) {
     //   the explicit host/report probes cover the first frame of an overlay.
     extern gX_I1 gX_Tools_BugReport_IsOpen(gX_I0);
     extern gX_I1 gX_EditorHost_IsOpen(gX_I0);
+    extern gX_I1 gX_EditorPicker_IsOpen(gX_I0);
     extern gX_I1 gX_Tools_ImGui_WantsMouse(gX_I0);
     extern gX_I1 gX_Tools_ImGui_WantsKeyboard(gX_I0);
     gui.toolsInputCaptured = (gX_Tools_RuntimeActive()
         || gX_Tools_BugReport_IsOpen() || gX_EditorHost_IsOpen()
+        || gX_EditorPicker_IsOpen()
         || gX_Tools_ImGui_WantsMouse()) ? 1 : 0;
     
     //opencode: markup live-reload — rate-limited mtime watch on the registered

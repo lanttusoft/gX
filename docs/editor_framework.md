@@ -2,8 +2,8 @@
 
 <!-- //ai: GX-I043 proposal. This is a design note, not an admitted API. -->
 
-Status: **proposal** — editor kernel + shared picker, sliced behind existing
-tool gates.
+Status: **partial** — command registry + shared picker implemented in the
+first slice; the remaining kernel components are still a proposal.
 
 ## Why
 
@@ -209,6 +209,22 @@ gX_I1 gX_EditorFramework_Test_DocumentDirty(const gX_I8 *toolId);
 Headless gates use IDs and rectangles, not hardcoded mouse coordinates. The
 existing `GX_TOOLS_LAYOUT_TRACE`, `GX_GUI_TRACE` and editor-system markers stay
 as the low-level evidence layer.
+
+## Implementation status
+
+First slice landed:
+
+- `src/tools/editor/editor_commands.{h,c}` — bounded C command registry with
+  register/unregister/run/enabled/count/at.
+- `src/tools/editor/editor_picker.{h,cpp}` — shared ImGui picker with search,
+  Enter/double-click, ellipsis + full-path tooltip and scale-aware geometry.
+- GFX preset actions registered as `gfx.preset.load`, `gfx.preset.reload` and
+  `gfx.preset.save`; the inspector buttons and headless probe dispatch them.
+- `GX_GFX_PRESET_PICKER=1` and `GX_EDITOR_PICKER_TRACE=1` expose the picker to
+  `gfx-editor-layout-check`.
+
+Still proposed: document/session guards, panel registry, input-owner stack,
+modal manager, undo transactions and the full command palette.
 
 ## Pilot: GFX preset load
 

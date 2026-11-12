@@ -235,6 +235,8 @@ set(GX_SOURCES
     src/tools/imgui/rlImGui.cpp
     src/tools/imgui/imgui_gx.cpp
     src/tools/editor/editor.cpp
+    src/tools/editor/editor_commands.c
+    src/tools/editor/editor_picker.cpp
     src/tools/theme/theme_editor.cpp
     src/tools/gfx/gfx_editor.cpp
     #opencode: synth wavetable authoring panel (draw/generate + .f32 fixtures).
@@ -688,7 +690,8 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         src/tools/imgui/rlImGui.cpp src/tools/imgui/imgui_gx.cpp
         #ai: GUI/theme editors are pointer-driven tool UIs; Release favors
         #   size for the same reason as gfx_editor.cpp.
-        src/tools/editor/editor.cpp src/tools/theme/theme_editor.cpp
+        src/tools/editor/editor.cpp src/tools/editor/editor_picker.cpp
+        src/tools/theme/theme_editor.cpp
         #ai: CLI parsing runs once at startup, never on the frame path.
         src/main_parse.c
         src/renderer/gfx/schema.c

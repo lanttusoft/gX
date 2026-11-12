@@ -67,6 +67,21 @@ right edge or wrap into the next row. `GX_GFX_ASSET_BROWSER=1` opens the grid
 headlessly, and `gfx-editor-layout-check` pins every grid path to its cell
 width and one line of text at 100/175%.
 
+### GFX preset picker (2026-11-12)
+
+The inspector's **Load preset** button now opens the shared picker instead of
+confirming the path already in the field. **Reload current** keeps the
+confirming reload path, and **Browse** opens the same picker. Select a row and
+press **Enter**, double-click, or use **Open**; accepting stages the path and
+opens the existing replace confirmation. Paths are one-line ellipsized with a
+full-path tooltip, and the picker scales with the tool UI (including 175%).
+
+The actions are registered commands — `gfx.preset.load`, `gfx.preset.reload`
+and `gfx.preset.save` — so menus, buttons and headless probes dispatch the
+same IDs. `GX_GFX_PRESET_PICKER=1` opens the picker headlessly;
+`GX_EDITOR_PICKER_TRACE=1` emits its geometry and row fit. `gfx-editor-layout-check`
+pins the window inside the display and every row inside its cell at 100/175%.
+
 ### GUI editor usability (2026-11-08)
 
 The GUI editor's existing direct-manipulation workflow is now explicitly

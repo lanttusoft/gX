@@ -56,6 +56,7 @@
 #include "gui/element/element.h"
 #include "gui/gui.h"
 #include "gui/markup.h"
+#include "tools/editor/editor_commands.h"
 #include "gui/style.h"
 #include "gui/binding.h"
 #include "gui/builder.h"
@@ -1178,6 +1179,52 @@ static gX_I32 gX_Tests_TextInput(gX_I0) {
 }
 
 //opencode: scroll math tests — pure offset/selection helpers (no input heap).
+static gX_I32 s_editorCommandRuns = 0;
+static gX_I1 s_editorCommandEnabled = 1;
+
+static gX_I0 gX_Tests_EditorCommand_Run(gX_I0 *user) {
+    (void)user;
+    s_editorCommandRuns++;
+}
+
+static gX_I1 gX_Tests_EditorCommand_Enabled(gX_I0 *user) {
+    (void)user;
+    return s_editorCommandEnabled;
+}
+
+static gX_I32 gX_Tests_EditorCommands(gX_I0) {
+    gX_I32 errors = 0;
+    gX_I32 before = gX_EditorCommands_Count();
+    gX_EditorCommand command = {
+        "test.editor.command", "Test command", NULL,
+        gX_Tests_EditorCommand_Enabled, gX_Tests_EditorCommand_Run, NULL
+    };
+    if (!gX_EditorCommands_Register(&command)) errors++;
+    if (gX_EditorCommands_Count() != before + 1) errors++;
+    s_editorCommandEnabled = 1;
+    s_editorCommandRuns = 0;
+    if (!gX_EditorCommands_Run("test.editor.command")
+        || s_editorCommandRuns != 1) errors++;
+    s_editorCommandEnabled = 0;
+    if (gX_EditorCommands_Run("test.editor.command")
+        || s_editorCommandRuns != 1
+        || gX_EditorCommands_Enabled("test.editor.command")) errors++;
+    gX_EditorCommand replacement = {
+        "test.editor.command", "Test command v2", NULL,
+        NULL, gX_Tests_EditorCommand_Run, NULL
+    };
+    if (!gX_EditorCommands_Register(&replacement)) errors++;
+    if (!gX_EditorCommands_Run("test.editor.command")
+        || s_editorCommandRuns != 2) errors++;
+    if (gX_EditorCommands_Count() != before + 1) errors++;
+    if (!gX_EditorCommands_Unregister("test.editor.command")) errors++;
+    if (gX_EditorCommands_Count() != before) errors++;
+    if (gX_EditorCommands_Run("test.editor.command")) errors++;
+    gX_TraceLog(gX_LOG_INFO, "EDITOR_COMMAND_TESTS: %s",
+        errors == 0 ? "all passed" : "failed");
+    return errors;
+}
+
 static gX_I32 gX_Tests_ScrollMath(gX_I0) {
     gX_I32 errors = 0;
     if (gX_GUI_Scroll_Clamp(-3, 10, 4) != 0) {
@@ -4400,6 +4447,7 @@ gX_I32 gX_Tests(gX_I0) {
     errors += gX_Tests_GUI_CallbackRebuild();
     errors += gX_Tests_GUI_ElementGeneration();
     errors += gX_Tests_GUI_EditorIdentity();
+    errors += gX_Tests_EditorCommands();
     errors += gX_Tests_ScrollMath();
     errors += gX_Tests_Layout();
     //opencode: targeted GUI audit regressions stay in the headless test gate.
