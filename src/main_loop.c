@@ -84,6 +84,15 @@ static gX_I32 gX_Loop_Update(gX_I0) {
     GX_PROFILER_CHECK( gX_ResourceManager_Update(),                           "resource" );
     GX_PROFILER_CHECK( gX_GameData_Update(),                                  "gamedata" );
     GX_PROFILER_CHECK( gX_Input_Update(),                                     "input" );
+    //ai: Shift+F10 opens the offline report from any scene; plain F10 stays
+    //   the developer console.
+    {
+        extern gX_I0 gX_Tools_BugReport_OpenGlobal(gX_I0);
+        gX_I1 shiftDown = input.keyboard.keys[gX_KEY_LEFT_SHIFT].state.DOWN
+            || input.keyboard.keys[gX_KEY_RIGHT_SHIFT].state.DOWN;
+        if (shiftDown && input.keyboard.keys[gX_KEY_F10].state.PRESSED)
+            gX_Tools_BugReport_OpenGlobal();
+    }
     GX_PROFILER_CHECK( gX_ConsolePlayback_Update(),                           "playback" );
     GX_PROFILER_CHECK( gX_Random_Update(),                                    "random" );
     //ai: console playback freezes simulation updates while paused; a step or

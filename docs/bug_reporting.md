@@ -2,9 +2,10 @@
 
 <!-- //ai: local diagnostics, with explicit submission and no background writes. -->
 
-Open **GFX editor → Help → Report bug…** or press **F10** in GFX editor
-authoring mode. Outside the GFX editor, use the public GitHub issue tracker;
-the title Help panel links to it.
+Open **GFX editor → Help → Report bug…** or press **Shift+F10** from any
+scene. Plain **F10** remains the developer console. The form is an internal
+dev-style tool; outsiders should use the public GitHub issue tracker linked
+from the title Help panel.
 Drafts remain in memory when the form closes; quitting loses them. Opening or
 editing the form does not create files.
 

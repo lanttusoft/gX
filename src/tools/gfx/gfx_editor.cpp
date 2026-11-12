@@ -12636,3 +12636,28 @@ extern "C" gX_I0 gX_Tools_Gfx_Draw(gX_I0) {
     ImGui::End();
 #endif
 }
+
+#if gX_ENABLE_RENDERER == 1
+//ai: GX-I040 — global Shift+F10 entry point for the offline report form. The
+//   form and diagnostics remain the GFX-owned subsystem; other scenes get the
+//   same writer with whatever generic context is available.
+extern "C" gX_I0 gX_Tools_BugReport_OpenGlobal(gX_I0) {
+    extern gX_I0 gX_GUI_Load_ImGui(gX_I0);
+    gX_GUI_Load_ImGui();
+    gX_BugReport.open = 1;
+    gX_TraceLog(gX_LOG_INFO, "BUG_REPORT: open global");
+}
+
+extern "C" gX_I1 gX_Tools_BugReport_IsOpen(gX_I0) {
+    return gX_BugReport.open;
+}
+
+extern "C" gX_I0 gX_Tools_BugReport_DrawGlobal(gX_I0) {
+    gX_Tools_Gfx_BugReport_Draw();
+}
+#else
+extern "C" gX_I0 gX_Tools_BugReport_OpenGlobal(gX_I0) { return 0; }
+extern "C" gX_I1 gX_Tools_BugReport_IsOpen(gX_I0) { return 0; }
+extern "C" gX_I0 gX_Tools_BugReport_DrawGlobal(gX_I0) { return 0; }
+#endif
+

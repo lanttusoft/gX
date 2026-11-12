@@ -28,6 +28,7 @@
 #if gX_ENABLE_RENDERER == 1
 
 #include "gx_build_info.h"
+#include "../tools_ui_scale.h"
 
 //ai: defined by the GFX editor; reports the selected scene camera separately
 //   from the free/editor camera that the live viewport uses.
@@ -231,29 +232,38 @@ static gX_I0 gX_Tools_Gfx_BugReport_Test(gX_I0)
 //ai: menu/hotkey form retains drafts in memory; no background saves or uploads.
 static gX_I0 gX_Tools_Gfx_BugReport_Draw(gX_I0)
 {
-    if (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(ImGuiKey_F10, false))
-        gX_BugReport.open = !gX_BugReport.open;
     if (!gX_BugReport.open) return;
     bool Open = true;
-    ImGui::SetNextWindowSize(ImVec2(520, 0), ImGuiCond_FirstUseEver);
+    gX_F32 reportScale = gX_Tools_UI_Scale();
+    ImGui::SetNextWindowSize(ImVec2(gX_Tools_UI_ScaleWidth(560.0f), 0),
+        ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Report bug (offline)", &Open))
     {
+        ImGui::PushItemWidth(-FLT_MIN);
         ImGui::TextWrapped("Save to bugs/. No uploads. Draft lost on exit.");
-        ImGui::InputText("Title", gX_BugReport.name, sizeof(gX_BugReport.name));
-        ImGui::Combo("Type", &gX_BugReport.type, gX_BugTypes, 5);
-        ImGui::Combo("Severity", &gX_BugReport.severity, gX_BugSeverities, 4);
+        ImGui::TextUnformatted("Title");
+        ImGui::InputText("##title", gX_BugReport.name, sizeof(gX_BugReport.name));
+        ImGui::TextUnformatted("Type");
+        ImGui::Combo("##type", &gX_BugReport.type, gX_BugTypes, 5);
+        ImGui::TextUnformatted("Severity");
+        ImGui::Combo("##severity", &gX_BugReport.severity, gX_BugSeverities, 4);
         ImGui::TextWrapped("Low: cosmetic. Medium: workaround. High: blocked task/repeated crash. Critical: data loss/corruption/security.");
         ImGui::TextWrapped("One issue: steps, expected vs actual, frequency, preset/revision. Unsure? Medium; explain impact.");
-        ImGui::InputTextMultiline("Description", gX_BugReport.description, sizeof(gX_BugReport.description));
-        ImGui::InputTextMultiline("Reproduction steps", gX_BugReport.steps, sizeof(gX_BugReport.steps));
-        ImGui::InputText("When / how", gX_BugReport.when, sizeof(gX_BugReport.when));
-        ImGui::InputText("Affected feature", gX_BugReport.affects, sizeof(gX_BugReport.affects));
+        ImGui::TextUnformatted("Description");
+        ImGui::InputTextMultiline("##description", gX_BugReport.description, sizeof(gX_BugReport.description));
+        ImGui::TextUnformatted("Reproduction steps");
+        ImGui::InputTextMultiline("##steps", gX_BugReport.steps, sizeof(gX_BugReport.steps));
+        ImGui::TextUnformatted("When / how");
+        ImGui::InputText("##when", gX_BugReport.when, sizeof(gX_BugReport.when));
+        ImGui::TextUnformatted("Affected feature");
+        ImGui::InputText("##affects", gX_BugReport.affects, sizeof(gX_BugReport.affects));
         bool Shot = gX_BugReport.screenshot != 0;
         ImGui::Checkbox("Attach screen (may include UI)", &Shot);
         gX_BugReport.screenshot = Shot;
         bool Diagnostics = gX_BugReport.diagnostics != 0;
         ImGui::Checkbox("Attach diagnostic state (private context)", &Diagnostics);
         gX_BugReport.diagnostics = Diagnostics;
+        ImGui::PopItemWidth();
         if (ImGui::Button("Save local report")) gX_Tools_Gfx_BugReport_Save("bugs");
         ImGui::TextWrapped("%s", gX_BugReport.status);
     }

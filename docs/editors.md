@@ -94,8 +94,9 @@ make editor-system-check
 
 `editor-system-check` is the cross-editor lifecycle gate: it verifies toolbar
 activation for the theme/sky/background/textwriter editors, close/reopen for
-every editor and lab, and that closing Theme Lab, Materials Lab, Shader Lab or
-the theme editor returns to the title. It runs in the full audit matrix.
+every editor and lab, Shift+F10 report opening (with plain F10 still reserved
+for the console), and that closing Theme Lab, Materials Lab, Shader Lab or the
+theme editor returns to the title. It runs in the full audit matrix.
 
 ### v0.42.0 dogfooding fixes (2026-11-08)
 

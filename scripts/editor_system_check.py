@@ -31,7 +31,7 @@ OPEN_MIN = 10.0
 
 
 def run(editor, frames, *, close_at=None, reopen_at=None, screenshot=None,
-        shot_frame=25):
+        shot_frame=25, extra=None):
     environment = {
         "GX_SKIP_TESTS": "1",
         "GX_FIXED_DT": "0.0166666667",
@@ -43,6 +43,8 @@ def run(editor, frames, *, close_at=None, reopen_at=None, screenshot=None,
         environment["GX_TOOLS_CLOSE_AT"] = str(close_at)
     if reopen_at is not None:
         environment["GX_TOOLS_REOPEN_AT"] = str(reopen_at)
+    if extra:
+        environment.update({key: str(value) for key, value in extra.items()})
     with audit.engine_default_settings():
         result = audit.run_scene(
             "--title", environment, width=None, height=None, fps=None,
@@ -83,6 +85,22 @@ def main():
             if baseline_shot is None:
                 raise RuntimeError("baseline title screenshot missing")
             baseline = image(baseline_shot)
+
+            #ai: GX-I040 — Shift+F10 opens the internal report from the title,
+            #   not just inside the GFX editor.
+            report_log = run(None, 80, extra={
+                "GX_AI_INPUT": "0.5 key 299 1"})
+            report_ok = "BUG_REPORT: open global" in report_log
+            print(f"{'report':<12} {'PASS' if report_ok else 'FAIL'}  "
+                  f"Shift+F10 global open")
+            if not report_ok:
+                failures.append("report: Shift+F10 did not open")
+            plain_log = run(None, 50, extra={"GX_AI_INPUT": "0.5 key 299 0"})
+            plain_ok = "BUG_REPORT: open global" not in plain_log
+            print(f"{'report':<12} {'PASS' if plain_ok else 'FAIL'}  "
+                  f"plain F10 stays console")
+            if not plain_ok:
+                failures.append("report: plain F10 opened the report")
 
             for editor, expected in HOSTABLE:
                 log = run(editor, 25)
