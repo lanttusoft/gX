@@ -49,7 +49,7 @@ GATE_EVIDENCE ?=
 export GX_AUDIT_WINDOW ?= hidden
 
 .PHONY: reflection-lab-check shader-cache-check
-.PHONY: all check check-fast check-kernel release clean lean reflect-check reflect-check-fast ssr-normal-check dither-check palette-check interlace-check dof-resolution-check snow-check snowfall-check rain-check fogsprite-check probe-check splat-check mirror-check materials-check gfx-check gfx-check-fast gfx-scene-smoke gui-check gui-check-fast gui-scoreboard gui-visual-review gui-interaction-check gui-theme-check gui-layout-check gui-shadow-check gui-depth-check gui-glass-check gui-cursor-light-check gui-pause-blur-check gui-effect-contrast-check gui-benchmark gui-benchmark-check gfx-benchmark gfx-benchmark-check gfx-benchmark-release gfx-benchmark-reference-check raymarch-benchmark raymarch-benchmark-check gfx-visual-review gfx-patchwork-check gfx-quick gfx-grid-check gfx-snapshot-check gfx-picker-check gfx-light-picker-check gfx-motion-path-check dock-layout-check gfx-label-font-check gfx-animation-check bloom-audit bloom-audit-quick audit-summary audit-summary-full gfx-preset-overwrite-check gfx-art-picker-check gfx-art-blending-check gfx-mirror-alignment-check gfx-reflection-ui-check gfx-material-asset-check gfx-asset-roots-check gfx-bijection-check gfx-skin-bones-check gfx-camera-render-check ssr-resolution-check gfx-rt-diet-check provenance-check gfx-gl-level-ui-check gfx-prefab-check gfx-aero-check gfx-primitive-check gfx-texture-check wavetable-editor-check textwriter-editor-check textwriter-render-check sky-render-check analog-reduced-check colour-independence-check physics-editor-check gfx-export-check gfx-battle-check gfx-background-check gfx-pp-check gfx-raymarch-check gfx-raymarch-features-check error-handling-check error-check gfx-profile-check debug-check cache-check gfx-decal-bake-check version-check version-gate gfx-planar-material-check gfx-light-check gfx-art-light-check gfx-art-reflection-check gfx-shadow-check gfx-light-shadow-check material-maps-check lightmap-check lightmap-visual-review temporal-check temporal-check-fast warmup-check water-check horizon-check scoreboard fog-light-check wireframe-check particle-velocity-check compute-feature-check gl-level-check glsl130-check gl-legacy-native-check oracle-path-check oracle-bounce-check oracle-hdr-check oracle-gpu-check oracle-gpu-multibounce-check oracle-gpu-reflection-check compiler-check type-audit-check lint-check cppcheck-check sanitize-check tsan-check coverage-check fuzz-json size-report perf-stat gl-audit math-check proofs proofs-full hw-report-check sense-check editor-host-check cursor-check
+.PHONY: all check check-fast check-kernel release clean lean reflect-check reflect-check-fast ssr-normal-check dither-check palette-check interlace-check dof-resolution-check snow-check snowfall-check rain-check fogsprite-check probe-check splat-check mirror-check materials-check gfx-check gfx-check-fast gfx-scene-smoke gui-check gui-check-fast gui-scoreboard gui-visual-review gui-interaction-check gui-theme-check gui-layout-check gui-shadow-check gui-depth-check gui-glass-check gui-cursor-light-check gui-pause-blur-check gui-effect-contrast-check gui-benchmark gui-benchmark-check gfx-benchmark gfx-benchmark-check gfx-benchmark-release gfx-benchmark-reference-check raymarch-benchmark raymarch-benchmark-check gfx-visual-review gfx-patchwork-check gfx-quick gfx-grid-check gfx-snapshot-check gfx-picker-check gfx-light-picker-check gfx-motion-path-check dock-layout-check gfx-label-font-check gfx-animation-check bloom-audit bloom-audit-quick audit-summary audit-summary-full gfx-preset-overwrite-check gfx-art-picker-check gfx-art-blending-check gfx-mirror-alignment-check gfx-reflection-ui-check gfx-material-asset-check gfx-asset-roots-check gfx-bijection-check gfx-skin-bones-check gfx-camera-render-check ssr-resolution-check gfx-rt-diet-check provenance-check gfx-gl-level-ui-check gfx-prefab-check gfx-aero-check gfx-primitive-check gfx-texture-check wavetable-editor-check textwriter-editor-check textwriter-render-check sky-render-check analog-reduced-check colour-independence-check physics-editor-check gfx-export-check gfx-battle-check gfx-background-check gfx-pp-check gfx-raymarch-check gfx-raymarch-features-check error-handling-check error-check gfx-profile-check debug-check cache-check gfx-decal-bake-check version-check version-gate gfx-planar-material-check gfx-light-check gfx-art-light-check gfx-art-reflection-check gfx-shadow-check gfx-light-shadow-check material-maps-check lightmap-check lightmap-visual-review temporal-check temporal-check-fast warmup-check water-check horizon-check scoreboard fog-light-check wireframe-check particle-velocity-check compute-feature-check gl-level-check glsl130-check gl-legacy-native-check oracle-path-check oracle-bounce-check oracle-hdr-check oracle-gpu-check oracle-gpu-multibounce-check oracle-gpu-reflection-check compiler-check type-audit-check lint-check cppcheck-check sanitize-check tsan-check coverage-check fuzz-json size-report perf-stat gl-audit math-check proofs proofs-full hw-report-check sense-check editor-host-check editor-input-check cursor-check
 
 all:
 	bash build.sh $(BUILD_TYPE)
@@ -357,6 +357,8 @@ check-fast: all
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/editor_host_check.py
 	@echo "== [gX fast] GUI editor usability =="
 	python3 scripts/gui_editor_check.py
+	@echo "== [gX fast] editor input arbitration =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/editor_input_check.py
 	@echo "== [gX fast] GUI layout at 175% =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/gui_layout_check.py --quick \
 		--scale 1.75 --output /tmp/opencode/gui_layout_175
@@ -1145,6 +1147,13 @@ gui-editor-check: all
 editor-system-check: all
 	@echo "== [gX CI] editor system lifecycle =="
 	DISPLAY=$${DISPLAY:-:1} python3 scripts/editor_system_check.py
+
+#ai: editor input arbitration — panel clicks/arrows must not leak into the
+#   native GUI; canvas wheel/pan gestures are viewport-only.
+.PHONY: editor-input-check
+editor-input-check: all
+	@echo "== [gX CI] editor input arbitration =="
+	DISPLAY=$${DISPLAY:-:1} python3 scripts/editor_input_check.py
 
 #ai: GFX editor onboarding — F1/Help guide opens on the GFX stage.
 .PHONY: gfx-editor-guide-check

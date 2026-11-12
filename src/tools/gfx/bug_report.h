@@ -230,15 +230,39 @@ static gX_I0 gX_Tools_Gfx_BugReport_Test(gX_I0)
 #endif
 
 //ai: menu/hotkey form retains drafts in memory; no background saves or uploads.
+static gX_I0 gX_Tools_Gfx_BugReport_Reset(gX_I0)
+{
+    memset(gX_BugReport.name, 0, sizeof(gX_BugReport.name));
+    memset(gX_BugReport.description, 0, sizeof(gX_BugReport.description));
+    memset(gX_BugReport.steps, 0, sizeof(gX_BugReport.steps));
+    memset(gX_BugReport.when, 0, sizeof(gX_BugReport.when));
+    memset(gX_BugReport.affects, 0, sizeof(gX_BugReport.affects));
+    gX_BugReport.type = 0;
+    gX_BugReport.severity = 0;
+    gX_BugReport.screenshot = 0;
+    gX_BugReport.diagnostics = 0;
+    snprintf(gX_BugReport.status, sizeof(gX_BugReport.status), "Draft cleared.");
+}
+
 static gX_I0 gX_Tools_Gfx_BugReport_Draw(gX_I0)
 {
     if (!gX_BugReport.open) return;
     bool Open = true;
-    gX_F32 reportScale = gX_Tools_UI_Scale();
-    ImGui::SetNextWindowSize(ImVec2(gX_Tools_UI_ScaleWidth(560.0f), 0),
-        ImGuiCond_FirstUseEver);
+    gX_F32 width = gX_Tools_UI_ScaleWidth(560.0f);
+    gX_F32 maxWidth = ImGui::GetIO().DisplaySize.x - 80.0f;
+    if (width > maxWidth) width = maxWidth;
+    if (width < 320.0f) width = 320.0f;
+    gX_F32 height = ImGui::GetIO().DisplaySize.y * 0.85f;
+    if (height < 320.0f) height = 320.0f;
+    ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(width * 0.6f, 260.0f),
+        ImVec2(ImGui::GetIO().DisplaySize.x - 20.0f,
+               ImGui::GetIO().DisplaySize.y - 20.0f));
     if (ImGui::Begin("Report bug (offline)", &Open))
     {
+        gX_F32 footerH = ImGui::GetFrameHeightWithSpacing()
+            + ImGui::GetTextLineHeightWithSpacing() * 2.0f;
+        ImGui::BeginChild("##report_body", ImVec2(0, -footerH), false);
         ImGui::PushItemWidth(-FLT_MIN);
         ImGui::TextWrapped("Save to bugs/. No uploads. Draft lost on exit.");
         ImGui::TextUnformatted("Title");
@@ -264,11 +288,37 @@ static gX_I0 gX_Tools_Gfx_BugReport_Draw(gX_I0)
         ImGui::Checkbox("Attach diagnostic state (private context)", &Diagnostics);
         gX_BugReport.diagnostics = Diagnostics;
         ImGui::PopItemWidth();
+        ImGui::EndChild();
         if (ImGui::Button("Save local report")) gX_Tools_Gfx_BugReport_Save("bugs");
+        ImVec2 saveMin = ImGui::GetItemRectMin();
+        ImVec2 saveMax = ImGui::GetItemRectMax();
+        ImGui::SameLine();
+        if (ImGui::Button("Reset")) {
+            gX_Tools_Gfx_BugReport_Reset();
+            gX_TraceLog(gX_LOG_INFO, "BUG_REPORT: reset");
+        }
+        ImVec2 resetMin = ImGui::GetItemRectMin();
+        ImVec2 resetMax = ImGui::GetItemRectMax();
+        {
+            static gX_I1 traced = 0;
+            const gX_I8 *trace = getenv("GX_TOOLS_LAYOUT_TRACE");
+            if (!traced && trace && trace[0]) {
+                traced = 1;
+                ImVec2 winMin = ImGui::GetWindowPos();
+                ImVec2 winMax = ImVec2(winMin.x + ImGui::GetWindowSize().x,
+                    winMin.y + ImGui::GetWindowSize().y);
+                gX_TraceLog(gX_LOG_INFO,
+                    "BUG_REPORT: form save=%.0f,%.0f,%.0f,%.0f reset=%.0f,%.0f,%.0f,%.0f window=%.0f,%.0f,%.0f,%.0f",
+                    saveMin.x, saveMin.y, saveMax.x, saveMax.y,
+                    resetMin.x, resetMin.y, resetMax.x, resetMax.y,
+                    winMin.x, winMin.y, winMax.x, winMax.y);
+            }
+        }
         ImGui::TextWrapped("%s", gX_BugReport.status);
     }
     ImGui::End();
     gX_BugReport.open = Open;
+    if (!Open) gX_TraceLog(gX_LOG_INFO, "BUG_REPORT: close");
 }
 
 #endif

@@ -87,8 +87,18 @@ The editor canvas starts **locked**: left-drag cannot select, move or resize
 elements; the wheel zooms (0.5–4×) and middle-drag pans. The toolbar
 **Unlock** toggle enables element gestures and changes to **Lock**; **Fit**
 resets the editor-local view. The view is restored when the editor closes, so
-the runtime canvas is never left zoomed. `editor-system-check` pins the
-default lock, unlocked state, zoom state and view reset.
+the runtime canvas is never left zoomed. Wheel/pan gestures are confined to
+the free viewport: scrolling the tree, Properties, host chrome or the report
+form never moves the canvas. The toolbar wraps its action row at 100–175%
+text scale, and the status strip grows with the scaled text so both stay
+inside the left dock.
+
+The editor state model is explicit in the gate: `closed -> open (locked) ->
+unlocked -> locked -> close -> closed`, and a reopen starts locked again with
+a restored runtime transform. `editor-system-check` pins the default lock,
+unlock/lock toggle, zoom state, view reset, toolbar/status overlap at 100%
+and 175%, report action-row fit, report open/close/reopen, host open/close,
+Theme Lab Back and title return.
 
 Saves honor the same harness guard as the other editors: a gate-launched run
 with `GX_NO_SETTINGS_SAVE=1` refuses to write shipped markup. The headless hooks
@@ -99,13 +109,29 @@ with `GX_NO_SETTINGS_SAVE=1` refuses to write shipped markup. The headless hooks
 ```bash
 make gui-editor-check
 make editor-system-check
+make editor-input-check
 ```
 
 `editor-system-check` is the cross-editor lifecycle gate: it verifies toolbar
 activation for the theme/sky/background/textwriter editors, close/reopen for
 every editor and lab, Shift+F10 report opening (with plain F10 still reserved
 for the console), and that closing Theme Lab, Materials Lab, Shader Lab or the
-theme editor returns to the title. It runs in the full audit matrix.
+theme editor returns to the title. It also pins toolbar/status overlap at
+100%/175%, the theme panel below the host workspace tabs, the report form's
+action row at 175%, the report Reset control, report/host/canvas state
+transitions and the Theme Lab **Back to title** route. It runs in the full
+audit matrix.
+
+`editor-input-check` is the input-arbitration gate. It verifies that a wheel
+or middle-drag over an ImGui panel does not zoom or pan the canvas, that the
+same gestures do work in the free viewport, that a click on an ImGui form
+cannot activate a title button underneath, and that arrow keys during text
+entry do not move native GUI focus. ImGui capture is read from the previous
+frame's `WantCaptureMouse`/`WantCaptureKeyboard`; the host and report probes
+cover the first frame of an overlay. It runs in `check-fast` and the quick
+tier. The floating theme editor starts below the host workspace tabs (including
+175%) and caps its width so its preview and Back route remain visible; closing
+the last runtime editor hides the host workspace strip.
 
 ### v0.42.0 dogfooding fixes (2026-11-08)
 

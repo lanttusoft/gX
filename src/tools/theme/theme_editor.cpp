@@ -477,9 +477,19 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
             static int sizeFrames = 0;
             if (s_prevDocked) sizeFrames = 0;
             if (sizeFrames < 5) {
+                //ai: the host workspace tabs are a second ImGui bar above the
+                //   floating tool; a fixed y=40 covered them at high text scale.
+                extern gX_I1 gX_EditorHost_IsOpen(gX_I0);
+                gX_F32 top = ImGui::GetFrameHeight();
+                if (gX_EditorHost_IsOpen()) top += ImGui::GetFrameHeight();
+                top += 6.0f;
                 if (sizeFrames == 0)
-                    ImGui::SetNextWindowPos(ImVec2(40, 40), ImGuiCond_Always);
-                ImGui::SetNextWindowSize(ImVec2(gX_Tools_UI_ScaleWidth(520.0f), tsh > 100 ? tsh - 60 : 1000), ImGuiCond_Always);
+                    ImGui::SetNextWindowPos(ImVec2(40, top), ImGuiCond_Always);
+                gX_F32 height = tsh > top + 70.0f ? tsh - top - 30.0f : 1000.0f;
+                gX_F32 panelW = gX_Tools_UI_ScaleWidth(520.0f);
+                gX_F32 maxPanel = ImGui::GetIO().DisplaySize.x * 0.62f;
+                if (panelW > maxPanel) panelW = maxPanel;
+                ImGui::SetNextWindowSize(ImVec2(panelW, height), ImGuiCond_Always);
                 sizeFrames++;
             }
         }
@@ -504,6 +514,18 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
         if (!thOpen) tools_close_theme_runtime();
         return;
     }
+    static gX_I1 topTraced = 0;
+    if (!topTraced && getenv("GX_TOOLS_LAYOUT_TRACE")) {
+        topTraced = 1;
+        ImVec2 wpos = ImGui::GetWindowPos();
+        ImVec2 wsize = ImGui::GetWindowSize();
+        extern gX_I1 gX_EditorHost_IsOpen(gX_I0);
+        gX_F32 barH = ImGui::GetFrameHeight();
+        gX_F32 hostBottom = barH * (gX_EditorHost_IsOpen() ? 2.0f : 1.0f);
+        gX_TraceLog(gX_LOG_INFO,
+            "THEME_EDITOR: panel=%.0f,%.0f,%.0f,%.0f hostbottom=%.0f",
+            wpos.x, wpos.y, wpos.x + wsize.x, wpos.y + wsize.y, hostBottom);
+    }
     if (!thOpen) tools_close_theme_runtime();
     if (!s_panelTraced) {
         s_panelTraced = 1;
@@ -512,6 +534,14 @@ extern "C" gX_I0 gX_Tools_Theme_Draw(gX_I0) {
     ImGui::TextWrapped("Theme: %s", s_themePath[0] ? s_themePath : "(none)");
     ImGui::Text("Tokens: %i%s", gX_GUI_Style_TokenCount(),
         s_edited ? " (edited)" : "");
+    //ai: the preview canvas cannot receive clicks while the paired runtime
+    //   tool owns input, so the accessible Back route lives on the panel.
+    if (ImGui::Button("Back to title")) {
+        tools_close_theme_runtime();
+        gX_TraceLog(gX_LOG_INFO, "THEME_EDITOR: back");
+    }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Close the theme editor and its preview, return to the title.");
     ImGui::InputTextWithHint("##search", "filter tokens... (R = reset)", s_search, sizeof(s_search));
     if (ImGui::SmallButton("Reset all") && s_baselineCount > 0) {
         for (gX_I32 i = 0; i < s_baselineCount; i++) theme_reset_token(i);

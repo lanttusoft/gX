@@ -6,6 +6,7 @@
 #ai: v0.44.1 editor-system gate — lifecycle, toolbars and lab cleanup across
 #   every editor, not just per-editor opening frames.
 import argparse
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -153,6 +154,129 @@ def main():
             if not parity_ok:
                 failures.append(f"canvas: preview parity failed ({parity:.2f})")
 
+            #ai: overlap/visibility — the view controls must remain inside the
+            #   left dock and the status text must stay inside its strip at
+            #   100% and 175%.
+            for scale, label in (("1.00", "100%"), ("1.75", "175%")):
+                log = run("editor", 45, extra={
+                    "GX_UI_SCALE": scale, "GX_DOCK_DISABLE": "1",
+                    "GX_TOUR": "0", "GX_TOOLS_LAYOUT_TRACE": "1"})
+                bar = re.search(
+                    r"EDITOR_SYSTEM: toolbar unlock=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+) "
+                    r"fit=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+) "
+                    r"panel=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)", log)
+                status = re.search(
+                    r"EDITOR_SYSTEM: status text=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+) "
+                    r"window=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)", log)
+                layout_ok = bool(bar) and bool(status)
+                if layout_ok:
+                    v = [float(value) for value in bar.groups()]
+                    layout_ok = (
+                        v[2] <= v[10] and v[6] <= v[10]
+                        and v[3] >= v[9] and v[7] >= v[9]
+                        and v[7] <= v[11])
+                    t = [float(value) for value in status.groups()]
+                    layout_ok = layout_ok and t[3] <= t[7] and t[0] >= t[4]
+                print(f"{'toolbar':<12} {'PASS' if layout_ok else 'FAIL'}  "
+                      f"{label} unlock/fit inside, status fits")
+                if not layout_ok:
+                    failures.append(f"toolbar: overlap/status failed at {label}")
+
+            #ai: the floating theme editor must start below the host workspace
+            #   tab strip, including at 175% text scale.
+            for scale, label in (("1.00", "100%"), ("1.75", "175%")):
+                log = run("theme", 35, extra={
+                    "GX_UI_SCALE": scale, "GX_DOCK_DISABLE": "1",
+                    "GX_TOOLS_LAYOUT_TRACE": "1"})
+                panel = re.search(
+                    r"THEME_EDITOR: panel=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+) "
+                    r"hostbottom=([-\d.]+)", log)
+                overlap_ok = bool(panel) and float(panel.group(2)) >= float(panel.group(5))
+                print(f"{'overlap':<12} {'PASS' if overlap_ok else 'FAIL'}  "
+                      f"theme panel below host bar {label}")
+                if not overlap_ok:
+                    failures.append(f"overlap: theme panel covered the host bar at {label}")
+
+            #ai: the report form keeps its action row on screen at 175%, and
+            #   Reset clears the draft.
+            for scale, label in (("1.00", "100%"), ("1.75", "175%")):
+                log = run(None, 60, extra={
+                    "GX_UI_SCALE": scale, "GX_AI_INPUT": "0.5 key 299 1",
+                    "GX_TOOLS_LAYOUT_TRACE": "1"})
+                form = re.search(
+                    r"BUG_REPORT: form save=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+) "
+                    r"reset=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+) "
+                    r"window=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)", log)
+                form_ok = bool(form)
+                if form_ok:
+                    v = [float(value) for value in form.groups()]
+                    form_ok = (v[2] <= v[10] and v[3] <= v[11]
+                               and v[6] <= v[10] and v[7] <= v[11]
+                               and v[8] >= 0 and v[9] >= 0
+                               and v[10] <= 1024 and v[11] <= 768)
+                print(f"{'report':<12} {'PASS' if form_ok else 'FAIL'}  "
+                      f"form actions inside {label}")
+                if not form_ok:
+                    failures.append(f"report: form actions clipped at {label}")
+            reset_log = run(None, 120, extra={
+                "GX_UI_SCALE": "1.75",
+                "GX_AI_INPUT": "0.5 key 299 1; 1.0 move 340 620 100; 1.5 click 340 620"})
+            reset_ok = "BUG_REPORT: reset" in reset_log
+            print(f"{'report':<12} {'PASS' if reset_ok else 'FAIL'}  reset control")
+            if not reset_ok:
+                failures.append("report: Reset control did not fire")
+
+            #ai: state-machine transitions — report close/reopen, host
+            #   open/close and canvas lock toggle.
+            state_log = run(None, 220, extra={
+                "GX_UI_SCALE": "1.75",
+                "GX_AI_INPUT": "0.5 key 299 1; 1.0 move 992 72 100; "
+                               "1.5 click 992 72; 2.0 key 299 1"})
+            report_state = (state_log.count("BUG_REPORT: open global") >= 2
+                            and "BUG_REPORT: close" in state_log)
+            print(f"{'state':<12} {'PASS' if report_state else 'FAIL'}  "
+                  f"report open-close-reopen")
+            if not report_state:
+                failures.append("state: report open-close-reopen failed")
+            host_log = run(None, 100, extra={
+                "GX_AI_INPUT": "0.5 key 298 1; 1.5 key 298 1"})
+            host_state = ("EDITOR_HOST: open=1" in host_log
+                          and "EDITOR_HOST: open=0" in host_log)
+            print(f"{'state':<12} {'PASS' if host_state else 'FAIL'}  "
+                  f"host open-close")
+            if not host_state:
+                failures.append("state: host open-close failed")
+            lock_log = run("editor", 140, extra={
+                "GX_UI_SCALE": "1.00", "GX_DOCK_DISABLE": "1",
+                "GX_TOUR": "0", "GX_TOOLS_LAYOUT_TRACE": "1",
+                "GX_AI_INPUT": "0.5 move 200 143 100; 0.8 click 200 143; "
+                               "1.2 click 200 143"})
+            lock_state = ("EDITOR_SYSTEM: canvas unlocked=1" in lock_log
+                          and "EDITOR_SYSTEM: canvas unlocked=0" in lock_log)
+            print(f"{'state':<12} {'PASS' if lock_state else 'FAIL'}  "
+                  f"canvas unlock-lock")
+            if not lock_state:
+                failures.append("state: canvas unlock-lock failed")
+
+            #ai: the Theme Lab Back route lives on the panel and must close the
+            #   paired preview at both text scales.
+            for scale, label, x, y in (
+                    ("1.00", "100%", 100, 112), ("1.75", "175%", 120, 192)):
+                directory = root / f"back-{label}"
+                directory.mkdir()
+                log = run("themlab", 80, screenshot=directory, shot_frame=70,
+                          extra={"GX_UI_SCALE": scale, "GX_DOCK_DISABLE": "1",
+                                 "GX_TOUR": "0",
+                                 "GX_AI_INPUT": f"0.3 move {x} {y} 100; "
+                                                f"0.8 click {x} {y}"})
+                shot = audit.newest_shot(directory)
+                delta = compare(baseline, image(shot)) if shot else 99.0
+                back_ok = "THEME_EDITOR: back" in log and delta < CLOSE_MAX
+                print(f"{'themlab':<12} {'PASS' if back_ok else 'FAIL'}  "
+                      f"Back {label} delta={delta:.2f}")
+                if not back_ok:
+                    failures.append(f"themlab: Back failed at {label} ({delta:.2f})")
+
             for editor, expected in HOSTABLE:
                 log = run(editor, 25)
                 if "needs the gx_shell module" in log:
@@ -205,7 +329,7 @@ def main():
         for failure in failures:
             print(f"EDITOR_SYSTEM_CHECK: FAIL — {failure}", file=sys.stderr)
         return 1
-    print("EDITOR_SYSTEM_CHECK: PASS — toolbars, lifecycle, labs and title return")
+    print("EDITOR_SYSTEM_CHECK: PASS — toolbars, lifecycle, labs, overlap and state transitions")
     return 0
 
 

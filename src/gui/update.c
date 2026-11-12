@@ -400,7 +400,16 @@ gX_I0 gX_GUI_Update(gX_I0) {
 
     gX_GUI_Canvas *canvases = gui.canvases.data;
     gX_Heap_Meta *canvasesMeta = gui.canvases.meta;
-    gui.toolsInputCaptured = gX_Tools_RuntimeActive();
+    //ai: global editor chrome also owns native GUI input. ImGui's last-frame
+    //   capture flags cover floating panels, menus and active text fields;
+    //   the explicit host/report probes cover the first frame of an overlay.
+    extern gX_I1 gX_Tools_BugReport_IsOpen(gX_I0);
+    extern gX_I1 gX_EditorHost_IsOpen(gX_I0);
+    extern gX_I1 gX_Tools_ImGui_WantsMouse(gX_I0);
+    extern gX_I1 gX_Tools_ImGui_WantsKeyboard(gX_I0);
+    gui.toolsInputCaptured = (gX_Tools_RuntimeActive()
+        || gX_Tools_BugReport_IsOpen() || gX_EditorHost_IsOpen()
+        || gX_Tools_ImGui_WantsMouse()) ? 1 : 0;
     
     //opencode: markup live-reload — rate-limited mtime watch on the registered
     //   markup file (refreshes markup canvases on change)
@@ -687,6 +696,17 @@ gX_I0 gX_GUI_Update(gX_I0) {
         gX_GUI_ScrollList_UpdateDrag();
     }
 
+    //ai: make the ImGui/native arbitration observable for editor-input-check.
+    if (gX_GUI_Trace_Enabled()
+        && input.mouse.leftButton.PRESSED && gX_Tools_ImGui_WantsMouse())
+        gX_TraceLog(gX_LOG_INFO, "GUITRACE: input-captured mouse");
+    if (gX_GUI_Trace_Enabled() && gX_Tools_ImGui_WantsKeyboard()
+        && (input.keyboard.keys[gX_KEY_UP].state.PRESSED
+            || input.keyboard.keys[gX_KEY_DOWN].state.PRESSED
+            || input.keyboard.keys[gX_KEY_LEFT].state.PRESSED
+            || input.keyboard.keys[gX_KEY_RIGHT].state.PRESSED))
+        gX_TraceLog(gX_LOG_INFO, "GUITRACE: input-captured keyboard");
+
     //opencode: click-to-focus through the centralized helper so state bits
     //   and focus IDs cannot diverge. A modal scopes outside clicks: they
     //   either dismiss it or are swallowed, never reaching background.
@@ -716,7 +736,8 @@ gX_I0 gX_GUI_Update(gX_I0) {
 
     //opencode: keyboard focus update — Tab/Shift+Tab cycling, Enter/Space activation
     //opencode: gamepad D-pad navigation — Up/Down cycle focus, A button activates
-    if (gui.focusEnabled && !gui.toolsInputCaptured) {
+    if (gui.focusEnabled && !gui.toolsInputCaptured
+        && !gX_Tools_ImGui_WantsKeyboard()) {
         gX_I1 tabPressed = input.keyboard.keys[gX_KEY_TAB].state.PRESSED;
         gX_I1 shiftDown = input.keyboard.keys[gX_KEY_LEFT_SHIFT].state.DOWN
                        || input.keyboard.keys[gX_KEY_RIGHT_SHIFT].state.DOWN;

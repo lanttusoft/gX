@@ -793,6 +793,8 @@ typedef struct {
     gX_F32 t0;
     gX_I32 isDrag;
     gX_I1 isKey;
+    gX_I1 isWheel;
+    gX_F32 wheel;
     gX_I32 keyCode;
     gX_I1 keyCtrl;
     gX_I32 modifierKey;
@@ -949,6 +951,10 @@ static gX_I0 gX_AI_Input_Parse(const gX_I8 *src) {
                 } else if (chordKeys[0]) continue;
                 else if (a->modifierCtrl) continue;
             }
+        } else if (strcmp(kind, "wheel") == 0) {
+            a->isWheel = 1;
+            a->dur = 0.01f;
+            if (sscanf(tok, "%*f %*s %f", &a->wheel) != 1) continue;
         } else continue;
         g_aiInput.count++;
     }
@@ -1004,7 +1010,8 @@ static gX_I0 gX_AI_Input_Apply(gX_I0) {
     if (idx >= 0) {
         const gX_AI_Action *a = &g_aiInput.actions[idx];
         //opencode: move parks button-up; click/drag hold the button.
-        down = (a->isKey || a->isPad) ? 0 : ((a->isDrag == 2) ? 0 : 1);
+        down = (a->isKey || a->isPad || a->isWheel) ? 0
+            : ((a->isDrag == 2) ? 0 : 1);
         button = a->button;
         g_aiInput.activeIdx = idx;
         if (a->isKey) {
@@ -1015,6 +1022,10 @@ static gX_I0 gX_AI_Input_Apply(gX_I0) {
             if (idx != prevKeyAction) gX_Input_Virtual_SetKey(a->keyCode, a->keyShift);
             prevKeyAction = idx;
         } else if (a->isPad) {
+            prevKeyAction = -1;
+        } else if (a->isWheel) {
+            input.mouse.scroll = a->wheel;
+            gX_TraceLog(gX_LOG_INFO, "INPUT: ai wheel=%.2f", a->wheel);
             prevKeyAction = -1;
         } else {
             //opencode: scripts author in window px; engine owns game coords.
@@ -1259,7 +1270,9 @@ gX_I0 gX_Input_Update(gX_I0) {
 
     //opencode: runtime tools suppress gameplay binds except for an explicitly
     //   activated editor camera, which uses the existing scene camera binds.
-    gX_I1 updateBinds = !gX_Tools_RuntimeActive() || input.toolCameraInputEnabled;
+    extern gX_I1 gX_Tools_ImGui_WantsKeyboard(gX_I0);
+    gX_I1 updateBinds = (!gX_Tools_RuntimeActive() || input.toolCameraInputEnabled)
+        && !gX_Tools_ImGui_WantsKeyboard();
 
     GX_PROFILE_ZONE_BEGIN("input:devices");
     gX_Input_Update_Keyboard();
@@ -1315,7 +1328,8 @@ gX_I0 gX_Input_Update(gX_I0) {
     if (updateBinds) gX_Input_Update_Binds();
     //opencode: enqueue characters for the textinput widget (after virtual
     //   input override so AI/script key presses synthesize chars too)
-    if (!gX_Tools_RuntimeActive()) gX_Input_Update_CharQueue();
+    if (!gX_Tools_RuntimeActive() && !gX_Tools_ImGui_WantsKeyboard())
+        gX_Input_Update_CharQueue();
     
     //opencode: use input system's PRESSED state (not raylib gX_Key_IsPressed)
     //so AI virtual key presses work correctly

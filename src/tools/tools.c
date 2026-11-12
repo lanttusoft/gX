@@ -394,6 +394,11 @@ gX_I0 tools_close_theme_runtime(gX_I0) {
         s_themeLabPaired = 0;
     }
     s_runtimeTheme = 0;
+    //ai: hide the workspace tab strip when its last editor closes.
+    {
+        extern gX_I0 gX_EditorHost_SetOpen(gX_I1);
+        gX_EditorHost_SetOpen(0);
+    }
 }
 
 gX_I0 gX_Tools_OpenThemLab_Runtime(gX_I0) {    //opencode: preview onto canvas 2 (audit re-queue keeps it across
@@ -541,6 +546,12 @@ gX_I0 gX_Tools_Close_Runtime(gX_I0) {
     s_runtimeRail = 0;
     s_runtimeBackground = 0;
     s_runtimeSky = 0;
+    //ai: the workspace tab strip is editor chrome; hide it when the last
+    //   runtime editor closes instead of leaving a "No editor" toolbar.
+    {
+        extern gX_I0 gX_EditorHost_SetOpen(gX_I1);
+        gX_EditorHost_SetOpen(0);
+    }
     //opencode: drop host panel insets so the next dock starts from the defaults.
     gX_GUI_Viewport_SetLeftInset(0.0f);
     gX_GUI_Viewport_SetRightInset(0.0f);

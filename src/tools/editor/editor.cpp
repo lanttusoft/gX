@@ -73,6 +73,7 @@ static gX_F32v2 s_viewPan = {0.0f, 0.0f};
 static gX_F32v2 s_savedCanvasOffset = {0.0f, 0.0f};
 static gX_F32v2 s_savedCanvasScale = {1.0f, 1.0f};
 static gX_I1 s_viewSaved = 0;
+static gX_I1 s_panMoved = 0;
 
 static gX_I0 tools_selection_clear(gX_I0) {
     s_selection.canvasIndex = -1;
@@ -153,6 +154,7 @@ extern "C" gX_I0 gX_Tools_Editor_ClearEditLock(gX_I0) {
     s_viewSaved = 0;
     s_viewZoom = 1.0f;
     s_viewPan = (gX_F32v2){0.0f, 0.0f};
+    s_panMoved = 0;
     s_canvasUnlocked = 0;
 }
 extern "C" gX_I0 gX_Tools_Editor_SoloRestore(gX_I0) {
@@ -543,7 +545,23 @@ static gX_I0 tools_canvas_local(gX_GUI_Canvas *canvas, gX_F32 mx, gX_F32 my,
 }
 
 static gX_I0 tools_canvas_view(gX_GUI_Canvas *canvas) {
+    //ai: view gestures belong to the canvas only. A panel scroll (Properties,
+    //   tree, report/host chrome) used to zoom or pan the scene underneath.
+    if (ImGui::GetIO().WantCaptureMouse) {
+        const char *trace = getenv("GX_TOOLS_LAYOUT_TRACE");
+        if (trace && trace[0])
+            gX_TraceLog(gX_LOG_INFO, "EDITOR_SYSTEM: view blocked=imgui");
+        return;
+    }
     gX_F32 mx = input.mouse.coord.x, my = input.mouse.coord.y;
+    gX_Rectangle box = canvas->canvasBox;
+    if (mx < box.x || my < box.y
+        || mx > box.x + box.width || my > box.y + box.height) {
+        const char *trace = getenv("GX_TOOLS_LAYOUT_TRACE");
+        if (trace && trace[0])
+            gX_TraceLog(gX_LOG_INFO, "EDITOR_SYSTEM: view blocked=box");
+        return;
+    }
     gX_F32 bw = canvas->buffer.width > 0 ? (gX_F32)canvas->buffer.width : 1.0f;
     gX_F32 bh = canvas->buffer.height > 0 ? (gX_F32)canvas->buffer.height : 1.0f;
     gX_F32 scroll = input.mouse.scroll;
@@ -562,11 +580,22 @@ static gX_I0 tools_canvas_view(gX_GUI_Canvas *canvas) {
             s_viewPan.x = mx - canvas->canvasBox.x - cx * kx * newZoom;
             s_viewPan.y = my - canvas->canvasBox.y - cy * ky * newZoom;
             s_viewZoom = newZoom;
+            gX_TraceLog(gX_LOG_INFO,
+                "EDITOR_SYSTEM: view zoom=%.2f pan=%.0f,%.0f",
+                s_viewZoom, s_viewPan.x, s_viewPan.y);
         }
     }
     if (input.mouse.middleButton.DOWN) {
-        s_viewPan.x += input.mouse.coordDelta.x;
-        s_viewPan.y += input.mouse.coordDelta.y;
+        //ai: coordPrev is frame-stable for both physical and scripted input;
+        //   coordDelta is the raw OS delta and stays zero under GX_AI_INPUT.
+        s_viewPan.x += input.mouse.coord.x - input.mouse.coordPrev.x;
+        s_viewPan.y += input.mouse.coord.y - input.mouse.coordPrev.y;
+        s_panMoved = 1;
+    }
+    if (input.mouse.middleButton.RELEASED && s_panMoved) {
+        s_panMoved = 0;
+        gX_TraceLog(gX_LOG_INFO,
+            "EDITOR_SYSTEM: view pan=%.0f,%.0f", s_viewPan.x, s_viewPan.y);
     }
 }
 
@@ -1387,45 +1416,77 @@ static const gX_I8 *tools_add_type_name(gX_I32 idx) {
     if (idx < 0 || idx > 5) idx = 0;
     return names[idx];
 }
+static gX_I0 tools_toolbar_same_line(const gX_I8 *nextLabel) {
+    gX_F32 width = ImGui::CalcTextSize(nextLabel).x
+        + ImGui::GetStyle().FramePadding.x * 2.0f;
+    gX_F32 lastRight = ImGui::GetItemRectMax().x;
+    gX_F32 panelRight = ImGui::GetWindowPos().x
+        + ImGui::GetWindowContentRegionMax().x;
+    if (lastRight + width + ImGui::GetStyle().ItemSpacing.x <= panelRight)
+        ImGui::SameLine();
+}
+
 static gX_I0 tools_panel_toolbar(gX_GUI_Canvas *canvas) {
     gX_I32 selectionIndex = tools_selection_index(canvas);
     (void)canvas;
+    const gX_I1 traceLayout = getenv("GX_TOOLS_LAYOUT_TRACE") != NULL;
+    ImVec2 unlockMin = ImVec2(0, 0), unlockMax = ImVec2(0, 0);
+    ImVec2 fitMin = ImVec2(0, 0), fitMax = ImVec2(0, 0);
     if (ImGui::SmallButton("+ Add")) {
         tools_add_element(s_addTypeIdx);
     }
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Add %s element (type picker lives in Actions below)",
             tools_add_type_name(s_addTypeIdx));
-    ImGui::SameLine();
+    tools_toolbar_same_line("Dup");
     if (ImGui::SmallButton("Dup") && selectionIndex >= 0) {
         tools_duplicate_element(selectionIndex);
     }
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Duplicate selected element (+16px offset)");
-    ImGui::SameLine();
+    tools_toolbar_same_line("Del");
     if (ImGui::SmallButton("Del") && selectionIndex >= 0) {
         s_confirmRemove = 1;
     }
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Delete selected element (asks first)");
-    ImGui::SameLine();
+    tools_toolbar_same_line("Save");
     if (ImGui::SmallButton("Save")) {
         tools_save_request();
     }
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Save markup (overwrite asks unless it is the opened file)");
-    ImGui::SameLine();
-    if (ImGui::SmallButton(s_canvasUnlocked ? "Lock" : "Unlock"))
+    tools_toolbar_same_line(s_canvasUnlocked ? "Lock" : "Unlock");
+    if (ImGui::SmallButton(s_canvasUnlocked ? "Lock" : "Unlock")) {
         s_canvasUnlocked = !s_canvasUnlocked;
-    if (ImGui::IsItemHovered())
+        gX_TraceLog(gX_LOG_INFO, "EDITOR_SYSTEM: canvas unlocked=%d",
+            s_canvasUnlocked);
+    }
+    gX_I1 unlockHovered = ImGui::IsItemHovered();
+    unlockMin = ImGui::GetItemRectMin();
+    unlockMax = ImGui::GetItemRectMax();
+    if (unlockHovered)
         ImGui::SetTooltip("Locked: wheel zooms and middle-drag pans; Unlock enables element drag/resize.");
-    ImGui::SameLine();
+    tools_toolbar_same_line("Fit");
     if (ImGui::SmallButton("Fit")) {
         s_viewZoom = 1.0f;
         s_viewPan = (gX_F32v2){0.0f, 0.0f};
     }
+    fitMin = ImGui::GetItemRectMin();
+    fitMax = ImGui::GetItemRectMax();
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Reset the editor canvas view (not the element layout)");
+    if (traceLayout) {
+        ImVec2 panelMin = ImGui::GetWindowPos();
+        ImVec2 panelMax = ImVec2(panelMin.x + ImGui::GetWindowSize().x,
+            panelMin.y + ImGui::GetWindowSize().y);
+        gX_TraceLog(gX_LOG_INFO,
+            "EDITOR_SYSTEM: toolbar unlock=%.0f,%.0f,%.0f,%.0f fit=%.0f,%.0f,%.0f,%.0f panel=%.0f,%.0f,%.0f,%.0f hover=%d mouse=%.0f,%.0f",
+            unlockMin.x, unlockMin.y, unlockMax.x, unlockMax.y,
+            fitMin.x, fitMin.y, fitMax.x, fitMax.y,
+            panelMin.x, panelMin.y, panelMax.x, panelMax.y,
+            unlockHovered, ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
+    }
 }
 
 static gX_I0 tools_panel_actions(void) {
@@ -1652,6 +1713,7 @@ extern "C" gX_I0 gX_Tools_Editor_Open(gX_I32 canvasIndex, const gX_I8 *markupPat
     s_canvasUnlocked = 0;
     s_viewZoom = 1.0f;
     s_viewPan = (gX_F32v2){0.0f, 0.0f};
+    s_panMoved = 0;
     {
         const char *unlockEnv = getenv("GX_TOOLS_CANVAS_UNLOCK");
         if (unlockEnv && unlockEnv[0] == '1') s_canvasUnlocked = 1;
@@ -1998,7 +2060,8 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
     gX_F32 menuH = ImGui::GetFrameHeight();
     //ai: GUI-M4 — the status strip must grow with the scaled font; a fixed
     //   28px row clipped the 175% text.
-    gX_F32 statusH = ImGui::GetFrameHeight() + 8.0f;
+    gX_F32 statusH = ImGui::GetTextLineHeightWithSpacing()
+        + ImGui::GetStyle().WindowPadding.y * 2.0f + 2.0f;
 
     //opencode: LEFT — element tree + add/remove/duplicate + save path
     //ai: docked titles shorten when the live font/width cannot fit them, so
@@ -2138,6 +2201,19 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
             ImGui::Text("canvas %i | %u el | sel #%i %s @ (%.0f,%.0f) %.0fx%.0f | snap %s grid %s",
                 s_targetCanvas, canvas ? canvas->elements.amount : 0, selectionIndex, selName, sx, sy, sw, sh,
                 s_snapOn ? "on" : "off", s_gridOn ? "on" : "off");
+        }
+        {
+            const gX_I8 *traceLayout = getenv("GX_TOOLS_LAYOUT_TRACE");
+            if (traceLayout && traceLayout[0]) {
+                ImVec2 tmin = ImGui::GetItemRectMin();
+                ImVec2 tmax = ImGui::GetItemRectMax();
+                ImVec2 wmin = ImGui::GetWindowPos();
+                ImVec2 wmax = ImVec2(wmin.x + ImGui::GetWindowSize().x,
+                    wmin.y + ImGui::GetWindowSize().y);
+                gX_TraceLog(gX_LOG_INFO,
+                    "EDITOR_SYSTEM: status text=%.0f,%.0f,%.0f,%.0f window=%.0f,%.0f,%.0f,%.0f",
+                    tmin.x, tmin.y, tmax.x, tmax.y, wmin.x, wmin.y, wmax.x, wmax.y);
+            }
         }
         if (ImGui::GetFontSize() <= 18.0f) {
             const gX_I8 *hint = "click select - drag move - handles resize - Ctrl+Z undo";

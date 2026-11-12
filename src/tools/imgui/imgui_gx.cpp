@@ -72,6 +72,18 @@ extern "C" gX_I0 gX_EditorHost_Draw(gX_I0);
 #include "../../module/module.h"
 
 static gX_I1 s_loaded = 0;
+//ai: native GUI input arbitration — toolkit queries the last ImGui frame so
+//   canvas clicks, wheel gestures and arrow keys cannot leak through a panel.
+extern "C" gX_I1 gX_Tools_ImGui_WantsMouse(gX_I0) {
+    if (!s_loaded || !ImGui::GetCurrentContext()) return 0;
+    return ImGui::GetIO().WantCaptureMouse ? 1 : 0;
+}
+
+extern "C" gX_I1 gX_Tools_ImGui_WantsKeyboard(gX_I0) {
+    if (!s_loaded || !ImGui::GetCurrentContext()) return 0;
+    ImGuiIO &io = ImGui::GetIO();
+    return (io.WantCaptureKeyboard || io.WantTextInput) ? 1 : 0;
+}
 static gX_I1 s_themeMode = 0;
 //opencode: immutable reference style lets user scale changes avoid cumulative
 //   rounding from ImGuiStyle::ScaleAllSizes().

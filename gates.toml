@@ -322,6 +322,16 @@ group = "gui"
 cache = "content"
 description = "Cross-editor lifecycle, toolbar and lab cleanup."
 
+#ai: editor input arbitration — ImGui windows own clicks/arrows over the
+#   native GUI, and canvas wheel/pan gestures stay inside the free viewport.
+[gate.editor-input]
+script = "editor_input_check.py"
+args = []
+tier = ["quick"]
+group = "gui"
+cache = "content"
+description = "Cross-editor ImGui/native input arbitration."
+
 [gate.gui-interaction]
 script = "gui_interaction_check.py"
 args = []

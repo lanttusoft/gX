@@ -11,7 +11,9 @@ editing the form does not create files.
 
 Title and description are required. The form also accepts type, severity,
 reproduction steps, when/how it happened, and the affected feature. Click
-**Save local report** to write a uniquely named JSON file under `bugs/`.
+**Save local report** to write a uniquely named JSON file under `bugs/`;
+**Reset** clears the draft and the status. The form caps its width and height
+at high text scale, scrolls the fields and keeps Save/Reset on screen.
 Repeated submissions never overwrite existing reports. The status shows the
 saved path or failure. Title/description buffers hold 128/256 bytes;
 reproduction steps hold 1024 bytes, other text fields 256 bytes.

@@ -343,7 +343,11 @@ static gX_I0 host_open_editor(gX_I32 index) {
 }
 
 static gX_I0 host_close_editor(void) {
+    //ai: a workspace switch closes the active tool, not the host toolbar;
+    //   restore the host when this close came from the host itself.
+    gX_I1 hostWasOpen = s_hostOpen;
     gX_Tools_Close_Runtime();
+    if (hostWasOpen) gX_EditorHost_SetOpen(1);
     host_trace_active();
 }
 
