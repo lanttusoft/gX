@@ -148,7 +148,7 @@ gX_I1 gX_EditorPicker_IsOpen(gX_I0)
 
 gX_I0 gX_EditorPicker_Draw(gX_I0)
 {
-    if (!s_open) return;
+    if (!s_open || !s_entries) return;
     if (!ImGui::GetCurrentContext()) return;
     if (s_pending)
     {
@@ -193,31 +193,32 @@ gX_I0 gX_EditorPicker_Draw(gX_I0)
     gX_I32 matching = 0;
     for (gX_I32 i = 0; i < s_count; i++)
     {
-        if (!editor_picker_matches(s_entries[i].path)) continue;
+        const gX_I8 *path = s_entries[i].path;
+        if (!path || !path[0]) continue;
+        if (!editor_picker_matches(path)) continue;
         matching++;
         gX_F32 avail = ImGui::GetContentRegionAvail().x;
         gX_I8 display[GX_EDITOR_PICKER_PATH];
         editor_picker_ellipsis(s_entries[i].label, avail, display, sizeof(display));
         gX_I1 selected = strcmp((const char *)s_selected,
-            (const char *)s_entries[i].path) == 0;
+            (const char *)path) == 0;
         ImGui::PushID(i);
         if (ImGui::Selectable((const char *)display, selected,
                 ImGuiSelectableFlags_AllowDoubleClick))
         {
-            snprintf((char *)s_selected, sizeof(s_selected), "%s",
-                s_entries[i].path);
+            snprintf((char *)s_selected, sizeof(s_selected), "%s", path);
             if (ImGui::IsMouseDoubleClicked(0)) {
-                editor_picker_accept(s_entries[i].path);
+                editor_picker_accept(path);
                 ImGui::PopID();
                 break;
             }
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("%s", s_entries[i].path);
+            ImGui::SetTooltip("%s", path);
             if (ImGui::IsKeyPressed(ImGuiKey_Enter, false)
                 || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter, false)) {
-                editor_picker_accept(s_entries[i].path);
+                editor_picker_accept(path);
                 ImGui::PopID();
                 break;
             }
@@ -228,7 +229,7 @@ gX_I0 gX_EditorPicker_Draw(gX_I0)
             ImVec2 imax = ImGui::GetItemRectMax();
             gX_TraceLog(gX_LOG_INFO,
                 "EDITOR_PICKER: item id=%s path=%s avail=%.0f item=%.0f",
-                s_id, s_entries[i].path, avail, imax.x - imin.x);
+                s_id, path, avail, imax.x - imin.x);
         }
         ImGui::PopID();
     }

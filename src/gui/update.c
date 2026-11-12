@@ -399,6 +399,7 @@ gX_I0 gX_GUI_Update(gX_I0) {
         gX_Cursor_Pop("gui-modal");
 
     gX_GUI_Canvas *canvases = gui.canvases.data;
+    if (!canvases && gui.canvases.amount > 0) return;
     gX_Heap_Meta *canvasesMeta = gui.canvases.meta;
     //ai: global editor chrome also owns native GUI input. ImGui's last-frame
     //   capture flags cover floating panels, menus and active text fields;
@@ -500,17 +501,19 @@ gX_I0 gX_GUI_Update(gX_I0) {
         gui.composite.backgroundValid = false;
         // Mark all canvas buffers for reload
         //opencode: reuse outer 'canvases' instead of redeclaring
-        for (gX_U32 i = 0; i < gui.canvases.amount; i++) {
-            gX_GUI_Canvas *c = &canvases[i];
-            //opencode: update canvasBox to match new screen dimensions so the canvas
-            //   buffer is recreated at the correct size and composited full-screen.
-            //   Without this, canvasBox stays at the initial load-time window size.
-            c->canvasBox.width = (gX_F32)maindata.screenWidth;
-            c->canvasBox.height = (gX_F32)maindata.screenHeight;
-            if (c->buffer.loadingState.loaded) {
-                gX_GUI_BufferPool_Stash(c->buffer, c->buffer.width, c->buffer.height, false);
-                c->buffer.loadingState.loaded = false;
-                c->buffer.loadingState.load = true;
+        if (canvases) {
+            for (gX_U32 i = 0; i < gui.canvases.amount; i++) {
+                gX_GUI_Canvas *c = &canvases[i];
+                //opencode: update canvasBox to match new screen dimensions so the canvas
+                //   buffer is recreated at the correct size and composited full-screen.
+                //   Without this, canvasBox stays at the initial load-time window size.
+                c->canvasBox.width = (gX_F32)maindata.screenWidth;
+                c->canvasBox.height = (gX_F32)maindata.screenHeight;
+                if (c->buffer.loadingState.loaded) {
+                    gX_GUI_BufferPool_Stash(c->buffer, c->buffer.width, c->buffer.height, false);
+                    c->buffer.loadingState.loaded = false;
+                    c->buffer.loadingState.load = true;
+                }
             }
         }
     }
@@ -844,6 +847,7 @@ gX_I0 gX_GUI_Update(gX_I0) {
                 if (!gX_GUI_Canvas_InputAllowed((gX_I32)ci)) continue;
                 if (!gui.canvases.meta[ci].UPDATE) continue;
                 gX_GUI_Element *elems = c->elements.data;
+                if (!elems) continue;
                 for (gX_U32 ei = 0; ei < c->elements.amount; ei++) {
                     //opencode: audit — focus traversal visits only live
                     //   (USED), visible, enabled, focusable elements.
