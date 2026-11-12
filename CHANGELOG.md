@@ -4,6 +4,25 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.44.2] - 2026-11-12
+
+Release-Class: patch
+
+### Added
+- **Release tooling:** `scripts/release.py` provides a dry-run-first release
+  workflow: status/plan, version-mirror preparation, class-appropriate
+  admission with recorded retries, reproducible/archive packaging, retained
+  evidence bundles and explicit owner-only tag/push/publish commands.
+  `make release-status` and `make release-plan` expose the read-only paths.
+- Release test tooling covers version parsing, mirror planning without
+  writes, owner command generation and the declared release class.
+
+### Changed
+- Release tooling keeps publication manual: it never creates tags or
+  releases, and it refuses evidence bundles inside the repository.
+
+No runtime, save, preset or resource format changed.
+
 ## [0.44.1] - 2026-11-11
 
 Release-Class: patch
