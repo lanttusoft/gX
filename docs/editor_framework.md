@@ -227,14 +227,15 @@ First slice landed:
   path, dirty/read-only, save/load callbacks, `CanClose` guard. The GFX preset
   marks dirty on model/light history edits and cleans on save/load;
   `GX_GFX_PRESET_TOUCH=1` exposes the state to the layout gate.
+- The GFX close guard is wired into the host and GFX menus: a dirty preset
+  vetoes teardown and opens **Save and close / Discard and close / Cancel**.
 
 The input handoff was tightened after the GUI-editor close bug: the host
 capture query is active-editor-aware, tool close waits for the invoking menu
 to finish, and ImGui capture is ignored when no frame was drawn recently.
 
-Still proposed: wiring a close prompt into the host/tool close paths, panel
-registry, input-owner stack, modal manager, undo transactions and the full
-command palette.
+Still proposed: panel registry, input-owner stack, a general modal manager,
+undo transactions and the full command palette.
 
 ## Pilot: GFX preset load
 

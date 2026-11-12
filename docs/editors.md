@@ -84,10 +84,12 @@ pins the window inside the display and every row inside its cell at 100/175%.
 
 The preset is also the first document-backed surface (GX-I043): model/light
 history edits mark it **modified**, Save/load clear the flag, and the replace
-confirmation warns that unsaved changes will be lost. `GX_GFX_PRESET_TOUCH=1`
-marks it dirty for headless captures; `gfx-editor-layout-check` verifies a
-preset load clears the state. A full close guard is still pending because the
-host owns tool close.
+confirmation warns that unsaved changes will be lost. Closing a dirty preset
+from the host menu or the GFX editor menu is vetoed by
+`gX_Tools_Gfx_CloseGuard` and opens a **Save and close / Discard and close /
+Cancel** prompt. `GX_GFX_PRESET_TOUCH=1` and `GX_GFX_PRESET_CLOSE=1` expose the
+state and guard to `gfx-editor-layout-check`, which verifies load clears the
+flag and a dirty close prompts.
 
 ### GUI editor usability (2026-11-08)
 

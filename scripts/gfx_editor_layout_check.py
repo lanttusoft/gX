@@ -164,6 +164,7 @@ def check_preset_document(name):
         "GX_GFX_LAYOUT_TRACE": "1",
         "GX_GFX_PRESET_TOUCH": "1",
         "GX_GFX_PRESET_LOAD": "resources/tools/gfx_showcase.json",
+        "GX_GFX_PRESET_CLOSE": "1",
     })
     try:
         result = subprocess.run(
@@ -181,6 +182,42 @@ def check_preset_document(name):
             f"{name}: preset document did not become dirty")
     require("EDITOR_DOCUMENT: clean id=gfx.preset" in log,
             f"{name}: preset load did not clear dirty state")
+    require("GFX_PRESET: close guard=clean" in log,
+            f"{name}: clean preset did not allow close")
+
+
+def check_preset_close(name):
+    environment = dict(os.environ)
+    environment.update({
+        "DISPLAY": audit.display(),
+        "GX_AUDIT_WINDOW": "hidden",
+        "GX_NO_SETTINGS_SAVE": "1",
+        "GX_SKIP_TESTS": "1",
+        "GX_DOCK_DISABLE": "1",
+        "GX_FRAMES": "80",
+        "GX_UI_SCALE": "1.00",
+        "GX_GFX_LAYOUT_TRACE": "1",
+        "GX_GFX_PRESET_TOUCH": "1",
+        "GX_GFX_PRESET_CLOSE": "1",
+    })
+    try:
+        result = subprocess.run(
+            [str(BIN), "--gfx", "--gfx-editor",
+             "--screenWidth", "1024", "--screenHeight", "768"],
+            cwd=str(ROOT), env=environment, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
+    except (OSError, subprocess.SubprocessError) as error:
+        raise RuntimeError(f"{name}: {error}") from error
+    log = audit.strip_ansi(result.stdout or "")
+    if result.returncode != 0:
+        raise RuntimeError(f"{name}: close guard run exited {result.returncode}: "
+                           f"{log[-500:]}")
+    require("GFX_PRESET: close blocked dirty" in log,
+            f"{name}: dirty preset allowed close")
+    require("GFX_PRESET: close guard=dirty" in log,
+            f"{name}: dirty close guard trace missing")
+    require("GFX_PRESET: close prompt" in log,
+            f"{name}: dirty close did not open the prompt")
 
 
 def check_common(name, row, width, height, minimum_stage):
@@ -238,6 +275,7 @@ def main():
         check_preset_picker("preset-1024-100", 1024, 768, "1.00")
         check_preset_picker("preset-1024-175", 1024, 768, "1.75")
         check_preset_document("preset-document")
+        check_preset_close("preset-close-dirty")
 
         wide = run("1600-125", 1600, 900, "1.25", "advanced")
         check_common("1600-125", wide, 1600, 900, 600)
@@ -262,8 +300,8 @@ def main():
         return 1
     print("GFX_EDITOR_LAYOUT_CHECK: PASS scene/preset/lab rows fit at "
           "1024/1600 and 100/125/150/175% scale; the 1024 footer is condensed; "
-          "asset paths ellipsize, preset picker rows fit and preset dirty state "
-          "clears on load")
+          "asset paths ellipsize, preset picker rows fit, preset dirty state "
+          "clears on load and dirty close prompts")
     return 0
 
 

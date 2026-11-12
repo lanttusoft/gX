@@ -230,6 +230,18 @@ static gX_I0 gfx_preset_document_touch(void) {
     gX_EditorDocument *document = gfx_preset_document();
     if (document) gX_EditorDocument_MarkDirty(document);
 }
+
+static gX_I1 s_presetCloseRequested = 0;
+
+//ai: GX-I043 — host close paths ask this before tearing the tool down.
+extern "C" gX_I1 gX_Tools_Gfx_CloseGuard(gX_I0) {
+    if (!*gX_Tools_RuntimeGfxFlag()) return 1;
+    gX_EditorDocument *document = gfx_preset_document();
+    if (!gX_EditorDocument_Dirty(document)) return 1;
+    s_presetCloseRequested = 1;
+    gX_TraceLog(gX_LOG_INFO, "GFX_PRESET: close blocked dirty");
+    return 0;
+}
 #define GX_GFX_PRESET_MAX 96
 //ai: the browser index is heap-backed so the Release BSS budget stays flat.
 static gX_I8 (*s_presetFiles)[256] = NULL;
@@ -732,6 +744,8 @@ static gX_I1 s_headlessAssetBrowserDone = 0;
 static gX_I1 s_headlessPresetPickerDone = 0;
 //ai: GX-I043 — mark the preset document dirty for document-state captures.
 static gX_I1 s_headlessPresetTouchDone = 0;
+//ai: GX-I043 — exercise the close guard for headless document-state checks.
+static gX_I1 s_headlessPresetCloseDone = 0;
 //opencode: headless prefab check (gate hook): capture the fixture's selected
 //   model + nearby lights, place a copy 2m along +X, and report the counts.
 static gX_I1 s_headlessPrefabCheckDone = 0;
@@ -3126,6 +3140,32 @@ static gX_I0 gfx_preset_panel(gX_RendererGFX *gfx) {
         if (ImGui::Button("Overwrite preset")) {
             gfx_preset_save_commit(gfx);
             ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+    if (s_presetCloseRequested) {
+        s_presetCloseRequested = 0;
+        ImGui::OpenPopup("Unsaved GFX preset changes");
+        gX_TraceLog(gX_LOG_INFO, "GFX_PRESET: close prompt");
+    }
+    if (ImGui::BeginPopupModal("Unsaved GFX preset changes", NULL,
+            ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::TextWrapped("The preset has unsaved changes.");
+        ImGui::Text("File: %s", s_presetPath);
+        if (ImGui::Button("Save and close")) {
+            gfx_preset_save_commit(gfx);
+            if (!gX_EditorDocument_Dirty(document)) {
+                ImGui::CloseCurrentPopup();
+                gX_Tools_Close_Runtime();
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Discard and close")) {
+            gX_EditorDocument_ClearDirty(document);
+            ImGui::CloseCurrentPopup();
+            gX_Tools_Close_Runtime();
         }
         ImGui::SameLine();
         if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
@@ -8259,6 +8299,14 @@ static gX_I0 gfx_preset_headless_hooks(gX_RendererGFX *gfx) {
         gfx_preset_load(gfx);
         s_headlessPresetLoadDone = 1;
     }
+    const char *presetClose = getenv("GX_GFX_PRESET_CLOSE");
+    if (presetClose && presetClose[0] && !s_headlessPresetCloseDone
+        && maindata.frameCount >= 3) {
+        gX_I1 canClose = gX_Tools_Gfx_CloseGuard();
+        gX_TraceLog(gX_LOG_INFO, "GFX_PRESET: close guard=%s",
+            canClose ? "clean" : "dirty");
+        s_headlessPresetCloseDone = 1;
+    }
     const char *materialMapPath = getenv("GX_GFX_MATERIAL_MAP_CHECK");
     if (materialMapPath && materialMapPath[0] && !s_headlessMaterialMapCheckDone
         && maindata.frameCount >= 3) {
@@ -12244,7 +12292,9 @@ static gX_I0 gfx_menu_bar(gX_RendererGFX *gfx) {
             s_inspectorPanelOpen = 1;
             ImGui::OpenPopup("Confirm GFX preset load");
         }
-        if (ImGui::MenuItem("Close editor")) gX_Tools_Close_Runtime();
+        if (ImGui::MenuItem("Close editor")) {
+            if (gX_Tools_Gfx_CloseGuard()) gX_Tools_Close_Runtime();
+        }
         ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Edit")) {

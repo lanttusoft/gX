@@ -41,6 +41,8 @@ extern "C" {
 }
 
 #include "imgui/imgui.h"
+
+extern "C" gX_I1 gX_Tools_Gfx_CloseGuard(gX_I0);
 #include "tools.h"
 
 #include <stdio.h>
@@ -355,7 +357,9 @@ static gX_I0 host_close_editor(void) {
 static gX_I0 host_close_editor_and_bar(void) {
     //ai: keep the host alive until the invoking menu finishes its click and
     //   closes; hiding it immediately orphaned the popup and captured every
-    //   native GUI click.
+    //   native GUI click. A dirty GFX preset vetoes the close and opens its
+    //   Save/Discard/Cancel prompt instead.
+    if (!gX_Tools_Gfx_CloseGuard()) return;
     gX_Tools_Close_Runtime();
     gX_EditorHost_SetOpen(1);
     s_closeHostPending = 20;

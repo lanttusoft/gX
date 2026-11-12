@@ -784,6 +784,9 @@ the not-in-slice list live in `docs/scripting.md`.
   editor|theme|themlab|materials|shaderlab|gfx|script|wavetable|textwriter|physics|rail|background|sky
   is the headless hook; the rail panel is drawn by the gx_shell module.
 - `gX_Tools_Close_Runtime` — close all runtime tools (window X closes one)
+- `gX_Tools_Gfx_CloseGuard` — veto a GFX-editor close when its preset document
+  is dirty; the host/GFX close menus call it and the editor opens its
+  Save/Discard/Cancel prompt
 - `gX_Tools_EditorSystem_Tick` — deterministic open/close/reopen hook used by
   `editor-system-check`; not a user-facing control
 - `gX_Tests` — unit tests (math + heap + JSON), 0 errors = green
