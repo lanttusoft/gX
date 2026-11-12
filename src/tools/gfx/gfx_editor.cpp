@@ -79,6 +79,7 @@
 #include "../../input.h"
 #include "../editor_host.h"
 #include "../editor/editor_commands.h"
+#include "../editor/editor_documents.h"
 #include "../editor/editor_picker.h"
 #include "../../wrappers/input.h"
 #include "../../wrappers/camera.h"
@@ -210,6 +211,25 @@ static gX_I8 s_presetStatus[160] = { 0 };
 static gX_I1 s_presetStatusOK = 1;
 //opencode: transient search, selection, and filesystem index for the preset browser.
 static gX_I8 s_presetSelectedPath[256] = { 0 };
+
+//ai: GX-I043 — the GFX preset is the first document-backed tool surface.
+static gX_EditorDocument s_presetDocument;
+static gX_I1 s_presetDocumentReady = 0;
+
+static gX_EditorDocument *gfx_preset_document(void) {
+    if (!s_presetDocumentReady) {
+        gX_EditorDocument_Init(&s_presetDocument, "gfx.preset",
+            s_presetPath, NULL, NULL, NULL, NULL);
+        s_presetDocumentReady = 1;
+    }
+    gX_EditorDocument_SetPath(&s_presetDocument, s_presetPath);
+    return &s_presetDocument;
+}
+
+static gX_I0 gfx_preset_document_touch(void) {
+    gX_EditorDocument *document = gfx_preset_document();
+    if (document) gX_EditorDocument_MarkDirty(document);
+}
 #define GX_GFX_PRESET_MAX 96
 //ai: the browser index is heap-backed so the Release BSS budget stays flat.
 static gX_I8 (*s_presetFiles)[256] = NULL;
@@ -710,6 +730,8 @@ static gX_I1 s_headlessAssetRootCheckDone = 0;
 static gX_I1 s_headlessAssetBrowserDone = 0;
 //ai: GX-I043 — headless preset picker open for command/picker captures.
 static gX_I1 s_headlessPresetPickerDone = 0;
+//ai: GX-I043 — mark the preset document dirty for document-state captures.
+static gX_I1 s_headlessPresetTouchDone = 0;
 //opencode: headless prefab check (gate hook): capture the fixture's selected
 //   model + nearby lights, place a copy 2m along +X, and report the counts.
 static gX_I1 s_headlessPrefabCheckDone = 0;
@@ -2891,6 +2913,11 @@ static gX_I0 gfx_preset_save_commit(gX_RendererGFX *gfx) {
     }
     if (gX_RendererGFX_Preset_Save_New(gfx, s_presetPath) == 0) {
         gfx_cameras_preset_write(s_presetPath);
+        gX_EditorDocument *document = gfx_preset_document();
+        if (document) {
+            gX_EditorDocument_SetPath(document, s_presetPath);
+            gX_EditorDocument_ClearDirty(document);
+        }
         gfx_preset_set_status("Preset saved", 1);
     } else {
         gfx_preset_set_status("Preset save failed", 0);
@@ -2960,6 +2987,13 @@ static gX_I0 gfx_preset_load(gX_RendererGFX *gfx) {
                     "PBR preset requests MEDIUM quality");
             }
         }
+        {
+            gX_EditorDocument *document = gfx_preset_document();
+            if (document) {
+                gX_EditorDocument_SetPath(document, s_presetPath);
+                gX_EditorDocument_ClearDirty(document);
+            }
+        }
         gfx_preset_set_status("Preset loaded", 1);
     } else {
         gfx_preset_set_status("Preset load failed", 0);
@@ -3009,6 +3043,7 @@ static gX_I0 gfx_preset_commands_register(gX_I0) {
 //   all live models, lights, and textures.
 static gX_I0 gfx_preset_panel(gX_RendererGFX *gfx) {
     gfx_preset_commands_register();
+    gX_EditorDocument *document = gfx_preset_document();
     ImGui::SeparatorText("Preset");
     if (s_presetOverwritePending) {
         ImGui::OpenPopup("Confirm GFX preset overwrite");
@@ -3033,6 +3068,9 @@ static gX_I0 gfx_preset_panel(gX_RendererGFX *gfx) {
     s_layoutMetrics.presetFits = pathWidth <= fieldWidth + 0.5f ? 1 : 0;
     if (!stackBrowse) ImGui::SameLine();
     gfx_preset_browser_popup();
+    if (gX_EditorDocument_Dirty(document))
+        ImGui::TextColored(ImVec4(1.0f, 0.76f, 0.35f, 1.0f),
+            "Unsaved preset changes");
     if (s_presetConfirmPending) {
         ImGui::OpenPopup("Confirm GFX preset load");
         s_presetConfirmPending = 0;
@@ -3069,6 +3107,9 @@ static gX_I0 gfx_preset_panel(gX_RendererGFX *gfx) {
     }
     if (ImGui::BeginPopupModal("Confirm GFX preset load", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextWrapped("This replaces the live GFX scene and renderer settings.");
+        if (gX_EditorDocument_Dirty(document))
+            ImGui::TextColored(ImVec4(1.0f, 0.76f, 0.35f, 1.0f),
+                "Unsaved preset changes will be lost.");
         ImGui::Text("File: %s", s_presetPath);
         if (ImGui::Button("Load and replace")) {
             gfx_preset_load(gfx);
@@ -3246,6 +3287,7 @@ static gX_I0 gfx_model_history_push(gX_GFX_Model_Edit_State *stack,
     }
     memcpy(&stack[*count], state, sizeof(stack[0]));
     (*count)++;
+    gfx_preset_document_touch();
 }
 
 static gX_I0 gfx_model_history_observe(gX_I32 index, gX_RendererGFX_Model *model) {
@@ -3431,6 +3473,7 @@ static gX_I0 gfx_light_history_push(gX_GFX_Light_Edit_State *stack,
     }
     memcpy(&stack[*count], state, sizeof(stack[0]));
     (*count)++;
+    gfx_preset_document_touch();
 }
 
 static gX_I0 gfx_light_history_reset(gX_I0) {
@@ -7909,6 +7952,13 @@ static gX_I0 gfx_preset_headless_hooks(gX_RendererGFX *gfx) {
         && !s_headlessMaterialAssetCheckDone && maindata.frameCount >= 3) {
         gfx_material_asset_headless_check(materialAssetPath);
         s_headlessMaterialAssetCheckDone = 1;
+    }
+    const char *presetTouch = getenv("GX_GFX_PRESET_TOUCH");
+    if (presetTouch && presetTouch[0] && !s_headlessPresetTouchDone
+        && maindata.frameCount >= 3) {
+        gfx_preset_document_touch();
+        s_headlessPresetTouchDone = 1;
+        gX_TraceLog(gX_LOG_INFO, "GFX_PRESET: document touched");
     }
     const char *presetPicker = getenv("GX_GFX_PRESET_PICKER");
     if (presetPicker && presetPicker[0] && !s_headlessPresetPickerDone

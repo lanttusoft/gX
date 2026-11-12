@@ -57,6 +57,7 @@
 #include "gui/gui.h"
 #include "gui/markup.h"
 #include "tools/editor/editor_commands.h"
+#include "tools/editor/editor_documents.h"
 #include "gui/style.h"
 #include "gui/binding.h"
 #include "gui/builder.h"
@@ -1190,6 +1191,61 @@ static gX_I0 gX_Tests_EditorCommand_Run(gX_I0 *user) {
 static gX_I1 gX_Tests_EditorCommand_Enabled(gX_I0 *user) {
     (void)user;
     return s_editorCommandEnabled;
+}
+
+static gX_I32 s_documentSaveCalls = 0;
+static gX_I32 s_documentLoadCalls = 0;
+static gX_I1 s_documentCloseResult = 1;
+
+static gX_I32 gX_Tests_EditorDocument_Save(gX_EditorDocument *document) {
+    (void)document;
+    s_documentSaveCalls++;
+    return 1;
+}
+
+static gX_I32 gX_Tests_EditorDocument_Load(gX_EditorDocument *document) {
+    (void)document;
+    s_documentLoadCalls++;
+    return 1;
+}
+
+static gX_I1 gX_Tests_EditorDocument_Close(gX_EditorDocument *document) {
+    (void)document;
+    return s_documentCloseResult;
+}
+
+static gX_I32 gX_Tests_EditorDocuments(gX_I0) {
+    gX_I32 errors = 0;
+    gX_EditorDocument document;
+    gX_EditorDocument_Init(&document, "test.document", "first.json",
+        gX_Tests_EditorDocument_Save, gX_Tests_EditorDocument_Load,
+        gX_Tests_EditorDocument_Close, NULL);
+    if (strcmp((const char *)gX_EditorDocument_Path(&document),
+            "first.json") != 0) errors++;
+    if (gX_EditorDocument_Dirty(&document)) errors++;
+    gX_EditorDocument_MarkDirty(&document);
+    if (!gX_EditorDocument_Dirty(&document)) errors++;
+    s_documentCloseResult = 0;
+    if (gX_EditorDocument_CanClose(&document)) errors++;
+    s_documentCloseResult = 1;
+    if (!gX_EditorDocument_CanClose(&document)) errors++;
+    s_documentSaveCalls = 0;
+    if (!gX_EditorDocument_Save(&document) || s_documentSaveCalls != 1
+        || gX_EditorDocument_Dirty(&document)) errors++;
+    gX_EditorDocument_MarkDirty(&document);
+    s_documentLoadCalls = 0;
+    if (!gX_EditorDocument_Load(&document) || s_documentLoadCalls != 1
+        || gX_EditorDocument_Dirty(&document)) errors++;
+    gX_EditorDocument_SetPath(&document, "second.json");
+    if (strcmp((const char *)gX_EditorDocument_Path(&document),
+            "second.json") != 0) errors++;
+    document.readOnly = 1;
+    gX_EditorDocument_MarkDirty(&document);
+    if (gX_EditorDocument_Save(&document) || !gX_EditorDocument_Dirty(&document))
+        errors++;
+    gX_TraceLog(gX_LOG_INFO, "EDITOR_DOCUMENT_TESTS: %s",
+        errors == 0 ? "all passed" : "failed");
+    return errors;
 }
 
 static gX_I32 gX_Tests_EditorCommands(gX_I0) {
@@ -4448,6 +4504,7 @@ gX_I32 gX_Tests(gX_I0) {
     errors += gX_Tests_GUI_ElementGeneration();
     errors += gX_Tests_GUI_EditorIdentity();
     errors += gX_Tests_EditorCommands();
+    errors += gX_Tests_EditorDocuments();
     errors += gX_Tests_ScrollMath();
     errors += gX_Tests_Layout();
     //opencode: targeted GUI audit regressions stay in the headless test gate.

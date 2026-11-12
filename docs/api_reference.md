@@ -758,6 +758,10 @@ the not-in-slice list live in `docs/scripting.md`.
 - `gX_EditorPicker_*` — internal shared ImGui picker (GX-I043): `Open`, `Draw`,
   `IsOpen`. The caller supplies the item list and accept callback; the picker
   never writes or loads by itself.
+- `gX_EditorDocument_*` — internal document/session state (GX-I043):
+  `Init`, `SetPath`, `Path`, `MarkDirty`, `ClearDirty`, `Dirty`, `Save`,
+  `Load`, `CanClose`. Storage is caller-owned; `Save`/`Load` clear dirty only
+  on callback success.
 - `gX_Tools_Gfx_LabPanel*` — renderer lab panels: `Mask`, `Count`,
   `Label` (Models/Sky/World/FX/Lights/Render/Water; bit order matches the
   panel list). `GX_GFX_PANEL_LABS=<mask>` pins the mask for captures and the

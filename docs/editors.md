@@ -82,6 +82,13 @@ same IDs. `GX_GFX_PRESET_PICKER=1` opens the picker headlessly;
 `GX_EDITOR_PICKER_TRACE=1` emits its geometry and row fit. `gfx-editor-layout-check`
 pins the window inside the display and every row inside its cell at 100/175%.
 
+The preset is also the first document-backed surface (GX-I043): model/light
+history edits mark it **modified**, Save/load clear the flag, and the replace
+confirmation warns that unsaved changes will be lost. `GX_GFX_PRESET_TOUCH=1`
+marks it dirty for headless captures; `gfx-editor-layout-check` verifies a
+preset load clears the state. A full close guard is still pending because the
+host owns tool close.
+
 ### GUI editor usability (2026-11-08)
 
 The GUI editor's existing direct-manipulation workflow is now explicitly

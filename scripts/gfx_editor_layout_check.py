@@ -151,6 +151,38 @@ def check_preset_picker(name, width, height, scale):
                 f"{name}: picker path '{path}' is {item}px in a {avail}px row")
 
 
+def check_preset_document(name):
+    environment = dict(os.environ)
+    environment.update({
+        "DISPLAY": audit.display(),
+        "GX_AUDIT_WINDOW": "hidden",
+        "GX_NO_SETTINGS_SAVE": "1",
+        "GX_SKIP_TESTS": "1",
+        "GX_DOCK_DISABLE": "1",
+        "GX_FRAMES": "80",
+        "GX_UI_SCALE": "1.00",
+        "GX_GFX_LAYOUT_TRACE": "1",
+        "GX_GFX_PRESET_TOUCH": "1",
+        "GX_GFX_PRESET_LOAD": "resources/tools/gfx_showcase.json",
+    })
+    try:
+        result = subprocess.run(
+            [str(BIN), "--gfx", "--gfx-editor",
+             "--screenWidth", "1024", "--screenHeight", "768"],
+            cwd=str(ROOT), env=environment, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
+    except (OSError, subprocess.SubprocessError) as error:
+        raise RuntimeError(f"{name}: {error}") from error
+    log = audit.strip_ansi(result.stdout or "")
+    if result.returncode != 0:
+        raise RuntimeError(f"{name}: document run exited {result.returncode}: "
+                           f"{log[-500:]}")
+    require("EDITOR_DOCUMENT: dirty id=gfx.preset" in log,
+            f"{name}: preset document did not become dirty")
+    require("EDITOR_DOCUMENT: clean id=gfx.preset" in log,
+            f"{name}: preset load did not clear dirty state")
+
+
 def check_common(name, row, width, height, minimum_stage):
     require(row["windowW"] == width and row["windowH"] == height,
             f"{name}: unexpected window {row['windowW']}x{row['windowH']}")
@@ -205,6 +237,7 @@ def main():
         check_asset_grid("asset-1024-175", 1024, 768, "1.75")
         check_preset_picker("preset-1024-100", 1024, 768, "1.00")
         check_preset_picker("preset-1024-175", 1024, 768, "1.75")
+        check_preset_document("preset-document")
 
         wide = run("1600-125", 1600, 900, "1.25", "advanced")
         check_common("1600-125", wide, 1600, 900, 600)
@@ -229,7 +262,8 @@ def main():
         return 1
     print("GFX_EDITOR_LAYOUT_CHECK: PASS scene/preset/lab rows fit at "
           "1024/1600 and 100/125/150/175% scale; the 1024 footer is condensed; "
-          "asset paths ellipsize and preset picker rows fit their cells")
+          "asset paths ellipsize, preset picker rows fit and preset dirty state "
+          "clears on load")
     return 0
 
 

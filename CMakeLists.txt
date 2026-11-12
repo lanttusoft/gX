@@ -236,6 +236,7 @@ set(GX_SOURCES
     src/tools/imgui/imgui_gx.cpp
     src/tools/editor/editor.cpp
     src/tools/editor/editor_commands.c
+    src/tools/editor/editor_documents.c
     src/tools/editor/editor_picker.cpp
     src/tools/theme/theme_editor.cpp
     src/tools/gfx/gfx_editor.cpp

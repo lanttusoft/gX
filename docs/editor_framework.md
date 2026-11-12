@@ -2,8 +2,9 @@
 
 <!-- //ai: GX-I043 proposal. This is a design note, not an admitted API. -->
 
-Status: **partial** — command registry + shared picker implemented in the
-first slice; the remaining kernel components are still a proposal.
+Status: **partial** — command registry, shared picker and the first
+document-backed preset are implemented; the remaining kernel components are
+still a proposal.
 
 ## Why
 
@@ -222,9 +223,14 @@ First slice landed:
   `gfx.preset.save`; the inspector buttons and headless probe dispatch them.
 - `GX_GFX_PRESET_PICKER=1` and `GX_EDITOR_PICKER_TRACE=1` expose the picker to
   `gfx-editor-layout-check`.
+- `src/tools/editor/editor_documents.{h,c}` — caller-owned document state:
+  path, dirty/read-only, save/load callbacks, `CanClose` guard. The GFX preset
+  marks dirty on model/light history edits and cleans on save/load;
+  `GX_GFX_PRESET_TOUCH=1` exposes the state to the layout gate.
 
-Still proposed: document/session guards, panel registry, input-owner stack,
-modal manager, undo transactions and the full command palette.
+Still proposed: wiring a close prompt into the host/tool close paths, panel
+registry, input-owner stack, modal manager, undo transactions and the full
+command palette.
 
 ## Pilot: GFX preset load
 
