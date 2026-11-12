@@ -149,6 +149,15 @@ static gX_I0 lab_title_menu(gX_GUI_Builder *b, gX_F32 gx, gX_F32 gy, gX_I1 bluep
     gX_GUI_Builder_Element_End(b);
 }
 
+//ai: v0.45.0 — Theme Lab has its own Back route, independent of the paired
+//   theme editor's small X.
+static gX_I0 gX_GUI_Template_ThemLab_Back(gX_I0 *arg) {
+    (void)arg;
+    extern gX_I0 gX_Tools_Close_Runtime(gX_I0);
+    gX_Tools_Close_Runtime();
+    gX_TraceLog(gX_LOG_INFO, "EDITOR_SYSTEM: themlab back");
+}
+
 gX_I0 gX_GUI_Template_ThemLab(gX_I32 canvasindex);
 gX_I0 gX_GUI_Template_ThemLab(gX_I32 canvasindex) {
     gX_GUI_Canvas *canvas = gX_GUI_Canvas_FromIndex(canvasindex);
@@ -170,6 +179,20 @@ gX_I0 gX_GUI_Template_ThemLab(gX_I32 canvasindex) {
             gX_GUI_Builder_Text_Set(&b, "THEM LAB - live design preview");
             if (b.curText) { b.curText->fontSize = 14; b.curText->color = gui.style.blueprint.accentColor; }
         gX_GUI_Builder_Text_End(&b);
+    gX_GUI_Builder_Element_End(&b);
+
+    gX_GUI_Builder_Element_Begin(&b);
+        gX_GUI_Builder_RectGrid(&b, 6.55f, 0.6f, 1.3f, 0.36f);
+        gX_GUI_Builder_Color(&b, 0, 0, 0, 0);
+        gX_GUI_Element_Template_Button(b.currentElement);
+        b.currentElement->description[0] = '\0';
+        gX_GUI_Builder_Text_Begin(&b);
+            gX_GUI_Builder_Text_Set(&b, "BACK TO TITLE");
+            b.currentElement->stateRendering.TEXT_CENTER_X = true;
+            b.currentElement->stateRendering.TEXT_CENTER_Y = true;
+            if (b.curText) { b.curText->fontSize = 10; b.curText->color = gui.style.blueprint.accentColor; }
+        gX_GUI_Builder_Text_End(&b);
+        gX_GUI_OnClick(b.currentElement, gX_GUI_Template_ThemLab_Back, 0);
     gX_GUI_Builder_Element_End(&b);
 
     //opencode: declutter — fewer, wider buttons so labels never ellipsize.

@@ -81,6 +81,15 @@ edges at 100% and 175%. Dense title EXTRAS cards keep their maturity
 description for pointer hover but do not draw a focus tooltip over the next
 grid row. The Settings scale slider is labeled **Tool UI**.
 
+### GUI editor canvas lock (2026-11-12)
+
+The editor canvas starts **locked**: left-drag cannot select, move or resize
+elements; the wheel zooms (0.5–4×) and middle-drag pans. The toolbar
+**Unlock** toggle enables element gestures and changes to **Lock**; **Fit**
+resets the editor-local view. The view is restored when the editor closes, so
+the runtime canvas is never left zoomed. `editor-system-check` pins the
+default lock, unlocked state, zoom state and view reset.
+
 Saves honor the same harness guard as the other editors: a gate-launched run
 with `GX_NO_SETTINGS_SAVE=1` refuses to write shipped markup. The headless hooks
 (`GX_TOOLS_SELECT`, `GX_TOOLS_FILTER`, `GX_TOOLS_SOLO`, `GX_TOOLS_ADD`,

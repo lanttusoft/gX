@@ -129,6 +129,7 @@ def run_tools_actions(target, shots, actions):
         "GX_UI_SCALE": "1.00",
         "GX_DOCK_DISABLE": "1",
         "GX_TOOLS_SELECT": "1",
+        "GX_TOOLS_CANVAS_UNLOCK": "1",
         "GX_SCREENSHOT_DIR": str(shots),
         "GX_AI_INPUT": actions,
     })

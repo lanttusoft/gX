@@ -64,6 +64,17 @@ def compare(a, b):
     return float(np.abs(a[CROP_TOP:] - b[CROP_TOP:]).mean())
 
 
+def parity_delta(a, b):
+    if a.shape != b.shape:
+        b = np.asarray(Image.fromarray(b.astype(np.uint8)).resize(
+            (a.shape[1], a.shape[0]))).astype(np.float64)
+    height, width = a.shape[:2]
+    # ai: stay inside both side panels at 1024x768 (300px left, 340px right).
+    left, right = int(width * 0.32), int(width * 0.64)
+    return float(np.abs(a[CROP_TOP:, left:right]
+                        - b[CROP_TOP:, left:right]).mean())
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Check editor lifecycle, toolbars and lab cleanup.")
@@ -101,6 +112,46 @@ def main():
                   f"plain F10 stays console")
             if not plain_ok:
                 failures.append("report: plain F10 opened the report")
+
+            locked_log = run("editor", 30)
+            locked_ok = "EDITOR_SYSTEM: canvas locked=1 zoom=1.00" in locked_log
+            unlocked_log = run("editor", 30, extra={
+                "GX_TOOLS_CANVAS_UNLOCK": "1"})
+            unlocked_ok = "EDITOR_SYSTEM: canvas locked=0 zoom=1.00" in unlocked_log
+            zoom_log = run("editor", 30, extra={"GX_TOOLS_VIEW_ZOOM": "1.5"})
+            zoom_ok = "EDITOR_SYSTEM: canvas locked=1 zoom=1.50" in zoom_log
+            print(f"{'canvas':<12} {'PASS' if locked_ok and unlocked_ok and zoom_ok else 'FAIL'}  "
+                  f"lock={int(locked_ok)} unlock={int(unlocked_ok)} zoom={int(zoom_ok)}")
+            if not (locked_ok and unlocked_ok and zoom_ok):
+                failures.append("canvas: lock/unlock/zoom state missing")
+            view_dir = root / "editor-view-reset"
+            view_dir.mkdir()
+            run("editor", 35, close_at=15, screenshot=view_dir,
+                shot_frame=30, extra={"GX_TOOLS_VIEW_ZOOM": "1.5"})
+            view_shot = audit.newest_shot(view_dir)
+            view_delta = (compare(baseline, image(view_shot))
+                          if view_shot else 99.0)
+            view_ok = view_shot is not None and view_delta < CLOSE_MAX
+            print(f"{'canvas':<12} {'PASS' if view_ok else 'FAIL'}  "
+                  f"view reset delta={view_delta:.2f}")
+            if not view_ok:
+                failures.append(f"canvas: view did not reset ({view_delta:.2f})")
+            parity_base_dir = root / "parity-baseline"
+            parity_base_dir.mkdir()
+            run(None, 220, screenshot=parity_base_dir, shot_frame=200)
+            parity_base = audit.newest_shot(parity_base_dir)
+            parity_dir = root / "editor-parity"
+            parity_dir.mkdir()
+            run("editor", 220, screenshot=parity_dir, shot_frame=200, extra={
+                "GX_TOOLS_GRID": "0", "GX_DOCK_DISABLE": "1", "GX_TOUR": "0"})
+            parity_shot = audit.newest_shot(parity_dir)
+            parity = (parity_delta(image(parity_base), image(parity_shot))
+                      if parity_base and parity_shot else 99.0)
+            parity_ok = parity_shot is not None and parity < 8.0
+            print(f"{'canvas':<12} {'PASS' if parity_ok else 'FAIL'}  "
+                  f"runtime parity delta={parity:.2f}")
+            if not parity_ok:
+                failures.append(f"canvas: preview parity failed ({parity:.2f})")
 
             for editor, expected in HOSTABLE:
                 log = run(editor, 25)

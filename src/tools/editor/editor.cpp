@@ -65,6 +65,14 @@ typedef struct gX_Tools_Editor_Handle {
 } gX_Tools_Editor_Handle;
 static gX_Tools_Editor_Handle s_selection = { -1, 0, 0 };
 static gX_I32 s_pendingSelect = -1;
+//ai: v0.45.0 — locked-by-default preview. The canvas view is editor-local and
+//   restored on close; locked mode only pans/zooms, never moves elements.
+static gX_I1 s_canvasUnlocked = 0;
+static gX_F32 s_viewZoom = 1.0f;
+static gX_F32v2 s_viewPan = {0.0f, 0.0f};
+static gX_F32v2 s_savedCanvasOffset = {0.0f, 0.0f};
+static gX_F32v2 s_savedCanvasScale = {1.0f, 1.0f};
+static gX_I1 s_viewSaved = 0;
 
 static gX_I0 tools_selection_clear(gX_I0) {
     s_selection.canvasIndex = -1;
@@ -137,6 +145,15 @@ static gX_I0 tools_edit_lock_clear(gX_I0) {
 }
 extern "C" gX_I0 gX_Tools_Editor_ClearEditLock(gX_I0) {
     tools_edit_lock_clear();
+    gX_GUI_Canvas *canvas = gX_GUI_Canvas_FromIndex(s_targetCanvas);
+    if (s_viewSaved && canvas) {
+        canvas->canvasOffset = s_savedCanvasOffset;
+        canvas->canvasScale = s_savedCanvasScale;
+    }
+    s_viewSaved = 0;
+    s_viewZoom = 1.0f;
+    s_viewPan = (gX_F32v2){0.0f, 0.0f};
+    s_canvasUnlocked = 0;
 }
 extern "C" gX_I0 gX_Tools_Editor_SoloRestore(gX_I0) {
     tools_solo_restore(gX_GUI_Canvas_FromIndex(s_targetCanvas));
@@ -509,12 +526,64 @@ static gX_F32 tools_grid(gX_F32 v) {
 
 static gX_I1 s_pressCaptured = 0; //opencode: press-routing — gesture started on ImGui
 
+static gX_I0 tools_canvas_local(gX_GUI_Canvas *canvas, gX_F32 mx, gX_F32 my,
+    gX_F32 *lx, gX_F32 *ly) {
+    gX_F32 bw = canvas->buffer.width > 0 ? (gX_F32)canvas->buffer.width
+        : (canvas->canvasBox.width > 0.0f ? canvas->canvasBox.width : 1.0f);
+    gX_F32 bh = canvas->buffer.height > 0 ? (gX_F32)canvas->buffer.height
+        : (canvas->canvasBox.height > 0.0f ? canvas->canvasBox.height : 1.0f);
+    gX_F32 kx = canvas->canvasBox.width / bw * canvas->canvasScale.x;
+    gX_F32 ky = canvas->canvasBox.height / bh * canvas->canvasScale.y;
+    if (kx == 0.0f) kx = 1.0f;
+    if (ky == 0.0f) ky = 1.0f;
+    *lx = kx != 0.0f
+        ? (mx - canvas->canvasBox.x - canvas->canvasOffset.x) / kx : 0.0f;
+    *ly = ky != 0.0f
+        ? (my - canvas->canvasBox.y - canvas->canvasOffset.y) / ky : 0.0f;
+}
+
+static gX_I0 tools_canvas_view(gX_GUI_Canvas *canvas) {
+    gX_F32 mx = input.mouse.coord.x, my = input.mouse.coord.y;
+    gX_F32 bw = canvas->buffer.width > 0 ? (gX_F32)canvas->buffer.width : 1.0f;
+    gX_F32 bh = canvas->buffer.height > 0 ? (gX_F32)canvas->buffer.height : 1.0f;
+    gX_F32 scroll = input.mouse.scroll;
+    if (scroll != 0.0f) {
+        gX_F32 oldZoom = s_viewZoom;
+        gX_F32 newZoom = oldZoom * (1.0f + scroll * 0.1f);
+        if (newZoom < 0.5f) newZoom = 0.5f;
+        if (newZoom > 4.0f) newZoom = 4.0f;
+        if (newZoom != oldZoom) {
+            gX_F32 kx = canvas->canvasBox.width / bw;
+            gX_F32 ky = canvas->canvasBox.height / bh;
+            gX_F32 cx = (mx - canvas->canvasBox.x - s_viewPan.x)
+                / (kx * oldZoom);
+            gX_F32 cy = (my - canvas->canvasBox.y - s_viewPan.y)
+                / (ky * oldZoom);
+            s_viewPan.x = mx - canvas->canvasBox.x - cx * kx * newZoom;
+            s_viewPan.y = my - canvas->canvasBox.y - cy * ky * newZoom;
+            s_viewZoom = newZoom;
+        }
+    }
+    if (input.mouse.middleButton.DOWN) {
+        s_viewPan.x += input.mouse.coordDelta.x;
+        s_viewPan.y += input.mouse.coordDelta.y;
+    }
+}
+
 static gX_I0 tools_canvas_drag(gX_GUI_Canvas *canvas) {
     //opencode: engine mouse already owns game coords (Update_Mouse maps).
     gX_F32 mx = input.mouse.coord.x, my = input.mouse.coord.y;
     gX_I1 pressed = input.mouse.leftButton.PRESSED != 0;
     gX_I1 down = input.mouse.leftButton.DOWN != 0;
     gX_I1 captured = ImGui::GetIO().WantCaptureMouse != 0;
+
+    tools_canvas_view(canvas);
+    if (!s_canvasUnlocked) {
+        s_dragMode = 0;
+        s_dragSel = -1;
+        s_pressCaptured = 0;
+        return;
+    }
 
     if (!s_canvasArmed) {
         if (down) {
@@ -538,18 +607,20 @@ static gX_I0 tools_canvas_drag(gX_GUI_Canvas *canvas) {
                 s_dragSel = -1;
                 return;
             }
-            gX_I32 sel = tools_hit_test(canvas, mx, my);
+            gX_F32 lx, ly;
+            tools_canvas_local(canvas, mx, my, &lx, &ly);
+            gX_I32 sel = tools_hit_test(canvas, lx, ly);
             if (sel >= 0) {
                 gX_GUI_Element *el = &((gX_GUI_Element *)canvas->elements.data)[sel];
                 tools_selection_set(canvas, sel);
-                gX_I32 h = tools_resize_handle(el, mx, my);
+                gX_I32 h = tools_resize_handle(el, lx, ly);
                 if (h) {
                     s_dragMode = h;
                 } else {
                     s_dragMode = 1;
                 }
                 s_dragSel = sel;
-                s_dragStartMouse = (gX_F32v2){ mx, my };
+                s_dragStartMouse = (gX_F32v2){ lx, ly };
                 s_dragStartRect = el->rect;
                 tools_undo_push(canvas);
             } else {
@@ -576,7 +647,9 @@ static gX_I0 tools_canvas_drag(gX_GUI_Canvas *canvas) {
             s_dragMode = 0;
             return;
         }
-        gX_F32 dx = mx - s_dragStartMouse.x, dy = my - s_dragStartMouse.y;
+        gX_F32 lx, ly;
+        tools_canvas_local(canvas, mx, my, &lx, &ly);
+        gX_F32 dx = lx - s_dragStartMouse.x, dy = ly - s_dragStartMouse.y;
         gX_Rectangle r = s_dragStartRect;
         if (s_dragMode == 1) {
             el->rect.x = tools_grid(r.x + dx);
@@ -614,6 +687,7 @@ extern "C" gX_I32 gX_Tools_Editor_TestInputCapture(gX_I0) {
     gX_Rectangle savedDragStartRect = s_dragStartRect;
     gX_I1 savedPressCaptured = s_pressCaptured;
     gX_I1 savedCanvasArmed = s_canvasArmed;
+    gX_I1 savedCanvasUnlocked = s_canvasUnlocked;
     gX_F32v2 savedMouse = input.mouse.coord;
     gX_I1 savedPressed = input.mouse.leftButton.PRESSED;
     gX_I1 savedDown = input.mouse.leftButton.DOWN;
@@ -628,6 +702,7 @@ extern "C" gX_I32 gX_Tools_Editor_TestInputCapture(gX_I0) {
     s_dragSel = -1;
     s_pressCaptured = 0;
     s_canvasArmed = 0;
+    s_canvasUnlocked = 1;
     if (gX_GUI_Canvas_Load(&canvas) != 0
         || gX_GUI_Canvas_Add_Element(&canvas) != 0) {
         errors++;
@@ -653,6 +728,10 @@ extern "C" gX_I32 gX_Tools_Editor_TestInputCapture(gX_I0) {
         if (tools_selection_index(&canvas) != 0
             || memcmp(&element->rect, &initialRect, sizeof(initialRect)) != 0
             || s_dragMode != 0 || !s_pressCaptured) {
+            gX_TraceLog(gX_LOG_INFO,
+                "IMGUI input fail A sel=%d mode=%d press=%d rect=%.0f",
+                tools_selection_index(&canvas), s_dragMode, s_pressCaptured,
+                element->rect.x);
             errors++;
         }
 
@@ -670,12 +749,23 @@ extern "C" gX_I32 gX_Tools_Editor_TestInputCapture(gX_I0) {
         input.mouse.leftButton.UP = false;
         ImGui::GetIO().WantCaptureMouse = false;
         tools_canvas_drag(&canvas);
-        if (s_dragMode != 1 || s_dragSel != 0) errors++;
+        if (s_dragMode != 1 || s_dragSel != 0) {
+            gX_TraceLog(gX_LOG_INFO,
+                "IMGUI input fail B mode=%d sel=%d armed=%d unlock=%d",
+                s_dragMode, s_dragSel, s_canvasArmed, s_canvasUnlocked);
+            errors++;
+        }
         input.mouse.coord = (gX_F32v2){170.0f, 120.0f};
         input.mouse.leftButton.PRESSED = false;
         tools_canvas_drag(&canvas);
         if (element->rect.x == initialRect.x
-            && element->rect.y == initialRect.y) errors++;
+            && element->rect.y == initialRect.y) {
+            gX_TraceLog(gX_LOG_INFO,
+                "IMGUI input fail C rect=%.0f,%.0f start=%.0f,%.0f",
+                element->rect.x, element->rect.y,
+                s_dragStartMouse.x, s_dragStartMouse.y);
+            errors++;
+        }
         input.mouse.leftButton.DOWN = false;
         input.mouse.leftButton.UP = true;
         input.mouse.leftButton.RELEASED = true;
@@ -693,6 +783,7 @@ extern "C" gX_I32 gX_Tools_Editor_TestInputCapture(gX_I0) {
     s_dragStartRect = savedDragStartRect;
     s_pressCaptured = savedPressCaptured;
     s_canvasArmed = savedCanvasArmed;
+    s_canvasUnlocked = savedCanvasUnlocked;
     input.mouse.coord = savedMouse;
     input.mouse.leftButton.PRESSED = savedPressed;
     input.mouse.leftButton.DOWN = savedDown;
@@ -1323,6 +1414,18 @@ static gX_I0 tools_panel_toolbar(gX_GUI_Canvas *canvas) {
     }
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Save markup (overwrite asks unless it is the opened file)");
+    ImGui::SameLine();
+    if (ImGui::SmallButton(s_canvasUnlocked ? "Lock" : "Unlock"))
+        s_canvasUnlocked = !s_canvasUnlocked;
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Locked: wheel zooms and middle-drag pans; Unlock enables element drag/resize.");
+    ImGui::SameLine();
+    if (ImGui::SmallButton("Fit")) {
+        s_viewZoom = 1.0f;
+        s_viewPan = (gX_F32v2){0.0f, 0.0f};
+    }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Reset the editor canvas view (not the element layout)");
 }
 
 static gX_I0 tools_panel_actions(void) {
@@ -1368,10 +1471,12 @@ static gX_I0 tools_rect_to_screen(gX_GUI_Canvas *canvas, gX_Rectangle r,
     gX_F32 ky = canvas->canvasBox.height / bh;
     gX_Rectangle gm;
     gX_Rectangle sc;
-    gm.x = canvas->canvasBox.x + canvas->canvasOffset.x + r.x * kx;
-    gm.y = canvas->canvasBox.y + canvas->canvasOffset.y + r.y * ky;
-    gm.width = r.width * kx;
-    gm.height = r.height * ky;
+    gX_F32 zx = canvas->canvasScale.x != 0.0f ? canvas->canvasScale.x : 1.0f;
+    gX_F32 zy = canvas->canvasScale.y != 0.0f ? canvas->canvasScale.y : 1.0f;
+    gm.x = canvas->canvasBox.x + canvas->canvasOffset.x + r.x * kx * zx;
+    gm.y = canvas->canvasBox.y + canvas->canvasOffset.y + r.y * ky * zy;
+    gm.width = r.width * kx * zx;
+    gm.height = r.height * ky * zy;
     //opencode: overlay fix — the foreground draw list is screen px, so map
     //   game->screen (identity until docked; pillarbox offset+scale after).
     sc = gX_GUI_GameToScreen(gm);
@@ -1544,6 +1649,31 @@ extern "C" gX_I0 gX_Tools_Editor_Open(gX_I32 canvasIndex, const gX_I8 *markupPat
     s_treeTraced = 0;
     s_editorOpened = 1;
     s_canvasArmed = 0;
+    s_canvasUnlocked = 0;
+    s_viewZoom = 1.0f;
+    s_viewPan = (gX_F32v2){0.0f, 0.0f};
+    {
+        const char *unlockEnv = getenv("GX_TOOLS_CANVAS_UNLOCK");
+        if (unlockEnv && unlockEnv[0] == '1') s_canvasUnlocked = 1;
+        const char *gridEnv = getenv("GX_TOOLS_GRID");
+        if (gridEnv && gridEnv[0] == '0') s_gridOn = 0;
+        const char *zoomEnv = getenv("GX_TOOLS_VIEW_ZOOM");
+        if (zoomEnv && zoomEnv[0]) {
+            gX_F32 zoom = (gX_F32)atof(zoomEnv);
+            if (zoom >= 0.5f && zoom <= 4.0f) s_viewZoom = zoom;
+        }
+        gX_TraceLog(gX_LOG_INFO,
+            "EDITOR_SYSTEM: canvas locked=%d zoom=%.2f",
+            !s_canvasUnlocked, s_viewZoom);
+    }
+    {
+        gX_GUI_Canvas *view = gX_GUI_Canvas_FromIndex(canvasIndex);
+        if (view) {
+            s_savedCanvasOffset = view->canvasOffset;
+            s_savedCanvasScale = view->canvasScale;
+            s_viewSaved = 1;
+        }
+    }
     tools_selection_clear();
     s_pendingSelect = -1;
     tools_edit_lock_set(s_targetCanvas);
@@ -1634,6 +1764,10 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0);
 extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
     gX_Tools_Editor_DeferredOpen();
     gX_GUI_Canvas *canvas = gX_GUI_Canvas_FromIndex(s_targetCanvas);
+    if (s_editorOpened && canvas) {
+        canvas->canvasOffset = s_viewPan;
+        canvas->canvasScale = (gX_F32v2){s_viewZoom, s_viewZoom};
+    }
     if (s_editorOpened && canvas && canvas->elements.amount > 0 && !s_treeTraced) {
         gX_U32 named = 0;
         gX_U32 labeled = 0;
