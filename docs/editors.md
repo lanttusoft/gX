@@ -98,7 +98,8 @@ unlocked -> locked -> close -> closed`, and a reopen starts locked again with
 a restored runtime transform. `editor-system-check` pins the default lock,
 unlock/lock toggle, zoom state, view reset, toolbar/status overlap at 100%
 and 175%, report action-row fit, report open/close/reopen, host open/close,
-Theme Lab Back and title return.
+Theme Lab Back and title return. The tool/lab Back path is also pinned to not
+flash the whole frame to black; scene switches keep the global transition fade.
 
 Saves honor the same harness guard as the other editors: a gate-launched run
 with `GX_NO_SETTINGS_SAVE=1` refuses to write shipped markup. The headless hooks
@@ -119,8 +120,8 @@ for the console), and that closing Theme Lab, Materials Lab, Shader Lab or the
 theme editor returns to the title. It also pins toolbar/status overlap at
 100%/175%, the theme panel below the host workspace tabs, the report form's
 action row at 175%, the report Reset control, report/host/canvas state
-transitions and the Theme Lab **Back to title** route. It runs in the full
-audit matrix.
+transitions and the Theme Lab **Back to title** route and a no-black-flash check for that route.
+It runs in the full audit matrix.
 
 `editor-input-check` is the input-arbitration gate. It verifies that a wheel
 or middle-drag over an ImGui panel does not zoom or pan the canvas, that the

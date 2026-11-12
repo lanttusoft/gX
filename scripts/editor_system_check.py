@@ -277,6 +277,23 @@ def main():
                 if not back_ok:
                     failures.append(f"themlab: Back failed at {label} ({delta:.2f})")
 
+            #ai: a tool/lab Back must not flash the whole frame to black; the
+            #   scene-transition fade remains a separate, intentional effect.
+            flash_dir = root / "back-flash"
+            flash_dir.mkdir()
+            run("themlab", 70, screenshot=flash_dir, shot_frame=50,
+                extra={"GX_UI_SCALE": "1.00", "GX_DOCK_DISABLE": "1",
+                       "GX_TOUR": "0",
+                       "GX_AI_INPUT": "0.3 move 100 112 100; 0.8 click 100 112"})
+            flash_shot = audit.newest_shot(flash_dir)
+            flash_mean = (image(flash_shot)[CROP_TOP:].mean()
+                          if flash_shot else 0.0)
+            flash_ok = flash_shot is not None and flash_mean > 20.0
+            print(f"{'themlab':<12} {'PASS' if flash_ok else 'FAIL'}  "
+                  f"Back no black flash mean={flash_mean:.1f}")
+            if not flash_ok:
+                failures.append(f"themlab: Back flashed black ({flash_mean:.1f})")
+
             for editor, expected in HOSTABLE:
                 log = run(editor, 25)
                 if "needs the gx_shell module" in log:
