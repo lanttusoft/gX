@@ -59,6 +59,8 @@ check: all
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	python3 -m unittest discover -s scripts -p test_version_suggest.py
 	python3 -m unittest discover -s scripts -p test_gate_manifest.py
+	#ai: GX-I040 — release orchestration is dry-run-first.
+	python3 -m unittest discover -s scripts -p test_release.py
 	#ai: M4 — one retry, with first-verdict provenance.
 	python3 -m unittest discover -s scripts -p test_audit_summary.py
 	python3 -m unittest discover -s scripts -p test_model_import.py
@@ -276,6 +278,8 @@ check-fast: all
 	python3 -m unittest discover -s scripts -p test_bug_replay.py
 	python3 -m unittest discover -s scripts -p test_version_suggest.py
 	python3 -m unittest discover -s scripts -p test_gate_manifest.py
+	#ai: GX-I040 — release orchestration is dry-run-first.
+	python3 -m unittest discover -s scripts -p test_release.py
 	#ai: M4 — one retry, with first-verdict provenance.
 	python3 -m unittest discover -s scripts -p test_audit_summary.py
 	python3 -m unittest discover -s scripts -p test_model_import.py
@@ -1193,6 +1197,15 @@ version-check:
 version-suggest:
 	@echo "== [gX] version suggestion =="
 	python3 scripts/version_suggest.py --from "$${FROM:-$$(git describe --tags --abbrev=0 2>/dev/null)}" --to "$${TO:-HEAD}"
+
+#ai: GX-I040 — release status/plan wrappers; execution stays explicit.
+.PHONY: release-status release-plan
+release-status:
+	python3 scripts/release.py status
+
+release-plan:
+	python3 scripts/release.py plan $(if $(VERSION),--version $(VERSION),) \
+		$(if $(CLASS),--class $(CLASS),) $(if $(FULL),--full,)
 
 version-gate:
 	@from="$${FROM:-$$(git describe --tags --abbrev=0 2>/dev/null)}"; \

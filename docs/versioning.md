@@ -118,6 +118,28 @@ FROM=v0.25.0 TO=v0.26.0 make version-gate
 6. Update the private release ledger with tag object, target commit, asset
    SHA-256 and post-publish result.
 
+### Standardized orchestrator
+
+`scripts/release.py` (GX-I040) makes the mechanical steps consistent without
+taking publication out of the owner's hands:
+
+```bash
+make release-status
+make release-plan VERSION=0.44.2 CLASS=patch
+python3 scripts/release.py prepare --version 0.44.2 --class patch --apply
+python3 scripts/release.py admit --version 0.44.2 --run
+python3 scripts/release.py package --version 0.44.2 --run
+python3 scripts/release.py bundle --version 0.44.2 \
+  --evidence-dir "$GX_RELEASE_EVIDENCE" --write
+python3 scripts/release.py owner --version 0.44.2 \
+  --notes /path/to/github-release.md
+```
+
+`prepare` and all execution stages default to dry-run; `--apply`/`--run`/`--write`
+perform the local work. `admit` records any permitted sequential retries in its
+state. `owner` only prints the signed-tag/push/archive-sign/publish commands;
+the agent must not run them without explicit owner action.
+
 ## History
 
 - `v0.24.0` — MINOR: opt-in color-code ECC and clutter detection.
