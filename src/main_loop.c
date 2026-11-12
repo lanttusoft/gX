@@ -93,6 +93,19 @@ static gX_I32 gX_Loop_Update(gX_I0) {
         if (shiftDown && input.keyboard.keys[gX_KEY_F10].state.PRESSED)
             gX_Tools_BugReport_OpenGlobal();
     }
+    //ai: GX-I043 — Ctrl+P opens the command palette from any scene, except
+    //   while an ImGui text field owns the keyboard.
+    {
+        extern gX_I0 gX_EditorPalette_OpenGlobal(gX_I0);
+        extern gX_I1 gX_Tools_ImGui_WantsKeyboard(gX_I0);
+        gX_I1 ctrlDown = input.keyboard.keys[gX_KEY_LEFT_CONTROL].state.DOWN
+            || input.keyboard.keys[gX_KEY_RIGHT_CONTROL].state.DOWN;
+        if ((ctrlDown && input.keyboard.keys[gX_KEY_P].state.PRESSED
+             && !gX_Tools_ImGui_WantsKeyboard())
+            || (maindata.frameCount == 2
+                && getenv("GX_EDITOR_PALETTE")))
+            gX_EditorPalette_OpenGlobal();
+    }
     GX_PROFILER_CHECK( gX_ConsolePlayback_Update(),                           "playback" );
     GX_PROFILER_CHECK( gX_Random_Update(),                                    "random" );
     //ai: console playback freezes simulation updates while paused; a step or

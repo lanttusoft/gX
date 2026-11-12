@@ -42,6 +42,10 @@ static gX_I32 s_count = 0;
 static gX_I8 s_selected[GX_EDITOR_PICKER_PATH];
 static gX_I0 (*s_accept)(const gX_I8 *path, gX_I0 *user) = NULL;
 static gX_I0 *s_user = NULL;
+static gX_I1 s_acceptPending = 0;
+static gX_I8 s_acceptPath[GX_EDITOR_PICKER_PATH];
+static gX_I0 (*s_pendingAccept)(const gX_I8 *path, gX_I0 *user) = NULL;
+static gX_I0 *s_pendingUser = NULL;
 
 static gX_I0 editor_picker_clear(void)
 {
@@ -87,13 +91,12 @@ static gX_I0 editor_picker_accept(const gX_I8 *path)
     snprintf((char *)s_selected, sizeof(s_selected), "%s", path);
     gX_TraceLog(gX_LOG_INFO, "EDITOR_PICKER: accept id=%s path=%s",
         s_id, s_selected);
-    gX_I0 (*accept)(const gX_I8 *, gX_I0 *) = s_accept;
-    gX_I0 *user = s_user;
+    snprintf((char *)s_acceptPath, sizeof(s_acceptPath), "%s", s_selected);
+    s_pendingAccept = s_accept;
+    s_pendingUser = s_user;
+    s_acceptPending = 1;
     s_open = 0;
     s_pending = 0;
-    ImGui::CloseCurrentPopup();
-    editor_picker_clear();
-    if (accept) accept(s_selected, user);
 }
 
 gX_I0 gX_EditorPicker_Open(const gX_EditorPickerRequest *request)
@@ -203,15 +206,21 @@ gX_I0 gX_EditorPicker_Draw(gX_I0)
         {
             snprintf((char *)s_selected, sizeof(s_selected), "%s",
                 s_entries[i].path);
-            if (ImGui::IsMouseDoubleClicked(0))
+            if (ImGui::IsMouseDoubleClicked(0)) {
                 editor_picker_accept(s_entries[i].path);
+                ImGui::PopID();
+                break;
+            }
         }
         if (ImGui::IsItemHovered())
         {
             ImGui::SetTooltip("%s", s_entries[i].path);
             if (ImGui::IsKeyPressed(ImGuiKey_Enter, false)
-                || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter, false))
+                || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter, false)) {
                 editor_picker_accept(s_entries[i].path);
+                ImGui::PopID();
+                break;
+            }
         }
         if (getenv("GX_EDITOR_PICKER_TRACE"))
         {
@@ -225,19 +234,32 @@ gX_I0 gX_EditorPicker_Draw(gX_I0)
     }
     if (matching == 0) ImGui::TextDisabled("No matches.");
     ImGui::EndChild();
-    ImGui::TextDisabled("Double-click or Enter to open.");
-    ImGui::BeginDisabled(!s_selected[0]);
-    if (ImGui::Button("Open"))
-        editor_picker_accept(s_selected);
-    ImGui::EndDisabled();
-    ImGui::SameLine();
-    if (ImGui::Button("Cancel"))
+    if (!s_acceptPending)
     {
-        gX_TraceLog(gX_LOG_INFO, "EDITOR_PICKER: cancel id=%s", s_id);
-        s_open = 0;
-        s_pending = 0;
-        ImGui::CloseCurrentPopup();
-        editor_picker_clear();
+        ImGui::TextDisabled("Double-click or Enter to open.");
+        ImGui::BeginDisabled(!s_selected[0]);
+        if (ImGui::Button("Open")) editor_picker_accept(s_selected);
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel"))
+        {
+            gX_TraceLog(gX_LOG_INFO, "EDITOR_PICKER: cancel id=%s", s_id);
+            s_open = 0;
+            s_pending = 0;
+            ImGui::CloseCurrentPopup();
+            editor_picker_clear();
+        }
     }
+    if (s_acceptPending) ImGui::CloseCurrentPopup();
     ImGui::EndPopup();
+    if (s_acceptPending)
+    {
+        s_acceptPending = 0;
+        gX_I0 (*accept)(const gX_I8 *, gX_I0 *) = s_pendingAccept;
+        gX_I0 *user = s_pendingUser;
+        gX_I8 path[GX_EDITOR_PICKER_PATH];
+        snprintf((char *)path, sizeof(path), "%s", s_acceptPath);
+        editor_picker_clear();
+        if (accept) accept(path, user);
+    }
 }

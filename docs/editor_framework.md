@@ -229,13 +229,16 @@ First slice landed:
   `GX_GFX_PRESET_TOUCH=1` exposes the state to the layout gate.
 - The GFX close guard is wired into the host and GFX menus: a dirty preset
   vetoes teardown and opens **Save and close / Discard and close / Cancel**.
+- The command palette (Ctrl+P) is a thin view over the same command registry
+  and shared picker; the host registers toolbar/report/open-editor commands and
+  an active GFX editor adds its preset commands.
 
 The input handoff was tightened after the GUI-editor close bug: the host
 capture query is active-editor-aware, tool close waits for the invoking menu
 to finish, and ImGui capture is ignored when no frame was drawn recently.
 
-Still proposed: panel registry, input-owner stack, a general modal manager,
-undo transactions and the full command palette.
+Still proposed: panel registry, input-owner stack, a general modal manager
+and undo transactions.
 
 ## Pilot: GFX preset load
 

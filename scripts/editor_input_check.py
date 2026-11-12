@@ -123,6 +123,31 @@ def main():
             if not host_ok:
                 failures.append("host-close: host bar/UI stayed inert after close")
 
+            palette = run({
+                "GX_EDITOR_PALETTE": "1",
+                "GX_EDITOR_PICKER_TRACE": "1",
+            })
+            palette_ok = (
+                "EDITOR_PALETTE: open commands=" in palette
+                and "EDITOR_PICKER: open id=editor.palette" in palette
+                and "EDITOR_COMMAND: register editor.host.toggle" in palette)
+            print(f"{'palette':<12} {'PASS' if palette_ok else 'FAIL'}  "
+                  f"Ctrl+P command list")
+            if not palette_ok:
+                failures.append("palette: Ctrl+P did not open the command list")
+
+            palette_run = run({
+                "GX_EDITOR_PALETTE": "1",
+                "GX_EDITOR_PICKER_TRACE": "1",
+                "GX_AI_INPUT": "1.2 move 400 277 100; 1.35 click 400 277; "
+                               "1.55 click 400 277",
+            })
+            palette_run_ok = "EDITOR_COMMAND: run editor.open.gui" in palette_run
+            print(f"{'palette':<12} {'PASS' if palette_run_ok else 'FAIL'}  "
+                  f"double-click runs command")
+            if not palette_run_ok:
+                failures.append("palette: command did not run from the palette")
+
             click = run({
                 "GX_GUI_TRACE": "1",
                 "GX_AI_INPUT": "0.5 key 299 1; 1.0 move 350 425 100; "

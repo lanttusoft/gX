@@ -43,7 +43,9 @@ extern "C" {
 #include "imgui/imgui.h"
 
 extern "C" gX_I1 gX_Tools_Gfx_CloseGuard(gX_I0);
+extern "C" gX_I0 gX_Tools_BugReport_OpenGlobal(gX_I0);
 #include "tools.h"
+#include "editor/editor_commands.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -477,9 +479,62 @@ static gX_I0 host_apply_suite(gX_I32 index) {
     host_save_selection();
 }
 
+static gX_I0 host_cmd_toggle(gX_I0 *user) {
+    (void)user;
+    gX_EditorHost_SetOpen(s_hostOpen ? 0 : 1);
+}
+
+static gX_I0 host_cmd_report(gX_I0 *user) {
+    (void)user;
+    gX_Tools_BugReport_OpenGlobal();
+}
+
+static gX_I0 host_cmd_open_gui(gX_I0 *user) {
+    (void)user;
+    gX_Tools_OpenEditor_Runtime();
+}
+
+static gX_I0 host_cmd_open_gfx(gX_I0 *user) {
+    (void)user;
+    gX_Tools_OpenGfx_Runtime();
+}
+
+static gX_I0 host_cmd_open_theme(gX_I0 *user) {
+    (void)user;
+    gX_Tools_OpenTheme_Runtime();
+}
+
+static gX_I0 host_cmd_open_themlab(gX_I0 *user) {
+    (void)user;
+    gX_Tools_OpenThemLab_Runtime();
+}
+
+static gX_I0 host_register_commands(gX_I0) {
+    static gX_I1 registered = 0;
+    if (registered) return;
+    registered = 1;
+    gX_EditorCommand commands[] = {
+        { "editor.host.toggle", "Toggle editor toolbar", "F9",
+          NULL, host_cmd_toggle, NULL },
+        { "editor.report", "Report bug (offline)", "Shift+F10",
+          NULL, host_cmd_report, NULL },
+        { "editor.open.gui", "Open GUI editor", NULL,
+          NULL, host_cmd_open_gui, NULL },
+        { "editor.open.gfx", "Open GFX editor", NULL,
+          NULL, host_cmd_open_gfx, NULL },
+        { "editor.open.theme", "Open theme editor", NULL,
+          NULL, host_cmd_open_theme, NULL },
+        { "editor.open.themlab", "Open Theme Lab", NULL,
+          NULL, host_cmd_open_themlab, NULL },
+    };
+    for (gX_U32 i = 0; i < sizeof(commands) / sizeof(commands[0]); i++)
+        gX_EditorCommands_Register(&commands[i]);
+}
+
 static gX_I0 host_init_env(gX_I0) {
     if (s_inited) return;
     s_inited = 1;
+    host_register_commands();
     const gX_I8 *guard = getenv("GX_NO_SETTINGS_SAVE");
     s_guarded = (guard && guard[0] && guard[0] != '0') ? 1 : 0;
     host_suites_init();
@@ -537,6 +592,10 @@ extern "C" gX_I1 gX_EditorHost_IsOpen(gX_I0) {
 extern "C" gX_I1 gX_EditorHost_Active(gX_I0) {
     host_init_env();
     return host_active_editor() ? 1 : 0;
+}
+
+extern "C" gX_I0 gX_EditorHost_EnsureCommands(gX_I0) {
+    host_init_env();
 }
 
 extern "C" gX_I0 gX_EditorHost_Update(gX_I0) {

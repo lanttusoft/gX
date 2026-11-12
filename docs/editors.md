@@ -67,6 +67,17 @@ right edge or wrap into the next row. `GX_GFX_ASSET_BROWSER=1` opens the grid
 headlessly, and `gfx-editor-layout-check` pins every grid path to its cell
 width and one line of text at 100/175%.
 
+### Command palette (2026-11-12)
+
+**Ctrl+P** opens the shared command palette from any scene (except while an
+ImGui text field owns the keyboard). It is a thin view over the editor command
+registry: type to filter, then Enter or double-click to run. The host registers
+toolbar toggle, offline report, and open-GUI/GFX/theme/Theme Lab commands; an
+active GFX editor contributes its preset commands. `GX_EDITOR_PALETTE=1`
+opens the palette headlessly; `editor-input-check` pins the command list and a
+double-click execution. The palette uses the same picker geometry and
+ellipsis rules as the preset browser.
+
 ### GFX preset picker (2026-11-12)
 
 The inspector's **Load preset** button now opens the shared picker instead of

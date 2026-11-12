@@ -1375,17 +1375,20 @@ static gX_I0 gX_GUI_Draw_ToolsOverlay(gX_I0) {    //opencode: v0.6.9 Phase B —
     //   F10, independent of the exclusive tool set).
     gX_I1 consoleOpen = gX_Module_OverlayOpen();
     extern gX_I1 gX_Tools_BugReport_IsOpen(gX_I0);
+    extern gX_I1 gX_EditorPicker_IsOpen(gX_I0);
     gX_I1 bugReportOpen = gX_Tools_BugReport_IsOpen();
+    gX_I1 pickerOpen = gX_EditorPicker_IsOpen();
     if (maindata.masterIndex == gX_SCENE_GUIPLAYGROUND || arguments.hasThemeEditor
         || gX_Tools_RuntimeActive() || consoleOpen
-        || gX_EditorHost_IsOpen() || bugReportOpen) {
+        || gX_EditorHost_IsOpen() || bugReportOpen || pickerOpen) {
         //opencode: v0.6.9 — fullscreen viewport for ImGui (margins
         //   drawable; game phase uses game-rect). No-op until docked.
         gX_RHI_Viewport(0, 0, (gX_I32)maindata.windowWidth, (gX_I32)maindata.windowHeight);
         extern gX_I0 gX_GUI_Draw_ImGui(gX_I0);
         //opencode: the host can be opened by the env hook without a tool
         //   opener, so ensure the ImGui chrome exists before drawing it.
-        if (gX_EditorHost_IsOpen() || bugReportOpen) gX_GUI_Load_ImGui();
+        if (gX_EditorHost_IsOpen() || bugReportOpen || pickerOpen)
+            gX_GUI_Load_ImGui();
         gX_GUI_Draw_ImGui();
     }
 }

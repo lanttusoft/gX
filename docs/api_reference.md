@@ -762,6 +762,9 @@ the not-in-slice list live in `docs/scripting.md`.
   `Init`, `SetPath`, `Path`, `MarkDirty`, `ClearDirty`, `Dirty`, `Save`,
   `Load`, `CanClose`. Storage is caller-owned; `Save`/`Load` clear dirty only
   on callback success.
+- `gX_EditorPalette_*` — internal Ctrl+P command palette (GX-I043): `Open`,
+  `OpenGlobal`. It builds a filtered list from `gX_EditorCommands_*` and uses
+  the shared picker; `GX_EDITOR_PALETTE=1` opens it headlessly.
 - `gX_Tools_Gfx_LabPanel*` — renderer lab panels: `Mask`, `Count`,
   `Label` (Models/Sky/World/FX/Lights/Render/Water; bit order matches the
   panel list). `GX_GFX_PANEL_LABS=<mask>` pins the mask for captures and the
