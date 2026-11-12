@@ -23,7 +23,9 @@ class ReleaseOrchestratorTests(unittest.TestCase):
                          (1, 2, 3, "rc1"))
 
     def test_previous_tag_is_below_target(self):
-        self.assertEqual(release.previous_tag((0, 44, 1, "")), "v0.44.0")
+        with mock.patch.object(release, "run") as run:
+            run.return_value = mock.Mock(stdout="v0.44.2\nv0.44.1\nv0.44.0\n")
+            self.assertEqual(release.previous_tag((0, 44, 2, "")), "v0.44.1")
 
     def test_mirror_plan_does_not_write(self):
         files = {
