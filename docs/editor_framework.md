@@ -104,10 +104,11 @@ gX_I1 gX_EditorInput_CapturesText(gX_I0);
 
 Precedence: modal > ImGui > native GUI > game. This turns the current
 `WantCaptureMouse`/`WantCaptureKeyboard` probes and report/host checks into one
-explicit per-frame owner. Shortcut routing, wheel ownership and arrow-key
-navigation all read the same value. The first slice combines the probes in
+explicit per-frame owner. The first slice combines the probes in
 `gX_EditorInput_Update`; native GUI mouse/keyboard capture, gameplay binds,
 the character queue and the palette text-field guard consume the predicates.
+Canvas wheel/pan gestures still use ImGui's own capture probe until they
+migrate.
 
 ### Document/session
 
