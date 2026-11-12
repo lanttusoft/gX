@@ -238,7 +238,7 @@ def command_prepare(args):
     state["date"] = args.date or datetime.date.today().isoformat()
     state["previous_tag"] = previous_tag(version)
     state["stages"]["prepared"] = {
-        "commit": run(["git", "rev-parse", "HEAD"]).stdout.strip(),
+        "base_commit": run(["git", "rev-parse", "HEAD"]).stdout.strip(),
         "date": state["date"],
     }
     save_state(version, state)
@@ -366,18 +366,27 @@ def command_bundle(args):
     if logs.is_dir():
         shutil.copytree(logs, evidence / "logs")
     _section, declared = changelog_section(version)
+    previous = state.get("previous_tag") or previous_tag(version)
     manifest = {
         "schema": 1,
         "version": format_version(version),
         "class": state.get("class") or declared,
         "commit": run(["git", "rev-parse", "HEAD"]).stdout.strip(),
         "branch": run(["git", "rev-parse", "--abbrev-ref", "HEAD"]).stdout.strip(),
+        "previous_tag": previous,
         "stages": state.get("stages", {}),
     }
     (evidence / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    patch = run(["git", "show", "--format=", "--binary", "HEAD"])
-    (evidence / "release.patch").write_text(patch.stdout, encoding="utf-8")
+    if previous:
+        patch = run(["git", "diff", "--binary", f"{previous}..HEAD"])
+        (evidence / "release.patch").write_text(patch.stdout, encoding="utf-8")
+    if args.notes:
+        notes = Path(args.notes)
+        if not notes.is_file():
+            print(f"RELEASE: release notes not found: {notes}", file=sys.stderr)
+            return 1
+        shutil.copyfile(notes, evidence / "github-release.md")
     commit = run(["git", "log", "-1", "--show-signature", "--format=%H%n%G?%n%s"])
     (evidence / "commit.txt").write_text(commit.stdout, encoding="utf-8")
     archive = ARTIFACTS / f"gX-v{format_version(version)}.tar.gz"
@@ -460,6 +469,7 @@ def main():
     bundle_parser = sub.add_parser("bundle", help="assemble evidence bundle")
     bundle_parser.add_argument("--version")
     bundle_parser.add_argument("--evidence-dir", required=True)
+    bundle_parser.add_argument("--notes", help="release-notes Markdown to include")
     bundle_parser.add_argument("--write", action="store_true")
     bundle_parser.set_defaults(function=command_bundle)
 
