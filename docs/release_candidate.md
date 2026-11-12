@@ -29,9 +29,9 @@ items. Until all three gates and the operations contract hold, gX stays a
 | Version | v0.45.0 (beta) |
 | Public tree | `lanttusoft/gX`, `main` = release commit `1358c7b` plus docs closeouts; signed `v0.45.0` tag targets `1358c7b` |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 122 manifest entries at the v0.45.0 admission, plus the new quick-tier `editor-input` gate (123 total); PASS — 109/109 gates, 1,523.6 s wall / 3,005.1 s gate time (AUDIT_CACHE=0, no retries) at `1358c7b` |
+| Audit baseline | 123 manifest entries; PASS — 110/110 gates, 1,556.7 s wall / 3,071.7 s gate time (AUDIT_CACHE=0, no retries) at `32d6596`; the v0.45.0 admission was 109/109 at `1358c7b` |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 3,940,699 B (253,605 B headroom), BSS 2,672,608 B (32,392 B headroom), assessment D — v0.45.0 `make lean` |
+| Lean gate | payload 3,944,155 B (250,149 B headroom), BSS 2,672,672 B (32,328 B headroom), assessment D — post-v0.45.0 `make check` at `32d6596` |
 | Release class | MINOR (v0.45.0: global Shift+F10 offline report, locked/zoomable GUI editor canvas, lab navigation, preview parity gates; no save/resource format change) |
 
 ## Completeness ledger
@@ -128,7 +128,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-12 | v0.45.0 MINOR prep: global Shift+F10 offline report (plain F10 stays console), locked-by-default GUI canvas with wheel zoom/middle pan/Unlock/Fit and restored runtime transform, Theme Lab Back, editor/runtime center-crop parity, cross-editor gate coverage. `release.py` prepared mirrors/SBOM; `version-gate` PASS — **109/109** gates, 1,523.6 s wall / 3,005.1 s gate time (AUDIT_CACHE=0, no retries); reproducible build and deterministic archive PASS. | owner/agent |
 | 2026-11-12 | v0.45.0 published: signed tag `v0.45.0` (object `8d2b8c6`, target `1358c7b`); archive `86648ec4...024b9` (22,868,291 B, 1,918 members); hosted digest/signatures and fresh-clone smoke PASS; release body corrected to published (https://github.com/lanttusoft/gX/releases/tag/v0.45.0). | owner/agent |
 | 2026-11-12 | RC refresh at `1358c7b` (v0.45.0): PASS — 109/109 gates, 1,523.6 s wall / 3,005.1 s gate time (AUDIT_CACHE=0), Lean payload 3,940,699 B / BSS 2,672,608 B, hosted archive and fresh-clone smoke verified. Blockers unchanged: five author dogfooding sessions, three demand signals, AMD/Intel hardware or accepted gap, operations sign-off. No RC/silver/gold claim. | owner/agent |
-| 2026-11-12 | Post-v0.45.0 editor dogfooding: native GUI input now yields to ImGui capture (clicks and arrow keys), canvas wheel/pan stays in the free viewport, the editor toolbar wraps and the status strip scales, the theme panel is inset/width-capped with a panel Back route, the host hides with the last editor, and the report form scrolls with Reset. New quick-tier `editor-input` gate plus `editor-system` overlap/state coverage. Focused gates, `--test-only` and `check-fast` PASS; commit not tagged/pushed. Remaining `bugs/`: back-to-title fade and GUI text/highlight alignment. No RC claim. | owner/agent |
+| 2026-11-12 | Post-v0.45.0 editor dogfooding: native GUI input now yields to ImGui capture (clicks and arrow keys), canvas wheel/pan stays in the free viewport, the editor toolbar wraps and the status strip scales, the theme panel is inset/width-capped with a panel Back route, the host hides with the last editor, and the report form scrolls with Reset. New quick-tier `editor-input` gate plus `editor-system` overlap/state coverage. `--test-only`, focused gates, `check-fast`, `make check` and the full matrix PASS — **110/110** gates, 1,556.7 s wall / 3,071.7 s gate time (AUDIT_CACHE=0, no retries); Lean payload 3,944,155 B / BSS 2,672,672 B. Commit not tagged/pushed. Remaining `bugs/`: back-to-title fade and GUI text/highlight alignment. No RC claim. | owner/agent |
 
 ## Change rule
 
