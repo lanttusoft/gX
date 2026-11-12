@@ -27,11 +27,11 @@ items. Until all three gates and the operations contract hold, gX stays a
 | Item | Value |
 | --- | --- |
 | Version | v0.45.0 (beta) |
-| Public tree | `lanttusoft/gX`; signed `v0.45.0` tag targets `1358c7b`; `main` carries the post-release editor slices through `3f26a47` plus docs closeouts |
+| Public tree | `lanttusoft/gX`; signed `v0.45.0` tag targets `1358c7b`; `main` carries the post-release editor slices through `7fda31e` plus docs closeouts |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 123 manifest entries; PASS — 110/110 gates, 1,604.1 s wall / 3,165.5 s gate time (AUDIT_CACHE=0, no retries) at `3f26a47`; the v0.45.0 admission was 109/109 at `1358c7b` |
+| Audit baseline | 123 manifest entries; PASS — 110/110 gates, 1,541.3 s wall / 3,035.5 s gate time (AUDIT_CACHE=0) at `7fda31e`; one recorded shader-cache warm-load retry; the v0.45.0 admission was 109/109 at `1358c7b` |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 3,949,947 B (244,357 B headroom), BSS 2,685,504 B (19,496 B headroom), assessment D — post-v0.45.0 `make check` at `3f26a47` |
+| Lean gate | payload 3,950,683 B (243,621 B headroom), BSS 2,685,536 B (19,464 B headroom), assessment D — post-v0.45.0 `make check` at `7fda31e` |
 | Release class | MINOR (v0.45.0: global Shift+F10 offline report, locked/zoomable GUI editor canvas, lab navigation, preview parity gates; no save/resource format change) |
 
 ## Completeness ledger
@@ -48,7 +48,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
 | Admission | full audit matrix green (`make audit-summary-full`) | holds | PASS — 109/109 gates, 1,523.6 s wall / 3,005.1 s gate time (AUDIT_CACHE=0) on the v0.45.0 tree at `1358c7b` (2026-11-12); no retries |
 | Tests | unit suite + contract gates green | holds | `--test-only`, gate manifest |
-| Stability | 3 consecutive full admission runs without a flake | holds | 3 x `make check` on 2026-11-08 (`b0fd5f4`, `89aa25d`, v0.42.0 release tree); no flake; the rare test-only SIGSEGV remains a watch item |
+| Stability | 3 consecutive full admission runs without a flake | partial | 3 x `make check` on 2026-11-08 (`b0fd5f4`, `89aa25d`, v0.42.0 release tree); the `7fda31e` full matrix needed one shader-cache warm-load retry (146.8 ms vs 143.4 ms; sequential retry PASS 138.3/126.6 ms). The rare test-only SIGSEGV remains a watch item. |
 | Docs | documentation index covers public surfaces; API/enum coverage gates | holds | `docs/README.md`, `api_coverage.py`, `enum_coverage.py` |
 | Docs | release notes + changelog for every release | holds | `CHANGELOG.md`, release notes |
 | License | GPL-3.0-or-later; provenance/attribution/copyright audits clean | holds | `provenance_audit.py --strict`, `copyright_audit.py` |
@@ -131,6 +131,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-12 | Post-v0.45.0 editor dogfooding: native GUI input now yields to ImGui capture (clicks and arrow keys), canvas wheel/pan stays in the free viewport, the editor toolbar wraps and the status strip scales, the theme panel is inset/width-capped with a panel Back route, the host hides with the last editor, and the report form scrolls with Reset. New quick-tier `editor-input` gate plus `editor-system` overlap/state coverage. `--test-only`, focused gates, `check-fast`, `make check` and the full matrix PASS — **110/110** gates, 1,556.7 s wall / 3,071.7 s gate time (AUDIT_CACHE=0, no retries); Lean payload 3,944,155 B / BSS 2,672,672 B. Commit not tagged/pushed. Remaining `bugs/`: back-to-title fade and GUI text/highlight alignment. No RC claim. | owner/agent |
 | 2026-11-12 | GFX asset-browser long-path dogfooding fix at `35164b3`: model paths ellipsize on one line with full-path tooltips instead of clipping at the cell edge; headless `GX_GFX_ASSET_BROWSER` hook and `gfx-editor-layout-check` cell width/height coverage. Full matrix PASS — **110/110** gates, 1,540.0 s wall / 3,036.8 s gate time (AUDIT_CACHE=0, no retries); `make check` PASS, Lean payload 3,944,987 B / BSS 2,672,672 B. No tag/push; no RC claim. | owner/agent |
 | 2026-11-12 | GX-I043 editor framework slices at `3f26a47`: bounded command registry, shared preset picker (Load opens picker, Reload current, Enter/double-click, ellipsis/tooltip, 175% geometry) and document dirty/load-guard state (modified marker, load warning, save/load clear). Full matrix PASS — **110/110** gates, 1,604.1 s wall / 3,165.5 s gate time (AUDIT_CACHE=0, no retries); `make check` PASS, Lean payload 3,949,947 B / BSS 2,685,504 B. No tag/push; no RC claim. | owner/agent |
+| 2026-11-12 | Editor close input handoff at `7fda31e`: active-editor-aware host capture, deferred host hide through the invoking menu, live-frame ImGui capture guard and panel-X host close. `editor-input-check` now pins X/host-menu close followed by a title OPEN GFX click. Full matrix PASS — **110/110** gates, 1,541.3 s wall / 3,035.5 s gate time (AUDIT_CACHE=0) with one recorded `shader-cache` warm-load retry (retry PASS); `make check` PASS, Lean payload 3,950,683 B / BSS 2,685,536 B. Stability row now partial. No tag/push; no RC claim. | owner/agent |
 
 ## Change rule
 
