@@ -104,6 +104,11 @@ extern "C" gX_I1 gX_Tools_ImGui_WantsKeyboard(gX_I0) {
     ImGuiIO &io = ImGui::GetIO();
     return (io.WantCaptureKeyboard || io.WantTextInput) ? 1 : 0;
 }
+
+extern "C" gX_I1 gX_Tools_ImGui_WantsTextInput(gX_I0) {
+    if (!gX_Tools_ImGui_Live()) return 0;
+    return ImGui::GetIO().WantTextInput ? 1 : 0;
+}
 static gX_I1 s_themeMode = 0;
 //opencode: immutable reference style lets user scale changes avoid cumulative
 //   rounding from ImGuiStyle::ScaleAllSizes().

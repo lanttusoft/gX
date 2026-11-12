@@ -87,20 +87,27 @@ before running.
 
 ```c
 typedef enum gX_EditorInputOwner {
-    GX_EDITOR_INPUT_GAME,
+    GX_EDITOR_INPUT_GAME = 0,
     GX_EDITOR_INPUT_NATIVE_GUI,
     GX_EDITOR_INPUT_IMGUI,
     GX_EDITOR_INPUT_MODAL
 } gX_EditorInputOwner;
 
-gX_EditorInputOwner gX_EditorFramework_Input_Owner(gX_I0);
-gX_I0 gX_EditorFramework_Input_Set(gX_EditorInputOwner owner, const gX_I8 *reason);
+gX_I0 gX_EditorInput_BeginFrame(gX_I0);
+gX_I0 gX_EditorInput_Set(gX_EditorInputOwner owner, const gX_I8 *reason);
+gX_I0 gX_EditorInput_Update(gX_I0);
+gX_EditorInputOwner gX_EditorInput_Owner(gX_I0);
+gX_I1 gX_EditorInput_CapturesMouse(gX_I0);
+gX_I1 gX_EditorInput_CapturesKeyboard(gX_I0);
+gX_I1 gX_EditorInput_CapturesText(gX_I0);
 ```
 
 Precedence: modal > ImGui > native GUI > game. This turns the current
 `WantCaptureMouse`/`WantCaptureKeyboard` probes and report/host checks into one
 explicit per-frame owner. Shortcut routing, wheel ownership and arrow-key
-navigation all read the same value.
+navigation all read the same value. The first slice combines the probes in
+`gX_EditorInput_Update`; native GUI mouse/keyboard capture, gameplay binds,
+the character queue and the palette text-field guard consume the predicates.
 
 ### Document/session
 
@@ -248,14 +255,22 @@ First slice landed:
   parse, and **View > Reset Layout** restores the saved mask and clears the
   per-suite ImGui geometry. `GX_EDITOR_PANEL_TOGGLE`, `GX_EDITOR_LAYOUT_RESET`
   and `GX_EDITOR_STATE_DIR` expose the same path to `editor-system-check`.
+- The input-owner kernel (`src/tools/editor/editor_input.{h,c}`) combines the
+  remaining probes once per frame: modal (report/picker) > ImGui (tool chrome
+  or ImGui capture) > native GUI > game. Native GUI mouse/keyboard capture,
+  gameplay binds, the character queue and the Ctrl+P text-field guard read the
+  predicates. `GX_EDITOR_INPUT_TRACE=1` logs owner/reason changes, and
+  `editor-input-check` pins title=game, GFX=imgui/tools, report=modal and
+  picker=modal.
 
 The input handoff was tightened after the GUI-editor close bug: the host
 capture query is active-editor-aware, tool close waits for the invoking menu
 to finish, and ImGui capture is ignored when no frame was drawn recently.
 
-Still proposed: input-owner stack, a general modal manager and undo
-transactions. The panel registry covers the GFX panels first; the other tools'
-internal panels migrate as they gain separate windows.
+Still proposed: a general modal manager and undo transactions, plus migrating
+the other tools' internal panels as they gain separate windows. The input-owner
+stack is implemented as a per-frame predicate facade; the remaining direct
+probe call sites migrate incrementally.
 
 ## Pilot: GFX preset load
 
@@ -290,7 +305,8 @@ buttons all dispatch commands instead of owning separate state.
    Move scene/inspector/asset/footer and the tool panels onto declared panels.
 5. **Schema inspector + undo transactions.**
    Start with the GFX material/model rows; unify value formatting and reset.
-6. **Input-owner stack + modal manager.**
+6. **Input-owner stack + modal manager.** (owner facade landed; per-tool
+   capture probes and the modal stack remain.)
    Replace the remaining per-tool capture probes.
 7. **Test kit + framework gate.**
    Add `editor-framework-check` once the command and picker surfaces are
@@ -304,7 +320,8 @@ buttons all dispatch commands instead of owning separate state.
   long-path ellipsis, action-row fit.
 - `editor-system-check`: state transitions, host/toolbar visibility and the
   panel-mask round-trip/reset remain authoritative.
-- `editor-input-check`: click/key/wheel arbitration remains authoritative.
+- `editor-input-check`: click/key/wheel arbitration and owner precedence remain
+  authoritative.
 
 ## Non-goals
 

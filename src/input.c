@@ -35,6 +35,7 @@
 #include "gui/binding.h"
 #include "gui/console_playback.h"
 #include "tools/tools.h"
+#include "tools/editor/editor_input.h"
 
 #include "main.h"
 #include "common/enum.h"
@@ -1270,9 +1271,9 @@ gX_I0 gX_Input_Update(gX_I0) {
 
     //opencode: runtime tools suppress gameplay binds except for an explicitly
     //   activated editor camera, which uses the existing scene camera binds.
-    extern gX_I1 gX_Tools_ImGui_WantsKeyboard(gX_I0);
+    gX_EditorInput_Update();
     gX_I1 updateBinds = (!gX_Tools_RuntimeActive() || input.toolCameraInputEnabled)
-        && !gX_Tools_ImGui_WantsKeyboard();
+        && !gX_EditorInput_CapturesKeyboard();
 
     GX_PROFILE_ZONE_BEGIN("input:devices");
     gX_Input_Update_Keyboard();
@@ -1328,7 +1329,7 @@ gX_I0 gX_Input_Update(gX_I0) {
     if (updateBinds) gX_Input_Update_Binds();
     //opencode: enqueue characters for the textinput widget (after virtual
     //   input override so AI/script key presses synthesize chars too)
-    if (!gX_Tools_RuntimeActive() && !gX_Tools_ImGui_WantsKeyboard())
+    if (!gX_Tools_RuntimeActive() && !gX_EditorInput_CapturesKeyboard())
         gX_Input_Update_CharQueue();
     
     //opencode: use input system's PRESSED state (not raylib gX_Key_IsPressed)

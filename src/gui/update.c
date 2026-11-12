@@ -33,6 +33,7 @@
 #include "element/element.h"
 #include "element/struct.h"
 #include "../tools/tools.h"
+#include "../tools/editor/editor_input.h"
 
 #include "../main.h"
 #include "../input.h"
@@ -411,15 +412,15 @@ gX_I0 gX_GUI_Update(gX_I0) {
     extern gX_I1 gX_Tools_ImGui_WantsKeyboard(gX_I0);
     gX_I1 hostActive = gX_EditorHost_Active();
     gX_I1 imguiMouse = gX_Tools_ImGui_WantsMouse();
-    gui.toolsInputCaptured = (gX_Tools_RuntimeActive()
-        || gX_Tools_BugReport_IsOpen() || hostActive
-        || gX_EditorPicker_IsOpen() || imguiMouse) ? 1 : 0;
+    gX_EditorInput_Update();
+    gui.toolsInputCaptured = gX_EditorInput_CapturesMouse() ? 1 : 0;
     if (gX_GUI_Trace_Enabled() && input.mouse.leftButton.PRESSED)
         gX_TraceLog(gX_LOG_INFO,
-            "GUITRACE: input owner runtime=%d hostActive=%d picker=%d report=%d imguiMouse=%d captured=%d",
+            "GUITRACE: input owner runtime=%d hostActive=%d picker=%d report=%d imguiMouse=%d captured=%d owner=%d reason=%s",
             gX_Tools_RuntimeActive(), hostActive,
             gX_EditorPicker_IsOpen(), gX_Tools_BugReport_IsOpen(),
-            imguiMouse, gui.toolsInputCaptured);
+            imguiMouse, gui.toolsInputCaptured,
+            (gX_I32)gX_EditorInput_Owner(), gX_EditorInput_Reason());
     
     //opencode: markup live-reload — rate-limited mtime watch on the registered
     //   markup file (refreshes markup canvases on change)
@@ -749,7 +750,7 @@ gX_I0 gX_GUI_Update(gX_I0) {
     //opencode: keyboard focus update — Tab/Shift+Tab cycling, Enter/Space activation
     //opencode: gamepad D-pad navigation — Up/Down cycle focus, A button activates
     if (gui.focusEnabled && !gui.toolsInputCaptured
-        && !gX_Tools_ImGui_WantsKeyboard()) {
+        && !gX_EditorInput_CapturesKeyboard()) {
         gX_I1 tabPressed = input.keyboard.keys[gX_KEY_TAB].state.PRESSED;
         gX_I1 shiftDown = input.keyboard.keys[gX_KEY_LEFT_SHIFT].state.DOWN
                        || input.keyboard.keys[gX_KEY_RIGHT_SHIFT].state.DOWN;

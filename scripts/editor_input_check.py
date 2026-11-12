@@ -176,6 +176,52 @@ def main():
                   f"no-title-focus={int('GUITRACE: focus ' not in tail)}")
             if not keys_ok:
                 failures.append("report: an arrow key moved title focus while typing")
+
+            #ai: the per-frame owner makes the precedence observable: gameplay
+            #   on the title, tool chrome over the GFX editor, and modals over
+            #   both the report and the shared picker.
+            owner_title = run({"GX_EDITOR_INPUT_TRACE": "1"}, frames=40)
+            title_owner_ok = "EDITOR_INPUT: owner=game reason=game" in owner_title
+            print(f"{'owner':<12} {'PASS' if title_owner_ok else 'FAIL'}  "
+                  f"title=game")
+            if not title_owner_ok:
+                failures.append("owner: title did not start at game")
+
+            owner_gfx = run({
+                "GX_TOOLS_OPEN": "gfx",
+                "GX_EDITOR_HOST": "1",
+                "GX_EDITOR_INPUT_TRACE": "1",
+            }, frames=40)
+            gfx_owner_ok = ("EDITOR_INPUT: owner=imgui reason=tools"
+                            in owner_gfx)
+            print(f"{'owner':<12} {'PASS' if gfx_owner_ok else 'FAIL'}  "
+                  f"GFX=imgui/tools")
+            if not gfx_owner_ok:
+                failures.append("owner: GFX chrome did not own input")
+
+            owner_report = run({
+                "GX_EDITOR_INPUT_TRACE": "1",
+                "GX_AI_INPUT": "0.5 key 299 1",
+            }, frames=70)
+            report_owner_ok = ("EDITOR_INPUT: owner=modal reason=report"
+                               in owner_report)
+            print(f"{'owner':<12} {'PASS' if report_owner_ok else 'FAIL'}  "
+                  f"report=modal")
+            if not report_owner_ok:
+                failures.append("owner: report did not raise the modal owner")
+
+            owner_picker = run({
+                "GX_TOOLS_OPEN": "gfx",
+                "GX_EDITOR_HOST": "1",
+                "GX_GFX_PRESET_PICKER": "1",
+                "GX_EDITOR_INPUT_TRACE": "1",
+            }, frames=50)
+            picker_owner_ok = ("EDITOR_INPUT: owner=modal reason=picker"
+                               in owner_picker)
+            print(f"{'owner':<12} {'PASS' if picker_owner_ok else 'FAIL'}  "
+                  f"picker=modal")
+            if not picker_owner_ok:
+                failures.append("owner: picker did not raise the modal owner")
     except (OSError, RuntimeError, ValueError) as error:
         print(f"EDITOR_INPUT_CHECK: FAIL — {error}", file=sys.stderr)
         return 1

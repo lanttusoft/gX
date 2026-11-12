@@ -760,6 +760,10 @@ the not-in-slice list live in `docs/scripting.md`.
   `Toggle`, `Mask`, `ApplyMask`, `Reset`. Panels declare get/set callbacks;
   the host persists visibility as a 32-bit workspace mask. The GFX scene,
   inspector, asset, footer and renderer labs are registered first.
+- `gX_EditorInput_*` — internal per-frame input owner (GX-I043): `BeginFrame`,
+  `Set`, `Update`, `Owner`, `Reason`, `CapturesMouse`, `CapturesKeyboard`,
+  `CapturesText`. Precedence is modal > ImGui > native GUI > game;
+  `GX_EDITOR_INPUT_TRACE=1` logs transitions for gates.
 - `gX_EditorPicker_*` — internal shared ImGui picker (GX-I043): `Open`, `Draw`,
   `IsOpen`. The caller supplies the item list and accept callback; the picker
   never writes or loads by itself.

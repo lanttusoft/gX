@@ -97,11 +97,11 @@ static gX_I32 gX_Loop_Update(gX_I0) {
     //   while an ImGui text field owns the keyboard.
     {
         extern gX_I0 gX_EditorPalette_OpenGlobal(gX_I0);
-        extern gX_I1 gX_Tools_ImGui_WantsKeyboard(gX_I0);
+        extern gX_I1 gX_EditorInput_CapturesText(gX_I0);
         gX_I1 ctrlDown = input.keyboard.keys[gX_KEY_LEFT_CONTROL].state.DOWN
             || input.keyboard.keys[gX_KEY_RIGHT_CONTROL].state.DOWN;
         if ((ctrlDown && input.keyboard.keys[gX_KEY_P].state.PRESSED
-             && !gX_Tools_ImGui_WantsKeyboard())
+             && !gX_EditorInput_CapturesText())
             || (maindata.frameCount == 2
                 && getenv("GX_EDITOR_PALETTE")))
             gX_EditorPalette_OpenGlobal();

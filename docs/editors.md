@@ -78,6 +78,19 @@ opens the palette headlessly; `editor-input-check` pins the command list and a
 double-click execution. The palette uses the same picker geometry and
 ellipsis rules as the preset browser.
 
+### Input owner (2026-11-12)
+
+The editor kernel now has one per-frame input owner
+(`src/tools/editor/editor_input.{h,c}`): **modal > ImGui > native GUI > game**.
+`gX_EditorInput_Update` combines the report, picker, host/tool, ImGui and text
+probes in one place; call sites consume `CapturesMouse`, `CapturesKeyboard`
+and `CapturesText` instead of recombining them. This covers native GUI mouse
+and keyboard capture, gameplay binds, the character queue and the Ctrl+P text
+guard. `GX_EDITOR_INPUT_TRACE=1` logs owner/reason transitions, and
+`editor-input-check` pins title=game, GFX=imgui/tools, report=modal and
+picker=modal. The remaining per-tool direct probes migrate incrementally; the
+owner is a facade over the existing evidence, not a second event loop.
+
 ### Workspace panel registry (2026-11-12)
 
 The editor host now owns a bounded C panel registry
