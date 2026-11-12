@@ -61,6 +61,12 @@ Expert labs) and that `resources/settings.json` is unchanged.
 scrolls for its lower sections at the lean floor; that is expected, not
 clipping.
 
+The asset-browser grid keeps long model paths on one line with a trailing
+ellipsis and a full-path hover tooltip, so they no longer clip at the cell's
+right edge or wrap into the next row. `GX_GFX_ASSET_BROWSER=1` opens the grid
+headlessly, and `gfx-editor-layout-check` pins every grid path to its cell
+width and one line of text at 100/175%.
+
 ### GUI editor usability (2026-11-08)
 
 The GUI editor's existing direct-manipulation workflow is now explicitly

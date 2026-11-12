@@ -705,6 +705,8 @@ static gX_I1 s_headlessMaterialAssetCheckDone = 0;
 static gX_I1 s_headlessMaterialMapCheckDone = 0;
 //opencode: headless asset-root registration check (gate hook).
 static gX_I1 s_headlessAssetRootCheckDone = 0;
+//ai: headless asset-browser open for layout/text-clip captures.
+static gX_I1 s_headlessAssetBrowserDone = 0;
 //opencode: headless prefab check (gate hook): capture the fixture's selected
 //   model + nearby lights, place a copy 2m along +X, and report the counts.
 static gX_I1 s_headlessPrefabCheckDone = 0;
@@ -3898,6 +3900,30 @@ static gX_I0 gfx_asset_thumbnails_clear(gX_I0) {
     s_assetThumbnailNext = 0;
 }
 
+//ai: asset grid paths are single-line and ellipsized; the tooltip keeps the
+//   full path discoverable instead of silently clipping it at the cell edge.
+static gX_I0 gfx_asset_text_ellipsis(const gX_I8 *text) {
+    gX_F32 avail = ImGui::GetContentRegionAvail().x;
+    if (avail < 1.0f) avail = 1.0f;
+    if (ImGui::CalcTextSize(text).x <= avail) {
+        ImGui::TextUnformatted(text);
+    } else {
+        gX_I8 buf[256];
+        snprintf(buf, sizeof(buf), "%s", text);
+        gX_I32 len = (gX_I32)strlen(buf);
+        gX_F32 dotsWidth = ImGui::CalcTextSize("...").x;
+        while (len > 0) {
+            buf[len] = '\0';
+            if (ImGui::CalcTextSize(buf).x + dotsWidth <= avail) break;
+            len--;
+        }
+        gX_I8 out[260];
+        snprintf(out, sizeof(out), "%s...", buf);
+        ImGui::TextUnformatted(out);
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", text);
+}
+
 //opencode: browser targets capture the selected renderer object/slot when opened.
 static gX_I0 gfx_asset_browser_open(gX_RendererGFX *gfx, gX_I32 kind,
     gX_I32 targetType, gX_I32 targetIndex, gX_I32 targetSlot,
@@ -4244,7 +4270,17 @@ static gX_I0 gfx_asset_browser_window(gX_RendererGFX *gfx) {
                     if (s_assetBrowserKind == gX_GFX_ASSET_MODELS) {
                         if (ImGui::Button(gfx_model_basename(path), ImVec2(-FLT_MIN, 76.0f)))
                             gfx_asset_select(path);
-                        ImGui::TextDisabled("%s", path);
+                        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", path);
+                        gX_F32 pathAvail = ImGui::GetContentRegionAvail().x;
+                        gfx_asset_text_ellipsis(path);
+                        if (getenv("GX_GFX_LAYOUT_TRACE")) {
+                            ImVec2 pmin = ImGui::GetItemRectMin();
+                            ImVec2 pmax = ImGui::GetItemRectMax();
+                            gX_TraceLog(gX_LOG_INFO,
+                                "GFX_ASSET_GRID path=%.63s avail=%.0f item=%.0f line=%.0f height=%.0f",
+                                path, pathAvail, pmax.x - pmin.x,
+                                ImGui::GetTextLineHeight(), pmax.y - pmin.y);
+                        }
                     } else {
                         ImVec2 itemSize = ImVec2(84.0f, 84.0f);
                         gX_I1 visible = ImGui::IsRectVisible(itemSize);
@@ -7835,6 +7871,14 @@ static gX_I0 gfx_preset_headless_hooks(gX_RendererGFX *gfx) {
         && !s_headlessMaterialAssetCheckDone && maindata.frameCount >= 3) {
         gfx_material_asset_headless_check(materialAssetPath);
         s_headlessMaterialAssetCheckDone = 1;
+    }
+    const char *assetBrowser = getenv("GX_GFX_ASSET_BROWSER");
+    if (assetBrowser && assetBrowser[0] && !s_headlessAssetBrowserDone
+        && maindata.frameCount >= 3) {
+        gfx_asset_browser_open(gfx, gX_GFX_ASSET_MODELS,
+            gX_GFX_ASSET_TARGET_NONE, -1, -1, -1, -1);
+        s_headlessAssetBrowserDone = 1;
+        gX_TraceLog(gX_LOG_INFO, "GFX_ASSET_BROWSER: open");
     }
     const char *assetRootAdd = getenv("GX_GFX_ASSET_ROOT_ADD");
     if (assetRootAdd && assetRootAdd[0] && !s_headlessAssetRootCheckDone

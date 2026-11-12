@@ -25,6 +25,9 @@ TRACE_RE = re.compile(
 KEYS = ("windowW", "windowH", "scene", "inspector", "stage", "viewport",
         "pick", "buttons", "preset", "presetTextW", "presetFieldW", "labs",
         "rows", "footer", "footerW", "footerH")
+GRID_RE = re.compile(
+    r"GFX_ASSET_GRID path=(\S+) avail=(\d+) item=(\d+) "
+    r"line=(\d+) height=(\d+)")
 
 
 def run(name, width, height, scale, level):
@@ -61,6 +64,43 @@ def run(name, width, height, scale, level):
 def require(condition, message):
     if not condition:
         raise RuntimeError(message)
+
+
+def check_asset_grid(name, width, height, scale):
+    environment = dict(os.environ)
+    environment.update({
+        "DISPLAY": audit.display(),
+        "GX_AUDIT_WINDOW": "hidden",
+        "GX_NO_SETTINGS_SAVE": "1",
+        "GX_SKIP_TESTS": "1",
+        "GX_DOCK_DISABLE": "1",
+        "GX_FRAMES": "80",
+        "GX_UI_SCALE": scale,
+        "GX_GFX_LAYOUT_TRACE": "1",
+        "GX_GFX_ASSET_BROWSER": "1",
+    })
+    try:
+        result = subprocess.run(
+            [str(BIN), "--gfx", "--gfx-editor",
+             "--screenWidth", str(width), "--screenHeight", str(height)],
+            cwd=str(ROOT), env=environment, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
+    except (OSError, subprocess.SubprocessError) as error:
+        raise RuntimeError(f"{name}: {error}") from error
+    log = audit.strip_ansi(result.stdout or "")
+    if result.returncode != 0:
+        raise RuntimeError(f"{name}: asset browser exited {result.returncode}: "
+                           f"{log[-500:]}")
+    require("GFX_ASSET_BROWSER: open" in log,
+            f"{name}: asset browser did not open")
+    rows = GRID_RE.findall(log)
+    require(rows, f"{name}: asset grid trace missing")
+    for path, avail, item, line, item_height in rows:
+        require(int(item) <= int(avail) + 1,
+                f"{name}: grid path '{path}' is {item}px in a {avail}px cell")
+        require(int(item_height) <= int(line) * 3 // 2 + 1,
+                f"{name}: grid path '{path}' wraps to {item_height}px "
+                f"(line {line}px)")
 
 
 def check_common(name, row, width, height, minimum_stage):
@@ -113,6 +153,9 @@ def main():
         require(large["footer"] == 0,
                 "1024-175-expert: footer should yield the stage")
 
+        check_asset_grid("asset-1024-100", 1024, 768, "1.00")
+        check_asset_grid("asset-1024-175", 1024, 768, "1.75")
+
         wide = run("1600-125", 1600, 900, "1.25", "advanced")
         check_common("1600-125", wide, 1600, 900, 600)
         require(wide["footer"] == 2,
@@ -135,7 +178,8 @@ def main():
         print(f"GFX_EDITOR_LAYOUT_CHECK: FAIL — {failure}", file=sys.stderr)
         return 1
     print("GFX_EDITOR_LAYOUT_CHECK: PASS scene/preset/lab rows fit at "
-          "1024/1600 and 100/125/150/175% scale; the 1024 footer is condensed")
+          "1024/1600 and 100/125/150/175% scale; the 1024 footer is condensed; "
+          "asset paths ellipsize inside their cells")
     return 0
 
 
