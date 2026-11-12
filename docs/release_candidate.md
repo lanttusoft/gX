@@ -27,11 +27,11 @@ items. Until all three gates and the operations contract hold, gX stays a
 | Item | Value |
 | --- | --- |
 | Version | v0.45.0 (beta) |
-| Public tree | `lanttusoft/gX`; signed `v0.45.0` tag targets `1358c7b`; `main` carries the post-release editor slices through `b1f2fc8` plus docs closeouts |
+| Public tree | `lanttusoft/gX`; signed `v0.45.0` tag targets `1358c7b`; `main` carries the post-release editor slices through `8607a66` plus docs closeouts |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 123 manifest entries; PASS — 110/110 gates, 1,574.2 s wall / 3,108.6 s gate time (AUDIT_CACHE=0, no retries) at `b1f2fc8`; the v0.45.0 admission was 109/109 at `1358c7b` |
+| Audit baseline | 123 manifest entries; PASS — 110/110 gates, 1,624.5 s wall / 3,205.1 s gate time (AUDIT_CACHE=0, no retries) at `8607a66`; the v0.45.0 admission was 109/109 at `1358c7b` |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 3,954,171 B (240,133 B headroom), BSS 2,685,856 B (19,144 B headroom), assessment D — post-palette `make lean` at `b1f2fc8` |
+| Lean gate | payload 3,960,379 B (233,925 B headroom), BSS 2,692,128 B (12,872 B headroom), assessment D — post-panel-registry `make lean` at `8607a66` |
 | Release class | MINOR (v0.45.0: global Shift+F10 offline report, locked/zoomable GUI editor canvas, lab navigation, preview parity gates; no save/resource format change) |
 
 ## Completeness ledger
@@ -48,7 +48,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
 | Admission | full audit matrix green (`make audit-summary-full`) | holds | PASS — 109/109 gates, 1,523.6 s wall / 3,005.1 s gate time (AUDIT_CACHE=0) on the v0.45.0 tree at `1358c7b` (2026-11-12); no retries |
 | Tests | unit suite + contract gates green | holds | `--test-only`, gate manifest |
-| Stability | 3 consecutive full admission runs without a flake | partial | 3 x `make check` on 2026-11-08 (`b0fd5f4`, `89aa25d`, v0.42.0 release tree); the `7fda31e` matrix needed one shader-cache warm-load retry (146.8 ms vs 143.4 ms; sequential retry PASS 138.3/126.6 ms); `4eadcf9` and the palette matrix at `b1f2fc8` were clean. The rare test-only SIGSEGV remains a watch item. |
+| Stability | 3 consecutive full admission runs without a flake | partial | 3 x `make check` on 2026-11-08 (`b0fd5f4`, `89aa25d`, v0.42.0 release tree); the `7fda31e` matrix needed one shader-cache warm-load retry (146.8 ms vs 143.4 ms; sequential retry PASS 138.3/126.6 ms); `4eadcf9`, the palette matrix at `b1f2fc8` and the panel-registry matrix at `8607a66` were clean. The rare test-only SIGSEGV remains a watch item. |
 | Docs | documentation index covers public surfaces; API/enum coverage gates | holds | `docs/README.md`, `api_coverage.py`, `enum_coverage.py` |
 | Docs | release notes + changelog for every release | holds | `CHANGELOG.md`, release notes |
 | License | GPL-3.0-or-later; provenance/attribution/copyright audits clean | holds | `provenance_audit.py --strict`, `copyright_audit.py` |
@@ -134,6 +134,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-12 | Editor close input handoff at `7fda31e`: active-editor-aware host capture, deferred host hide through the invoking menu, live-frame ImGui capture guard and panel-X host close. `editor-input-check` now pins X/host-menu close followed by a title OPEN GFX click. Full matrix PASS — **110/110** gates, 1,541.3 s wall / 3,035.5 s gate time (AUDIT_CACHE=0) with one recorded `shader-cache` warm-load retry (retry PASS); `make check` PASS, Lean payload 3,950,683 B / BSS 2,685,536 B. Stability row now partial. No tag/push; no RC claim. | owner/agent |
 | 2026-11-12 | Dirty GFX preset close guard at `4eadcf9`: host/GFX close menus veto teardown and open Save and close / Discard and close / Cancel; Save/Discard clear the document, Cancel keeps the editor. `GX_GFX_PRESET_CLOSE` and `gfx-editor-layout-check` pin clean close and dirty prompt. Full matrix PASS — **110/110** gates, 1,592.2 s wall / 3,141.9 s gate time (AUDIT_CACHE=0, no retries); `make check` PASS, Lean payload 3,951,323 B / BSS 2,685,568 B. No tag/push; no RC claim. | owner/agent |
 | 2026-11-12 | Ctrl+P command palette at `b1f2fc8` (GX-I043): a thin view over the command registry and shared picker, available from any scene and skipping active text input; the host contributes toolbar/report/open-editor commands and an active GFX editor adds its preset commands. The picker accept path now runs callbacks after the popup/child closes and pops its IDs, fixing a crash when a command opened another editor. `editor-input-check` adds palette open/list and double-click run rows. Full matrix PASS — **110/110** gates, 1,574.2 s wall / 3,108.6 s gate time (AUDIT_CACHE=0, no retries); `--test-only`, `check-fast`, api coverage, gates/version checks and Lean (payload 3,954,171 B / BSS 2,685,856 B) PASS. No tag/push; no RC claim. | owner/agent |
+| 2026-11-12 | Workspace panel registry at `c8e2bd6` (GX-I043): one bounded C table now declares the GFX scene, inspector, asset, footer and eleven renderer labs with get/set callbacks; the active editor menu is generated from it, suites persist a single panel mask as `#v2` lines (legacy lines still parse), **View > Reset Layout** restores the saved mask and clears the per-suite ImGui geometry, and `editor.layout.reset` joins the palette. `GX_EDITOR_STATE_DIR`/`GX_EDITOR_PANEL_TOGGLE`/`GX_EDITOR_LAYOUT_RESET` expose the path headlessly; `editor-system-check` adds registry, round-trip, reset and legacy-parse rows. Follow-up `8607a66` fixed two clang-tidy diff findings in the picker row loop and the GUI refresh path. Full matrix PASS — **110/110** gates, 1,624.5 s wall / 3,205.1 s gate time (AUDIT_CACHE=0, no retries); `make check`, `--test-only`, `check-fast`, `lint-check`, api coverage, gates/version checks and Lean (payload 3,960,379 B / BSS 2,692,128 B; the registry's 24 slots account for +6,272 B BSS, a possible lean follow-up) PASS. No tag/push; no RC claim. | owner/agent |
 
 ## Change rule
 
