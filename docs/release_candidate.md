@@ -1,6 +1,6 @@
 # gX release candidate ledger
 
-<!-- //ai: RC readiness refresh 2026-11-11: v0.43.0 audit/lean/publish outcomes. -->
+<!-- //ai: RC readiness refresh 2026-11-12: v0.45.0 audit/lean/publish outcomes. -->
 Status: **not a release candidate yet** — ledger opened 2026-11-01 on the
 v0.30.0 line.
 
@@ -26,13 +26,13 @@ items. Until all three gates and the operations contract hold, gX stays a
 
 | Item | Value |
 | --- | --- |
-| Version | v0.43.0 (beta) |
-| Public tree | `lanttusoft/gX`, `main` = release commit plus docs closeouts |
+| Version | v0.45.0 (beta) |
+| Public tree | `lanttusoft/gX`, `main` = release commit `1358c7b` plus docs closeouts; signed `v0.45.0` tag targets `1358c7b` |
 | License | GPL-3.0-or-later, plus the asset provenance contract |
-| Audit baseline | 120 manifest entries; PASS — 107/107 gates, 1,481.0 s wall / 2,919.0 s gate time (AUDIT_CACHE=0) at `81191f6`; the v0.42.7 tree was also 107/107 |
+| Audit baseline | 122 manifest entries; PASS — 109/109 gates, 1,523.6 s wall / 3,005.1 s gate time (AUDIT_CACHE=0, no retries) at `1358c7b`; v0.44.1 was also 109/109 |
 | Proof pin | `gx-proofs` `v0.19.0-proofs`, 60 core / 125 total modules, 1,347 / 3,071 declarations |
-| Lean gate | payload 3,933,755 B (260,549 B headroom), BSS 2,672,576 B (32,424 B headroom) — v0.43.0 `make lean` |
-| Release class | MINOR (v0.43.0: RHI/common correctness and diagnostics, ordered event-log access, clean-checkout console gates; no save/resource format change) |
+| Lean gate | payload 3,940,699 B (253,605 B headroom), BSS 2,672,608 B (32,392 B headroom), assessment D — v0.45.0 `make lean` |
+| Release class | MINOR (v0.45.0: global Shift+F10 offline report, locked/zoomable GUI editor canvas, lab navigation, preview parity gates; no save/resource format change) |
 
 ## Completeness ledger
 
@@ -46,7 +46,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Source | Release builds reproduce across extraction paths | holds | `make reproducible-check` (two clean trees, fixed epoch) |
 | Admission | `make check` (build, tests, scene smoke, audits, proofs, lean gate) | holds | release CI logs |
 | Admission | `make check-fast` on PATCH lines; full on MINOR+ | holds | release CI logs |
-| Admission | full audit matrix green (`make audit-summary-full`) | holds | PASS — 107/107 gates, 1,481.0 s wall / 2,919.0 s gate time (AUDIT_CACHE=0) on the v0.43.0 tree at `81191f6` (2026-11-11); no retries |
+| Admission | full audit matrix green (`make audit-summary-full`) | holds | PASS — 109/109 gates, 1,523.6 s wall / 3,005.1 s gate time (AUDIT_CACHE=0) on the v0.45.0 tree at `1358c7b` (2026-11-12); no retries |
 | Tests | unit suite + contract gates green | holds | `--test-only`, gate manifest |
 | Stability | 3 consecutive full admission runs without a flake | holds | 3 x `make check` on 2026-11-08 (`b0fd5f4`, `89aa25d`, v0.42.0 release tree); no flake; the rare test-only SIGSEGV remains a watch item |
 | Docs | documentation index covers public surfaces; API/enum coverage gates | holds | `docs/README.md`, `api_coverage.py`, `enum_coverage.py` |
@@ -58,7 +58,7 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | Dogfooding | 5 public-tree sessions recorded | open | gate 1 |
 | Demand | 3 clear signals recorded | open | gate 3 |
 | Security | no credentials; secret-scan/alert review | holds | `secret-scan` quick gate over tracked files + hosted secret scanning |
-| Operations | `publish_readiness.md` executed with no open items | open | v0.43.0 runbook executed as a worked example; RC sign-off pending (operations record) |
+| Operations | `publish_readiness.md` executed with no open items | open | v0.45.0 runbook executed as a worked example through `scripts/release.py`; RC sign-off pending (operations record) |
 | Scope | known limitations documented and accepted | holds | release notes + this ledger |
 
 ## Known limitations (accepted for the beta line)
@@ -122,6 +122,12 @@ Status values: **holds** (evidence current), **partial** (works, gaps named),
 | 2026-11-11 | v0.43.0 MINOR prep: RHI/common audit repairs (message-history overflow, storage/FBO/MSAA diagnostics, hashmap, registry, ordered event log) plus clean-checkout console fixtures. Version mirrors/SBOM updated; `version-gate` PASS — 107/107 gates, 1,481.0 s wall / 2,919.0 s gate time (AUDIT_CACHE=0, no retries); reproducible build and deterministic archive PASS. No tag/push yet; no RC claim. | owner/agent |
 | 2026-11-11 | v0.43.0 published: signed tag `v0.43.0` (object `476b305`, target `81191f6`); `main` + tag pushed atomically; GitHub pre-release with archive/checksum/signatures; hosted digest `6bb96a8e...343d` verified, fresh-clone and hosted-archive smoke PASS (https://github.com/lanttusoft/gX/releases/tag/v0.43.0). | owner/agent |
 | 2026-11-11 | RC refresh at `81191f6` (v0.43.0): PASS — 107/107 gates, 1,481.0 s wall / 2,919.0 s gate time (AUDIT_CACHE=0), NVIDIA GTX 1060 re-verified, hosted archive/signatures verified. Blockers unchanged: five author sessions, three demand signals, AMD/Intel hardware or accepted gap, operations sign-off. No RC/silver/gold claim. | owner/agent |
+| 2026-11-11 | v0.44.0 MINOR published: signed tag `v0.44.0` (object `ba9d946`, target `2ebe375`); audit **108/108** gates, 1,536.0 s wall / 3,029.8 s gate time, Lean payload 3,935,707 B (258,597 B headroom), BSS 2,672,576 B (32,424 B headroom); archive `2d6e7921...cbde4`; fresh-clone smoke PASS. The pre-release page appeared after the post-push check; its four assets are present, but no hosted extraction smoke was recorded for this version (https://github.com/lanttusoft/gX/releases/tag/v0.44.0). | owner/agent |
+| 2026-11-12 | v0.44.1 PATCH published: signed tag `v0.44.1` (object `e608d6e`, target `462fc40`); cross-editor lifecycle/readability repairs; audit **109/109** gates, 1,519.8 s wall / 2,991.7 s gate time; archive `aa87a3a1...8c9e5`; hosted and fresh-clone smoke PASS (https://github.com/lanttusoft/gX/releases/tag/v0.44.1). | owner/agent |
+| 2026-11-12 | v0.44.2 PATCH published: signed tag `v0.44.2` (object `80f6a4f`, target `a97d1cd`); standardized release orchestrator, cumulative evidence bundles and notes; PATCH admission (`check-fast` + focused release tests); archive `8c1b067a...dc21d`; hosted and fresh-clone smoke PASS (https://github.com/lanttusoft/gX/releases/tag/v0.44.2). The tag is immutable; post-tag test fix `6766886` shipped in v0.45.0 rather than rewriting it. | owner/agent |
+| 2026-11-12 | v0.45.0 MINOR prep: global Shift+F10 offline report (plain F10 stays console), locked-by-default GUI canvas with wheel zoom/middle pan/Unlock/Fit and restored runtime transform, Theme Lab Back, editor/runtime center-crop parity, cross-editor gate coverage. `release.py` prepared mirrors/SBOM; `version-gate` PASS — **109/109** gates, 1,523.6 s wall / 3,005.1 s gate time (AUDIT_CACHE=0, no retries); reproducible build and deterministic archive PASS. | owner/agent |
+| 2026-11-12 | v0.45.0 published: signed tag `v0.45.0` (object `8d2b8c6`, target `1358c7b`); archive `86648ec4...024b9` (22,868,291 B, 1,918 members); hosted digest/signatures and fresh-clone smoke PASS; release body corrected to published (https://github.com/lanttusoft/gX/releases/tag/v0.45.0). | owner/agent |
+| 2026-11-12 | RC refresh at `1358c7b` (v0.45.0): PASS — 109/109 gates, 1,523.6 s wall / 3,005.1 s gate time (AUDIT_CACHE=0), Lean payload 3,940,699 B / BSS 2,672,608 B, hosted archive and fresh-clone smoke verified. Blockers unchanged: five author dogfooding sessions, three demand signals, AMD/Intel hardware or accepted gap, operations sign-off. No RC/silver/gold claim. | owner/agent |
 
 ## Change rule
 
