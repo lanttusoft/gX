@@ -166,19 +166,29 @@ GFX preset, model, texture, theme and markup pickers migrate to this service.
 ```c
 typedef struct gX_EditorPanel {
     const gX_I8 *id;
-    const gX_I8 *title;
-    const gX_I8 *ownerTool;
-    gX_I32 defaultDock;      // left/right/center/floating
-    gX_F32 minWidth;
-    gX_F32 minHeight;
-    gX_I1 *visible;
-    gX_I0 (*draw)(gX_I0);
+    const gX_I8 *label;
+    const gX_I8 *group;       // "panel" or "renderer"
+    gX_I1 defaultVisible;
+    gX_I1 (*get)(gX_I0 *user);
+    gX_I0 (*set)(gX_I0 *user, gX_I1 visible);
+    gX_I0 *user;
 } gX_EditorPanel;
+
+gX_I32 gX_EditorPanels_Register(const gX_EditorPanel *panel);
+gX_I32 gX_EditorPanels_Find(const gX_I8 *id);
+gX_I1  gX_EditorPanels_Visible(gX_I32 index);
+gX_I0  gX_EditorPanels_SetVisible(gX_I32 index, gX_I1 visible);
+gX_U32 gX_EditorPanels_Mask(gX_I0);
+gX_I0  gX_EditorPanels_ApplyMask(gX_U32 mask);
+gX_I0  gX_EditorPanels_Reset(gX_I0);
 ```
 
 The host owns positions, layout persistence, summon/hide and reset. This is the
 single place for “panel below the host tabs”, “toolbar visible when open” and
-“no panel covers another at 175%”.
+“no panel covers another at 175%”. Panel visibility is a bit in a workspace
+mask; the registry stores get/set callbacks so a boolean flag and a renderer-lab
+bitmask share the same contract. Registration is bounded and dense, and the
+host renders the active tool's menu from the table instead of hardcoded flags.
 
 ### Modal/notification manager
 
@@ -232,13 +242,20 @@ First slice landed:
 - The command palette (Ctrl+P) is a thin view over the same command registry
   and shared picker; the host registers toolbar/report/open-editor commands and
   an active GFX editor adds its preset commands.
+- The panel registry (`src/tools/editor/editor_panels.{h,c}`) declares the GFX
+  scene, inspector, asset, footer and eleven renderer labs. Workspace suites
+  persist one panel mask (`#v2|name|editor|mask`), legacy suite lines still
+  parse, and **View > Reset Layout** restores the saved mask and clears the
+  per-suite ImGui geometry. `GX_EDITOR_PANEL_TOGGLE`, `GX_EDITOR_LAYOUT_RESET`
+  and `GX_EDITOR_STATE_DIR` expose the same path to `editor-system-check`.
 
 The input handoff was tightened after the GUI-editor close bug: the host
 capture query is active-editor-aware, tool close waits for the invoking menu
 to finish, and ImGui capture is ignored when no frame was drawn recently.
 
-Still proposed: panel registry, input-owner stack, a general modal manager
-and undo transactions.
+Still proposed: input-owner stack, a general modal manager and undo
+transactions. The panel registry covers the GFX panels first; the other tools'
+internal panels migrate as they gain separate windows.
 
 ## Pilot: GFX preset load
 
@@ -268,7 +285,8 @@ buttons all dispatch commands instead of owning separate state.
 3. **Document/session + close guard.**
    Move the GFX preset and GUI markup save/load/dirty state behind the document
    struct.
-4. **Panel registry + layout persistence.**
+4. **Panel registry + layout persistence.** (landed for GFX: scene, inspector,
+   asset, footer and the eleven renderer labs; other tools pending.)
    Move scene/inspector/asset/footer and the tool panels onto declared panels.
 5. **Schema inspector + undo transactions.**
    Start with the GFX material/model rows; unify value formatting and reset.
@@ -284,8 +302,8 @@ buttons all dispatch commands instead of owning separate state.
   picker open/accept/cancel, input-owner precedence, dirty close guard.
 - `gfx-editor-layout-check`: preset picker and command rows at 100/175%,
   long-path ellipsis, action-row fit.
-- `editor-system-check`: state transitions and host/toolbar visibility remain
-  authoritative.
+- `editor-system-check`: state transitions, host/toolbar visibility and the
+  panel-mask round-trip/reset remain authoritative.
 - `editor-input-check`: click/key/wheel arbitration remains authoritative.
 
 ## Non-goals

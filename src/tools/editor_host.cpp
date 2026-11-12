@@ -28,8 +28,8 @@
 //opencode: global editor host — menu-bar root, editor registry and the first
 //   workspace/suite slice. The toolbar is always summonable (F9) from any
 //   scene, editor or non-editor. Each suite owns a visible-editor selection
-//   and an ImGui layout file (per-suite geometry); the GFX editor stays
-//   disabled until the workspace/panel migration lands.
+//   and an ImGui layout file (per-suite geometry). A bounded panel registry
+//   owns summon/hide, saved masks and reset.
 //   See docs/editors.md and docs/gfx_editor_rework.md.
 
 extern "C" {
@@ -46,6 +46,7 @@ extern "C" gX_I1 gX_Tools_Gfx_CloseGuard(gX_I0);
 extern "C" gX_I0 gX_Tools_BugReport_OpenGlobal(gX_I0);
 #include "tools.h"
 #include "editor/editor_commands.h"
+#include "editor/editor_panels.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,6 +66,9 @@ static gX_I32 s_pendingDelete = -1;
 static gX_I1 s_saveOpen = 0;
 static gX_I8 s_saveName[64] = {0};
 static gX_I8 s_saveError[128] = {0};
+static gX_I1 s_panelsRegistered = 0;
+static gX_I1 s_layoutResetPending = 0;
+static gX_I32 s_labPanelUser[GX_EDITOR_PANEL_MAX];
 
 typedef struct HostEditor {
     const gX_I8 *label;
@@ -98,9 +102,7 @@ typedef struct HostSuite {
     gX_I8 name[64];
     gX_I32 editor; // registry index, -1 = no editor
     gX_I1 user;
-    gX_I1 scenePanel;
-    gX_I1 inspectorPanel;
-    gX_U32 labMask; // GFX renderer panels
+    gX_U32 panelMask; // gX_EditorPanels_Mask() at save time
 } HostSuite;
 
 static HostSuite s_suites[HOST_SUITE_MAX];
@@ -173,16 +175,24 @@ static gX_I0 host_trace_active(gX_I0) {
         active ? (const char *)active->label : "none");
 }
 
+static gX_I0 host_state_dir(gX_I8 *out, gX_U32 size) {
+    const gX_I8 *dir = getenv("GX_EDITOR_STATE_DIR");
+    if (!dir || !dir[0]) dir = gX_Directory_Working_Get();
+    snprintf((char *)out, size, "%s", (const char *)dir);
+}
+
 static gX_I0 host_suite_path(gX_I32 index, gX_I8 *out, gX_U32 size) {
-    const gX_I8 *work = gX_Directory_Working_Get();
+    gX_I8 work[1024];
     const gX_I8 *name = (index >= 0 && index < s_suiteCount)
         ? host_suite_name(index) : "Default";
+    host_state_dir(work, sizeof(work));
     snprintf((char *)out, size, "%s/gx_editor_%s.ini",
         (const char *)work, (const char *)name);
 }
 
 static gX_I0 host_selection_path(gX_I8 *out, gX_U32 size) {
-    const gX_I8 *work = gX_Directory_Working_Get();
+    gX_I8 work[1024];
+    host_state_dir(work, sizeof(work));
     snprintf((char *)out, size, "%s/gx_editor_workspace.txt",
         (const char *)work);
 }
@@ -194,8 +204,110 @@ static gX_I1 host_file_exists(const gX_I8 *path) {
     return 1;
 }
 
+static gX_I1 host_bool_panel_get(gX_I0 *user) {
+    if (!user) return 0;
+    return *(gX_I1 *)user ? 1 : 0;
+}
+
+static gX_I0 host_bool_panel_set(gX_I0 *user, gX_I1 visible) {
+    if (!user) return;
+    *(gX_I1 *)user = visible ? 1 : 0;
+}
+
+static gX_I1 host_lab_panel_get(gX_I0 *user) {
+    if (!user) return 0;
+    gX_I32 index = *(gX_I32 *)user;
+    gX_U32 *labs = gX_Tools_Gfx_LabPanelMask();
+    if (!labs || index < 0 || index >= 32) return 0;
+    return (*labs & (1u << index)) ? 1 : 0;
+}
+
+static gX_I0 host_lab_panel_set(gX_I0 *user, gX_I1 visible) {
+    if (!user) return;
+    gX_I32 index = *(gX_I32 *)user;
+    gX_U32 *labs = gX_Tools_Gfx_LabPanelMask();
+    if (!labs || index < 0 || index >= 32) return;
+    if (visible) *labs |= 1u << index;
+    else *labs &= ~(1u << index);
+}
+
+static gX_U32 host_panel_mask_valid(gX_I0) {
+    gX_I32 count = gX_EditorPanels_Count();
+    if (count <= 0) return 0;
+    if (count >= 32) return 0xFFFFFFFFu;
+    return (1u << count) - 1u;
+}
+
+static gX_U32 host_panel_mask_defaults(gX_I0) {
+    gX_U32 mask = 0;
+    for (gX_I32 i = 0; i < GX_EDITOR_PANEL_MAX; i++) {
+        const gX_EditorPanel *panel = gX_EditorPanels_At(i);
+        if (panel && panel->defaultVisible) mask |= 1u << i;
+    }
+    return mask;
+}
+
+static gX_U32 host_panel_mask_set(gX_U32 mask, const gX_I8 *id, gX_I1 visible) {
+    gX_I32 index = gX_EditorPanels_Find(id);
+    if (index < 0) return mask;
+    if (visible) return mask | (1u << index);
+    return mask & ~(1u << index);
+}
+
+static gX_U32 host_panel_mask_from_legacy(gX_I1 scene, gX_I1 inspector,
+    gX_U32 labs) {
+    gX_U32 mask = host_panel_mask_defaults();
+    mask = host_panel_mask_set(mask, (const gX_I8 *)"gfx.scene", scene);
+    mask = host_panel_mask_set(mask, (const gX_I8 *)"gfx.inspector", inspector);
+    gX_I32 labCount = gX_Tools_Gfx_LabPanelCount();
+    for (gX_I32 i = 0; i < labCount && i < 32; i++) {
+        if (!(labs & (1u << i))) continue;
+        gX_I8 id[32];
+        snprintf((char *)id, sizeof(id), "gfx.lab.%d", (int)i);
+        mask = host_panel_mask_set(mask, id, 1);
+    }
+    return mask;
+}
+
+static gX_I0 host_register_panels(gX_I0) {
+    if (s_panelsRegistered) return;
+    s_panelsRegistered = 1;
+    gX_EditorPanels_Clear();
+    gX_EditorPanel core[] = {
+        { "gfx.scene", "Scene panel", "panel", 1,
+          host_bool_panel_get, host_bool_panel_set,
+          gX_Tools_Gfx_ScenePanelFlag() },
+        { "gfx.inspector", "Inspector panel", "panel", 1,
+          host_bool_panel_get, host_bool_panel_set,
+          gX_Tools_Gfx_InspectorPanelFlag() },
+        { "gfx.asset", "Asset browser", "panel", 0,
+          host_bool_panel_get, host_bool_panel_set,
+          gX_Tools_Gfx_AssetPanelFlag() },
+        { "gfx.footer", "Shortcut footer", "panel", 1,
+          host_bool_panel_get, host_bool_panel_set,
+          gX_Tools_Gfx_FooterPanelFlag() },
+    };
+    for (gX_U32 i = 0; i < sizeof(core) / sizeof(core[0]); i++)
+        gX_EditorPanels_Register(&core[i]);
+    gX_I32 labCount = gX_Tools_Gfx_LabPanelCount();
+    if (labCount > GX_EDITOR_PANEL_MAX - 4) labCount = GX_EDITOR_PANEL_MAX - 4;
+    for (gX_I32 i = 0; i < labCount; i++) {
+        gX_I8 id[32];
+        snprintf((char *)id, sizeof(id), "gfx.lab.%d", (int)i);
+        s_labPanelUser[i] = i;
+        gX_EditorPanel panel = {
+            id, gX_Tools_Gfx_LabPanelLabel(i), "renderer", 0,
+            host_lab_panel_get, host_lab_panel_set, &s_labPanelUser[i]
+        };
+        gX_EditorPanels_Register(&panel);
+    }
+    gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: panels count=%d mask=0x%08x",
+        gX_EditorPanels_Count(), gX_EditorPanels_Mask());
+}
+
 static gX_I0 host_suites_file_path(gX_I8 *out, gX_U32 size) {
-    const gX_I8 *work = gX_Directory_Working_Get();
+    gX_I8 work[1024];
+    host_state_dir(work, sizeof(work));
     snprintf((char *)out, size, "%s/gx_editor_suites.txt", (const char *)work);
 }
 
@@ -207,9 +319,8 @@ static gX_I0 host_suites_persist(gX_I0) {
     if (!file) return;
     for (gX_I32 i = 0; i < s_suiteCount; i++) {
         if (!s_suites[i].user) continue;
-        fprintf(file, "%s|%d|%d|%d|%u\n", (const char *)s_suites[i].name,
-            s_suites[i].editor, (gX_I32)s_suites[i].scenePanel,
-            (gX_I32)s_suites[i].inspectorPanel, (unsigned)s_suites[i].labMask);
+        fprintf(file, "#v2|%s|%d|%u\n", (const char *)s_suites[i].name,
+            s_suites[i].editor, (unsigned)s_suites[i].panelMask);
     }
     fclose(file);
 }
@@ -237,9 +348,9 @@ static gX_I0 host_suites_init(gX_I0) {
             (const char *)kBuiltinSuites[i].name);
         s_suites[s_suiteCount].editor = kBuiltinSuites[i].editor;
         s_suites[s_suiteCount].user = 0;
-        s_suites[s_suiteCount].scenePanel = kBuiltinSuites[i].scenePanel;
-        s_suites[s_suiteCount].inspectorPanel = kBuiltinSuites[i].inspectorPanel;
-        s_suites[s_suiteCount].labMask = kBuiltinSuites[i].labMask;
+        s_suites[s_suiteCount].panelMask = host_panel_mask_from_legacy(
+            kBuiltinSuites[i].scenePanel, kBuiltinSuites[i].inspectorPanel,
+            kBuiltinSuites[i].labMask);
         s_suiteCount++;
     }
     if (s_guarded) return;
@@ -252,38 +363,47 @@ static gX_I0 host_suites_init(gX_I0) {
         for (gX_U32 i = 0; i < sizeof(line); i++) {
             if (line[i] == '\n' || line[i] == '\r') { line[i] = '\0'; break; }
         }
-        char *bar = strchr((char *)line, '|');
+        gX_I1 v2 = strncmp((char *)line, "#v2|", 4) == 0;
+        char *name = v2 ? (char *)line + 4 : (char *)line;
+        char *bar = strchr(name, '|');
         if (!bar) continue;
         *bar = '\0';
         char *cursor = bar + 1;
         char *bar2 = strchr(cursor, '|');
         if (bar2) *bar2 = '\0';
         gX_I32 editor = atoi(cursor);
-        gX_I32 scene = 1, inspector = 1;
-        gX_U32 labs = 0;
-        if (bar2) {
-            char *bar3 = strchr(bar2 + 1, '|');
-            if (bar3) *bar3 = '\0';
-            scene = atoi(bar2 + 1);
-            if (bar3) {
-                char *bar4 = strchr(bar3 + 1, '|');
-                if (bar4) *bar4 = '\0';
-                inspector = atoi(bar3 + 1);
-                if (bar4) labs = (gX_U32)strtoul(bar4 + 1, NULL, 10);
+        gX_U32 mask = 0;
+        if (v2) {
+            if (!bar2) continue;
+            mask = (gX_U32)strtoul(bar2 + 1, NULL, 10)
+                & host_panel_mask_valid();
+        } else {
+            gX_I32 scene = 1, inspector = 1;
+            gX_U32 labs = 0;
+            if (bar2) {
+                char *bar3 = strchr(bar2 + 1, '|');
+                if (bar3) *bar3 = '\0';
+                scene = atoi(bar2 + 1);
+                if (bar3) {
+                    char *bar4 = strchr(bar3 + 1, '|');
+                    if (bar4) *bar4 = '\0';
+                    inspector = atoi(bar3 + 1);
+                    if (bar4) labs = (gX_U32)strtoul(bar4 + 1, NULL, 10);
+                }
+                scene = scene ? 1 : 0;
+                inspector = inspector ? 1 : 0;
             }
-            scene = scene ? 1 : 0;
-            inspector = inspector ? 1 : 0;
+            mask = host_panel_mask_from_legacy((gX_I1)scene,
+                (gX_I1)inspector, labs & host_lab_mask_all());
         }
         if (editor < -1 || editor >= kEditorCount) continue;
-        if (!host_suite_name_valid(line)) continue;
-        if (host_suite_name_used(line)) continue;
+        if (!host_suite_name_valid(name)) continue;
+        if (host_suite_name_used(name)) continue;
         snprintf((char *)s_suites[s_suiteCount].name,
-            sizeof(s_suites[s_suiteCount].name), "%s", (char *)line);
+            sizeof(s_suites[s_suiteCount].name), "%.63s", name);
         s_suites[s_suiteCount].editor = editor;
         s_suites[s_suiteCount].user = 1;
-        s_suites[s_suiteCount].scenePanel = (gX_I1)scene;
-        s_suites[s_suiteCount].inspectorPanel = (gX_I1)inspector;
-        s_suites[s_suiteCount].labMask = labs & host_lab_mask_all();
+        s_suites[s_suiteCount].panelMask = mask;
         s_suiteCount++;
     }
     fclose(file);
@@ -417,16 +537,12 @@ static gX_I0 host_save_user_suite(const gX_I8 *name) {
         s_suites[found].user = 1;
     }
     s_suites[found].editor = editor;
-    s_suites[found].scenePanel = 1;
-    s_suites[found].inspectorPanel = 1;
-    s_suites[found].labMask = 0;
-    if (strcmp((const char *)kEditors[editor].label, "GFX") == 0) {
-        s_suites[found].scenePanel = *gX_Tools_Gfx_ScenePanelFlag() ? 1 : 0;
-        s_suites[found].inspectorPanel =
-            *gX_Tools_Gfx_InspectorPanelFlag() ? 1 : 0;
-        s_suites[found].labMask =
-            *gX_Tools_Gfx_LabPanelMask() & host_lab_mask_all();
-    }
+    s_suites[found].panelMask = 0;
+    if (strcmp((const char *)kEditors[editor].label, "GFX") == 0)
+        s_suites[found].panelMask = gX_EditorPanels_Mask()
+            & host_panel_mask_valid();
+    gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: panels saved=%s mask=0x%08x",
+        (const char *)name, s_suites[found].panelMask);
     host_suites_persist();
     s_suite = found;
     host_save_selection();
@@ -470,13 +586,70 @@ static gX_I0 host_apply_suite(gX_I32 index) {
     if (editorIndex >= 0) host_open_editor(editorIndex);
     if (editorIndex >= 0
         && strcmp((const char *)kEditors[editorIndex].label, "GFX") == 0) {
-        *gX_Tools_Gfx_ScenePanelFlag() = s_suites[index].scenePanel;
-        *gX_Tools_Gfx_InspectorPanelFlag() = s_suites[index].inspectorPanel;
-        *gX_Tools_Gfx_LabPanelMask() =
-            s_suites[index].labMask & host_lab_mask_all();
+        gX_EditorPanels_ApplyMask(s_suites[index].panelMask
+            & host_panel_mask_valid());
     }
+    gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: panels workspace=%s mask=0x%08x",
+        (const char *)host_suite_name(index), gX_EditorPanels_Mask());
     host_load_layout(index);
     host_save_selection();
+}
+
+static gX_I0 host_reset_layout(gX_I0) {
+    if (s_suite < 0 || s_suite >= s_suiteCount) return;
+    gX_I8 path[512];
+    host_suite_path(s_suite, path, sizeof(path));
+    if (!s_guarded) {
+        if (remove((const char *)path) == 0) {
+            gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: layout cleared=%s",
+                (const char *)host_suite_name(s_suite));
+        }
+    }
+    gX_I32 editorIndex = host_suite_editor(s_suite);
+    if (editorIndex >= 0
+        && strcmp((const char *)kEditors[editorIndex].label, "GFX") == 0) {
+        gX_EditorPanels_ApplyMask(s_suites[s_suite].panelMask
+            & host_panel_mask_valid());
+    }
+    s_layoutResetPending = 1;
+    gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: layout reset=%s mask=0x%08x",
+        (const char *)host_suite_name(s_suite), gX_EditorPanels_Mask());
+}
+
+static gX_I1 host_cmd_reset_enabled(gX_I0 *user) {
+    (void)user;
+    return host_active_editor() ? 1 : 0;
+}
+
+static gX_I0 host_cmd_reset(gX_I0 *user) {
+    (void)user;
+    host_reset_layout();
+}
+
+static gX_I0 host_toggle_panel_list(const gX_I8 *list) {
+    if (!list || !list[0]) return;
+    const gX_I8 *cursor = list;
+    while (*cursor) {
+        const gX_I8 *comma = strchr((const char *)cursor, ',');
+        gX_U32 len = comma ? (gX_U32)(comma - cursor)
+            : (gX_U32)strlen((const char *)cursor);
+        if (len >= GX_EDITOR_PANEL_ID) len = GX_EDITOR_PANEL_ID - 1;
+        gX_I8 id[GX_EDITOR_PANEL_ID];
+        memcpy(id, cursor, len);
+        id[len] = '\0';
+        gX_I32 index = gX_EditorPanels_Find(id);
+        if (index < 0) {
+            gX_TraceLog(gX_LOG_WARNING, "EDITOR_HOST: unknown panel '%s'", id);
+        } else {
+            gX_EditorPanels_Toggle(index);
+            const gX_EditorPanel *panel = gX_EditorPanels_At(index);
+            gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: panel id=%s visible=%d",
+                panel ? (const char *)panel->id : (const char *)id,
+                (gX_I32)gX_EditorPanels_Visible(index));
+        }
+        if (!comma) break;
+        cursor = comma + 1;
+    }
 }
 
 static gX_I0 host_cmd_toggle(gX_I0 *user) {
@@ -526,6 +699,8 @@ static gX_I0 host_register_commands(gX_I0) {
           NULL, host_cmd_open_theme, NULL },
         { "editor.open.themlab", "Open Theme Lab", NULL,
           NULL, host_cmd_open_themlab, NULL },
+        { "editor.layout.reset", "Reset panel layout", NULL,
+          host_cmd_reset_enabled, host_cmd_reset, NULL },
     };
     for (gX_U32 i = 0; i < sizeof(commands) / sizeof(commands[0]); i++)
         gX_EditorCommands_Register(&commands[i]);
@@ -534,6 +709,7 @@ static gX_I0 host_register_commands(gX_I0) {
 static gX_I0 host_init_env(gX_I0) {
     if (s_inited) return;
     s_inited = 1;
+    host_register_panels();
     host_register_commands();
     const gX_I8 *guard = getenv("GX_NO_SETTINGS_SAVE");
     s_guarded = (guard && guard[0] && guard[0] != '0') ? 1 : 0;
@@ -600,6 +776,11 @@ extern "C" gX_I0 gX_EditorHost_EnsureCommands(gX_I0) {
 
 extern "C" gX_I0 gX_EditorHost_Update(gX_I0) {
     host_init_env();
+    if (s_layoutResetPending && ImGui::GetCurrentContext()) {
+        s_layoutResetPending = 0;
+        ImGui::LoadIniSettingsFromMemory("");
+        gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: layout geometry reset");
+    }
     if (!s_hostOpen) return;
     gX_Cursor_Push(GX_CURSOR_STATE_UI, "editor-host", 30);
     if (!ImGui::GetCurrentContext()) gX_GUI_Load_ImGui();
@@ -608,6 +789,18 @@ extern "C" gX_I0 gX_EditorHost_Update(gX_I0) {
         gX_I32 pending = s_pendingSuite;
         s_pendingSuite = -2;
         if (pending >= 0) host_apply_suite(pending);
+    }
+    {
+        //ai: headless panel controls run after the pending workspace applies,
+        //   so a capture can save or reset the exact visibility it tests.
+        static gX_I1 panelEnvDone = 0;
+        if (!panelEnvDone && host_active_editor()) {
+            panelEnvDone = 1;
+            const gX_I8 *toggle = getenv("GX_EDITOR_PANEL_TOGGLE");
+            if (toggle && toggle[0]) host_toggle_panel_list(toggle);
+            const gX_I8 *reset = getenv("GX_EDITOR_LAYOUT_RESET");
+            if (reset && reset[0] && reset[0] != '0') host_reset_layout();
+        }
     }
     {
         //opencode: capture/test hook — save the active editor as a user suite.
@@ -633,6 +826,17 @@ extern "C" gX_I0 gX_EditorHost_Update(gX_I0) {
     }
 }
 
+static gX_I0 host_panel_menu_item(gX_I32 index) {
+    const gX_EditorPanel *panel = gX_EditorPanels_At(index);
+    if (!panel) return;
+    gX_I1 visible = gX_EditorPanels_Visible(index);
+    if (ImGui::MenuItem((const char *)panel->label, NULL, &visible)) {
+        gX_EditorPanels_SetVisible(index, visible ? 1 : 0);
+        gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: panel id=%s visible=%d",
+            (const char *)panel->id, (gX_I32)visible);
+    }
+}
+
 static gX_I0 host_editor_menu(const HostEditor *editor) {
     if (!ImGui::BeginMenu(editor->label)) return;
     if (ImGui::MenuItem("Close")) {
@@ -640,30 +844,18 @@ static gX_I0 host_editor_menu(const HostEditor *editor) {
     }
     if (strcmp((const char *)editor->label, "GFX") == 0) {
         ImGui::Separator();
-        gX_I1 scene = *gX_Tools_Gfx_ScenePanelFlag() ? 1 : 0;
-        if (ImGui::MenuItem("Scene panel", NULL, &scene))
-            *gX_Tools_Gfx_ScenePanelFlag() = scene;
-        gX_I1 inspector = *gX_Tools_Gfx_InspectorPanelFlag() ? 1 : 0;
-        if (ImGui::MenuItem("Inspector panel", NULL, &inspector))
-            *gX_Tools_Gfx_InspectorPanelFlag() = inspector;
-        gX_I1 asset = *gX_Tools_Gfx_AssetPanelFlag() ? 1 : 0;
-        if (ImGui::MenuItem("Asset browser", NULL, &asset))
-            *gX_Tools_Gfx_AssetPanelFlag() = asset;
-        gX_I1 footer = *gX_Tools_Gfx_FooterPanelFlag() ? 1 : 0;
-        if (ImGui::MenuItem("Shortcut footer", NULL, &footer))
-            *gX_Tools_Gfx_FooterPanelFlag() = footer;
+        gX_I32 count = gX_EditorPanels_Count();
+        for (gX_I32 i = 0; i < count; i++) {
+            const gX_EditorPanel *panel = gX_EditorPanels_At(i);
+            if (panel && strcmp((const char *)panel->group, "panel") == 0)
+                host_panel_menu_item(i);
+        }
         ImGui::Separator();
         if (ImGui::BeginMenu("Renderer panels")) {
-            gX_U32 *labs = gX_Tools_Gfx_LabPanelMask();
-            gX_I32 labCount = gX_Tools_Gfx_LabPanelCount();
-            for (gX_I32 i = 0; i < labCount; i++) {
-                gX_U32 bit = 1u << i;
-                bool open = (*labs & bit) != 0;
-                if (ImGui::MenuItem(
-                        (const char *)gX_Tools_Gfx_LabPanelLabel(i), NULL, &open)) {
-                    if (open) *labs |= bit;
-                    else *labs &= ~bit;
-                }
+            for (gX_I32 i = 0; i < count; i++) {
+                const gX_EditorPanel *panel = gX_EditorPanels_At(i);
+                if (panel && strcmp((const char *)panel->group, "renderer") == 0)
+                    host_panel_menu_item(i);
             }
             ImGui::EndMenu();
         }
@@ -788,7 +980,9 @@ static gX_I0 host_draw_menu_bar(void) {
     }
     if (ImGui::BeginMenu("View")) {
         ImGui::MenuItem("Editor Bar", "F9", false, false);
-        ImGui::MenuItem("Reset Layout", NULL, false, false);
+        if (ImGui::MenuItem("Reset Layout", NULL, false,
+                host_active_editor() != NULL))
+            host_reset_layout();
         ImGui::Separator();
         if (ImGui::BeginMenu("Workspaces")) {
             for (gX_I32 i = 0; i < s_suiteCount; i++) {

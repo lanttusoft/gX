@@ -19,7 +19,7 @@ round-trips presets under `resources/tools/`.
 
 | Surface | Source | Edits | Tier | Gate / gap |
 |---|---|---|---|---|
-| Global editor host | `src/tools/editor_host.cpp` | always-summonable menu bar (`gX/File/Edit/View/<Active Editor>/Window/Help`), editor registry (GUI, theme, sky, background, physics, wavetable, textwriter, rail, GFX; GFX scene/inspector/asset/footer panels summonable, renderer labs (Models/Sky/World/FX/Lights/Render/Water/Ray/Particles/Refl/Debug) as separate panels, per-suite panel and lab masks), workspace tabs, built-in and user-saved suites (`gx_editor_<suite>.ini`, `gx_editor_suites.txt`, `gx_editor_workspace.txt`), console/quit | Alpha/WIP | `editor-host`; per-panel draw, GFX migration and layout polish pending |
+| Global editor host | `src/tools/editor_host.cpp` | always-summonable menu bar (`gX/File/Edit/View/<Active Editor>/Window/Help`), editor registry (GUI, theme, sky, background, physics, wavetable, textwriter, rail, GFX; GFX scene/inspector/asset/footer panels and renderer labs (Models/Sky/World/FX/Lights/Render/Water/Ray/Particles/Refl/Debug) come from one bounded panel registry, per-suite masks), workspace tabs, built-in and user-saved suites (`gx_editor_<suite>.ini`, `gx_editor_suites.txt`, `gx_editor_workspace.txt`), console/quit | Alpha/WIP | `editor-host`; GFX panel registry landed, other tool panels pending |
 | GFX editor | `src/tools/gfx/gfx_editor.cpp` | renderer scene (models/materials/lights/camera/sky/weather/decals/water/particles/SSAO/SSR/quality) + blockout/texture/export/bake panels | Beta | full audit matrix; rework Phases 1–5 complete; F1/Help guide; `gfx-editor-layout` covers 1024/1600 and 100–175% scale |
 | GUI editor | `src/tools/editor/editor.cpp` | markup templates on the GUIPLAYGROUND canvas | Alpha/WIP | `gui-editor` gate; canvas click/drag/resize, tree filter, undo/redo, first-run tour + F1 guide, shipped-markup guard, deferred `--tools` markup open and readable tree labels |
 | Theme editor | `src/tools/theme/theme_editor.cpp` | GUI theme tokens (live) | Alpha/WIP | `ui-audit` open path; token-list surface, manual workflow |
@@ -77,6 +77,34 @@ active GFX editor contributes its preset commands. `GX_EDITOR_PALETTE=1`
 opens the palette headlessly; `editor-input-check` pins the command list and a
 double-click execution. The palette uses the same picker geometry and
 ellipsis rules as the preset browser.
+
+### Workspace panel registry (2026-11-12)
+
+The editor host now owns a bounded C panel registry
+(`src/tools/editor/editor_panels.{h,c}`). The GFX scene, inspector, asset
+browser, shortcut footer and all eleven renderer labs are registered once with
+an ID, label, group, default visibility and get/set callbacks. The active
+editor menu is generated from that table instead of hardcoded flag checks, and
+the `GFX`/`GFX Focus` built-ins seed the same masks.
+
+Workspace masks persist in `gx_editor_suites.txt` as
+`#v2|<name>|<editor>|<mask>`; legacy `name|editor|scene|inspector|labs` lines
+still parse. **View > Reset Layout** restores the workspace's saved mask and
+clears its per-suite `gx_editor_<suite>.ini` geometry, so a messy drag can be
+undone without losing the workspace's panel choice. The host also exposes the
+reset as the `editor.layout.reset` command for menus and the palette.
+
+Headless hooks:
+
+- `GX_EDITOR_STATE_DIR=<dir>` redirects suites, selection and per-suite ini
+  files to a scratch directory (no repository writes).
+- `GX_EDITOR_PANEL_TOGGLE=<id>[,<id>]` toggles registered panels after the
+  pending workspace applies.
+- `GX_EDITOR_LAYOUT_RESET=1` runs the same reset path after the toggles.
+
+`editor-system-check` pins the 15-panel registry, the asset-toggle mask
+round-trip across two runs, reset clearing the geometry and restoring the saved
+mask, legacy suite parsing, and the `editor.layout.reset` command.
 
 ### GFX preset picker (2026-11-12)
 

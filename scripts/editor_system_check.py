@@ -246,6 +246,91 @@ def main():
                   f"host open-close")
             if not host_state:
                 failures.append("state: host open-close failed")
+
+            #ai: workspace panel registry — every GFX panel is registered,
+            #   visibility round-trips through a v2 suite, Reset Layout restores
+            #   the saved mask and clears the per-suite geometry, and legacy
+            #   suite lines still parse.
+            panel_state = root / "panel-state"
+            panel_state.mkdir()
+            panel_env = {
+                "GX_EDITOR_STATE_DIR": str(panel_state),
+                "GX_NO_SETTINGS_SAVE": "0",
+                "GX_EDITOR_HOST": "1",
+            }
+            save_log = run("gfx", 90, extra={
+                **panel_env,
+                "GX_EDITOR_PANEL_TOGGLE": "gfx.asset",
+                "GX_EDITOR_SUITE_SAVE": "PanelTest",
+            })
+            count = re.search(r"EDITOR_HOST: panels count=(\d+)", save_log)
+            saved = re.search(
+                r"EDITOR_HOST: panels saved=PanelTest mask=0x([0-9a-f]+)",
+                save_log)
+            registry_ok = (
+                bool(count) and int(count.group(1)) >= 15
+                and bool(saved)
+                and "EDITOR_HOST: panel id=gfx.asset visible=1" in save_log
+                and "EDITOR_COMMAND: register editor.layout.reset" in save_log)
+            print(f"{'panels':<12} {'PASS' if registry_ok else 'FAIL'}  "
+                  f"registry count={count.group(1) if count else '?'} "
+                  f"asset toggle")
+            if not registry_ok:
+                failures.append("panels: registry/toggle/command missing")
+
+            load_log = run("gfx", 40, extra={
+                **panel_env,
+                "GX_EDITOR_WORKSPACE": "PanelTest",
+            })
+            loaded = re.search(
+                r"EDITOR_HOST: panels workspace=PanelTest mask=0x([0-9a-f]+)",
+                load_log)
+            persist_ok = (
+                bool(saved) and bool(loaded)
+                and saved.group(1) == loaded.group(1))
+            print(f"{'panels':<12} {'PASS' if persist_ok else 'FAIL'}  "
+                  f"workspace mask round-trip")
+            if not persist_ok:
+                failures.append("panels: workspace mask did not round-trip")
+
+            reset_log = run("gfx", 40, extra={
+                **panel_env,
+                "GX_EDITOR_WORKSPACE": "PanelTest",
+                "GX_EDITOR_PANEL_TOGGLE": "gfx.asset",
+                "GX_EDITOR_LAYOUT_RESET": "1",
+            })
+            reset = re.search(
+                r"EDITOR_HOST: layout reset=PanelTest mask=0x([0-9a-f]+)",
+                reset_log)
+            reset_ok = (
+                "EDITOR_HOST: panel id=gfx.asset visible=0" in reset_log
+                and bool(reset) and bool(saved)
+                and reset.group(1) == saved.group(1)
+                and "EDITOR_HOST: layout cleared=PanelTest" in reset_log
+                and "EDITOR_HOST: layout geometry reset" in reset_log)
+            print(f"{'panels':<12} {'PASS' if reset_ok else 'FAIL'}  "
+                  f"reset restores saved mask + clears geometry")
+            if not reset_ok:
+                failures.append("panels: Reset Layout did not restore the workspace")
+
+            legacy_state = root / "panel-legacy"
+            legacy_state.mkdir()
+            (legacy_state / "gx_editor_suites.txt").write_text(
+                "Legacy|8|1|0|0\n", encoding="utf-8")
+            legacy_log = run("gfx", 30, extra={
+                "GX_EDITOR_STATE_DIR": str(legacy_state),
+                "GX_NO_SETTINGS_SAVE": "0",
+                "GX_EDITOR_HOST": "1",
+                "GX_EDITOR_WORKSPACE": "Legacy",
+            })
+            legacy = re.search(
+                r"EDITOR_HOST: panels workspace=Legacy mask=0x([0-9a-f]+)",
+                legacy_log)
+            legacy_ok = bool(legacy) and int(legacy.group(1), 16) == 9
+            print(f"{'panels':<12} {'PASS' if legacy_ok else 'FAIL'}  "
+                  f"legacy suite parses")
+            if not legacy_ok:
+                failures.append("panels: legacy suite line did not parse")
             lock_log = run("editor", 140, extra={
                 "GX_UI_SCALE": "1.00", "GX_DOCK_DISABLE": "1",
                 "GX_TOUR": "0", "GX_TOOLS_LAYOUT_TRACE": "1",

@@ -755,6 +755,11 @@ the not-in-slice list live in `docs/scripting.md`.
 - `gX_EditorCommands_*` — internal editor command registry (GX-I043):
   `Register`, `Unregister`, `Run`, `Enabled`, `Count`, `At`. Commands are
   copied into a bounded table; menus, buttons and headless probes share IDs.
+- `gX_EditorPanels_*` — internal workspace panel registry (GX-I043):
+  `Clear`, `Register`, `Count`, `At`, `Find`, `Visible`, `SetVisible`,
+  `Toggle`, `Mask`, `ApplyMask`, `Reset`. Panels declare get/set callbacks;
+  the host persists visibility as a 32-bit workspace mask. The GFX scene,
+  inspector, asset, footer and renderer labs are registered first.
 - `gX_EditorPicker_*` — internal shared ImGui picker (GX-I043): `Open`, `Draw`,
   `IsOpen`. The caller supplies the item list and accept callback; the picker
   never writes or loads by itself.

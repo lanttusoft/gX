@@ -237,6 +237,7 @@ set(GX_SOURCES
     src/tools/editor/editor.cpp
     src/tools/editor/editor_commands.c
     src/tools/editor/editor_documents.c
+    src/tools/editor/editor_panels.c
     src/tools/editor/editor_picker.cpp
     src/tools/editor/editor_palette.cpp
     src/tools/theme/theme_editor.cpp
