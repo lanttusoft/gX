@@ -135,6 +135,8 @@ Start here:
   presentation modes and bounded multi-frame reassembly.
 - [gX debug colors — magic-color registry](debug_colors.md)
 - [gX — editors and tooling surfaces](editors.md)
+- [Editor framework proposal](editor_framework.md) — command registry, shared
+  picker, documents, panel registry and input ownership (GX-I043).
 - [GFX editor rework](gfx_editor_rework.md) — hierarchy, identity, showcase and
   accessibility phases.
 - [gX v0.2 Front-End Design Specification](frontend_design.md)
