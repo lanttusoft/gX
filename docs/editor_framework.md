@@ -228,6 +228,10 @@ First slice landed:
   marks dirty on model/light history edits and cleans on save/load;
   `GX_GFX_PRESET_TOUCH=1` exposes the state to the layout gate.
 
+The input handoff was tightened after the GUI-editor close bug: the host
+capture query is active-editor-aware, tool close waits for the invoking menu
+to finish, and ImGui capture is ignored when no frame was drawn recently.
+
 Still proposed: wiring a close prompt into the host/tool close paths, panel
 registry, input-owner stack, modal manager, undo transactions and the full
 command palette.

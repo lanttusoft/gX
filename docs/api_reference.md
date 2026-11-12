@@ -750,8 +750,8 @@ the not-in-slice list live in `docs/scripting.md`.
 - `gX_Tools_*` — runtime open/close + CLI inits (`--tools`, `--theme-editor`)
 - `gX_EditorHost_*` — always-summonable global host (F9): menu bar, editor
   registry, workspace suites and per-suite layouts. `Toggle`, `SetOpen`,
-  `IsOpen`, `Update`, `Draw`; `GX_EDITOR_HOST=1` opens it for captures and
-  `GX_EDITOR_WORKSPACE=<name>` selects a suite
+  `IsOpen`, `Active`, `Update`, `Draw`; `GX_EDITOR_HOST=1` opens it for captures
+  and `GX_EDITOR_WORKSPACE=<name>` selects a suite
 - `gX_EditorCommands_*` — internal editor command registry (GX-I043):
   `Register`, `Unregister`, `Run`, `Enabled`, `Count`, `At`. Commands are
   copied into a bounded table; menus, buttons and headless probes share IDs.

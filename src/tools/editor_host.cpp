@@ -50,6 +50,7 @@ extern "C" {
 extern "C" gX_I0 gX_EditorHost_SetOpen(gX_I1 open);
 
 static gX_I1 s_hostOpen = 0;
+static gX_I32 s_closeHostPending = 0;
 static gX_I1 s_inited = 0;
 static gX_I1 s_guarded = 0;
 static gX_I1 s_aboutOpen = 0;
@@ -351,6 +352,16 @@ static gX_I0 host_close_editor(void) {
     host_trace_active();
 }
 
+static gX_I0 host_close_editor_and_bar(void) {
+    //ai: keep the host alive until the invoking menu finishes its click and
+    //   closes; hiding it immediately orphaned the popup and captured every
+    //   native GUI click.
+    gX_Tools_Close_Runtime();
+    gX_EditorHost_SetOpen(1);
+    s_closeHostPending = 20;
+    host_trace_active();
+}
+
 static gX_I0 host_save_user_suite(const gX_I8 *name) {
     if (s_guarded) {
         snprintf((char *)s_saveError, sizeof(s_saveError),
@@ -519,6 +530,11 @@ extern "C" gX_I1 gX_EditorHost_IsOpen(gX_I0) {
     return s_hostOpen;
 }
 
+extern "C" gX_I1 gX_EditorHost_Active(gX_I0) {
+    host_init_env();
+    return host_active_editor() ? 1 : 0;
+}
+
 extern "C" gX_I0 gX_EditorHost_Update(gX_I0) {
     host_init_env();
     if (!s_hostOpen) return;
@@ -557,8 +573,7 @@ extern "C" gX_I0 gX_EditorHost_Update(gX_I0) {
 static gX_I0 host_editor_menu(const HostEditor *editor) {
     if (!ImGui::BeginMenu(editor->label)) return;
     if (ImGui::MenuItem("Close")) {
-        *editor->flag() = 0;
-        host_trace_active();
+        host_close_editor_and_bar();
     }
     if (strcmp((const char *)editor->label, "GFX") == 0) {
         ImGui::Separator();
@@ -679,7 +694,7 @@ static gX_I0 host_draw_menu_bar(void) {
                     host_open_editor(i);
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Close Editor")) host_close_editor();
+            if (ImGui::MenuItem("Close Editor")) host_close_editor_and_bar();
             ImGui::EndMenu();
         }
         if (ImGui::MenuItem("Console", "F10")) {
@@ -697,7 +712,7 @@ static gX_I0 host_draw_menu_bar(void) {
         ImGui::MenuItem("Save", NULL, false, false);
         ImGui::MenuItem("Save As", NULL, false, false);
         ImGui::Separator();
-        if (ImGui::MenuItem("Close Editor")) host_close_editor();
+        if (ImGui::MenuItem("Close Editor")) host_close_editor_and_bar();
         if (ImGui::MenuItem("Quit", "F4 twice")) maindata.close = 1;
         ImGui::EndMenu();
     }
@@ -727,8 +742,7 @@ static gX_I0 host_draw_menu_bar(void) {
             if (ImGui::MenuItem(editor->label, NULL, &open)) {
                 if (open) host_open_editor(i);
                 else {
-                    *editor->flag() = 0;
-                    host_trace_active();
+                    host_close_editor_and_bar();
                 }
             }
         }
@@ -746,13 +760,12 @@ static gX_I0 host_draw_menu_bar(void) {
             if (ImGui::MenuItem(editor->label, NULL, &open)) {
                 if (open) host_open_editor(i);
                 else {
-                    *editor->flag() = 0;
-                    host_trace_active();
+                    host_close_editor_and_bar();
                 }
             }
         }
         ImGui::Separator();
-        if (ImGui::MenuItem("Close All")) host_close_editor();
+        if (ImGui::MenuItem("Close All")) host_close_editor_and_bar();
         ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Help")) {
@@ -817,6 +830,13 @@ static gX_I0 host_draw_windows(void) {
 
 extern "C" gX_I0 gX_EditorHost_Draw(gX_I0) {
     host_init_env();
+    if (s_closeHostPending > 0) {
+        s_closeHostPending--;
+        if (s_closeHostPending == 0) {
+            gX_EditorHost_SetOpen(0);
+            return;
+        }
+    }
     if (!s_hostOpen) return;
     host_trace_active();
     host_draw_menu_bar();

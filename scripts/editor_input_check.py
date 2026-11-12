@@ -88,6 +88,41 @@ def main():
             if not canvas_pan_ok:
                 failures.append("pan: the canvas middle-drag did not pan")
 
+            #ai: closing the GUI editor must not leave the host bar or an
+            #   orphaned ImGui popup capturing native GUI clicks.
+            editor_x = run({
+                "GX_TOOLS_OPEN": "editor",
+                "GX_TOUR": "0",
+                "GX_DOCK_DISABLE": "1",
+                "GX_GUI_TRACE": "1",
+                "GX_AI_INPUT": "1.2 move 290 30 100; 1.5 click 290 30; "
+                               "2.2 move 350 415 100; 2.5 click 350 415",
+            })
+            x_ok = 'GUITRACE: click canvas=0 element=51 detail="OPEN GFX"' in editor_x
+            print(f"{'editor-x':<12} {'PASS' if x_ok else 'FAIL'}  "
+                  f"title click after X close")
+            if not x_ok:
+                failures.append("editor-x: title input stayed inert after X close")
+
+            host_close = run({
+                "GX_TOOLS_OPEN": "editor",
+                "GX_EDITOR_HOST": "1",
+                "GX_TOUR": "0",
+                "GX_DOCK_DISABLE": "1",
+                "GX_GUI_TRACE": "1",
+                "GX_AI_INPUT": "1.2 move 224 10 100; 1.5 click 224 10; "
+                               "1.8 move 250 31 100; 2.1 click 250 31; "
+                               "2.7 move 350 415 100; 3.0 click 350 415",
+            })
+            host_ok = (
+                "EDITOR_HOST: open=0" in host_close
+                and 'GUITRACE: click canvas=0 element=51 detail="OPEN GFX"'
+                in host_close)
+            print(f"{'host-close':<12} {'PASS' if host_ok else 'FAIL'}  "
+                  f"title click after host menu close")
+            if not host_ok:
+                failures.append("host-close: host bar/UI stayed inert after close")
+
             click = run({
                 "GX_GUI_TRACE": "1",
                 "GX_AI_INPUT": "0.5 key 299 1; 1.0 move 350 425 100; "

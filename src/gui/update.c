@@ -404,14 +404,21 @@ gX_I0 gX_GUI_Update(gX_I0) {
     //   capture flags cover floating panels, menus and active text fields;
     //   the explicit host/report probes cover the first frame of an overlay.
     extern gX_I1 gX_Tools_BugReport_IsOpen(gX_I0);
-    extern gX_I1 gX_EditorHost_IsOpen(gX_I0);
+    extern gX_I1 gX_EditorHost_Active(gX_I0);
     extern gX_I1 gX_EditorPicker_IsOpen(gX_I0);
     extern gX_I1 gX_Tools_ImGui_WantsMouse(gX_I0);
     extern gX_I1 gX_Tools_ImGui_WantsKeyboard(gX_I0);
+    gX_I1 hostActive = gX_EditorHost_Active();
+    gX_I1 imguiMouse = gX_Tools_ImGui_WantsMouse();
     gui.toolsInputCaptured = (gX_Tools_RuntimeActive()
-        || gX_Tools_BugReport_IsOpen() || gX_EditorHost_IsOpen()
-        || gX_EditorPicker_IsOpen()
-        || gX_Tools_ImGui_WantsMouse()) ? 1 : 0;
+        || gX_Tools_BugReport_IsOpen() || hostActive
+        || gX_EditorPicker_IsOpen() || imguiMouse) ? 1 : 0;
+    if (gX_GUI_Trace_Enabled() && input.mouse.leftButton.PRESSED)
+        gX_TraceLog(gX_LOG_INFO,
+            "GUITRACE: input owner runtime=%d hostActive=%d picker=%d report=%d imguiMouse=%d captured=%d",
+            gX_Tools_RuntimeActive(), hostActive,
+            gX_EditorPicker_IsOpen(), gX_Tools_BugReport_IsOpen(),
+            imguiMouse, gui.toolsInputCaptured);
     
     //opencode: markup live-reload — rate-limited mtime watch on the registered
     //   markup file (refreshes markup canvases on change)

@@ -126,7 +126,14 @@ unlocked -> locked -> close -> closed`, and a reopen starts locked again with
 a restored runtime transform. `editor-system-check` pins the default lock,
 unlock/lock toggle, zoom state, view reset, toolbar/status overlap at 100%
 and 175%, report action-row fit, report open/close/reopen, host open/close,
-Theme Lab Back and title return. The tool/lab Back path is also pinned to not
+Theme Lab Back and title return.
+
+Closing the GUI editor must hand native GUI input back. The panel X works at
+its real title-bar hit box; the host Window/File close paths keep the host
+alive just long enough for the invoking menu to close, then hide it.
+`gX_EditorHost_Active` only captures while an editor is active, and ImGui
+capture is ignored when no ImGui frame was drawn recently. `editor-input-check`
+pins both the X close and host-menu close followed by an OPEN GFX click. The tool/lab Back path is also pinned to not
 flash the whole frame to black; scene switches keep the global transition fade.
 
 Saves honor the same harness guard as the other editors: a gate-launched run

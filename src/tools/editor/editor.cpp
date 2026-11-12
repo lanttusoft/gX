@@ -2174,6 +2174,10 @@ extern "C" gX_I0 gX_Tools_Editor_Draw(gX_I0) {
         *gX_Tools_RuntimeEditorFlag() = 0;
         tools_edit_lock_clear();
         tools_solo_restore(gX_GUI_Canvas_FromIndex(s_targetCanvas));
+        //ai: a panel X must also hide the host tab strip; otherwise the host
+        //   keeps native GUI input captured while the editor is already gone.
+        extern gX_I0 gX_EditorHost_SetOpen(gX_I1);
+        gX_EditorHost_SetOpen(0);
     }
     //opencode: BOTTOM — status bar (pinned thin chrome)
     ImGui::SetNextWindowPos(ImVec2(0, scrH - statusH), ImGuiCond_Always);

@@ -73,15 +73,34 @@ extern "C" gX_I0 gX_EditorHost_Draw(gX_I0);
 #include "../../module/module.h"
 
 static gX_I1 s_loaded = 0;
+//ai: ImGui capture is only meaningful for a recently drawn frame. When the
+//   host/tool closes, ImGui stops drawing; stale HoveredWindow/popup state
+//   must not keep native GUI input captured.
+static gX_U64 s_lastDrawFrame = 0;
+
+static gX_I1 gX_Tools_ImGui_Live(gX_I0) {
+    if (!s_loaded || !ImGui::GetCurrentContext()) return 0;
+    return maindata.frameCount > s_lastDrawFrame + 1 ? 0 : 1;
+}
 //ai: native GUI input arbitration — toolkit queries the last ImGui frame so
 //   canvas clicks, wheel gestures and arrow keys cannot leak through a panel.
 extern "C" gX_I1 gX_Tools_ImGui_WantsMouse(gX_I0) {
-    if (!s_loaded || !ImGui::GetCurrentContext()) return 0;
-    return ImGui::GetIO().WantCaptureMouse ? 1 : 0;
+    if (!gX_Tools_ImGui_Live()) return 0;
+    //ai: io.WantCaptureMouse also turns true for mouse_any_down, even when the
+    //   press started outside every ImGui window. Native GUI needs that click.
+    //   Capture only when a window is hovered, an item is active or a popup
+    //   (menu/modal) is open.
+    bool hovered = ImGui::IsWindowHovered(
+        ImGuiHoveredFlags_AnyWindow
+        | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
+    bool active = ImGui::IsAnyItemActive();
+    bool popup = ImGui::IsPopupOpen((const char *)0, (ImGuiPopupFlags)(
+        ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel));
+    return (hovered || active || popup) ? 1 : 0;
 }
 
 extern "C" gX_I1 gX_Tools_ImGui_WantsKeyboard(gX_I0) {
-    if (!s_loaded || !ImGui::GetCurrentContext()) return 0;
+    if (!gX_Tools_ImGui_Live()) return 0;
     ImGuiIO &io = ImGui::GetIO();
     return (io.WantCaptureKeyboard || io.WantTextInput) ? 1 : 0;
 }
@@ -672,6 +691,7 @@ extern "C" gX_I0 gX_GUI_Unload_ImGui(gX_I0) {
 
 extern "C" gX_I0 gX_GUI_Draw_ImGui(gX_I0) {
     if (!s_loaded) return;
+    s_lastDrawFrame = maindata.frameCount;
     gX_Tools_ImGui_UIScale_Request(settings.toolUiScale);
     //opencode: v0.6.9 — fullscreen viewport + stable DisplaySize for ImGui.
     //   Backend DisplaySize flaps across resizes (jumping/clipping panels);

@@ -41,6 +41,7 @@ extern "C" {
 gX_I0 gX_EditorHost_Toggle(gX_I0);
 gX_I0 gX_EditorHost_SetOpen(gX_I1 open);
 gX_I1 gX_EditorHost_IsOpen(gX_I0);
+gX_I1 gX_EditorHost_Active(gX_I0);
 gX_I0 gX_EditorHost_Update(gX_I0);
 gX_I0 gX_EditorHost_Draw(gX_I0);
 
