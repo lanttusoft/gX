@@ -174,6 +174,14 @@ the default build, scene load or frame loop.
 - **P-first:** prefer graph/path/geometry algorithms with known polynomial
   bounds — ordering, topological sorts, shortest paths on a single agent,
   sweep/interval structures, bounded spatial hashing and grids.
+- **Quadratic or below by default:** aim for O(n), O(n log n) or O(n^2) with a
+  bounded n. A cubic-or-worse frame-path algorithm needs a fixed-size
+  justification (3x3/4x4 algebra is constant) or must move offline/precompute.
+  O(n^2) memory is usually worse than O(n^2) time; prefer linear or
+  log-linear storage.
+- **All-pairs is a cap, not a growth strategy:** O(n^2) pair checks are
+  acceptable only with a hard body/light/element cap; beyond it use spatial
+  grids, hashing or a BVH. Do not let the cap quietly become the design.
 - **Bounded heuristics for hard problems:** NP-hard optimization is allowed
   only as a bounded approximation with a measured budget — greedy/list
   scheduling, shelf or skyline atlas packing, greedy set cover, SAH-style BVH
