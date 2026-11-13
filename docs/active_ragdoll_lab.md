@@ -9,8 +9,8 @@ passive/default ragdoll path is unchanged.
 ## Purpose
 
 Define the smallest reusable physical body that can later support an
-**Embodied NPC (ENPC)**: an embodied character that explores a world and
-interacts with it.
+**Embodied NPC (ENPC)**: an embodied character that explores a world,
+interacts with it, or joins the player as a party member.
 
 This is **clean-room** work. It does not reverse-engineer, decompile, extract
 or copy any proprietary animation/physics middleware. No third-party code,
@@ -21,6 +21,23 @@ references; the implementation and tuning stay original.
 ENPC is an original gX term for the lab's embodied character archetype. It is
 not a reference to, or affiliated with, any third-party project, series,
 company, or character; no association or endorsement is implied.
+
+In design shorthand the author describes ENPC as
+**"Euphoria-style active body + Nextbot-style simple agency"**:
+
+- **active body** — motion reads as physical and reactive, with weight,
+  balance and recovery rather than a purely scripted animation;
+- **simple agency** — a lightweight perceive/navigate/interact loop that can
+  explore the world or join the player as a party member.
+
+Those are behavioral references only. No Euphoria, Source/Nextbot or other
+third-party middleware, code, data, constants, animations or assets are used,
+and no affiliation or endorsement is implied. ENPC does **not** imply a neural
+network, sentience, consciousness or general intelligence; it is a game entity
+with authored behavior.
+
+The author has no intention of developing ENPC because of the sheer
+implementation difficulty; only the standing ragdoll may be developed.
 
 ## Decision
 

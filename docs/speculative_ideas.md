@@ -29,7 +29,7 @@ concept without implying a release commitment.
 
 | ID | Idea | Status | Notes |
 | --- | --- | --- | --- |
-| S-001 | Embodied NPC (ENPC) | not implemented; no plan | An original gX term for an embodied character that explores a world and interacts with it. The body-first contract is in [`active_ragdoll_lab.md`](active_ragdoll_lab.md); the visual lab, hybrid locomotion and ENPC behavior are not implemented, and the contract keeps ENPC behavior out of the lab. Clean-room, no third-party animation/physics material. Revisit only after the hybrid controller, get-up state machine and performance budget exist, and the owner explicitly promotes it. |
+| S-001 | Embodied NPC (ENPC) | not implemented; no plan | An original gX term for an embodied character that explores the world, interacts with it, or joins the player as a party member. Design shorthand: **"Euphoria-style active body + Nextbot-style simple agency"** — behavioral references only; no third-party middleware, code, data, constants or assets, and no affiliation or endorsement. It does **not** imply a neural network, sentience or general intelligence; it is a game entity with authored behavior. The body-first contract is in [`active_ragdoll_lab.md`](active_ragdoll_lab.md); the visual lab, hybrid locomotion and ENPC behavior are not implemented, and the contract keeps ENPC behavior out of the lab. Revisit only after the hybrid controller, get-up state machine and performance budget exist, and the owner explicitly promotes it. |
 
 ## Template
 
