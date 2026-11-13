@@ -199,6 +199,24 @@ the default build, scene load or frame loop.
 - **Determinism:** bounded work should also be repeatable; record caps and
   seeds so gates and captures stay stable.
 
+### Performance is the contract
+
+Complexity is a proxy; wall-clock frame time is the actual requirement.
+
+- Hot paths need a measured budget — frame/p95 time, allocation count, draw
+  calls or VRAM — and a before/after number. Use the existing tools:
+  `GX_PROFILER` / `make profile-check`, `make gfx-benchmark` and
+  `make gfx-benchmark-check`, the feature matrix and the lean caps. See
+  [`minimum_hardware.md`](minimum_hardware.md),
+  [`rendering_backlog.md`](rendering_backlog.md) and
+  [`lean_gate.md`](lean_gate.md).
+- Avoid per-frame heap allocation, redundant GL state changes and repeated
+  full scans in hot loops where a bounded structure or cached result fits.
+- A change that regresses a measured budget needs an explicit trade or is
+  reverted; “it is only 1 ms” is still a budget decision.
+- Speed does not excuse unbounded memory, nondeterminism or an unmeasured
+  fallback.
+
 This is a design policy, not a claim that every current implementation is
 optimal or that every problem has a fast exact algorithm.
 
