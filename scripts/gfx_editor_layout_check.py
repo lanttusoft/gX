@@ -220,6 +220,48 @@ def check_preset_close(name):
             f"{name}: dirty close did not open the prompt")
 
 
+def check_preset_switch(name, dirty):
+    environment = dict(os.environ)
+    environment.update({
+        "DISPLAY": audit.display(),
+        "GX_AUDIT_WINDOW": "hidden",
+        "GX_NO_SETTINGS_SAVE": "1",
+        "GX_SKIP_TESTS": "1",
+        "GX_DOCK_DISABLE": "1",
+        "GX_FRAMES": "80",
+        "GX_UI_SCALE": "1.00",
+        "GX_GFX_LAYOUT_TRACE": "1",
+        "GX_EDITOR_HOST": "1",
+        "GX_EDITOR_SUITE_SWITCH": "Sky",
+    })
+    if dirty:
+        environment["GX_GFX_PRESET_TOUCH"] = "1"
+    try:
+        result = subprocess.run(
+            [str(BIN), "--gfx", "--gfx-editor",
+             "--screenWidth", "1024", "--screenHeight", "768"],
+            cwd=str(ROOT), env=environment, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
+    except (OSError, subprocess.SubprocessError) as error:
+        raise RuntimeError(f"{name}: {error}") from error
+    log = audit.strip_ansi(result.stdout or "")
+    if result.returncode != 0:
+        raise RuntimeError(f"{name}: workspace switch run exited "
+                           f"{result.returncode}: {log[-500:]}")
+    if dirty:
+        require("GFX_PRESET: close blocked dirty" in log,
+                f"{name}: dirty preset allowed a workspace switch")
+        require("EDITOR_HOST: workspace blocked=dirty" in log,
+                f"{name}: workspace switch did not report the dirty block")
+        require("GFX_PRESET: close prompt" in log,
+                f"{name}: dirty switch did not open the close prompt")
+        require("EDITOR_HOST: workspace=Sky" not in log,
+                f"{name}: workspace switched despite the dirty preset")
+    else:
+        require("EDITOR_HOST: workspace=Sky" in log,
+                f"{name}: clean workspace switch did not complete")
+
+
 def check_common(name, row, width, height, minimum_stage):
     require(row["windowW"] == width and row["windowH"] == height,
             f"{name}: unexpected window {row['windowW']}x{row['windowH']}")
@@ -276,6 +318,8 @@ def main():
         check_preset_picker("preset-1024-175", 1024, 768, "1.75")
         check_preset_document("preset-document")
         check_preset_close("preset-close-dirty")
+        check_preset_switch("preset-switch-dirty", True)
+        check_preset_switch("preset-switch-clean", False)
 
         wide = run("1600-125", 1600, 900, "1.25", "advanced")
         check_common("1600-125", wide, 1600, 900, 600)

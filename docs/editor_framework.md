@@ -256,6 +256,8 @@ First slice landed:
   parse, and **View > Reset Layout** restores the saved mask and clears the
   per-suite ImGui geometry. `GX_EDITOR_PANEL_TOGGLE`, `GX_EDITOR_LAYOUT_RESET`
   and `GX_EDITOR_STATE_DIR` expose the same path to `editor-system-check`.
+  Workspace switches and deletes consult the active tool's close guard, so a
+  dirty GFX preset cannot be discarded by changing suites.
 - The input-owner kernel (`src/tools/editor/editor_input.{h,c}`) combines the
   remaining probes once per frame: modal (report/picker) > ImGui (tool chrome
   or ImGui capture) > native GUI > game. Native GUI mouse/keyboard capture,

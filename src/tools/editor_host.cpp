@@ -467,13 +467,16 @@ static gX_I0 host_open_editor(gX_I32 index) {
     host_trace_active();
 }
 
-static gX_I0 host_close_editor(void) {
+static gX_I1 host_close_editor(void) {
     //ai: a workspace switch closes the active tool, not the host toolbar;
-    //   restore the host when this close came from the host itself.
+    //   restore the host when this close came from the host itself. A dirty
+    //   GFX preset vetoes every user-facing switch, not just the menu close.
+    if (!gX_Tools_Gfx_CloseGuard()) return 0;
     gX_I1 hostWasOpen = s_hostOpen;
     gX_Tools_Close_Runtime();
     if (hostWasOpen) gX_EditorHost_SetOpen(1);
     host_trace_active();
+    return 1;
 }
 
 static gX_I0 host_close_editor_and_bar(void) {
@@ -556,7 +559,12 @@ static gX_I0 host_delete_suite(gX_I32 index) {
     gX_I8 name[64];
     snprintf((char *)name, sizeof(name), "%s", (const char *)host_suite_name(index));
     if (s_suite == index) {
-        host_close_editor();
+        if (!host_close_editor()) {
+            gX_TraceLog(gX_LOG_WARNING,
+                "EDITOR_HOST: suite delete blocked=dirty");
+            s_pendingDelete = -1;
+            return;
+        }
         s_suite = 0;
     } else if (s_suite > index) {
         s_suite--;
@@ -578,7 +586,10 @@ static gX_I0 host_delete_suite(gX_I32 index) {
 static gX_I0 host_apply_suite(gX_I32 index) {
     if (index < 0 || index >= s_suiteCount) return;
     host_save_layout();
-    host_close_editor();
+    if (!host_close_editor()) {
+        gX_TraceLog(gX_LOG_WARNING, "EDITOR_HOST: workspace blocked=dirty");
+        return;
+    }
     s_suite = index;
     gX_TraceLog(gX_LOG_INFO, "EDITOR_HOST: workspace=%s",
         (const char *)host_suite_name(index));
@@ -789,6 +800,30 @@ extern "C" gX_I0 gX_EditorHost_Update(gX_I0) {
         gX_I32 pending = s_pendingSuite;
         s_pendingSuite = -2;
         if (pending >= 0) host_apply_suite(pending);
+    }
+    {
+        //ai: headless workspace switch, used to prove the dirty close guard
+        //   covers suite changes as well as menu closes.
+        static gX_I1 switchEnvDone = 0;
+        if (!switchEnvDone && host_active_editor()
+            && maindata.frameCount >= 5) {
+            const gX_I8 *target = getenv("GX_EDITOR_SUITE_SWITCH");
+            switchEnvDone = 1;
+            if (target && target[0]) {
+                gX_I1 found = 0;
+                for (gX_I32 i = 0; i < s_suiteCount; i++) {
+                    if (strcmp((const char *)target,
+                            (const char *)host_suite_name(i)) == 0) {
+                        s_pendingSuite = i;
+                        found = 1;
+                        break;
+                    }
+                }
+                if (!found)
+                    gX_TraceLog(gX_LOG_WARNING,
+                        "EDITOR_HOST: unknown workspace '%s'", (const char *)target);
+            }
+        }
     }
     {
         //ai: headless panel controls run after the pending workspace applies,

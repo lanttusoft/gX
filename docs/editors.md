@@ -117,7 +117,11 @@ Headless hooks:
 
 `editor-system-check` pins the 15-panel registry, the asset-toggle mask
 round-trip across two runs, reset clearing the geometry and restoring the saved
-mask, legacy suite parsing, and the `editor.layout.reset` command.
+mask, legacy suite parsing, and the `editor.layout.reset` command. Switching
+or deleting a workspace also consults the GFX close guard: a dirty preset shows
+the Save/Discard/Cancel prompt and the current workspace stays active.
+`GX_EDITOR_SUITE_SWITCH=<name>` requests a switch headlessly, and
+`gfx-editor-layout-check` covers both the dirty block and a clean switch.
 
 ### GFX preset picker (2026-11-12)
 
