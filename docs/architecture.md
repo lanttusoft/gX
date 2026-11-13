@@ -164,6 +164,36 @@ See `docs/guest_assets.md`.
 - The planned master-worker lane adds asset decode and measured CPU culling/
   terrain jobs; render passes and GL state stay on the master thread.
 
+## Runtime complexity policy (2026-11-13)
+
+gX is a runtime engine, not a solver. Default frame-path work should be
+polynomial-time and bounded, with explicit input, time and memory caps. Do not
+put exponential search, unbounded backtracking or a general-purpose solver in
+the default build, scene load or frame loop.
+
+- **P-first:** prefer graph/path/geometry algorithms with known polynomial
+  bounds — ordering, topological sorts, shortest paths on a single agent,
+  sweep/interval structures, bounded spatial hashing and grids.
+- **Bounded heuristics for hard problems:** NP-hard optimization is allowed
+  only as a bounded approximation with a measured budget — greedy/list
+  scheduling, shelf or skyline atlas packing, greedy set cover, SAH-style BVH
+  construction, priority culling. Record what is approximated and its cost.
+- **Exact solving is offline and tiny:** ILP/CP-SAT/brute force belong in
+  tooling and tests on small instances, never in the shipped frame path. The
+  NP-hard lab and candidate queue are in
+  [`speculative_ideas.md`](speculative_ideas.md) under S-010.
+- **State the problem precisely:** single-agent shortest path is in P;
+  multi-agent collision-free planning, coverage and general set cover are not.
+  A polynomial special case is preferred over a general hard problem.
+- **Budget failure means reduce scope:** if a heuristic cannot meet its frame
+  or memory budget, lower the instance size, precompute offline or cut the
+  feature. Do not hide the cost in unbounded search or an unmeasured fallback.
+- **Determinism:** bounded work should also be repeatable; record caps and
+  seeds so gates and captures stay stable.
+
+This is a design policy, not a claim that every current implementation is
+optimal or that every problem has a fast exact algorithm.
+
 ## Verification
 
 The GFX feature matrix supports focused validation with
