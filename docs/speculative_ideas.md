@@ -48,6 +48,33 @@ implementation and owner promotion before it becomes work.
 | S-007 | Self-modifying code segment / runtime code generation | not planned; security-sensitive, platform-gated | A separate writable+executable `text2`-style segment, or patching already-executed code at runtime. **Scope:** only a platform layer with no W^X/NX and no process isolation (retro console, bare-metal, DOS-style) may ever use this; hosted Linux/Windows/macOS and the default desktop build must not. "Complete memory access" is not a green light: it means the platform cannot enforce W^X, so code/data aliasing remains a correctness risk, there is no privilege boundary, and untrusted input or a bad write can still corrupt or brick the program. This is still the wrong abstraction for the core: `text`, `data` and `bss` are section/segment names, and a new segment does not create a safe boundary. A retro backend should own a platform-specific overlay/code pool (linked to S-006), not a generic engine `text2`. On hosted systems, W+X is blocked or audited by kernels, hardened runtimes, CFI and antivirus, and any write primitive becomes code execution. If runtime generation is ever needed there, use an opt-in W^X JIT pool (dual RW/RX mappings or RW->RX transitions), cache flushes, strict validation, no untrusted input and a W^X audit gate. Prefer precompiled code, bytecode, GPU shaders or dynamic modules. Revisit only with a named platform target, a measured hot path, a security review and owner approval. |
 | S-008 | General-relativity / spacetime lab | not implemented; no plan | A visualization/numerical lab for curved spacetime, distinct from the existing **special**-relativity applier (`gX_PhysicsRelativity_*`: a speed clamp and gamma mass scaling on top of ODE). A realistic slice is a fixed Schwarzschild metric with test-particle geodesics, gravitational time dilation/redshift and known-orbit checks (precession, photon ring), rendered as trails; weak-field approximations could later inform gameplay. Full numerical relativity, dynamical spacetime, matter coupling and tensor-field rendering are out of scope. Hard problems: 4D tensor maths, coordinate singularities, stable integrators, units and performance; it is not an ODE feature. Revisit only with a self-contained deterministic lab, analytic/oracle tolerances and owner approval. |
 | S-009 | Quantum-mechanics / wavefunction lab | not implemented; no plan | A visualization/numerical lab for wave mechanics, not a replacement for the rigid-body solver: a 1D/2D wavefunction evolved with split-step Fourier or Crank-Nicolson, showing free-packet spreading, wells, tunneling, two-slit interference or harmonic modes; a small qubit/gate toy is a separate possible slice. Hard problems: complex arithmetic, FFT/grid cost, boundary conditions, normalization, measurement/decoherence and scale; GPU compute may be needed for larger grids. The classical sandbox stays unchanged. First slice would be deterministic 1D/2D cases with analytic tests (well eigenvalues, packet width, tunneling probability) and an existing-renderer view. Revisit only with a measured educational/visual win and owner approval. |
+| S-010 | NP-hard optimization lab | not implemented; no plan | An offline lab for engine problems whose exact/optimal form is NP-hard or combinatorial. Candidates include render-graph/pass scheduling, draw-call batching, atlas/lightmap packing, shadow-casting light selection, LOD selection, shader-permutation selection, visibility set selection, frame-task scheduling, multi-agent/coverage navigation, gate/test selection and optimal BVH construction. Exact solving is only for tiny instances; runtime must stay heuristic. Compare exact/ILP/CP-SAT/brute force against the existing greedy/list heuristic on generated instances, report the optimality gap and runtime, and add no solver dependency to the default build. See the candidate queue below. |
+
+### NP-hard candidate queue (S-010)
+
+These are optimization problems, not claims that the current engine is doing
+them badly. Most already have practical heuristics; the lab would measure how
+far those heuristics are from a small exact solution.
+
+- **Render-graph / pass scheduling** — precedence and resource hazards plus
+  target reuse; list scheduling vs exact for small graphs.
+- **Draw-call batching / instance grouping** — bin packing and clustering.
+- **Atlas / lightmap / tile packing** — 2D rectangle and bin packing.
+- **Shadow-casting light and light-list selection** — set cover or knapsack
+  under a shadow/light budget.
+- **LOD and budgeted mesh selection** — multiple-choice knapsack under
+  triangle/VRAM limits; simplification itself stays heuristic.
+- **Shader permutation / feature selection** — set cover or knapsack under
+  variant and build-time budgets.
+- **Visibility / occlusion set selection** — set cover; single-ray visibility
+  is not NP-hard, so state the problem precisely.
+- **Frame-task scheduling** — precedence-constrained multiprocessor
+  scheduling.
+- **Multi-agent / coverage navigation** (ENPC) — collision-free multi-agent
+  planning or coverage, not single-agent shortest path.
+- **Gate/test selection under a time budget** — knapsack or set cover.
+- **Optimal BVH/tree construction** — exact optimal trees are combinatorial;
+  production builders use greedy SAH-style heuristics.
 
 ## Template
 

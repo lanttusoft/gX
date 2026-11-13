@@ -16,8 +16,8 @@ Start here:
   partial, deferred, declined and superseded ideas with reasons and sources.
 - [Speculative ideas — not a roadmap](speculative_ideas.md) — deliberately hard
   concepts such as ENPC, distributed role splits, alternate renderers,
-  Vulkan/retro backends, self-modifying code and GR/QM physics labs; no plan,
-  no promise and no authorization to implement.
+  Vulkan/retro backends, self-modifying code, GR/QM physics labs and NP-hard
+  optimization; no plan, no promise and no authorization to implement.
 - [gX proofs](https://github.com/lanttusoft/gx-proofs) — Lean 4 proof sources,
   audit contract and provenance.
 - [License](../LICENSE), [third-party notices](../license/NOTICE.md), [generated attributions](../license/ATTRIBUTIONS.md), [provenance source](../license/provenance.json).
