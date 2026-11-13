@@ -15,8 +15,9 @@ Start here:
 - [Ideas and decisions](ideas.md) — search before proposing work; retains done,
   partial, deferred, declined and superseded ideas with reasons and sources.
 - [Speculative ideas — not a roadmap](speculative_ideas.md) — deliberately hard
-  concepts such as ENPC, distributed role splits and wavelet/wave-optics
-  renderers; no plan, no promise and no authorization to implement.
+  concepts such as ENPC, distributed role splits, wavelet/wave-optics
+  renderers and a complete path tracer; no plan, no promise and no
+  authorization to implement.
 - [gX proofs](https://github.com/lanttusoft/gx-proofs) — Lean 4 proof sources,
   audit contract and provenance.
 - [License](../LICENSE), [third-party notices](../license/NOTICE.md), [generated attributions](../license/ATTRIBUTIONS.md), [provenance source](../license/provenance.json).
