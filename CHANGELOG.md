@@ -4,6 +4,56 @@ All notable changes to gX are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows
 SemVer.
 
+## [0.46.0] - 2026-11-13
+
+Release-Class: minor
+
+### Added
+- **Editor framework kernel (GX-I043):** bounded command registry and shared
+  ImGui picker; Ctrl+P command palette; caller-owned document dirty/load/close
+  state; a bounded workspace panel registry for the GFX scene, inspector, asset,
+  footer and eleven renderer labs; and a per-frame input owner with
+  **modal > ImGui > native GUI > game** precedence. The palette runs commands by
+  ID and the active GFX editor contributes its preset commands.
+- **Workspace panel persistence and reset:** suites persist one panel mask as
+  `#v2|name|editor|mask`; legacy `name|editor|scene|inspector|labs` lines still
+  parse. **View > Reset Layout** restores the saved mask and clears the
+  per-suite ImGui geometry; `editor.layout.reset` is also a command.
+- **Dirty-preset workspace guard:** switching or deleting a workspace consults
+  the GFX close guard, so a dirty preset cannot be discarded without the
+  Save and close / Discard and close / Cancel prompt.
+- **Headless editor hooks:** `GX_EDITOR_PALETTE`, `GX_EDITOR_PANEL_TOGGLE`,
+  `GX_EDITOR_LAYOUT_RESET`, `GX_EDITOR_SUITE_SWITCH`, `GX_EDITOR_STATE_DIR` and
+  `GX_EDITOR_INPUT_TRACE`.
+- **Gate coverage:** `editor-input-check` pins palette execution, input-owner
+  precedence and close handoff; `editor-system-check` pins the panel registry,
+  mask round-trip, reset and legacy parsing; `gfx-editor-layout-check` pins the
+  dirty and clean workspace switch.
+
+### Changed
+- **Editor input handoff:** host capture is active-editor-aware, host hide is
+  deferred through the invoking menu, ImGui capture is live-frame-only, and the
+  panel X closes the host cleanly.
+- **Editor layout polish:** the report form scrolls with a Reset control, the
+  theme panel is inset and width-capped, the toolbar wraps, the status strip
+  scales, and long asset-grid paths ellipsize with full-path tooltips.
+- **Shared UI scale:** the tool UI-scale helpers moved to
+  `src/tools/tools_ui_scale.h`; the report header includes them, so this is not
+  an API removal. The earlier classifier warning is a path move.
+- **Scope and policy docs:** added the speculative-ideas ledger (S-001..S-016),
+  its hardware-capability lens and scope-promotion path, `LEGAL.md` for
+  license/provenance concerns, and the P-first/quadratic runtime complexity and
+  measured-performance policy. Documentation-only; no runtime change.
+
+### Fixed
+- ImGui panels no longer leak clicks or arrow keys into the native GUI canvas;
+  closing the GUI editor returns native input; a dirty GFX preset cannot be lost
+  through a workspace switch/delete; picker rows and GUI canvas refresh paths
+  guard null data.
+
+No save, preset or resource data format changed; the workspace suite format adds
+an optional `#v2` line while legacy suites continue to load.
+
 ## [0.45.0] - 2026-11-12
 
 Release-Class: minor
