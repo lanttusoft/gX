@@ -22,7 +22,7 @@ GFX renderer demo on a plain `./build/gX_build`. That is intentional; use
 **Back to Title**. Any returning user with a settings file or save gets the
 title.
 
-- Version: see `readme.txt` (`v0.45.0` beta).
+- Version: see `readme.txt` (`v0.46.0` beta).
 - Repository: https://github.com/lanttusoft/gX
 - License: GPLv3; third-party notices in `license/NOTICE.md`.
 - License or provenance concern: see `LEGAL.md`.
