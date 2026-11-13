@@ -113,7 +113,8 @@ Revisit only if:
 
 ## Promotion
 
-Promotion is a separate decision. Create a `GX-I###` entry in
-[`ideas.md`](ideas.md), name the smallest contract and gate, and record the
-lean/performance cost. Until then, do not add runtime code, resources, scenes
-or public claims for a speculative entry.
+Promotion is a separate decision and the only way an entry becomes scope.
+Create a `GX-I###` entry in [`ideas.md`](ideas.md), name the smallest contract
+and gate, record the lean/performance cost, and update the relevant scope
+document if the supported target/product surface changes. Until then, do not
+add runtime code, resources, scenes or public claims for a speculative entry.
