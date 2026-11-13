@@ -35,6 +35,27 @@ recorded here: no private paths, story content, assets, code or third-party
 material. A gameX-side idea still needs its own public rationale, clean-room
 implementation and owner promotion before it becomes work.
 
+## Hardware lens
+
+The ledger is primarily a **hardware-capability exploration**: what a target can
+do, what it costs, and what gX would have to build to use it. The same idea can
+move tiers when drivers, extensions or target hardware change.
+
+| Capability tier | What it enables | Ledger examples |
+| --- | --- | --- |
+| Baseline GL 3.3 + CPU | PBR/shadows/SSR/SSGI/TAA/GTAO/bloom, 2D grid/SPH fluid, SSS approximations, CPU wave/geodesic labs, heuristic optimization | S-008, S-009, S-012 (2D), S-016 (SSS) |
+| GL 4.3 compute + SSBO | GPU particles/culling, 3D fluid, path-trace accumulation/denoise, small NN inference, multi-GPU compute offload | S-004, S-010 (offline), S-011, S-012 (3D), S-014 |
+| GL 4.6 / mesh / ray tracing | Mesh shaders, virtualized geometry, hardware RT, Lumen-like GI | S-013, S-016 (upper tier) |
+| Vendor SDK / fixed-function | DLSS/XeSS/FSR-class upscaling and frame generation, console SDKs | S-016 (vendor), S-006 |
+| Memory / IO / storage | Virtual texturing, streaming, compression, large worlds | S-016 (virtual texturing), future asset streaming |
+| Retro / bare-metal | ROM/RAM overlays, bank switching, raster tricks, no W^X | S-006, S-007 |
+| Network | Distributed simulation/render roles across machines | S-002 |
+| CPU SIMD / threads | NP-hard heuristics, physics, path tracing, MLP classifiers | S-008, S-009, S-010, S-014 |
+
+Hardware capability is necessary but not sufficient: portability, the lean
+budget, gates, content pipeline and maintenance cost decide whether an idea is
+promoted.
+
 ## Register
 
 | ID | Idea | Status | Notes |
