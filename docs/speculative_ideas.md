@@ -54,6 +54,7 @@ implementation and owner promotion before it becomes work.
 | S-013 | Hardware tessellation / displacement | not implemented; no plan | OpenGL 4.0+ patch pipeline (tessellation control/evaluation) for displaced terrain, water or curved surfaces. gX's caps already expose `hasTessellation` at GL level 400, but the baseline is GL 3.3, ES never has it, and the existing water mesh is already pre-tessellated (128x128). Hardware tessellation adds shader variants, patch/crack handling, adaptive-factor tuning, driver variance and gate burden, and is often slower than pre-tessellated LOD at gX's low-poly scene sizes. An opt-in GL 4.x lab could compare a displaced patch/terrain against pre-tessellated and vertex-displacement paths, with capped factors/patches, wireframe/crack checks and a 3.3 fallback. Mesh shaders (GL 4.6/extensions) are a separate, less portable path. Revisit only with a measured visual/perf win and owner approval. |
 | S-014 | Neural network / transformer applications | not implemented; no plan | Inference-only, pre-trained models for a bounded engine task: NPC steering/behavior scoring, animation blending or cleanup, asset tagging, denoising/upscaling, or a small dialogue/utility model. Training, large language models in the frame loop and untrusted model execution are out of scope; gX would not become an ML runtime. Any model weights need explicit provenance and a compatible license, and AI-generated assets follow [`ai_policy.md`](ai_policy.md). Start with a tiny deterministic CPU model against a hand-written baseline for one task; require fixed inputs, NaN/output checks, a hard time/memory budget and an opt-in build. Transformers are usually the wrong size for per-frame game logic; small MLPs/CNNs or classical heuristics come first. A local LLM belongs in tooling/authoring, not the default runtime. Revisit only with a measured win, a model-provenance review and owner approval. |
 | S-015 | Diffusion-model applications | not implemented; no plan | Image/texture/material generation, inpainting, upscaling, style transfer or reference variants as an **offline authoring aid**, not a runtime renderer feature. Real-time diffusion is too heavy and nondeterministic for the frame loop; a small learned denoiser for the path-trace lab is a different, narrower model. Generated assets need a fixed seed, a [`license/provenance.json`](../license/provenance.json) entry, a compatible model license and manual review under [`ai_policy.md`](ai_policy.md) and [`asset_clearance.md`](asset_clearance.md). gX's tooling scope is engine-native editing, not an asset-generation application, so this belongs in an external/companion tool or an opt-in export pipeline. No network dependency, no training and no untrusted model execution. Revisit only with a measured workflow win, clear provenance and owner approval. |
+| S-016 | Next-gen / AAA rendering systems | not implemented; no plan | A direction, not one feature: virtualized geometry, virtual texturing, GPU-driven culling/indirect draws, mesh shaders, hardware ray tracing, Lumen-like GI, temporal upscaling/frame generation, hair/fur, subsurface scattering and volumetrics. gX already ships simplified PBR, shadows, SSR, SSGI, TAA, GTAO, bloom, IBL and fog/volumetrics. Feasibility is tiered: GL 3.3 approximations and existing systems; opt-in GL 4.x compute/indirect/mesh-shader work; and Vulkan/DXR/vendor-SDK features that conflict with raylib-only and lean. Subsurface scattering is a good example of the middle tier: preintegrated skin plus a thickness/diffusion blur is feasible; a full BSSRDF is not. Do not chase parity; pick one measured slice with a frame/VRAM budget, fallback and gate. See the candidate tiers below. Revisit only with a named feature, a hardware target and owner approval. |
 
 ### NP-hard candidate queue (S-010)
 
@@ -80,6 +81,23 @@ far those heuristics are from a small exact solution.
 - **Gate/test selection under a time budget** — knapsack or set cover.
 - **Optimal BVH/tree construction** — exact optimal trees are combinatorial;
   production builders use greedy SAH-style heuristics.
+
+### AAA / next-gen candidate tiers (S-016)
+
+- **Already approximated in gX:** PBR materials, directional/point shadows, CSM,
+  SSR, SSGI, TAA, GTAO, bloom, IBL, fog and volumetrics. Improve these before
+  adding a new system.
+- **Plausible opt-in GL 3.3/4.x:** GPU-driven culling and indirect draws,
+  compute clustered lighting, GPU occlusion, mesh shaders (GL 4.6/extensions),
+  virtual texturing, shader-based temporal upscaling, and screen-space or
+  texture-space subsurface scattering. SSS should start with a preintegrated
+  skin LUT or a thickness/diffusion blur, not a full BSSRDF; it needs a
+  thickness source, a bounded blur radius and a no-light-leak/energy fixture.
+  Each candidate needs a fallback and a measured win.
+- **Out of the raylib-only/lean scope:** hardware ray tracing (no GL standard;
+  Vulkan/DXR), DLSS/NGX-class upscaling and frame generation (vendor SDKs),
+  Nanite-like virtualized geometry and Lumen-like full dynamic GI. These are
+  reference directions, not near-term gX features.
 
 ## Template
 

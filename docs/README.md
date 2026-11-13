@@ -18,8 +18,8 @@ Start here:
   concepts such as ENPC, distributed role splits, alternate renderers,
   Vulkan/retro backends, self-modifying code, GR/QM physics labs, NP-hard
   optimization, multi-GPU, 2D/3D fluid, tessellation, neural-network and
-  diffusion-model experiments; no plan, no promise and no authorization to
-  implement.
+  diffusion-model experiments and AAA rendering directions; no plan, no
+  promise and no authorization to implement.
 - [gX proofs](https://github.com/lanttusoft/gx-proofs) — Lean 4 proof sources,
   audit contract and provenance.
 - [License](../LICENSE), [third-party notices](../license/NOTICE.md), [generated attributions](../license/ATTRIBUTIONS.md), [provenance source](../license/provenance.json).
