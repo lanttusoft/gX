@@ -5,7 +5,7 @@ Start here:
 - [Getting started — the first five minutes](getting_started.md) — build, pick
   a front door, settings/saves, help and headless captures.
 - [gX readme](../readme.txt) — what gX is, build, license and controls.
-- [Contributing](../CONTRIBUTING.md), [support](../SUPPORT.md), [security policy](../SECURITY.md), [code of conduct](../CODE_OF_CONDUCT.md).
+- [Contributing](../CONTRIBUTING.md), [support](../SUPPORT.md), [security policy](../SECURITY.md), [license/provenance concerns](../LEGAL.md), [code of conduct](../CODE_OF_CONDUCT.md).
 <!-- //ai: public agent entry points. -->
 - [Agent guide](../AGENTS.md) — harness-neutral workflow for AI coding
   agents; [AI-assisted contributions](../AI_CONTRIBUTING.md) — the short
@@ -14,6 +14,8 @@ Start here:
 <!-- //ai: versioned idea/outcome memory, separate from session handoffs. -->
 - [Ideas and decisions](ideas.md) — search before proposing work; retains done,
   partial, deferred, declined and superseded ideas with reasons and sources.
+- [Speculative ideas — not a roadmap](speculative_ideas.md) — deliberately hard
+  concepts such as ENPC; no plan, no promise and no authorization to implement.
 - [gX proofs](https://github.com/lanttusoft/gx-proofs) — Lean 4 proof sources,
   audit contract and provenance.
 - [License](../LICENSE), [third-party notices](../license/NOTICE.md), [generated attributions](../license/ATTRIBUTIONS.md), [provenance source](../license/provenance.json).

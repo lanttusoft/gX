@@ -49,6 +49,8 @@ reviewer checklist is [`AI_CONTRIBUTING.md`](AI_CONTRIBUTING.md).
   `license/provenance.json` entry and a compatible license.
 - Do not copy tutorial or third-party code without a clear license and an
   attribution entry in `license/NOTICE.md`.
+- To raise a license, provenance, attribution or trademark concern, follow
+  [`LEGAL.md`](LEGAL.md). Do not post disputed material publicly.
 
 ## Security and conduct
 

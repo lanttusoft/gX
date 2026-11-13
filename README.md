@@ -25,6 +25,7 @@ title.
 - Version: see `readme.txt` (`v0.45.0` beta).
 - Repository: https://github.com/lanttusoft/gX
 - License: GPLv3; third-party notices in `license/NOTICE.md`.
+- License or provenance concern: see `LEGAL.md`.
 - Build: `./build.sh`; unit tests: `./build/gX_build --test-only`;
   fast checks: `make check-fast`. Windows x86_64 cross-build:
   `./build-mingw.sh`, `make mingw-check` and `make mingw-scripting-check`

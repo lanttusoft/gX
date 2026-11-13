@@ -24,6 +24,9 @@ dependencies are in scope. Third-party content and the author's private
 development archive are not published here. Issues in a third-party
 dependency should also be reported to that project.
 
+License, provenance, attribution and trademark concerns are **not** security
+vulnerabilities; follow [`LEGAL.md`](LEGAL.md) for those.
+
 ## Not security boundaries
 
 The local module/Host ABI and the Battle LAN prototype are development
