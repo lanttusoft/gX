@@ -17,7 +17,7 @@ Start here:
 - [Speculative ideas — not a roadmap](speculative_ideas.md) — deliberately hard
   concepts such as ENPC, distributed role splits, alternate renderers,
   Vulkan/retro backends, self-modifying code, GR/QM physics labs, NP-hard
-  optimization, multi-GPU and 3D fluid; no plan, no promise and no
+  optimization, multi-GPU and 2D/3D fluid; no plan, no promise and no
   authorization to implement.
 - [gX proofs](https://github.com/lanttusoft/gx-proofs) — Lean 4 proof sources,
   audit contract and provenance.
