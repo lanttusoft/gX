@@ -2,9 +2,11 @@
 
 <!-- //ai: speculative idea register; entries are not planned or promised. -->
 
-Status: **idea register only**. Entries here are deliberately speculative or
-very hard. They are not planned, approved, scheduled or promised, and they are
-not authorization to implement them. A normal idea row in
+Status: **speculative idea ledger**. An entry means only that the idea is
+theoretically possible within gX's clean-room, technical and budget
+constraints. It does **not** mean it will ever be implemented; most entries may
+stay here forever. Nothing here is planned, approved, scheduled or promised,
+and nothing is authorization to implement. A normal idea row in
 [`ideas.md`](ideas.md) plus explicit owner approval is required before code or
 content work starts.
 
